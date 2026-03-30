@@ -18,6 +18,7 @@ export function PortList() {
   const { t } = useLang()
   const [ports, setPorts] = useState<PortWaitTime[]>([])
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
+  const [cbpUpdatedAt, setCbpUpdatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -33,6 +34,7 @@ export function PortList() {
       const data = await res.json()
       setPorts(data.ports)
       setFetchedAt(data.fetchedAt)
+      setCbpUpdatedAt(data.cbpUpdatedAt ?? null)
       setError(null)
     } catch {
       setError('Could not load wait times. Showing cached data.')
@@ -64,6 +66,10 @@ export function PortList() {
     ? Math.round((Date.now() - new Date(fetchedAt).getTime()) / 1000 / 60)
     : null
 
+  const cbpTime = cbpUpdatedAt
+    ? new Date(cbpUpdatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    : null
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -77,16 +83,16 @@ export function PortList() {
   return (
     <div>
       {/* Direction toggle */}
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-4">
+      <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-4">
         <button
           onClick={() => setDirection('entering_us')}
-          className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${direction === 'entering_us' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
+          className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${direction === 'entering_us' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
         >
           {t.enteringUS}
         </button>
         <button
           onClick={() => setDirection('entering_mexico')}
-          className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${direction === 'entering_mexico' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
+          className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-colors ${direction === 'entering_mexico' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
         >
           {t.enteringMexico}
         </button>
@@ -95,13 +101,13 @@ export function PortList() {
       {/* Entering Mexico — community only */}
       {direction === 'entering_mexico' && (
         <div className="space-y-3 mb-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
-            <p className="text-sm font-semibold text-amber-800">{t.mexicoSideTitle}</p>
-            <p className="text-xs text-amber-700 mt-1 leading-relaxed">{t.mexicoSideDesc}</p>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 text-center">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t.mexicoSideTitle}</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 leading-relaxed">{t.mexicoSideDesc}</p>
           </div>
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-xs font-semibold text-gray-700 mb-1">{t.communityTip}</p>
-            <p className="text-xs text-gray-600 leading-relaxed">{t.communityTipDesc}</p>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">{t.communityTip}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{t.communityTipDesc}</p>
           </div>
         </div>
       )}
@@ -110,31 +116,33 @@ export function PortList() {
       {direction === 'entering_us' && (
         <>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-xs text-gray-500 font-medium">
+            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
               {error ? (
                 <span className="text-amber-500">{error}</span>
+              ) : cbpTime ? (
+                <span>CBP data as of {cbpTime}</span>
               ) : timeAgo !== null ? (
                 <span>{timeAgo === 0 ? t.updatedJustNow : t.updatedAgo(timeAgo)}</span>
               ) : null}
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex bg-gray-100 rounded-lg p-0.5">
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                 <button
                   onClick={() => setView('list')}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${view === 'list' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${view === 'list' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                   <List className="w-3 h-3" /> {t.list}
                 </button>
                 <button
                   onClick={() => setView('map')}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${view === 'map' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${view === 'map' ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`}
                 >
                   <Map className="w-3 h-3" /> {t.map}
                 </button>
               </div>
               <button
                 onClick={() => fetchPorts(true)}
-                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
+                className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                 disabled={refreshing}
               >
                 <RefreshCw className={`w-3 h-3 ${refreshing ? 'animate-spin' : ''}`} />
@@ -146,7 +154,7 @@ export function PortList() {
             <select
               value={selectedRegion}
               onChange={e => setSelectedRegion(e.target.value)}
-              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {ALL_REGIONS.map(r => (
                 <option key={r} value={r}>{r === 'All' ? t.allRegions : r}</option>
@@ -156,10 +164,10 @@ export function PortList() {
 
           {/* Legend */}
           <div className="flex items-center gap-4 mb-3 px-1">
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" /> Live data
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
               <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" /> No data / closed
             </div>
           </div>
@@ -179,7 +187,7 @@ export function PortList() {
             <div className="space-y-5">
               {Object.entries(grouped).map(([region, regionPorts]) => (
                 <div key={region}>
-                  <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                  <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-1">
                     {region}
                   </h2>
                   <div className="space-y-3">

@@ -17,7 +17,6 @@ export function PortCard({ port }: Props) {
   const primaryWait = port.vehicle ?? port.pedestrian
   const [shared, setShared] = useState(false)
 
-  // Rough estimate: ~3 cars processed per minute at a typical crossing
   const carsAhead = primaryWait !== null && primaryWait > 0
     ? Math.round(primaryWait * 3)
     : null
@@ -46,30 +45,30 @@ export function PortCard({ port }: Props) {
 
   return (
     <Link href={`/port/${encodeURIComponent(port.portId)}`}>
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="flex items-center gap-2">
               <span className={`w-2.5 h-2.5 rounded-full ${dot} flex-shrink-0`} />
-              <h3 className="font-semibold text-gray-900 text-base leading-tight">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base leading-tight">
                 {port.portName}
               </h3>
             </div>
-            <p className="text-xs text-gray-400 mt-0.5 ml-4">{port.crossingName}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 ml-4">{port.crossingName}</p>
           </div>
           <div className="flex items-center gap-2">
             {primaryWait !== null && (
               <div className="text-right">
                 {primaryWait === 0 ? (
-                  <span className="text-sm font-bold text-gray-400 bg-gray-100 px-3 py-1.5 rounded-xl">Closed</span>
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-xl">&lt;1 min</span>
                 ) : (
                   <>
                     <div>
-                      <span className="text-2xl font-bold text-gray-900">{primaryWait}</span>
-                      <span className="text-xs text-gray-400 ml-1">min</span>
+                      <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">{primaryWait}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 ml-1">min</span>
                     </div>
                     {carsAhead !== null && (
-                      <p className="text-xs text-gray-400 text-right">~{carsAhead} cars</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-right">~{carsAhead} cars</p>
                     )}
                   </>
                 )}
@@ -77,7 +76,7 @@ export function PortCard({ port }: Props) {
             )}
             <button
               onClick={handleShare}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
               title="Share wait times"
             >
               {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
@@ -85,7 +84,6 @@ export function PortCard({ port }: Props) {
           </div>
         </div>
 
-        {/* Only show lanes that have data */}
         {[
           { minutes: port.vehicle, label: 'Car' },
           { minutes: port.sentri, label: 'SENTRI' },

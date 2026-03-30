@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { LangProvider } from "@/lib/LangContext";
+import { ThemeProvider } from "@/lib/ThemeContext";
 import { Footer } from "@/components/Footer";
 import "./globals.css";
 
@@ -68,10 +69,12 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-8997191973110385" />
       </head>
       <body className="min-h-full flex flex-col">
-        <LangProvider>
-          {children}
-          <Footer />
-        </LangProvider>
+        <ThemeProvider>
+          <LangProvider>
+            {children}
+            <Footer />
+          </LangProvider>
+        </ThemeProvider>
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
           <Script
             async

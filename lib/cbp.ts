@@ -52,7 +52,6 @@ export async function fetchRgvWaitTimes(): Promise<PortWaitTime[]> {
 
 export function getWaitLevel(minutes: number | null): 'low' | 'medium' | 'high' | 'closed' | 'unknown' {
   if (minutes === null) return 'unknown'
-  if (minutes === 0) return 'closed'
   if (minutes <= 20) return 'low'
   if (minutes <= 45) return 'medium'
   return 'high'
