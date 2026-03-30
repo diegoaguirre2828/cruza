@@ -9,7 +9,7 @@ import { fetchRgvWaitTimes } from '@/lib/cbp' // We'll use the API instead
 import { getPortMeta } from '@/lib/portMeta'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from '@/components/WaitBadge'
-import { Bell, Star, LogOut, Map, Plus, Trash2, Route, Settings } from 'lucide-react'
+import { Bell, Star, LogOut, Map, Plus, Trash2, Route, Settings, Lock } from 'lucide-react'
 import type { PortWaitTime } from '@/types'
 
 interface SavedCrossing {
@@ -42,22 +42,39 @@ export default function DashboardPage() {
   }
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null)
   const [routeLoading, setRouteLoading] = useState(false)
+  const [tier, setTier] = useState<string>('free')
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
 
   const loadData = useCallback(async () => {
-    const [portsRes, savedRes, alertsRes] = await Promise.all([
+    const [portsRes, savedRes, alertsRes, profileRes] = await Promise.all([
       fetch('/api/ports'),
       fetch('/api/saved'),
       fetch('/api/alerts'),
+      fetch('/api/profile'),
     ])
     if (portsRes.ok) setPorts((await portsRes.json()).ports || [])
     if (savedRes.ok) setSaved((await savedRes.json()).saved || [])
     if (alertsRes.ok) setAlerts((await alertsRes.json()).alerts || [])
+    if (profileRes.ok) {
+      const { profile } = await profileRes.json()
+      setTier(profile?.tier || 'free')
+    }
   }, [])
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login')
     if (user) loadData()
   }, [user, authLoading, router, loadData])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('upgraded') === 'true') {
+        setShowUpgradeBanner(true)
+        window.history.replaceState({}, '', '/dashboard')
+      }
+    }
+  }, [])
 
   async function removeSaved(portId: string) {
     await fetch(`/api/saved?portId=${portId}`, { method: 'DELETE' })
@@ -126,6 +143,17 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Upgrade success banner */}
+        {showUpgradeBanner && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start justify-between">
+            <div>
+              <p className="text-sm font-semibold text-green-800">Welcome to Pro! 🎉</p>
+              <p className="text-xs text-green-600 mt-0.5">You now have access to wait time alerts and all Pro features.</p>
+            </div>
+            <button onClick={() => setShowUpgradeBanner(false)} className="text-green-400 hover:text-green-600 text-lg leading-none">×</button>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
           {[
@@ -186,7 +214,22 @@ export default function DashboardPage() {
         )}
 
         {/* Alerts Tab */}
-        {tab === 'alerts' && (
+        {tab === 'alerts' && tier === 'free' && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
+            <Lock className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-gray-900">Alerts are a Pro feature</p>
+            <p className="text-xs text-gray-400 mt-1 mb-4">Get notified the moment your crossing drops below your target wait time.</p>
+            <Link
+              href="/pricing"
+              className="inline-block bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            >
+              Upgrade to Pro — $2.99/mo
+            </Link>
+            <p className="text-xs text-gray-400 mt-3">7-day free trial, cancel anytime</p>
+          </div>
+        )}
+
+        {tab === 'alerts' && tier !== 'free' && (
           <div className="space-y-4">
             {/* Add alert */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">

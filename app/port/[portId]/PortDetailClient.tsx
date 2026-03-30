@@ -263,15 +263,20 @@ export function PortDetailClient({ port, portId }: Props) {
       </div>
 
       {/* Pro teaser */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
-        <p className="text-sm font-semibold text-blue-800">🔔 Get alerts when wait drops</p>
-        <p className="text-xs text-blue-600 mt-1">
-          Upgrade to Pro for $2.99/mo — get notified the moment your crossing clears up.
-        </p>
-        <button className="mt-3 bg-blue-600 text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-blue-700 transition-colors">
-          Try Pro Free for 7 Days
-        </button>
-      </div>
+      {!user && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
+          <p className="text-sm font-semibold text-blue-800">🔔 Get alerts when wait drops</p>
+          <p className="text-xs text-blue-600 mt-1">
+            Upgrade to Pro for $2.99/mo — get notified the moment your crossing clears up.
+          </p>
+          <a
+            href="/pricing"
+            className="inline-block mt-3 bg-blue-600 text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-blue-700 transition-colors"
+          >
+            Try Pro Free for 7 Days
+          </a>
+        </div>
+      )}
     </div>
   )
 }
