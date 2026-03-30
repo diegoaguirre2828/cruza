@@ -14,13 +14,14 @@ const PLANS = [
     period: 'forever',
     color: 'border-gray-200',
     badge: null,
+    desc: 'Everything you need to stop guessing and start crossing smarter. No credit card. No catch.',
     features: [
       'Live wait times — all 52 crossings',
-      'Interactive map',
-      'Region filter',
-      'Driver reports',
-      'Save favorite crossings',
-      'No ads (with account)',
+      'Interactive map with color-coded wait levels',
+      'Filter by city or region',
+      'Crowdsourced driver reports',
+      'Save your favorite crossings',
+      'No ads when signed in',
     ],
     cta: 'Get Started Free',
     href: '/signup',
@@ -32,13 +33,14 @@ const PLANS = [
     period: '/month',
     color: 'border-blue-500',
     badge: 'Most Popular',
+    desc: 'For daily commuters who can\'t afford to guess. Get notified the moment your crossing clears up.',
     features: [
       'Everything in Free',
-      'AI wait time predictions',
-      'Custom alerts (notify when wait drops)',
-      'Full route optimizer',
-      '7-day free trial',
-      'Cancel anytime',
+      'AI wait time predictions by day & hour',
+      'Custom alerts — get notified when wait drops below your threshold',
+      'Full route optimizer — find the fastest crossing right now',
+      'Unlimited saved crossings',
+      '7-day free trial, cancel anytime',
     ],
     cta: 'Start Free Trial',
     tier: 'pro',
@@ -50,12 +52,13 @@ const PLANS = [
     period: '/month',
     color: 'border-gray-900',
     badge: 'For Freight & Logistics',
+    desc: 'Built for operators moving freight across the border daily. Save hours, cut fuel costs, keep your fleet moving.',
     features: [
       'Everything in Pro',
-      'Fleet manager panel',
-      'Commercial lane focus',
-      'CSV data exports',
-      'API access',
+      'Fleet manager panel — track multiple drivers at once',
+      'Commercial & FAST lane focus',
+      'Historical CSV data exports',
+      'API access for your own systems',
       '90-day trend analysis',
       'Priority support',
     ],
@@ -118,6 +121,7 @@ export default function PricingPage() {
                     <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
                     <span className="text-gray-400 text-sm">{plan.period}</span>
                   </div>
+                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">{plan.desc}</p>
                 </div>
 
                 <ul className="space-y-2 mb-6 flex-1">
