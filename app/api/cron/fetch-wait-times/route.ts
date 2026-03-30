@@ -5,8 +5,10 @@ import { getServiceClient } from '@/lib/supabase'
 export async function GET(req: NextRequest) {
   // Protect cron endpoint
   const secret = req.headers.get('x-cron-secret') || req.nextUrl.searchParams.get('secret')
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const expectedSecret = process.env.CRON_SECRET
+  console.log('Secret received:', secret, 'Expected:', expectedSecret)
+  if (secret !== expectedSecret) {
+    return NextResponse.json({ error: 'Unauthorized', received: secret, expected: expectedSecret }, { status: 401 })
   }
 
   try {
