@@ -9,7 +9,7 @@ import { fetchRgvWaitTimes } from '@/lib/cbp' // We'll use the API instead
 import { getPortMeta } from '@/lib/portMeta'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from '@/components/WaitBadge'
-import { Bell, Star, LogOut, Map, Plus, Trash2, Route, Settings, Lock } from 'lucide-react'
+import { Bell, Star, LogOut, Map, Plus, Trash2, Route, Settings, Lock, Navigation } from 'lucide-react'
 import type { PortWaitTime } from '@/types'
 
 interface SavedCrossing {
@@ -187,26 +187,47 @@ export default function DashboardPage() {
               </div>
             ) : (
               savedPorts.map(({ saved: s, port }) => (
-                <div key={s.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <Link href={`/port/${encodeURIComponent(s.port_id)}`} className="font-semibold text-gray-900 text-sm hover:underline">
-                        {port?.portName ?? s.port_id}
-                      </Link>
-                      {s.label && <p className="text-xs text-gray-400">{s.label}</p>}
+                <div key={s.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                  {/* Clickable top section → port detail */}
+                  <Link href={`/port/${encodeURIComponent(s.port_id)}`} className="block p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-semibold text-gray-900 text-sm">{port?.portName ?? s.port_id}</p>
+                        {s.label && <p className="text-xs text-gray-400">{s.label}</p>}
+                      </div>
+                      <span className="text-xs text-gray-400">View →</span>
                     </div>
-                    <button onClick={() => removeSaved(s.port_id)} className="text-gray-300 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-4 h-4" />
+                    {port && (
+                      <div className="flex gap-3 justify-around">
+                        {port.vehicle !== null && <WaitBadge minutes={port.vehicle} label="Car" />}
+                        {port.sentri !== null && <WaitBadge minutes={port.sentri} label="SENTRI" />}
+                        {port.pedestrian !== null && <WaitBadge minutes={port.pedestrian} label="Walk" />}
+                        {port.commercial !== null && <WaitBadge minutes={port.commercial} label="Truck" />}
+                        {port.vehicle === null && port.sentri === null && port.pedestrian === null && port.commercial === null && (
+                          <p className="text-xs text-gray-400 py-1">No data right now</p>
+                        )}
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* Action bar */}
+                  <div className="flex border-t border-gray-100">
+                    <a
+                      href={`https://www.google.com/maps/search/${encodeURIComponent((port?.portName ?? s.port_id) + ' border crossing')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    >
+                      <Navigation className="w-3.5 h-3.5" /> Directions
+                    </a>
+                    <div className="w-px bg-gray-100" />
+                    <button
+                      onClick={() => removeSaved(s.port_id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Remove
                     </button>
                   </div>
-                  {port && (
-                    <div className="flex gap-3 justify-around">
-                      <WaitBadge minutes={port.vehicle} label="Car" />
-                      <WaitBadge minutes={port.sentri} label="SENTRI" />
-                      <WaitBadge minutes={port.pedestrian} label="Walk" />
-                      <WaitBadge minutes={port.commercial} label="Truck" />
-                    </div>
-                  )}
                 </div>
               ))
             )}
