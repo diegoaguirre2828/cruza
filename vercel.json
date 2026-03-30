@@ -1,12 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/fetch-wait-times",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/send-alerts",
-      "schedule": "*/15 * * * *"
-    }
-  ]
-}
+{}
