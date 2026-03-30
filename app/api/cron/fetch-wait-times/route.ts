@@ -3,7 +3,10 @@ import { fetchRgvWaitTimes } from '@/lib/cbp'
 import { getServiceClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
-  // Auth temporarily disabled for testing
+  const secret = req.nextUrl.searchParams.get('secret')
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   try {
     const ports = await fetchRgvWaitTimes()
