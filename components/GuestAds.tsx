@@ -52,7 +52,7 @@ export function GuestAds() {
   // Guest (no account) — full Google AdSense
   return (
     <div className="mb-4">
-      <AdsenseBlock slot="1234567890" />
+      <AdsenseBlock slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT || ''} />
       <p className="text-center text-xs text-gray-400 mt-2">
         <Link href="/signup" className="text-gray-600 font-medium hover:underline">
           {t.createAccount}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useRouter } from 'next/navigation'
 
-const ADMIN_EMAIL = 'diegonaguirre@icloud.com' // your email
+const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 
 interface Advertiser {
   id: string

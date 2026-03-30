@@ -18,12 +18,12 @@ export default function AdvertisePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    await fetch('/api/advertise', {
+    const res = await fetch('/api/advertise', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ businessName: form.businessName, contact_email: form.email, contact_phone: form.phone, description: `Near: ${form.crossing}` }),
+      body: JSON.stringify({ businessName: form.businessName, email: form.email, phone: form.phone, nearestCrossing: form.crossing }),
     })
-    setSubmitted(true)
+    if (res.ok) setSubmitted(true)
     setLoading(false)
   }
 
