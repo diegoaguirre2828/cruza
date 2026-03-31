@@ -69,8 +69,17 @@ export function WaitingMode({ onNearCrossing }: Props) {
     if (!navigator.geolocation) return
     const key = `waiting_dismissed_${new Date().toDateString()}`
     if (sessionStorage.getItem(key)) { setDismissed(true); return }
-    const id = navigator.geolocation.watchPosition(check, () => {}, { enableHighAccuracy: false, maximumAge: 60000 })
-    return () => navigator.geolocation.clearWatch(id)
+
+    // Only auto-watch if permission was already granted — no silent prompt
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        if (result.state === 'granted') {
+          const id = navigator.geolocation.watchPosition(check, () => {}, { enableHighAccuracy: false, maximumAge: 60000 })
+          result.onchange = () => { if (result.state !== 'granted') navigator.geolocation.clearWatch(id) }
+        }
+        // If 'prompt' or 'denied', we do nothing — no browser dialog on load
+      })
+    }
   }, [check])
 
   async function quickReport(cond: string) {
