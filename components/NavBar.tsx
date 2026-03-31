@@ -67,26 +67,32 @@ export function NavBar() {
         </Link>
       )}
 
-      {user && !isBusiness ? (
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-1 text-xs font-medium text-white px-3 py-1.5 rounded-xl transition-colors ${
-            isPro
-              ? 'bg-purple-600 hover:bg-purple-700'
-              : 'bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'
-          }`}
-        >
-          <User className="w-3 h-3" />
-          {isPro ? 'Pro' : t.me}
-        </Link>
-      ) : !user ? (
+      {user ? (
+        <>
+          {/* Account button — always visible for logged-in users */}
+          <Link
+            href="/dashboard"
+            className={`flex items-center gap-1 text-xs font-medium text-white px-3 py-1.5 rounded-xl transition-colors ${
+              isBusiness
+                ? 'bg-gray-700 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500'
+                : isPro
+                ? 'bg-purple-600 hover:bg-purple-700'
+                : 'bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600'
+            }`}
+            title="My Account"
+          >
+            <User className="w-3 h-3" />
+            {isBusiness ? '' : isPro ? 'Pro' : t.me}
+          </Link>
+        </>
+      ) : (
         <Link
           href="/signup"
           className="text-xs font-medium text-white bg-gray-900 px-3 py-1.5 rounded-xl hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
         >
           {t.signUpFree}
         </Link>
-      ) : null}
+      )}
     </div>
   )
 }
