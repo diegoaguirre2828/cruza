@@ -62,12 +62,14 @@ export async function POST(req: NextRequest) {
 
   // Log cleared event so dispatcher can be notified (email via cron or future push)
   if (status === 'cleared') {
-    await db.from('driver_events').insert({
-      driver_id: driver.id,
-      owner_id: driver.owner_id,
-      event_type: 'cleared',
-      port_id: portId || null,
-    }).catch(() => {}) // table may not exist yet — silent fail
+    try {
+      await db.from('driver_events').insert({
+        driver_id: driver.id,
+        owner_id: driver.owner_id,
+        event_type: 'cleared',
+        port_id: portId || null,
+      })
+    } catch {} // table may not exist yet — silent fail
   }
 
   return NextResponse.json({ success: true, driverName: driver.name })
