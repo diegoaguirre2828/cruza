@@ -49,7 +49,7 @@ export function NavBar() {
         <Gift className="w-3.5 h-3.5" />
       </Link>
 
-      <Link href="/services" className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors" title={lang === 'es' ? 'Servicios en México' : 'Cross for Services'}>
+      <Link href="/guide" className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors" title={lang === 'es' ? 'Guía fronteriza' : 'Border Guide'}>
         <Wrench className="w-3.5 h-3.5" />
       </Link>
 

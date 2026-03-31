@@ -38,7 +38,7 @@ export function ExchangeRateWidget() {
         </div>
       </div>
       <Link
-        href="/services"
+        href="/guide"
         className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 ml-3"
       >
         {lang === 'es' ? 'Servicios en MX →' : 'Services in MX →'}

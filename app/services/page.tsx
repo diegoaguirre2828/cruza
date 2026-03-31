@@ -138,9 +138,9 @@ export default function ServicesPage() {
 
         {/* Header */}
         <div className="pt-6 pb-2">
-          <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-3 transition-colors">
+          <Link href="/guide" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-3 transition-colors">
             <ArrowLeft className="w-3 h-3" />
-            {lang === 'es' ? 'Inicio' : 'Home'}
+            {lang === 'es' ? 'Guía fronteriza' : 'Border Guide'}
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {lang === 'es' ? '🇲🇽 Servicios en México' : '🇲🇽 Cross for Services'}

@@ -1,0 +1,136 @@
+'use client'
+
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { useLang } from '@/lib/LangContext'
+
+const GUIDES = [
+  {
+    href: '/customs',
+    emoji: '✅',
+    title: { en: 'Crossing Checklist', es: 'Lista de Cruce' },
+    desc: { en: 'Interactive checklist for entering the US or Mexico. Know what to bring, what to declare, and what to avoid.', es: 'Lista interactiva para entrar a EE.UU. o México. Qué llevar, qué declarar y qué evitar.' },
+    color: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+    badge: { en: 'Most useful', es: 'Más útil' },
+    badgeColor: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
+  },
+  {
+    href: '/insurance',
+    emoji: '🛡️',
+    title: { en: 'Mexico Auto Insurance', es: 'Seguro de Auto para México' },
+    desc: { en: 'Required by law. Compare providers, understand coverage, and get a quote before you cross.', es: 'Obligatorio por ley. Compara proveedores, entiende la cobertura y cotiza antes de cruzar.' },
+    color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
+    badge: { en: 'Required', es: 'Obligatorio' },
+    badgeColor: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+  },
+  {
+    href: '/services',
+    emoji: '🇲🇽',
+    title: { en: 'Cross for Services', es: 'Servicios en México' },
+    desc: { en: 'Auto repair, dental, medical, pharmacy, beauty — quality services at a fraction of US prices.', es: 'Talleres, dental, médico, farmacia, estética — servicios de calidad a precios accesibles.' },
+    color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+    badge: null,
+    badgeColor: '',
+  },
+  {
+    href: '/predict',
+    emoji: '🔮',
+    title: { en: 'Smart Crossing Planner', es: 'Planificador Inteligente' },
+    desc: { en: 'Find the best time and day to cross any port. Skip the long waits with data-driven predictions.', es: 'Encuentra el mejor horario y día para cruzar. Evita las esperas largas con predicciones basadas en datos.' },
+    color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
+    badge: null,
+    badgeColor: '',
+  },
+]
+
+const QUICK_FACTS = {
+  en: [
+    { label: 'US duty-free limit', value: '$800 per person' },
+    { label: 'MX duty-free limit', value: '$500 USD per person' },
+    { label: 'Cash declaration threshold', value: '$10,000 USD' },
+    { label: 'Alcohol duty-free (US entry)', value: '1 liter' },
+    { label: 'Mexico insurance required', value: 'Yes, always' },
+    { label: 'SENTRI enrollment savings', value: '30–90 min avg.' },
+  ],
+  es: [
+    { label: 'Límite libre de impuestos EE.UU.', value: '$800 por persona' },
+    { label: 'Límite libre de impuestos México', value: '$500 USD por persona' },
+    { label: 'Declaración de efectivo', value: '$10,000 USD' },
+    { label: 'Alcohol libre (entrando a EE.UU.)', value: '1 litro' },
+    { label: 'Seguro en México', value: 'Sí, siempre' },
+    { label: 'Ahorro con SENTRI', value: '30–90 min aprox.' },
+  ],
+}
+
+export default function GuidePage() {
+  const { lang } = useLang()
+
+  const t = {
+    title: lang === 'es' ? '🌉 Guía Fronteriza' : '🌉 Border Guide',
+    subtitle: lang === 'es'
+      ? 'Todo lo que necesitas saber para cruzar con confianza.'
+      : 'Everything you need to know to cross with confidence.',
+    quickFacts: lang === 'es' ? 'Datos rápidos' : 'Quick facts',
+    back: lang === 'es' ? 'Inicio' : 'Home',
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="max-w-lg mx-auto px-4 pb-16">
+
+        {/* Header */}
+        <div className="pt-6 pb-4">
+          <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-3 transition-colors">
+            <ArrowLeft className="w-3 h-3" /> {t.back}
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t.title}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t.subtitle}</p>
+        </div>
+
+        {/* Guide cards */}
+        <div className="space-y-3 mb-6">
+          {GUIDES.map(guide => (
+            <Link key={guide.href} href={guide.href}>
+              <div className={`rounded-2xl border p-4 hover:shadow-md transition-all active:scale-[0.98] ${guide.color}`}>
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl flex-shrink-0">{guide.emoji}</span>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                        {lang === 'es' ? guide.title.es : guide.title.en}
+                      </h2>
+                      {guide.badge && (
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${guide.badgeColor}`}>
+                          {lang === 'es' ? guide.badge.es : guide.badge.en}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {lang === 'es' ? guide.desc.es : guide.desc.en}
+                    </p>
+                  </div>
+                  <span className="text-gray-400 dark:text-gray-500 text-sm flex-shrink-0">→</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Quick facts table */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t.quickFacts}</h2>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {QUICK_FACTS[lang].map((fact, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                <p className="text-xs text-gray-600 dark:text-gray-400">{fact.label}</p>
+                <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{fact.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
