@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/useAuth'
 import { createClient } from '@/lib/auth'
-import { ArrowLeft, Save, CreditCard, LogOut, User, Building2, FileText } from 'lucide-react'
+import { BADGES } from '@/lib/points'
+import { ArrowLeft, Save, CreditCard, LogOut, User, Building2, FileText, Trophy } from 'lucide-react'
 
 const TIER_LABELS: Record<string, { label: string; color: string }> = {
   free:     { label: 'Free',     color: 'bg-gray-100 text-gray-600' },
@@ -26,7 +27,7 @@ export default function AccountPage() {
   const [profile, setProfile] = useState<Record<string, string> | null>(null)
   const [subscription, setSubscription] = useState<Record<string, string> | null>(null)
   const [email, setEmail] = useState('')
-  const [form, setForm] = useState({ full_name: '', company: '', bio: '' })
+  const [form, setForm] = useState({ display_name: '', full_name: '', company: '', bio: '' })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
@@ -42,6 +43,7 @@ export default function AccountPage() {
       setSubscription(d.subscription || null)
       setEmail(d.email || '')
       setForm({
+        display_name: d.profile?.display_name || '',
         full_name: d.profile?.full_name || '',
         company:   d.profile?.company || '',
         bio:       d.profile?.bio || '',
@@ -144,6 +146,38 @@ export default function AccountPage() {
           </div>
         </div>
 
+        {/* Points & badges */}
+        {(profile?.points > 0 || profile?.reports_count > 0) && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700">Community Stats</h2>
+              <Link href="/leaderboard" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
+                <Trophy className="w-3 h-3" /> Leaderboard
+              </Link>
+            </div>
+            <div className="flex gap-4 mb-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{profile.points || 0}</p>
+                <p className="text-xs text-gray-500">Points</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{profile.reports_count || 0}</p>
+                <p className="text-xs text-gray-500">Reports</p>
+              </div>
+            </div>
+            {profile?.badges?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.badges.map((b: string) => BADGES[b] && (
+                  <div key={b} className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-1">
+                    <span>{BADGES[b].emoji}</span>
+                    <span className="text-xs font-medium text-gray-700">{BADGES[b].label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Profile form */}
         <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm mb-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Profile</h2>
@@ -151,7 +185,20 @@ export default function AccountPage() {
           <div className="space-y-4">
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
-                <User className="w-3.5 h-3.5" /> Full name
+                <User className="w-3.5 h-3.5" /> Display name
+                <span className="text-gray-400 font-normal">(shown on your reports)</span>
+              </label>
+              <input
+                value={form.display_name}
+                onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. BorderPro_Laredo"
+                maxLength={30}
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-medium text-gray-700 mb-1">
+                Full name
               </label>
               <input
                 value={form.full_name}

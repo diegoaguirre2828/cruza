@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { useTheme } from '@/lib/ThemeContext'
-import { User, Moon, Sun } from 'lucide-react'
+import { User, Moon, Sun, Trophy } from 'lucide-react'
 
 export function NavBar() {
   const { user, loading } = useAuth()
@@ -27,6 +27,9 @@ export function NavBar() {
       >
         {lang === 'en' ? 'ES' : 'EN'}
       </button>
+      <Link href="/leaderboard" className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors" title="Leaderboard">
+        <Trophy className="w-3.5 h-3.5" />
+      </Link>
       <Link href="/advertise" className="text-xs font-medium text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 transition-colors">
         {t.localBusiness}
       </Link>
