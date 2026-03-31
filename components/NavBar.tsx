@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { useTheme } from '@/lib/ThemeContext'
-import { User, Moon, Sun, Trophy, Gift, Building2 } from 'lucide-react'
+import { User, Moon, Sun, Trophy, Gift, Building2, Wrench } from 'lucide-react'
 
 export function NavBar() {
   const { user, loading } = useAuth()
@@ -47,6 +47,10 @@ export function NavBar() {
 
       <Link href="/rewards" className="p-1.5 rounded-lg text-purple-500 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20 transition-colors" title={lang === 'es' ? 'Recompensas' : 'Rewards'}>
         <Gift className="w-3.5 h-3.5" />
+      </Link>
+
+      <Link href="/services" className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors" title={lang === 'es' ? 'Servicios en México' : 'Cross for Services'}>
+        <Wrench className="w-3.5 h-3.5" />
       </Link>
 
       {/* Business shortcut — very visible */}

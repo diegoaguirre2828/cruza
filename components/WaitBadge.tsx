@@ -15,7 +15,7 @@ export function WaitBadge({ minutes, label }: Props) {
 
   const display =
     minutes === null ? '—' :
-    minutes === 0 ? '< 1 min' :
+    minutes === 0 ? t.lessThanMin :
     `${minutes} min`
 
   return (

@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Share2, Check } from 'lucide-react'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
+import { useLang } from '@/lib/LangContext'
 import type { PortWaitTime } from '@/types'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function PortCard({ port }: Props) {
+  const { t } = useLang()
   const allNull = port.vehicle === null && port.pedestrian === null && port.sentri === null && port.commercial === null
   const primaryLevel = getWaitLevel(port.vehicle)
   // When CBP reports no data late at night, treat as low traffic (green dot)
@@ -86,22 +88,17 @@ export function PortCard({ port }: Props) {
           </div>
         </div>
 
-        {[
-          { minutes: port.vehicle, label: 'Car' },
-          { minutes: port.sentri, label: 'SENTRI' },
-          { minutes: port.pedestrian, label: 'Walk' },
-          { minutes: port.commercial, label: 'Truck' },
-        ].filter(lane => lane.minutes !== null).length > 0 ? (
+        {!allNull ? (
           <div className="flex gap-3 mt-2 justify-around">
-            {port.vehicle !== null && <WaitBadge minutes={port.vehicle} label="Car" />}
-            {port.sentri !== null && <WaitBadge minutes={port.sentri} label="SENTRI" />}
-            {port.pedestrian !== null && <WaitBadge minutes={port.pedestrian} label="Walk" />}
-            {port.commercial !== null && <WaitBadge minutes={port.commercial} label="Truck" />}
+            {port.vehicle !== null && <WaitBadge minutes={port.vehicle} label={t.laneCar} />}
+            {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} />}
+            {port.pedestrian !== null && <WaitBadge minutes={port.pedestrian} label={t.laneWalk} />}
+            {port.commercial !== null && <WaitBadge minutes={port.commercial} label={t.laneTruck} />}
           </div>
         ) : (
           <div className="flex items-center justify-center gap-1.5 mt-2 py-1">
             <span className="w-2 h-2 rounded-full bg-green-400" />
-            <p className="text-xs text-green-600 dark:text-green-400 font-medium">No wait · Low traffic</p>
+            <p className="text-xs text-green-600 dark:text-green-400 font-medium">{t.noWaitLowTraffic}</p>
           </div>
         )}
       </div>

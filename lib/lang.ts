@@ -66,6 +66,18 @@ export const translations = {
     plannerBannerTitle: '🔮 Smart Crossing Planner',
     plannerBannerSub: 'See the best time to cross — any port, any day',
     plannerTry: 'Try it →',
+    // Lane labels
+    laneCar: 'Car',
+    laneSentri: 'SENTRI',
+    laneWalk: 'Walk',
+    laneTruck: 'Truck',
+    // Wait states
+    noWaitLowTraffic: 'No wait · Low traffic',
+    lessThanMin: '< 1 min',
+    // PortList legend
+    legendNoWait: 'No / low wait',
+    // Services
+    servicesLink: 'Services in MX →',
   },
   es: {
     appName: 'Cruza',
@@ -130,6 +142,18 @@ export const translations = {
     plannerBannerTitle: '🔮 Planificador Inteligente',
     plannerBannerSub: 'Encuentra el mejor horario para cruzar',
     plannerTry: 'Probar →',
+    // Lane labels
+    laneCar: 'Auto',
+    laneSentri: 'SENTRI',
+    laneWalk: 'Peatón',
+    laneTruck: 'Camión',
+    // Wait states
+    noWaitLowTraffic: 'Sin espera · Poco tráfico',
+    lessThanMin: '< 1 min',
+    // PortList legend
+    legendNoWait: 'Sin espera',
+    // Services
+    servicesLink: 'Servicios en MX →',
   },
 }
 
