@@ -18,7 +18,7 @@ export default function LoginPage() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.replace('/dashboard')
+      if (data.user) router.replace('/')
     })
   }, [router])
 
@@ -32,7 +32,7 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      router.push('/')
     }
   }
 

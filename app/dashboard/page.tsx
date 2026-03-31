@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/auth'
 import { useAuth } from '@/lib/useAuth'
-import { fetchRgvWaitTimes } from '@/lib/cbp' // We'll use the API instead
-import { getPortMeta } from '@/lib/portMeta'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from '@/components/WaitBadge'
-import { Bell, Star, LogOut, Map, Plus, Trash2, Route, Settings, Lock, Navigation } from 'lucide-react'
+import { Bell, Star, LogOut, ArrowLeft, Plus, Trash2, Route, Settings, Lock, Navigation, Building2, User } from 'lucide-react'
 import { PushToggle } from '@/components/PushToggle'
 import type { PortWaitTime } from '@/types'
 
@@ -116,8 +114,11 @@ export default function DashboardPage() {
     port: ports.find(p => p.portId === s.port_id),
   }))
 
+  const isBusiness = tier === 'business'
+  const isPro = tier === 'pro' || isBusiness
+
   if (authLoading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
     </div>
   )
@@ -125,50 +126,93 @@ export default function DashboardPage() {
   const ORIGINS = ['McAllen', 'Laredo', 'El Paso', 'San Antonio', 'Houston', 'Dallas', 'Brownsville', 'San Diego', 'Phoenix', 'Tucson']
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto px-4 pb-10">
+
         {/* Header */}
         <div className="pt-6 pb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">My Dashboard</h1>
-            <p className="text-xs text-gray-400">{user?.email}</p>
+            <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-1 transition-colors">
+              <ArrowLeft className="w-3 h-3" /> Home
+            </Link>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My Account</h1>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{user?.email}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/" className="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50">
-              <Map className="w-4 h-4" />
+            <Link
+              href="/account"
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <Settings className="w-3.5 h-3.5" /> Settings
             </Link>
-            <Link href="/account" className="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50">
-              <Settings className="w-4 h-4" />
-            </Link>
-            <button onClick={signOut} className="p-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50">
+            <button
+              onClick={signOut}
+              className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Business portal shortcut — prominent for business users */}
+        {isBusiness && (
+          <Link
+            href="/business"
+            className="flex items-center justify-between bg-blue-600 dark:bg-blue-700 rounded-2xl px-4 py-3.5 mb-4 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Building2 className="w-5 h-5 text-white" />
+              <div>
+                <p className="text-sm font-bold text-white">Cruza Business Portal</p>
+                <p className="text-xs text-blue-200">Drivers · Dispatch · Loads · Cost Calculator</p>
+              </div>
+            </div>
+            <span className="text-white text-lg">→</span>
+          </Link>
+        )}
+
+        {/* Tier badge */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
+            isBusiness ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+            isPro ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' :
+            'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+          }`}>
+            <User className="w-3 h-3" />
+            {isBusiness ? 'Business' : isPro ? 'Pro' : 'Free'} Plan
+          </div>
+          {!isPro && (
+            <Link href="/pricing" className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
+              Upgrade →
+            </Link>
+          )}
+        </div>
+
         {/* Upgrade success banner */}
         {showUpgradeBanner && (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded-2xl p-4 flex items-start justify-between">
+          <div className="mb-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 flex items-start justify-between">
             <div>
-              <p className="text-sm font-semibold text-green-800">Welcome to Pro! 🎉</p>
-              <p className="text-xs text-green-600 mt-0.5">You now have access to wait time alerts and all Pro features.</p>
+              <p className="text-sm font-semibold text-green-800 dark:text-green-300">Welcome to Pro! 🎉</p>
+              <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">You now have access to wait time alerts and all Pro features.</p>
             </div>
             <button onClick={() => setShowUpgradeBanner(false)} className="text-green-400 hover:text-green-600 text-lg leading-none">×</button>
           </div>
         )}
 
         {/* Tabs */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-5">
           {[
-            { key: 'crossings', label: '⭐ Saved', icon: Star },
-            { key: 'alerts',    label: '🔔 Alerts', icon: Bell },
-            { key: 'route',     label: '🗺️ Route',  icon: Route },
+            { key: 'crossings', label: '⭐ Saved' },
+            { key: 'alerts',    label: '🔔 Alerts' },
+            { key: 'route',     label: '🗺️ Route' },
           ].map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key as typeof tab)}
               className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${
-                tab === t.key ? 'bg-white shadow text-gray-900' : 'text-gray-500'
+                tab === t.key
+                  ? 'bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-gray-100'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
               {t.label}
@@ -180,25 +224,24 @@ export default function DashboardPage() {
         {tab === 'crossings' && (
           <div className="space-y-3">
             {savedPorts.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-                <Star className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 font-medium">No saved crossings yet</p>
-                <p className="text-xs text-gray-400 mt-1">Tap ⭐ on any crossing to save it here</p>
-                <Link href="/" className="inline-block mt-4 bg-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-gray-700 transition-colors">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+                <Star className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">No saved crossings yet</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Tap ⭐ on any crossing to save it here</p>
+                <Link href="/" className="inline-block mt-4 bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors">
                   Browse Crossings
                 </Link>
               </div>
             ) : (
               savedPorts.map(({ saved: s, port }) => (
-                <div key={s.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                  {/* Clickable top section → port detail */}
-                  <Link href={`/port/${encodeURIComponent(s.port_id)}`} className="block p-4 hover:bg-gray-50 transition-colors">
+                <div key={s.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                  <Link href={`/port/${encodeURIComponent(s.port_id)}`} className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">{port?.portName ?? s.port_id}</p>
-                        {s.label && <p className="text-xs text-gray-400">{s.label}</p>}
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{port?.portName ?? s.port_id}</p>
+                        {s.label && <p className="text-xs text-gray-400 dark:text-gray-500">{s.label}</p>}
                       </div>
-                      <span className="text-xs text-gray-400">View →</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">View →</span>
                     </div>
                     {port && (
                       <div className="flex gap-3 justify-around">
@@ -207,26 +250,24 @@ export default function DashboardPage() {
                         {port.pedestrian !== null && <WaitBadge minutes={port.pedestrian} label="Walk" />}
                         {port.commercial !== null && <WaitBadge minutes={port.commercial} label="Truck" />}
                         {port.vehicle === null && port.sentri === null && port.pedestrian === null && port.commercial === null && (
-                          <p className="text-xs text-gray-400 py-1">No data right now</p>
+                          <p className="text-xs text-green-600 dark:text-green-400 py-1">No wait · Low traffic</p>
                         )}
                       </div>
                     )}
                   </Link>
-
-                  {/* Action bar */}
-                  <div className="flex border-t border-gray-100">
+                  <div className="flex border-t border-gray-100 dark:border-gray-700">
                     <a
                       href={`https://www.google.com/maps/search/${encodeURIComponent((port?.portName ?? s.port_id) + ' border crossing')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     >
                       <Navigation className="w-3.5 h-3.5" /> Directions
                     </a>
-                    <div className="w-px bg-gray-100" />
+                    <div className="w-px bg-gray-100 dark:bg-gray-700" />
                     <button
                       onClick={() => removeSaved(s.port_id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" /> Remove
                     </button>
@@ -239,45 +280,37 @@ export default function DashboardPage() {
 
         {/* Alerts Tab */}
         {tab === 'alerts' && tier === 'free' && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
-            <Lock className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-gray-900">Alerts are a Pro feature</p>
-            <p className="text-xs text-gray-400 mt-1 mb-4">Get notified the moment your crossing drops below your target wait time.</p>
-            <Link
-              href="/pricing"
-              className="inline-block bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
-            >
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+            <Lock className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Alerts are a Pro feature</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-4">Get notified the moment your crossing drops below your target wait time.</p>
+            <Link href="/pricing" className="inline-block bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
               Upgrade to Pro — $2.99/mo
             </Link>
-            <p className="text-xs text-gray-400 mt-3">7-day free trial, cancel anytime</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">7-day free trial, cancel anytime</p>
           </div>
         )}
 
         {tab === 'alerts' && tier !== 'free' && (
           <div className="space-y-4">
-            {/* Push notification toggle */}
             <PushToggle />
-
-            {/* Add alert */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Add Alert</h3>
               <div className="space-y-3">
                 <select
                   value={newAlertPortId}
                   onChange={e => setNewAlertPortId(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a crossing...</option>
                   {ports.map(p => (
-                    <option key={p.portId} value={p.portId}>
-                      {p.portName} – {p.crossingName}
-                    </option>
+                    <option key={p.portId} value={p.portId}>{p.portName} – {p.crossingName}</option>
                   ))}
                 </select>
                 <select
                   value={newAlertLane}
                   onChange={e => setNewAlertLane(e.target.value)}
-                  className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="vehicle">Passenger Vehicle</option>
                   <option value="sentri">SENTRI / Ready Lane</option>
@@ -291,7 +324,7 @@ export default function DashboardPage() {
                     value={newAlertThreshold}
                     onChange={e => setNewAlertThreshold(Number(e.target.value))}
                     min={5} max={120}
-                    className="w-20 border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-gray-100 text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-20 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400">min</span>
                 </div>
@@ -300,7 +333,7 @@ export default function DashboardPage() {
                   value={newAlertPhone}
                   onChange={e => setNewAlertPhone(e.target.value)}
                   placeholder="SMS phone (optional) e.g. +15551234567"
-                  className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 placeholder-gray-400 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                   onClick={addAlert}
@@ -312,9 +345,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Active alerts */}
             {alerts.length === 0 ? (
-              <p className="text-center text-sm text-gray-400 py-4">No alerts set up yet.</p>
+              <p className="text-center text-sm text-gray-400 dark:text-gray-500 py-4">No alerts set up yet.</p>
             ) : (
               alerts.map(alert => {
                 const port = ports.find(p => p.portId === alert.port_id)
@@ -322,20 +354,20 @@ export default function DashboardPage() {
                 const level = getWaitLevel(wait)
                 const dot = waitLevelDot(level)
                 return (
-                  <div key={alert.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex items-center justify-between">
+                  <div key={alert.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full ${dot}`} />
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {port?.portName ?? alert.port_id}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         Alert when {alert.lane_type} &lt; {alert.threshold_minutes} min
                         {wait !== null && ` · Now: ${wait} min`}
                       </p>
                     </div>
-                    <button onClick={() => removeAlert(alert.id)} className="text-gray-300 hover:text-red-400">
+                    <button onClick={() => removeAlert(alert.id)} className="text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -347,28 +379,28 @@ export default function DashboardPage() {
 
         {/* Route Optimizer Tab */}
         {tab === 'route' && tier === 'free' && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
-            <Lock className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-gray-900">Route Optimizer is a Pro feature</p>
-            <p className="text-xs text-gray-400 mt-1 mb-4">Find the fastest crossing near you based on live wait times.</p>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+            <Lock className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Route Optimizer is a Pro feature</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 mb-4">Find the fastest crossing near you based on live wait times.</p>
             <Link href="/pricing" className="inline-block bg-blue-600 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors">
               Upgrade to Pro — $2.99/mo
             </Link>
-            <p className="text-xs text-gray-400 mt-3">7-day free trial, cancel anytime</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">7-day free trial, cancel anytime</p>
           </div>
         )}
 
         {tab === 'route' && tier !== 'free' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Find Best Crossing</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Find Best Crossing</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Your origin city (US side)</label>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Your origin city (US side)</label>
                   <select
                     value={origin}
                     onChange={e => setOrigin(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     {ORIGINS.map(o => <option key={o} value={o}>{o}</option>)}
                   </select>
@@ -376,7 +408,7 @@ export default function DashboardPage() {
                 <button
                   onClick={optimizeRoute}
                   disabled={routeLoading}
-                  className="w-full bg-gray-900 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                  className="w-full bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-200 disabled:opacity-50 transition-colors"
                 >
                   {routeLoading ? 'Finding best route...' : '🗺️ Find Best Crossing Now'}
                 </button>
@@ -387,26 +419,25 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 {routeResult.best && (
                   <Link href={`/port/${encodeURIComponent(routeResult.best.portId)}`}>
-                    <div className="bg-green-50 border border-green-200 rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer">
-                      <p className="text-xs font-semibold text-green-600 mb-1">✅ BEST OPTION — tap to view</p>
-                      <p className="font-bold text-gray-900">{routeResult.best.portName}</p>
-                      <p className="text-xs text-gray-600">{routeResult.best.crossingName}</p>
-                      <p className="text-sm text-green-700 font-medium mt-2">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer">
+                      <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-1">✅ BEST OPTION — tap to view</p>
+                      <p className="font-bold text-gray-900 dark:text-gray-100">{routeResult.best.portName}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{routeResult.best.crossingName}</p>
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium mt-2">
                         Vehicle: {routeResult.best.vehicleWait !== null ? `${routeResult.best.vehicleWait} min` : 'N/A'}
                         {routeResult.best.commercialWait !== null && ` · Truck: ${routeResult.best.commercialWait} min`}
                       </p>
-                      <p className="text-xs text-green-600 mt-1">{routeResult.best.recommendation}</p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">{routeResult.best.recommendation}</p>
                     </div>
                   </Link>
                 )}
-
                 {routeResult.alternatives?.map((alt, i) => (
                   <Link key={i} href={`/port/${encodeURIComponent(alt.portId)}`}>
-                    <div className="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer">
-                      <p className="text-xs text-gray-500 mb-1 font-medium">Alternative #{i + 2} — tap to view</p>
-                      <p className="font-semibold text-gray-900 text-sm">{alt.portName}</p>
-                      <p className="text-xs text-gray-600">{alt.crossingName}</p>
-                      <p className="text-sm text-gray-800 font-medium mt-1">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Alternative #{i + 2} — tap to view</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{alt.portName}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{alt.crossingName}</p>
+                      <p className="text-sm text-gray-800 dark:text-gray-200 font-medium mt-1">
                         Vehicle: {alt.vehicleWait !== null ? `${alt.vehicleWait} min` : 'N/A'}
                       </p>
                     </div>
