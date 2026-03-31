@@ -5,13 +5,29 @@ import { useRouter } from 'next/navigation'
 import { PortCard } from './PortCard'
 import { BorderMap } from './BorderMap'
 import type { PortWaitTime } from '@/types'
-import { RefreshCw, Map, List } from 'lucide-react'
+import { RefreshCw, Map, List, Navigation, X } from 'lucide-react'
 import { ALL_REGIONS, getPortMeta } from '@/lib/portMeta'
 import { useLang } from '@/lib/LangContext'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000
 
 type Direction = 'entering_us' | 'entering_mexico'
+
+function haversineMi(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3958.8 // Earth radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function distLabel(mi: number, lang: string): string {
+  if (mi < 0.5) return lang === 'es' ? 'Muy cerca' : 'Very close'
+  if (mi < 1) return lang === 'es' ? `${(mi * 5280).toFixed(0)} pies` : `${(mi * 5280).toFixed(0)} ft`
+  return `${mi.toFixed(1)} mi`
+}
 
 export function PortList() {
   const router = useRouter()
@@ -25,6 +41,12 @@ export function PortList() {
   const [selectedRegion, setSelectedRegion] = useState('All')
   const [view, setView] = useState<'list' | 'map'>('list')
   const [direction, setDirection] = useState<Direction>('entering_us')
+
+  // Near Me
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
+  const [nearMe, setNearMe] = useState(false)
+  const [geoLoading, setGeoLoading] = useState(false)
+  const [geoError, setGeoError] = useState<string | null>(null)
 
   const fetchPorts = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true)
@@ -50,11 +72,44 @@ export function PortList() {
     return () => clearInterval(interval)
   }, [fetchPorts])
 
+  function requestNearMe() {
+    if (nearMe) {
+      setNearMe(false)
+      setGeoError(null)
+      return
+    }
+    if (!navigator.geolocation) {
+      setGeoError(lang === 'es' ? 'Geolocalización no disponible' : 'Geolocation not available')
+      return
+    }
+    setGeoLoading(true)
+    setGeoError(null)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setNearMe(true)
+        setGeoLoading(false)
+      },
+      () => {
+        setGeoError(lang === 'es' ? 'No se pudo obtener tu ubicación' : 'Could not get your location')
+        setGeoLoading(false)
+      },
+      { timeout: 8000 }
+    )
+  }
+
   const filteredPorts = selectedRegion === 'All'
     ? ports
     : ports.filter(p => getPortMeta(p.portId).region === selectedRegion)
 
-  // Group by region for list view
+  // Sorted by distance when Near Me is active
+  const sortedByDistance = userLoc
+    ? [...ports]
+        .map(p => ({ port: p, dist: haversineMi(userLoc.lat, userLoc.lng, getPortMeta(p.portId).lat, getPortMeta(p.portId).lng) }))
+        .sort((a, b) => a.dist - b.dist)
+    : []
+
+  // Group by region for normal list view
   const grouped = filteredPorts.reduce<Record<string, PortWaitTime[]>>((acc, port) => {
     const region = getPortMeta(port.portId).region
     if (!acc[region]) acc[region] = []
@@ -150,20 +205,51 @@ export function PortList() {
             </div>
           </div>
 
-          <div className="mb-4">
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 flex items-center gap-1">
-              📍 {lang === 'es' ? '¿En qué ciudad estás cruzando?' : 'Where are you crossing?'}
-            </p>
-            <select
-              value={selectedRegion}
-              onChange={e => setSelectedRegion(e.target.value)}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="All">{lang === 'es' ? '🗺️ Ver todos los cruces' : '🗺️ Show all crossings'}</option>
-              {ALL_REGIONS.filter(r => r !== 'All' && r !== 'Other').map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+          {/* Near Me + Region selector row */}
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={requestNearMe}
+                disabled={geoLoading}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors flex-shrink-0 ${
+                  nearMe
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-400'
+                }`}
+              >
+                {geoLoading ? (
+                  <RefreshCw className="w-3 h-3 animate-spin" />
+                ) : nearMe ? (
+                  <X className="w-3 h-3" />
+                ) : (
+                  <Navigation className="w-3 h-3" />
+                )}
+                {lang === 'es' ? 'Cerca de mí' : 'Near Me'}
+              </button>
+
+              {!nearMe && (
+                <select
+                  value={selectedRegion}
+                  onChange={e => setSelectedRegion(e.target.value)}
+                  className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="All">{lang === 'es' ? '🗺️ Todos los cruces' : '🗺️ All crossings'}</option>
+                  {ALL_REGIONS.filter(r => r !== 'All' && r !== 'Other').map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              )}
+
+              {nearMe && (
+                <p className="flex-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  {lang === 'es' ? 'Ordenado por distancia a ti' : 'Sorted by distance from you'}
+                </p>
+              )}
+            </div>
+
+            {geoError && (
+              <p className="text-xs text-red-500 dark:text-red-400 px-1">{geoError}</p>
+            )}
           </div>
 
           {/* Legend */}
@@ -190,7 +276,26 @@ export function PortList() {
             </div>
           )}
 
-          {view === 'list' && (
+          {/* Near Me sorted list */}
+          {view === 'list' && nearMe && userLoc && (
+            <div className="space-y-3">
+              <h2 className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2 px-1 flex items-center gap-1">
+                <Navigation className="w-3 h-3" />
+                {lang === 'es' ? 'Más cercanos a ti' : 'Nearest to you'}
+              </h2>
+              {sortedByDistance.map(({ port, dist }) => (
+                <div key={`${port.portId}-${port.crossingName}`}>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 px-1 mb-1 font-medium">
+                    {distLabel(dist, lang)} · {getPortMeta(port.portId).city}
+                  </p>
+                  <PortCard port={port} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Normal grouped list */}
+          {view === 'list' && !nearMe && (
             <div className="space-y-5">
               {Object.entries(grouped).map(([region, regionPorts]) => (
                 <div key={region}>
@@ -207,7 +312,7 @@ export function PortList() {
             </div>
           )}
 
-          {filteredPorts.length === 0 && !loading && (
+          {filteredPorts.length === 0 && !loading && !nearMe && (
             <p className="text-center text-gray-600 mt-10">No port data available.</p>
           )}
         </>
