@@ -66,7 +66,8 @@ export function PortDetailClient({ port, portId }: Props) {
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
-  const [communitySignal, setCommunitySignal] = useState<'worse' | 'better' | null>(null)
+  type CommunitySignal = { type: 'accident' | 'inspection' | 'worse' | 'better'; count: number }
+  const [communitySignal, setCommunitySignal] = useState<CommunitySignal | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -92,12 +93,23 @@ export function PortDetailClient({ port, portId }: Props) {
         if (reportsRes.ok) {
           const { reports } = await reportsRes.json()
           const cutoff = Date.now() - 30 * 60 * 1000
-          const recent = (reports || []).filter((r: { created_at: string }) => new Date(r.created_at).getTime() > cutoff)
-          if (recent.length >= 3) {
-            const slow = recent.filter((r: { report_type: string }) => r.report_type === 'slow').length
-            const fast = recent.filter((r: { report_type: string }) => r.report_type === 'fast').length
-            if (slow >= 3 && slow > fast * 2) setCommunitySignal('worse')
-            else if (fast >= 3 && fast > slow * 2) setCommunitySignal('better')
+          const recent: { report_type: string; created_at: string }[] = (reports || [])
+            .filter((r: { created_at: string }) => new Date(r.created_at).getTime() > cutoff)
+
+          const accidents   = recent.filter(r => r.report_type === 'accident').length
+          const inspections = recent.filter(r => r.report_type === 'inspection').length
+          const delays      = recent.filter(r => r.report_type === 'delay').length
+          const clears      = recent.filter(r => r.report_type === 'clear').length
+
+          // Priority order: accident > inspection > delay surge > clearing
+          if (accidents >= 1) {
+            setCommunitySignal({ type: 'accident', count: accidents })
+          } else if (inspections >= 1) {
+            setCommunitySignal({ type: 'inspection', count: inspections })
+          } else if (delays >= 3 && delays > clears * 2) {
+            setCommunitySignal({ type: 'worse', count: delays })
+          } else if (clears >= 3 && clears > delays * 2) {
+            setCommunitySignal({ type: 'better', count: clears })
           }
         }
       } finally {
@@ -360,20 +372,51 @@ export function PortDetailClient({ port, portId }: Props) {
       </div>
 
       {/* Community vs CBP signal */}
-      {communitySignal && (
-        <div className={`rounded-2xl px-4 py-3 border flex items-start gap-2 ${
-          communitySignal === 'worse'
-            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-            : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-        }`}>
-          <span className="text-base flex-shrink-0">{communitySignal === 'worse' ? '⚠️' : '✅'}</span>
-          <p className={`text-xs font-medium leading-snug ${communitySignal === 'worse' ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
-            {communitySignal === 'worse'
-              ? (es ? 'Cruzantes reportan más espera de lo que muestra CBP ahora mismo.' : 'Drivers on the ground are reporting longer waits than CBP currently shows.')
-              : (es ? 'Cruzantes reportan que va más rápido de lo que indica CBP.' : 'Drivers on the ground are reporting it\'s moving faster than CBP indicates.')}
-          </p>
-        </div>
-      )}
+      {communitySignal && (() => {
+        const cfg = {
+          accident: {
+            bg: 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700',
+            text: 'text-red-800 dark:text-red-300',
+            icon: '🚨',
+            en: `Accident reported at this crossing in the last 30 min — expect longer delays.`,
+            es: `Se reportó un accidente en este cruce en los últimos 30 min — espera más retraso.`,
+          },
+          inspection: {
+            bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
+            text: 'text-blue-800 dark:text-blue-300',
+            icon: '🔍',
+            en: `Enhanced inspections reported — all lanes may be slower than usual.`,
+            es: `Se reportaron inspecciones reforzadas — todos los carriles pueden estar más lentos.`,
+          },
+          worse: {
+            bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+            text: 'text-amber-800 dark:text-amber-300',
+            icon: '⚠️',
+            en: `${communitySignal.count} drivers reporting longer waits than CBP currently shows.`,
+            es: `${communitySignal.count} cruzantes reportan más espera de lo que indica CBP ahora.`,
+          },
+          better: {
+            bg: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
+            text: 'text-green-800 dark:text-green-300',
+            icon: '✅',
+            en: `${communitySignal.count} drivers reporting it's moving faster than CBP shows.`,
+            es: `${communitySignal.count} cruzantes dicen que va más rápido de lo que indica CBP.`,
+          },
+        }[communitySignal.type]
+        return (
+          <div className={`rounded-2xl px-4 py-3 border flex items-start gap-2 ${cfg.bg}`}>
+            <span className="text-base flex-shrink-0">{cfg.icon}</span>
+            <div>
+              <p className={`text-xs font-semibold leading-snug ${cfg.text}`}>
+                {es ? cfg.es : cfg.en}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {es ? 'Reportado por la comunidad · últimos 30 min' : 'Community reported · last 30 min'}
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Contextual delay banner */}
       {(contextualDelay || clearingTime) && (
