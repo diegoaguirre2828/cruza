@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   XAxis,
@@ -64,14 +66,16 @@ export function PortDetailClient({ port, portId }: Props) {
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
+  const [communitySignal, setCommunitySignal] = useState<'worse' | 'better' | null>(null)
 
   useEffect(() => {
     async function load() {
       try {
-        const [histRes, bestRes, predRes] = await Promise.all([
+        const [histRes, bestRes, predRes, reportsRes] = await Promise.all([
           fetch(`/api/ports/${encodeURIComponent(portId)}/history`),
           fetch(`/api/ports/${encodeURIComponent(portId)}/best-times`),
           fetch(`/api/predictions?portId=${encodeURIComponent(portId)}`),
+          fetch(`/api/reports?portId=${encodeURIComponent(portId)}&limit=20`),
         ])
         if (histRes.ok) {
           const { history } = await histRes.json()
@@ -84,6 +88,17 @@ export function PortDetailClient({ port, portId }: Props) {
         if (predRes.ok) {
           const { predictions } = await predRes.json()
           setPredictions(predictions || [])
+        }
+        if (reportsRes.ok) {
+          const { reports } = await reportsRes.json()
+          const cutoff = Date.now() - 30 * 60 * 1000
+          const recent = (reports || []).filter((r: { created_at: string }) => new Date(r.created_at).getTime() > cutoff)
+          if (recent.length >= 3) {
+            const slow = recent.filter((r: { report_type: string }) => r.report_type === 'slow').length
+            const fast = recent.filter((r: { report_type: string }) => r.report_type === 'fast').length
+            if (slow >= 3 && slow > fast * 2) setCommunitySignal('worse')
+            else if (fast >= 3 && fast > slow * 2) setCommunitySignal('better')
+          }
         }
       } finally {
         setLoadingHistory(false)
@@ -138,6 +153,37 @@ export function PortDetailClient({ port, portId }: Props) {
     return Math.round(readings.reduce((sum, r) => sum + (r.vehicle_wait ?? 0), 0) / readings.length)
   })()
 
+  const vehicleTrend = (() => {
+    if (history.length < 2) return { dir: 'stable' as const, delta: 0 }
+    const latest = history[history.length - 1]
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000)
+    const older = [...history].reverse().find(r => new Date(r.recorded_at) <= thirtyMinAgo)
+    if (!older) return { dir: 'stable' as const, delta: 0 }
+    const diff = (latest.vehicle_wait ?? 0) - (older.vehicle_wait ?? 0)
+    if (diff >= 3) return { dir: 'up' as const, delta: diff }
+    if (diff <= -3) return { dir: 'down' as const, delta: diff }
+    return { dir: 'stable' as const, delta: diff }
+  })()
+
+  const leaveRecommendation = (() => {
+    if (!bestTimes.length) return null
+    const currentHour = new Date().getHours()
+    return bestTimes
+      .filter(bt => bt.avgWait <= 25 && bt.hour > currentHour && bt.hour <= currentHour + 10)
+      .sort((a, b) => a.avgWait - b.avgWait)[0] ?? null
+  })()
+
+  const contextualDelay = (() => {
+    if (!bestTimes.length || port.vehicle === null || loadingHistory) return null
+    const currentHour = new Date().getHours()
+    const typicalNow = bestTimes.find(bt => bt.hour === currentHour)
+    if (!typicalNow || typicalNow.samples < 3) return null
+    const diff = port.vehicle - typicalNow.avgWait
+    if (diff >= 10) return { type: 'above' as const, diff: Math.round(diff), typical: typicalNow.avgWait }
+    if (diff <= -10) return { type: 'below' as const, diff: Math.round(Math.abs(diff)), typical: typicalNow.avgWait }
+    return null
+  })()
+
   const predictionChartData = predictions
     .filter(p => p.predictedWait !== null)
     .map(p => ({
@@ -145,6 +191,12 @@ export function PortDetailClient({ port, portId }: Props) {
       predicted: p.predictedWait,
       confidence: p.confidence,
     }))
+
+  const clearingTime = (() => {
+    if (!canAccess(tier, 'ai_predictions') || !predictionChartData.length) return null
+    const next = predictionChartData.slice(1).find(p => (p.predicted as number) <= 20)
+    return next?.time ?? null
+  })()
 
   return (
     <div className="space-y-4">
@@ -191,8 +243,8 @@ export function PortDetailClient({ port, portId }: Props) {
             {es ? 'Tiempos de espera' : 'Current Wait Times'}
           </h2>
           {avgVehicleWait !== null && !loadingHistory && (
-            <span className="text-xs text-gray-400">
-              {es ? `promedio hoy: ${avgVehicleWait} min` : `avg today: ${avgVehicleWait} min`}
+            <span className="text-xs font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
+              {es ? `promedio: ${avgVehicleWait} min` : `avg today: ${avgVehicleWait} min`}
             </span>
           )}
         </div>
@@ -200,29 +252,75 @@ export function PortDetailClient({ port, portId }: Props) {
           <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
             <span className="text-xs text-gray-500 mb-1">{es ? 'Vehículo' : 'Passenger Vehicle'}</span>
             <WaitBadge minutes={port.vehicle} label="" />
-            {port.vehicleLanesOpen !== null && (
-              <span className="text-xs text-gray-400 mt-1">
-                {es ? `${port.vehicleLanesOpen} carriles abiertos` : `${port.vehicleLanesOpen} lanes open`}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
+              {!loadingHistory && history.length > 1 && (
+                <>
+                  {vehicleTrend.dir === 'up' && (
+                    <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+                      ↑ +{vehicleTrend.delta} min
+                    </span>
+                  )}
+                  {vehicleTrend.dir === 'down' && (
+                    <span className="text-xs font-bold text-white bg-green-500 px-2 py-0.5 rounded-full">
+                      ↓ {vehicleTrend.delta} min
+                    </span>
+                  )}
+                  {vehicleTrend.dir === 'stable' && (
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                      → {es ? 'estable' : 'stable'}
+                    </span>
+                  )}
+                </>
+              )}
+              {port.vehicleLanesOpen !== null && (
+                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                  {port.vehicleLanesOpen} {es ? 'carriles' : 'lanes'}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
             <span className="text-xs text-gray-500 mb-1">SENTRI / Ready Lane</span>
-            <WaitBadge minutes={port.sentri} label="" />
-            {port.sentriLanesOpen !== null && (
-              <span className="text-xs text-gray-400 mt-1">
-                {es ? `${port.sentriLanesOpen} carriles abiertos` : `${port.sentriLanesOpen} lanes open`}
-              </span>
+            {port.sentri !== null ? (
+              <>
+                <WaitBadge minutes={port.sentri} label="" />
+                {port.sentriLanesOpen !== null && (
+                  <span className="text-xs text-gray-400 mt-1">
+                    {port.sentriLanesOpen} {es ? 'carriles' : 'lanes open'}
+                  </span>
+                )}
+              </>
+            ) : port.isClosed ? (
+              <span className="text-xs font-medium text-gray-400 mt-2">{es ? 'Cerrado' : 'Closed'}</span>
+            ) : port.vehicle !== null && port.vehicle > 0 ? (
+              // CBP doesn't always report SENTRI — estimate at ~40% of standard lane
+              <>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-lg font-bold text-blue-600">~{Math.round(port.vehicle * 0.4)}</span>
+                  <span className="text-xs text-gray-400">min</span>
+                </div>
+                <span className="text-xs text-blue-400 mt-0.5">{es ? 'estimado' : 'estimated'}</span>
+                <span className="text-xs text-gray-400 mt-0.5 text-center leading-tight">
+                  {es ? 'CBP no reportó' : 'CBP not reporting'}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-gray-400 mt-3">—</span>
             )}
           </div>
         </div>
 
-        {/* SENTRI enrollment nudge — show when SENTRI is at least 10 min faster than car lane */}
-        {port.sentri !== null && port.vehicle !== null && port.vehicle - port.sentri >= 10 && (
+        {/* SENTRI enrollment nudge — show when SENTRI is (or is estimated to be) at least 10 min faster */}
+        {port.vehicle !== null && port.vehicle > 0 && (() => {
+          const sentriWait = port.sentri ?? Math.round(port.vehicle * 0.4)
+          return port.vehicle - sentriWait >= 10
+        })() && (
           <div className="mt-4 flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
             <div>
               <p className="text-xs font-semibold text-blue-800 dark:text-blue-300">
-                {es ? `SENTRI te ahorraría ~${port.vehicle - port.sentri} min aquí` : `SENTRI saves you ~${port.vehicle - port.sentri} min at this crossing`}
+                {es
+                  ? `SENTRI te ahorraría ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min aquí`
+                  : `SENTRI saves you ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min at this crossing`}
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
                 {es ? 'Aprobación gratis — válido 5 años' : 'Free to apply — valid 5 years'}
@@ -260,6 +358,66 @@ export function PortDetailClient({ port, portId }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Community vs CBP signal */}
+      {communitySignal && (
+        <div className={`rounded-2xl px-4 py-3 border flex items-start gap-2 ${
+          communitySignal === 'worse'
+            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+            : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+        }`}>
+          <span className="text-base flex-shrink-0">{communitySignal === 'worse' ? '⚠️' : '✅'}</span>
+          <p className={`text-xs font-medium leading-snug ${communitySignal === 'worse' ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
+            {communitySignal === 'worse'
+              ? (es ? 'Cruzantes reportan más espera de lo que muestra CBP ahora mismo.' : 'Drivers on the ground are reporting longer waits than CBP currently shows.')
+              : (es ? 'Cruzantes reportan que va más rápido de lo que indica CBP.' : 'Drivers on the ground are reporting it\'s moving faster than CBP indicates.')}
+          </p>
+        </div>
+      )}
+
+      {/* Contextual delay banner */}
+      {(contextualDelay || clearingTime) && (
+        <div className={`rounded-2xl px-4 py-3 border ${
+          contextualDelay?.type === 'above'
+            ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+            : contextualDelay?.type === 'below'
+            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+        }`}>
+          {contextualDelay?.type === 'above' && (
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              ⚠️ {es
+                ? `~${contextualDelay.diff} min más de lo usual a esta hora`
+                : `~${contextualDelay.diff} min above usual for this time`}
+            </p>
+          )}
+          {contextualDelay?.type === 'below' && (
+            <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+              ✅ {es
+                ? `~${contextualDelay.diff} min menos de lo usual — buen momento para cruzar`
+                : `~${contextualDelay.diff} min below usual — great time to cross`}
+            </p>
+          )}
+          {!contextualDelay && clearingTime && (
+            <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+              🕐 {es
+                ? `Se espera que despeje alrededor de las ${clearingTime}`
+                : `Expected to clear around ${clearingTime}`}
+            </p>
+          )}
+          {contextualDelay && clearingTime && (
+            <p className={`text-xs mt-1 ${
+              contextualDelay.type === 'above'
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-green-600 dark:text-green-400'
+            }`}>
+              {es
+                ? `Se espera que despeje alrededor de las ${clearingTime}`
+                : `Expected to clear around ${clearingTime}`}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Quick Alert card */}
       {user && canAccess(tier, 'alerts') ? (
@@ -345,50 +503,86 @@ export function PortDetailClient({ port, portId }: Props) {
       </div>
 
       {/* 24-hour history chart */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Last 24 Hours</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+            {es ? 'Últimas 24 horas' : 'Last 24 Hours'}
+          </h2>
+          {!loadingHistory && chartData.length > 0 && avgVehicleWait !== null && (
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {es ? `promedio: ${avgVehicleWait} min` : `avg: ${avgVehicleWait} min`}
+            </span>
+          )}
+        </div>
         {loadingHistory ? (
-          <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
+          <div className="h-44 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />
         ) : chartData.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-8">
-            Not enough data yet. Check back after a few hours.
+            {es ? 'No hay datos aún. Vuelve en unas horas.' : 'Not enough data yet. Check back after a few hours.'}
           </p>
         ) : (
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradVehicle" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradPedestrian" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
               <XAxis
                 dataKey="time"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
                 interval="preserveStartEnd"
+                axisLine={false}
+                tickLine={false}
               />
-              <YAxis tick={{ fontSize: 10 }} unit=" min" width={45} />
+              <YAxis
+                tick={{ fontSize: 10, fill: '#9ca3af' }}
+                unit=" min"
+                width={48}
+                axisLine={false}
+                tickLine={false}
+              />
               <Tooltip
-                formatter={(value) => [`${value} min`, '']}
-                contentStyle={{ fontSize: 12 }}
+                formatter={(value, name) => [`${value} min`, name === 'vehicle' ? (es ? 'Vehículo' : 'Vehicle') : (es ? 'Peatón' : 'Pedestrian')]}
+                contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+                cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="vehicle"
                 stroke="#3b82f6"
-                strokeWidth={2}
+                strokeWidth={2.5}
+                fill="url(#gradVehicle)"
                 dot={false}
-                name="Vehicle"
+                name="vehicle"
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="pedestrian"
                 stroke="#10b981"
                 strokeWidth={2}
+                fill="url(#gradPedestrian)"
                 dot={false}
-                name="Pedestrian"
+                name="pedestrian"
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
-        <div className="flex gap-4 mt-2 text-xs text-gray-400">
-          <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block" /> Vehicle</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500 inline-block" /> Pedestrian</span>
+        <div className="flex gap-4 mt-1 text-xs text-gray-400">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-1 bg-blue-500 rounded-full inline-block" />
+            {es ? 'Vehículo' : 'Vehicle'}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" />
+            {es ? 'Peatón' : 'Pedestrian'}
+          </span>
         </div>
       </div>
 
@@ -448,8 +642,25 @@ export function PortDetailClient({ port, portId }: Props) {
       {canAccess(tier, 'ai_predictions') && bestTimes.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">
-            Best Times Today <span className="text-gray-400 font-normal">(based on history)</span>
+            {es ? 'Mejores horarios hoy' : 'Best Times Today'} <span className="text-gray-400 font-normal">{es ? '(basado en historial)' : '(based on history)'}</span>
           </h2>
+
+          {leaveRecommendation && (
+            <div className="mb-4 flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+              <span className="text-lg mt-0.5">🚀</span>
+              <div>
+                <p className="text-sm font-semibold text-green-800">
+                  {es
+                    ? `Sale a las ${formatHour(leaveRecommendation.hour - 1) || formatHour(leaveRecommendation.hour)} — espera ~${leaveRecommendation.avgWait} min`
+                    : `Leave around ${formatHour(leaveRecommendation.hour)} — expect ~${leaveRecommendation.avgWait} min wait`}
+                </p>
+                <p className="text-xs text-green-600 mt-0.5">
+                  {es ? 'Mejor ventana de cruce próximas horas' : 'Best crossing window in the next few hours'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {bestTimes.map((bt, i) => (
               <div key={bt.hour} className="flex items-center justify-between">
