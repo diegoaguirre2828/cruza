@@ -82,6 +82,7 @@ function BusinessPortalPage() {
   const [ports, setPorts] = useState<PortWaitTime[]>([])
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
+  const [trends, setTrends] = useState<Record<string, { vehicle: string; commercial: string }>>({})
   const [tier, setTier] = useState<string>('')
   const [cbpUpdatedAt, setCbpUpdatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -91,7 +92,7 @@ function BusinessPortalPage() {
   const [showAddShipment, setShowAddShipment] = useState(false)
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null)
   const [showAddDriver, setShowAddDriver] = useState(false)
-  const [driverForm, setDriverForm] = useState({ name: '', phone: '', carrier: '', notes: '' })
+  const [driverForm, setDriverForm] = useState({ name: '', phone: '', carrier: '', notes: '', dispatcher_phone: '' })
   const [savingDriver, setSavingDriver] = useState(false)
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -107,11 +108,18 @@ function BusinessPortalPage() {
   const [form, setForm] = useState(blankForm)
 
   const loadPorts = useCallback(async () => {
-    const res = await fetch('/api/ports')
-    if (res.ok) {
-      const d = await res.json()
+    const [portsRes, trendsRes] = await Promise.all([
+      fetch('/api/ports'),
+      fetch('/api/ports/trends'),
+    ])
+    if (portsRes.ok) {
+      const d = await portsRes.json()
       setPorts(d.ports || [])
       setCbpUpdatedAt(d.cbpUpdatedAt ?? null)
+    }
+    if (trendsRes.ok) {
+      const d = await trendsRes.json()
+      setTrends(d.trends || {})
     }
   }, [])
 
@@ -154,7 +162,7 @@ function BusinessPortalPage() {
     })
     setSavingDriver(false)
     setShowAddDriver(false)
-    setDriverForm({ name: '', phone: '', carrier: '', notes: '' })
+    setDriverForm({ name: '', phone: '', carrier: '', notes: '', dispatcher_phone: '' })
     loadDrivers()
   }
 
@@ -277,6 +285,14 @@ function BusinessPortalPage() {
   // Cost calculator
   const totalCost = Math.round((costDelay / 60) * costTrucks * costRate)
   const annualImpact = Math.round(totalCost * 250)  // ~250 working days
+
+  // Dispatch cost impact
+  const worstCommercial = Math.max(0, ...ports.map(p => p.commercial ?? 0))
+  const activeAtBorder = drivers.filter(d => ['in_line', 'at_bridge'].includes(d.current_status))
+  const liveDelayCost = activeAtBorder.reduce((sum, d) => {
+    const wait = ports.find(p => p.portId === d.current_port_id)?.commercial ?? 0
+    return sum + Math.round((wait / 60) * DELAY_COST_PER_HOUR)
+  }, 0)
 
   // Community reports for Intel tab
   const [portReports, setPortReports] = useState<Record<string, number>>({})
@@ -415,7 +431,7 @@ function BusinessPortalPage() {
                     <input
                       value={driverForm.phone}
                       onChange={e => setDriverForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="Phone (optional)"
+                      placeholder="Driver phone (optional)"
                       className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <input
@@ -425,6 +441,16 @@ function BusinessPortalPage() {
                       className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
+                  <div className="relative">
+                    <input
+                      value={driverForm.dispatcher_phone}
+                      onChange={e => setDriverForm(f => ({ ...f, dispatcher_phone: e.target.value }))}
+                      placeholder="Your WhatsApp number — driver will message you here"
+                      className="w-full border border-green-300 dark:border-green-700 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                    <span className="absolute right-3 top-2 text-base">📲</span>
+                  </div>
+                  <p className="text-xs text-gray-400">Include country code — e.g. <span className="font-mono">19561234567</span> for US numbers</p>
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
@@ -578,9 +604,27 @@ function BusinessPortalPage() {
         {activeTab === 'dispatch' && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Live Dispatcher Board</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">Ranked by commercial (truck) wait time. Click a crossing to view full details and community reports.</p>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Live Dispatcher Board</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Ranked by commercial (truck) wait time. Click a crossing to view details.</p>
             </div>
+
+            {/* Live driver cost banner */}
+            {activeAtBorder.length > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🚛</span>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                      {activeAtBorder.length} driver{activeAtBorder.length > 1 ? 's' : ''} at the border right now
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Current delays costing ~${liveDelayCost}/hr in driver time
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xl font-bold text-amber-700 dark:text-amber-300">${liveDelayCost}<span className="text-xs font-normal">/hr</span></span>
+              </div>
+            )}
 
             {/* Best ports highlight */}
             {bestPorts.length > 0 && (
@@ -590,23 +634,35 @@ function BusinessPortalPage() {
                   <p className="text-sm font-semibold text-green-800 dark:text-green-300">Recommended crossings right now</p>
                 </div>
                 <div className="space-y-2">
-                  {bestPorts.slice(0, 3).map((p, i) => (
-                    <Link key={p.portId} href={`/port/${encodeURIComponent(p.portId)}`}>
-                      <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-green-700 dark:text-green-400 w-5">#{i + 1}</span>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{p.portName}</p>
-                            <p className="text-xs text-gray-400">{p.crossingName} · {getPortMeta(p.portId).region}</p>
+                  {bestPorts.slice(0, 3).map((p, i) => {
+                    const savings = worstCommercial > 0 && p.commercial !== null
+                      ? Math.round(((worstCommercial - p.commercial) / 60) * DELAY_COST_PER_HOUR)
+                      : 0
+                    const trend = trends[p.portId]?.commercial
+                    return (
+                      <Link key={p.portId} href={`/port/${encodeURIComponent(p.portId)}`}>
+                        <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-green-700 dark:text-green-400 w-5">#{i + 1}</span>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{p.portName}</p>
+                              <p className="text-xs text-gray-400">{p.crossingName} · {getPortMeta(p.portId).region}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 justify-end">
+                              <p className="text-lg font-bold text-green-700 dark:text-green-400">{p.commercial} min</p>
+                              {trend === 'down' && <span className="text-green-500 text-sm">↓</span>}
+                              {trend === 'up' && <span className="text-red-500 text-sm">↑</span>}
+                            </div>
+                            {savings > 0 && (
+                              <p className="text-xs text-green-600 font-medium">saves ~${savings}/truck</p>
+                            )}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-green-700 dark:text-green-400">{p.commercial} min</p>
-                          <p className="text-xs text-gray-400">truck</p>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -654,9 +710,13 @@ function BusinessPortalPage() {
                               {port.vehicle !== null ? `${port.vehicle}m` : '—'}
                             </td>
                             <td className="text-center px-3 py-3">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${colors}`}>
-                                {port.commercial !== null ? `${port.commercial}m` : '—'}
-                              </span>
+                              <div className="flex items-center justify-center gap-1">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${colors}`}>
+                                  {port.commercial !== null ? `${port.commercial}m` : '—'}
+                                </span>
+                                {trends[port.portId]?.commercial === 'up' && <span className="text-red-500 text-xs">↑</span>}
+                                {trends[port.portId]?.commercial === 'down' && <span className="text-green-500 text-xs">↓</span>}
+                              </div>
                             </td>
                             <td className="text-center px-3 py-3 text-xs text-gray-600 dark:text-gray-400">
                               {port.sentri !== null ? `${port.sentri}m` : '—'}

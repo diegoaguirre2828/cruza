@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const db = getServiceClient()
   const { data: driver, error } = await db
     .from('drivers')
-    .select('id, name, carrier, current_status, current_port_id, last_checkin_at, owner_id')
+    .select('id, name, carrier, current_status, current_port_id, last_checkin_at, owner_id, dispatcher_phone')
     .eq('checkin_token', token)
     .single()
 
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
       current_port_id: driver.current_port_id,
       last_checkin_at: driver.last_checkin_at,
       company: owner?.company_name || owner?.full_name || null,
+      dispatcher_phone: driver.dispatcher_phone || null,
     }
   })
 }

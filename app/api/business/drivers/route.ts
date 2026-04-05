@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!await checkBusinessTier(user.id)) return NextResponse.json({ error: 'Business plan required' }, { status: 403 })
 
-  const { name, phone, carrier, notes } = await req.json()
+  const { name, phone, carrier, notes, dispatcher_phone } = await req.json()
   if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
 
   const token = randomBytes(24).toString('hex')
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     phone: phone?.slice(0, 50),
     carrier: carrier?.slice(0, 200),
     notes: notes?.slice(0, 500),
+    dispatcher_phone: dispatcher_phone?.replace(/\D/g, '').slice(0, 20) || null,
     checkin_token: token,
   }).select('id, checkin_token').single()
 
