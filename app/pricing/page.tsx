@@ -10,45 +10,41 @@ import { Check, ArrowLeft } from 'lucide-react'
 export default function PricingPage() {
   const { user } = useAuth()
   const { tier: currentTier } = useTier()
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const es = lang === 'es'
   const [loading, setLoading] = useState<string | null>(null)
 
   const PLANS = [
     {
       id: 'free',
-      name: 'Free',
+      name: es ? 'Gratis' : 'Free',
       price: '$0',
       period: t.freePeriod,
-      color: 'border-gray-200',
+      color: 'border-gray-200 dark:border-gray-700',
       badge: null,
-      desc: 'Live wait times for every crossing. No credit card. No catch.',
-      features: [
-        'Live wait times — all 52 crossings',
-        'Interactive map with color-coded wait levels',
-        'Filter by city or region',
-        'Crowdsourced driver reports',
-        'Save up to 3 favorite crossings',
-      ],
-      cta: 'Get Started Free',
+      desc: es
+        ? 'Tiempos en vivo para los 52 cruces. Sin tarjeta. Sin trampa.'
+        : 'Live wait times for every crossing. No credit card. No catch.',
+      features: es
+        ? ['Tiempos en vivo — los 52 cruces', 'Mapa interactivo con colores de espera', 'Filtrar por ciudad o región', 'Reportes de cruzantes en tiempo real', '1 cruce favorito guardado', 'En español y en inglés']
+        : ['Live wait times — all 52 crossings', 'Interactive map with color-coded wait levels', 'Filter by city or region', 'Crowdsourced driver reports', '1 saved favorite crossing', 'English & Spanish'],
+      cta: es ? 'Empezar gratis' : 'Get Started Free',
       href: '/signup',
     },
     {
       id: 'pro',
       name: 'Pro',
-      price: '$2.99',
+      price: '$4.99',
       period: '/month',
       color: 'border-blue-500',
       badge: t.mostPopular,
-      desc: 'Stop wasting time at the border. Get notified the moment your crossing clears up — by push, SMS, or email.',
-      features: [
-        'Everything in Free',
-        '🔔 Push + SMS + email alerts when wait drops',
-        '🔮 Historical patterns — best time to cross today',
-        '🗺️ Route optimizer — fastest crossing near you right now',
-        'Unlimited saved crossings',
-        '7-day free trial · cancel anytime',
-      ],
-      cta: 'Start 7-Day Free Trial',
+      desc: es
+        ? 'Deja de perder tiempo en el puente. Te avisamos cuando tu cruce se despeja — por push, SMS o email. Prueba 7 días gratis.'
+        : 'Stop wasting time at the border. Get notified the moment your crossing clears up — by push, SMS, or email. Try free for 7 days.',
+      features: es
+        ? ['Todo lo de Gratis', '🔔 Alertas push + SMS + email cuando baja la espera', '🔮 Patrones históricos — mejor hora para cruzar hoy', '🗺️ Optimizador de ruta — cruce más rápido cerca de ti', 'Cruces favoritos ilimitados', 'Alertas en español o inglés']
+        : ['Everything in Free', '🔔 Push + SMS + email alerts when wait drops', '🔮 Historical patterns — best time to cross today', '🗺️ Route optimizer — fastest crossing near you right now', 'Unlimited saved crossings', 'Alerts in English or Spanish'],
+      cta: es ? 'Empezar prueba gratis 7 días' : 'Start 7-Day Free Trial',
       tier: 'pro',
     },
     {
@@ -56,19 +52,15 @@ export default function PricingPage() {
       name: 'Business',
       price: '$49.99',
       period: '/month',
-      color: 'border-gray-900',
+      color: 'border-gray-900 dark:border-gray-100',
       badge: t.forFreight,
-      desc: 'One delayed truck costs more than this plan. Keep your fleet moving with real-time commercial lane intelligence.',
-      features: [
-        'Everything in Pro',
-        '🚛 Fleet Command Center — commercial lane focus',
-        '⚠️ Heavy delay watch list across all crossings',
-        '📥 Historical CSV exports (up to 90 days)',
-        '🔌 API access for your TMS or dispatch system',
-        '📧 Weekly border intelligence email report',
-        'Priority support via email',
-      ],
-      cta: 'Start Free Trial',
+      desc: es
+        ? 'Un camión retrasado 1 hora cuesta más que este plan. Prueba 14 días gratis — sin tarjeta de crédito.'
+        : 'One truck delayed 1 hour costs more than this plan. Try free for 14 days — no credit card required.',
+      features: es
+        ? ['Todo lo de Pro', '🚛 Centro de control de flota — carriles comerciales en tiempo real', '⚠️ Lista de alertas de retrasos graves en todos los cruces', '👷 Seguimiento de conductores sin app — solo un link', '📦 Gestión de envíos con ciclo de estatus', '📥 Exportación CSV histórica (hasta 90 días)', '📧 Reporte semanal de inteligencia fronteriza', 'Soporte prioritario por email']
+        : ['Everything in Pro', '🚛 Fleet Command Center — real-time commercial lane data', '⚠️ Heavy delay alerts across all crossings', '👷 Driver tracking — no app needed, just a link', '📦 Shipment management with status lifecycle', '📥 Historical CSV exports (up to 90 days)', '📧 Weekly border intelligence email report', 'Priority support via email'],
+      cta: es ? 'Empezar prueba gratis 14 días' : 'Start 14-Day Free Trial',
       tier: 'business',
     },
   ]
@@ -90,14 +82,14 @@ export default function PricingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-4xl mx-auto px-4 pb-16">
         <div className="pt-8 pb-6">
-          <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 mb-4">
+          <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4">
             <ArrowLeft className="w-3 h-3" /> {t.backToMap}
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">{t.pricingTitle}</h1>
-          <p className="text-gray-500 mt-2">{t.pricingSubtitle}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t.pricingTitle}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-2">{t.pricingSubtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -106,28 +98,28 @@ export default function PricingPage() {
             return (
               <div
                 key={plan.id}
-                className={`bg-white rounded-2xl border-2 p-6 shadow-sm relative flex flex-col ${plan.color}`}
+                className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-6 shadow-sm relative flex flex-col ${plan.color}`}
               >
                 {plan.badge && (
                   <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                    plan.id === 'pro' ? 'bg-blue-500 text-white' : 'bg-gray-900 text-white'
+                    plan.id === 'pro' ? 'bg-blue-500 text-white' : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
                   }`}>
                     {plan.badge}
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-900">{plan.name}</h2>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h2>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-3xl font-bold text-gray-900 dark:text-gray-100">{plan.price}</span>
                     <span className="text-gray-400 text-sm">{plan.period}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 leading-relaxed">{plan.desc}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 leading-relaxed">{plan.desc}</p>
                 </div>
 
                 <ul className="space-y-2 mb-6 flex-1">
                   {plan.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                       <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
                       {f}
                     </li>
@@ -135,13 +127,13 @@ export default function PricingPage() {
                 </ul>
 
                 {isCurrent ? (
-                  <div className="w-full text-center py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-500">
+                  <div className="w-full text-center py-2.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
                     {t.currentPlanLabel}
                   </div>
                 ) : plan.href ? (
                   <Link
                     href={plan.href}
-                    className="w-full text-center py-2.5 rounded-xl text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+                    className="w-full text-center py-2.5 rounded-xl text-sm font-medium bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700 transition-colors"
                   >
                     {plan.cta}
                   </Link>
@@ -152,10 +144,10 @@ export default function PricingPage() {
                     className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
                       plan.id === 'pro'
                         ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'bg-gray-900 text-white hover:bg-gray-700'
+                        : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-700'
                     }`}
                   >
-                    {loading === plan.tier ? 'Redirecting...' : plan.cta}
+                    {loading === plan.tier ? (es ? 'Redirigiendo...' : 'Redirecting...') : plan.cta}
                   </button>
                 )}
               </div>
@@ -163,25 +155,44 @@ export default function PricingPage() {
           })}
         </div>
 
-        {/* ROI calculator */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 text-base mb-3">{t.roiTitle}</h3>
-          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-            <div className="flex justify-between">
-              <span>Daily commuter · 30 min wasted/day</span>
-              <span className="font-semibold">~$300/mo in lost time</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Freight truck · 1 extra hour at border</span>
-              <span className="font-semibold">~$75–150 per crossing</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Fleet of 5 trucks · 3 crossings/week each</span>
-              <span className="font-semibold">~$4,500/mo at risk</span>
-            </div>
+        {/* Business cost impact — the killer argument */}
+        <div className="mt-6 bg-gray-900 dark:bg-gray-800 rounded-2xl p-6 text-white">
+          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-2">
+            {es ? '💰 El costo real de los retrasos' : '💰 The real cost of delays'}
+          </p>
+          <h3 className="text-xl font-bold mb-4">
+            {es
+              ? 'Un camión retrasado 1 hora cuesta más que un mes de Business.'
+              : 'One truck delayed 1 hour costs more than a month of Business.'}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            {[
+              {
+                label: es ? 'Cruzante diario · 30 min perdidos/día' : 'Daily commuter · 30 min wasted/day',
+                value: es ? '~$300/mes en tiempo' : '~$300/mo in lost time',
+                color: 'bg-white/10',
+              },
+              {
+                label: es ? 'Camión de carga · 1 hora extra en el puente' : 'Freight truck · 1 extra hour at border',
+                value: es ? '~$75–150 por cruce' : '~$75–150 per crossing',
+                color: 'bg-amber-500/20 border border-amber-500/30',
+              },
+              {
+                label: es ? 'Flota de 5 camiones · 3 cruces/semana c/u' : 'Fleet of 5 trucks · 3 crossings/week each',
+                value: es ? '~$4,500/mes en riesgo' : '~$4,500/mo at risk',
+                color: 'bg-red-500/20 border border-red-500/30',
+              },
+            ].map(row => (
+              <div key={row.label} className={`${row.color} rounded-xl p-3`}>
+                <p className="text-xs text-gray-300 leading-snug">{row.label}</p>
+                <p className="text-sm font-bold text-white mt-1">{row.value}</p>
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-blue-600 dark:text-blue-400 mt-3 font-medium">
-            Pro pays for itself the first time it saves you 20 minutes. Business pays for itself on a single truck.
+          <p className="text-sm text-amber-300 font-semibold">
+            {es
+              ? 'Pro se paga solo la primera vez que te ahorra 20 minutos. Business se paga en un solo camión.'
+              : 'Pro pays for itself the first time it saves you 20 minutes. Business pays for itself on a single truck.'}
           </p>
         </div>
 

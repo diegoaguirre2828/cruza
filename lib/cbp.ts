@@ -49,21 +49,31 @@ export async function fetchRgvWaitTimes(): Promise<PortWaitTime[]> {
 
   return data
     .filter((p) => p.border === 'Mexican Border')
-    .map((p) => ({
-      portId: p.port_number,
-      portName: p.port_name,
-      crossingName: p.crossing_name,
-      city: p.port_name,
-      vehicle: parseWait(p.passenger_vehicle_lanes?.standard_lanes?.delay_minutes, p.passenger_vehicle_lanes?.standard_lanes?.lanes_open),
-      sentri: parseWait(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.delay_minutes, p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
-      pedestrian: parseWait(p.pedestrian_lanes?.standard_lanes?.delay_minutes, p.pedestrian_lanes?.standard_lanes?.lanes_open),
-      commercial: parseWait(p.commercial_vehicle_lanes?.standard_lanes?.delay_minutes, p.commercial_vehicle_lanes?.standard_lanes?.lanes_open),
-      vehicleLanesOpen: parseLanes(p.passenger_vehicle_lanes?.standard_lanes?.lanes_open),
-      sentriLanesOpen: parseLanes(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
-      pedestrianLanesOpen: parseLanes(p.pedestrian_lanes?.standard_lanes?.lanes_open),
-      commercialLanesOpen: parseLanes(p.commercial_vehicle_lanes?.standard_lanes?.lanes_open),
-      recordedAt: p.date_time,
-    }))
+    .map((p) => {
+      const vehicleLanesOpen = parseLanes(p.passenger_vehicle_lanes?.standard_lanes?.lanes_open)
+      const pedestrianLanesOpen = parseLanes(p.pedestrian_lanes?.standard_lanes?.lanes_open)
+      const commercialLanesOpen = parseLanes(p.commercial_vehicle_lanes?.standard_lanes?.lanes_open)
+      // A crossing is closed when CBP reports 0 lanes open across all lane types that have data
+      const allZero = [vehicleLanesOpen, pedestrianLanesOpen, commercialLanesOpen].every(l => l === 0)
+      const anyData = [vehicleLanesOpen, pedestrianLanesOpen, commercialLanesOpen].some(l => l !== null)
+      const isClosed = anyData && allZero
+      return {
+        portId: p.port_number,
+        portName: p.port_name,
+        crossingName: p.crossing_name,
+        city: p.port_name,
+        vehicle: parseWait(p.passenger_vehicle_lanes?.standard_lanes?.delay_minutes, p.passenger_vehicle_lanes?.standard_lanes?.lanes_open),
+        sentri: parseWait(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.delay_minutes, p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
+        pedestrian: parseWait(p.pedestrian_lanes?.standard_lanes?.delay_minutes, p.pedestrian_lanes?.standard_lanes?.lanes_open),
+        commercial: parseWait(p.commercial_vehicle_lanes?.standard_lanes?.delay_minutes, p.commercial_vehicle_lanes?.standard_lanes?.lanes_open),
+        vehicleLanesOpen,
+        sentriLanesOpen: parseLanes(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
+        pedestrianLanesOpen,
+        commercialLanesOpen,
+        isClosed,
+        recordedAt: p.date_time,
+      }
+    })
 }
 
 export function getWaitLevel(minutes: number | null): 'low' | 'medium' | 'high' | 'closed' | 'unknown' {

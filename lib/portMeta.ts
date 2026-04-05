@@ -16,11 +16,11 @@ export const PORT_META: Record<string, PortMeta> = {
   '231001': { city: 'Roma',     region: 'RGV – Rio Grande City / Roma', lat: 26.4079, lng: -99.0195 },
   '231002': { city: 'Roma',     region: 'RGV – Rio Grande City / Roma', lat: 26.4100, lng: -99.0200 },
 
-  // ── Brownsville ────────────────────────────────────────
-  '535501': { city: 'Brownsville', region: 'Brownsville', lat: 25.9007, lng: -97.4935 },
-  '535502': { city: 'Brownsville', region: 'Brownsville', lat: 25.8726, lng: -97.4866 },
-  '535503': { city: 'Brownsville', region: 'Brownsville', lat: 26.0416, lng: -97.7367 },
-  '535504': { city: 'Brownsville', region: 'Brownsville', lat: 25.9044, lng: -97.5040 },
+  // ── Brownsville (RGV) ──────────────────────────────────
+  '535501': { city: 'Brownsville', region: 'RGV – Brownsville', lat: 25.9007, lng: -97.4935 },
+  '535502': { city: 'Brownsville', region: 'RGV – Brownsville', lat: 25.8726, lng: -97.4866 },
+  '535503': { city: 'Brownsville', region: 'RGV – Brownsville', lat: 26.0416, lng: -97.7367 },
+  '535504': { city: 'Brownsville', region: 'RGV – Brownsville', lat: 25.9044, lng: -97.5040 },
 
   // ── Laredo ─────────────────────────────────────────────
   '230401': { city: 'Laredo', region: 'Laredo', lat: 27.4994, lng: -99.5076 },
@@ -88,7 +88,7 @@ export const ALL_REGIONS = [
   'RGV – McAllen / Hidalgo',
   'RGV – Progreso / Donna',
   'RGV – Rio Grande City / Roma',
-  'Brownsville',
+  'RGV – Brownsville',
   'Laredo',
   'Eagle Pass',
   'Del Rio',

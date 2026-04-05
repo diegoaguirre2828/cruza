@@ -16,8 +16,8 @@ export function PortCard({ port }: Props) {
   const { t } = useLang()
   const allNull = port.vehicle === null && port.pedestrian === null && port.sentri === null && port.commercial === null
   const primaryLevel = getWaitLevel(port.vehicle)
-  // When CBP reports no data late at night, treat as low traffic (green dot)
-  const dot = allNull ? 'bg-green-500' : waitLevelDot(primaryLevel)
+  // Closed = gray dot; no data late at night = green dot; otherwise use wait level
+  const dot = port.isClosed ? 'bg-gray-400' : allNull ? 'bg-green-500' : waitLevelDot(primaryLevel)
   const primaryWait = port.vehicle ?? port.pedestrian
   const [shared, setShared] = useState(false)
 
@@ -92,7 +92,12 @@ export function PortCard({ port }: Props) {
           </div>
         </div>
 
-        {!allNull ? (
+        {port.isClosed ? (
+          <div className="flex items-center justify-center gap-1.5 mt-2 py-1">
+            <span className="w-2 h-2 rounded-full bg-gray-400" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Closed</p>
+          </div>
+        ) : !allNull ? (
           <div className="flex gap-3 mt-2 justify-around">
             {port.vehicle !== null && <WaitBadge minutes={port.vehicle} label={t.laneCar} lanesOpen={port.vehicleLanesOpen} />}
             {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} lanesOpen={port.sentriLanesOpen} />}

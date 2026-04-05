@@ -8,6 +8,7 @@ import type { PortWaitTime } from '@/types'
 import { RefreshCw, Map, List, Navigation, X, Share2, Check } from 'lucide-react'
 import { ALL_REGIONS, getPortMeta } from '@/lib/portMeta'
 import { useLang } from '@/lib/LangContext'
+import { useTier } from '@/lib/useTier'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000
 
@@ -29,17 +30,22 @@ function distLabel(mi: number, lang: string): string {
 }
 
 const MEX_CROSSINGS = [
-  { portId: '230501', name: 'McAllen / Hidalgo' },
+  // RGV – McAllen area
+  { portId: '230501', name: 'Hidalgo / McAllen (Puente Hidalgo)' },
   { portId: '230502', name: 'Pharr–Reynosa' },
   { portId: '230503', name: 'Anzaldúas' },
   { portId: '230901', name: 'Progreso' },
   { portId: '230902', name: 'Donna' },
-  { portId: '230701', name: 'Rio Grande City' },
-  { portId: '231001', name: 'Roma' },
-  { portId: '535501', name: 'Brownsville Gateway' },
-  { portId: '535502', name: 'Brownsville Veterans' },
-  { portId: '230401', name: 'Laredo I' },
-  { portId: '230402', name: 'Laredo II' },
+  { portId: '230701', name: 'Rio Grande City (Camargo)' },
+  { portId: '231001', name: 'Roma (Miguel Alemán)' },
+  // RGV – Brownsville
+  { portId: '535501', name: 'Brownsville – Gateway (Puente Nuevo)' },
+  { portId: '535502', name: 'Brownsville – Veterans (Puente Viejo)' },
+  { portId: '535503', name: 'Brownsville – Los Tomates' },
+  // Laredo
+  { portId: '230401', name: 'Laredo I – Gateway to Americas' },
+  { portId: '230402', name: 'Laredo II – Juárez-Lincoln' },
+  // Other
   { portId: '230301', name: 'Eagle Pass I' },
   { portId: '240201', name: 'El Paso' },
   { portId: '250401', name: 'San Ysidro' },
@@ -49,6 +55,8 @@ const MEX_CROSSINGS = [
 export function PortList() {
   const router = useRouter()
   const { t, lang } = useLang()
+  const { tier } = useTier()
+  const isBusiness = tier === 'business'
   const [ports, setPorts] = useState<PortWaitTime[]>([])
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [cbpUpdatedAt, setCbpUpdatedAt] = useState<string | null>(null)
@@ -96,6 +104,19 @@ export function PortList() {
     const interval = setInterval(() => fetchPorts(), REFRESH_INTERVAL)
     return () => clearInterval(interval)
   }, [fetchPorts])
+
+  // Auto-sort by proximity on load
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setNearMe(true)
+      },
+      () => { /* denied — stay with region grouping */ },
+      { timeout: 6000 }
+    )
+  }, [])
 
   function requestNearMe() {
     if (nearMe) { setNearMe(false); setGeoError(null); return }
@@ -198,8 +219,8 @@ export function PortList() {
       {direction === 'entering_mexico' && (
         <div className="space-y-4 mb-4">
 
-          {/* Insurance nudge — top of Mexico tab */}
-          <a
+          {/* Insurance nudge — top of Mexico tab, hidden for business accounts */}
+          {!isBusiness && <a
             href="/insurance"
             className="flex items-center justify-between bg-indigo-600 hover:bg-indigo-700 rounded-2xl px-4 py-3.5 transition-colors"
           >
@@ -217,7 +238,7 @@ export function PortList() {
             <span className="text-white text-sm font-semibold flex-shrink-0 ml-2">
               {lang === 'es' ? 'Ver →' : 'Get covered →'}
             </span>
-          </a>
+          </a>}
 
           {/* Community quick report */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
@@ -355,8 +376,8 @@ export function PortList() {
             {geoError && <p className="text-xs text-red-500 dark:text-red-400 px-1">{geoError}</p>}
           </div>
 
-          {/* Insurance banner — top of list */}
-          {!loading && filteredPorts.length > 0 && (
+          {/* Insurance banner — top of list, hidden for business accounts */}
+          {!loading && filteredPorts.length > 0 && !isBusiness && (
             <div className="mb-3 flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-2xl px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className="text-xl">🛡️</span>

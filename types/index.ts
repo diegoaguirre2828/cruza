@@ -38,6 +38,7 @@ export interface PortWaitTime {
   sentriLanesOpen: number | null
   pedestrianLanesOpen: number | null
   commercialLanesOpen: number | null
+  isClosed: boolean
   recordedAt: string
 }
 
