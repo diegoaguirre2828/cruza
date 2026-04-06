@@ -72,31 +72,60 @@ export async function POST(req: NextRequest) {
       })
     } catch {} // table may not exist yet — silent fail
 
-    // Feature 5C: Notify broker if there's an active shipment at this port
+    // Notify broker if there's an active shipment at this port
     try {
-      const { data: shipment } = await db
+      // Only query by port_id if we actually have one — empty string won't match anything
+      let shipmentQuery = db
         .from('shipments')
-        .select('id, reference_id, broker_email, broker_name, description, origin, destination')
+        .select('id, reference_id, broker_email, broker_name')
         .eq('user_id', driver.owner_id)
         .eq('status', 'crossing')
-        .eq('port_id', portId || '')
-        .single()
+
+      if (portId) shipmentQuery = shipmentQuery.eq('port_id', portId)
+
+      const { data: shipment } = await shipmentQuery.limit(1).single()
 
       if (shipment?.broker_email) {
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notify/broker`, {
+        const PORT_NAMES: Record<string, string> = {
+          '230501': 'Hidalgo / McAllen', '230502': 'Pharr–Reynosa',
+          '230503': 'Anzaldúas', '230901': 'Progreso', '230902': 'Donna',
+          '230701': 'Rio Grande City', '231001': 'Roma',
+          '535501': 'Brownsville Gateway', '535502': 'Brownsville Veterans',
+          '535503': 'Los Tomates', '230401': 'Laredo I', '230402': 'Laredo II',
+          '230301': 'Eagle Pass', '240201': 'El Paso', '250401': 'San Ysidro',
+        }
+        const portName = portId ? (PORT_NAMES[portId] || portId) : 'border crossing'
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+
+        // Call Resend directly — no internal HTTP hop needed
+        fetch('https://api.resend.com/emails', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
-            brokerEmail: shipment.broker_email,
-            brokerName: shipment.broker_name,
-            driverName: driver.name,
-            referenceId: shipment.reference_id,
-            portId: portId,
-            clearedAt: new Date().toISOString(),
+            from: process.env.RESEND_FROM_EMAIL || 'Cruza Alerts <onboarding@resend.dev>',
+            to: [shipment.broker_email],
+            subject: `✅ Shipment ${shipment.reference_id} cleared at ${portName}`,
+            html: `
+              <div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto;padding:24px">
+                <h2 style="color:#16a34a;margin-bottom:8px">✅ Shipment Cleared</h2>
+                <p style="color:#374151">Hello ${shipment.broker_name || 'there'},</p>
+                <p style="color:#374151">Shipment <strong>${shipment.reference_id}</strong> has cleared customs.</p>
+                <table style="width:100%;border-collapse:collapse;margin:16px 0">
+                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px;width:140px">Port of Entry</td><td style="padding:10px 16px;font-weight:600;color:#111827;font-size:14px">${portName}</td></tr>
+                  <tr><td style="padding:10px 16px;color:#6b7280;font-size:14px">Driver</td><td style="padding:10px 16px;color:#111827;font-size:14px">${driver.name}</td></tr>
+                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px">Cleared at</td><td style="padding:10px 16px;color:#111827;font-size:14px">${time}</td></tr>
+                </table>
+                <p style="color:#9ca3af;font-size:12px;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:16px">
+                  Sent via Cruza Border Intelligence · <a href="https://cruzaapp.vercel.app" style="color:#3b82f6">cruzaapp.vercel.app</a>
+                </p>
+              </div>`,
           }),
-        }).catch(() => {}) // non-blocking
+        }).catch(() => {}) // non-blocking — never fail the driver check-in
       }
-    } catch {} // non-blocking — don't fail the checkin if broker lookup errors
+    } catch {} // non-blocking
   }
 
   return NextResponse.json({ success: true, driverName: driver.name })
