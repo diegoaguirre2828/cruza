@@ -9,7 +9,7 @@ export function getStripe() {
 export const PLANS = {
   pro: {
     name: 'Pro',
-    price: 299, // cents
+    price: 499, // cents
     priceId: process.env.STRIPE_PRO_PRICE_ID!,
     features: [
       'No ads',

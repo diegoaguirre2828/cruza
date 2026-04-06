@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     cancel_url: `${origin}/pricing`,
     metadata: { userId: user.id, tier },
     subscription_data: {
-      trial_period_days: 7,
+      trial_period_days: tier === 'business' ? 14 : 7,
       metadata: { userId: user.id, tier },
     },
   })
