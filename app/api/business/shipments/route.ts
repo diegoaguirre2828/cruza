@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const {
     reference_id, description, origin, destination, port_id,
-    carrier, driver_name, driver_phone, expected_crossing_at, notes
+    carrier, driver_name, driver_phone, expected_crossing_at, notes,
+    broker_email, broker_name
   } = body
 
   if (!reference_id) return NextResponse.json({ error: 'reference_id required' }, { status: 400 })
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
     driver_phone: driver_phone?.slice(0, 50),
     expected_crossing_at: expected_crossing_at || null,
     notes: notes?.slice(0, 2000),
+    broker_email: broker_email?.slice(0, 200) || null,
+    broker_name: broker_name?.slice(0, 200) || null,
     status: 'scheduled',
   }).select('id').single()
 
@@ -86,7 +89,7 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = body
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
 
-  const allowed = ['status', 'delay_minutes', 'actual_crossing_at', 'notes', 'driver_name', 'driver_phone', 'port_id', 'expected_crossing_at']
+  const allowed = ['status', 'delay_minutes', 'actual_crossing_at', 'notes', 'driver_name', 'driver_phone', 'port_id', 'expected_crossing_at', 'broker_email', 'broker_name', 'reference_id', 'description', 'origin', 'destination', 'carrier']
   const safe: Record<string, unknown> = { updated_at: new Date().toISOString() }
   for (const key of allowed) {
     if (updates[key] !== undefined) safe[key] = updates[key]

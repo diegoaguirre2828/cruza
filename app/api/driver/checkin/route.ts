@@ -71,6 +71,32 @@ export async function POST(req: NextRequest) {
         port_id: portId || null,
       })
     } catch {} // table may not exist yet — silent fail
+
+    // Feature 5C: Notify broker if there's an active shipment at this port
+    try {
+      const { data: shipment } = await db
+        .from('shipments')
+        .select('id, reference_id, broker_email, broker_name, description, origin, destination')
+        .eq('user_id', driver.owner_id)
+        .eq('status', 'crossing')
+        .eq('port_id', portId || '')
+        .single()
+
+      if (shipment?.broker_email) {
+        fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/notify/broker`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brokerEmail: shipment.broker_email,
+            brokerName: shipment.broker_name,
+            driverName: driver.name,
+            referenceId: shipment.reference_id,
+            portId: portId,
+            clearedAt: new Date().toISOString(),
+          }),
+        }).catch(() => {}) // non-blocking
+      }
+    } catch {} // non-blocking — don't fail the checkin if broker lookup errors
   }
 
   return NextResponse.json({ success: true, driverName: driver.name })

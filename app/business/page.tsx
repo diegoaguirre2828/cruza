@@ -51,7 +51,60 @@ interface Shipment {
   delay_minutes: number
   notes: string | null
   created_at: string
+  broker_email: string | null
+  broker_name: string | null
 }
+
+// ── Feature 1: Holiday Surge Alerts ──
+const BORDER_HOLIDAYS = [
+  { name: "New Year's Day", month: 1, day: 1 },
+  { name: "Presidents Day", month: 2, day: 17 },
+  { name: "Memorial Day", month: 5, day: 26 },
+  { name: "Independence Day", month: 7, day: 4 },
+  { name: "Labor Day", month: 9, day: 1 },
+  { name: "Thanksgiving", month: 11, day: 27 },
+  { name: "Christmas", month: 12, day: 25 },
+  { name: "Año Nuevo (MX)", month: 1, day: 1 },
+  { name: "Día de la Constitución", month: 2, day: 3 },
+  { name: "Natalicio de Benito Juárez", month: 3, day: 17 },
+  { name: "Semana Santa", month: 4, day: 14 },
+  { name: "Día del Trabajo (MX)", month: 5, day: 1 },
+  { name: "Día de la Independencia", month: 9, day: 16 },
+  { name: "Día de Muertos", month: 11, day: 2 },
+  { name: "Día de la Revolución", month: 11, day: 17 },
+  { name: "Navidad (MX)", month: 12, day: 25 },
+]
+
+function getUpcomingHolidays(): { name: string; daysAway: number }[] {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const results: { name: string; daysAway: number }[] = []
+  for (const h of BORDER_HOLIDAYS) {
+    const year = today.getFullYear()
+    for (const y of [year, year + 1]) {
+      const hDate = new Date(y, h.month - 1, h.day)
+      hDate.setHours(0, 0, 0, 0)
+      const diff = Math.round((hDate.getTime() - today.getTime()) / 86400000)
+      if (diff >= 0 && diff <= 7) {
+        results.push({ name: h.name, daysAway: diff })
+      }
+    }
+  }
+  // deduplicate by name
+  const seen = new Set<string>()
+  return results.filter(r => { if (seen.has(r.name)) return false; seen.add(r.name); return true })
+}
+
+// ── Feature 2: Best Crossing Windows — crossing options ──
+const CROSSING_OPTIONS = [
+  { id: '230501', label: 'Hidalgo / McAllen' },
+  { id: '230502', label: 'Pharr–Reynosa' },
+  { id: '230401', label: 'Laredo I (Gateway)' },
+  { id: '230402', label: 'Laredo II (World Trade)' },
+  { id: '535501', label: 'Brownsville Gateway' },
+  { id: '230301', label: 'Eagle Pass I' },
+  { id: '240201', label: 'El Paso' },
+]
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   scheduled: { label: 'Scheduled', color: 'text-blue-600',   bg: 'bg-blue-50 dark:bg-blue-900/20',   dot: 'bg-blue-400' },
@@ -103,9 +156,19 @@ function BusinessPortalPage() {
   const blankForm = {
     reference_id: '', description: '', origin: '', destination: '',
     port_id: '', carrier: '', driver_name: '', driver_phone: '',
-    expected_crossing_at: '', notes: ''
+    expected_crossing_at: '', notes: '',
+    broker_name: '', broker_email: '',
   }
   const [form, setForm] = useState(blankForm)
+
+  // Feature 2: Best Crossing Windows state
+  const [bestWindowsPort, setBestWindowsPort] = useState('230501')
+  const [bestTimes, setBestTimes] = useState<{ hour: number; avgWait: number; samples: number }[]>([])
+  const [bestTimesLoading, setBestTimesLoading] = useState(false)
+
+  // Feature 3: Route All Trucks state
+  const [routeRecommendation, setRouteRecommendation] = useState<{ portName: string; commercialWait: number | null; region: string } | null>(null)
+  const [routingLoading, setRoutingLoading] = useState(false)
 
   const loadPorts = useCallback(async () => {
     const [portsRes, trendsRes] = await Promise.all([
@@ -261,9 +324,31 @@ function BusinessPortalPage() {
       driver_phone: s.driver_phone || '',
       expected_crossing_at: s.expected_crossing_at ? new Date(s.expected_crossing_at).toISOString().slice(0, 16) : '',
       notes: s.notes || '',
+      broker_name: s.broker_name || '',
+      broker_email: s.broker_email || '',
     })
     setEditingShipment(s)
     setShowAddShipment(true)
+  }
+
+  // Feature 3: Route All Trucks
+  async function routeAllTrucks() {
+    setRoutingLoading(true)
+    try {
+      const res = await fetch('/api/route-optimize?origin=McAllen&urgency=freight')
+      if (res.ok) {
+        const d = await res.json()
+        const best = d.best
+        if (best) {
+          setRouteRecommendation({
+            portName: best.portName || best.crossingName || best.name || 'Best crossing',
+            commercialWait: best.commercial ?? best.commercialWait ?? null,
+            region: best.region || best.city || 'RGV',
+          })
+        }
+      }
+    } catch {}
+    setRoutingLoading(false)
   }
 
   // Dispatcher metrics
@@ -294,6 +379,9 @@ function BusinessPortalPage() {
     return sum + Math.round((wait / 60) * DELAY_COST_PER_HOUR)
   }, 0)
 
+  // Feature 1: Holiday surge alerts
+  const upcomingHolidays = getUpcomingHolidays()
+
   // Community reports for Intel tab
   const [portReports, setPortReports] = useState<Record<string, number>>({})
   useEffect(() => {
@@ -310,6 +398,17 @@ function BusinessPortalPage() {
       setPortReports(map)
     })
   }, [activeTab])
+
+  // Feature 2: Fetch best times when intel tab opens or port selection changes
+  useEffect(() => {
+    if (activeTab !== 'intel') return
+    setBestTimesLoading(true)
+    fetch(`/api/ports/${bestWindowsPort}/best-times`)
+      .then(r => r.json())
+      .then(d => setBestTimes(d.bestTimes || []))
+      .catch(() => setBestTimes([]))
+      .finally(() => setBestTimesLoading(false))
+  }, [activeTab, bestWindowsPort])
 
   const cbpTime = cbpUpdatedAt
     ? new Date(cbpUpdatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -603,10 +702,74 @@ function BusinessPortalPage() {
         {/* ── DISPATCH TAB ── */}
         {activeTab === 'dispatch' && (
           <div className="space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Live Dispatcher Board</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-500">Ranked by commercial (truck) wait time. Click a crossing to view details.</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Live Dispatcher Board</h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Ranked by commercial (truck) wait time. Click a crossing to view details.</p>
+              </div>
+              {/* Feature 3: Route All Trucks button */}
+              <button
+                onClick={routeAllTrucks}
+                disabled={routingLoading}
+                className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-2 rounded-xl transition-colors"
+              >
+                <Map className="w-3.5 h-3.5" />
+                {routingLoading ? 'Routing...' : 'Route All Trucks'}
+              </button>
             </div>
+
+            {/* Feature 3: Route recommendation card */}
+            {routeRecommendation && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">
+                      → Best crossing: {routeRecommendation.portName}
+                    </p>
+                    {routeRecommendation.commercialWait !== null && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        {routeRecommendation.commercialWait} min commercial wait · {routeRecommendation.region}
+                      </p>
+                    )}
+                    <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                      Send this to all active drivers:
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setRouteRecommendation(null)}
+                    className="text-blue-400 hover:text-blue-600 flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {drivers.filter(d => ['en_route', 'in_line'].includes(d.current_status)).map(driver => {
+                    const msg = encodeURIComponent(
+                      `🚛 Dispatch recommendation: Head to ${routeRecommendation.portName} — only ${routeRecommendation.commercialWait ?? '?'} min commercial wait right now. ${routeRecommendation.region}`
+                    )
+                    const digits = (driver.phone || '').replace(/\D/g, '')
+                    const waUrl = digits
+                      ? `https://wa.me/${digits}?text=${msg}`
+                      : `https://wa.me/?text=${msg}`
+                    return (
+                      <a
+                        key={driver.id}
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs font-medium bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-xl transition-colors"
+                      >
+                        <Phone className="w-3 h-3" />
+                        WA {driver.name}
+                      </a>
+                    )
+                  })}
+                  {drivers.filter(d => ['en_route', 'in_line'].includes(d.current_status)).length === 0 && (
+                    <p className="text-xs text-blue-500 italic">No drivers currently en route or in line.</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Live driver cost banner */}
             {activeAtBorder.length > 0 && (
@@ -828,6 +991,26 @@ function BusinessPortalPage() {
                       className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     />
                   </div>
+                  {/* Feature 5A: Broker fields */}
+                  <div className="col-span-1">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Customs broker name (optional)</label>
+                    <input
+                      value={form.broker_name}
+                      onChange={e => setForm(f => ({ ...f, broker_name: e.target.value }))}
+                      placeholder="e.g. Acme Customs Brokers"
+                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Customs broker email — notified when shipment clears</label>
+                    <input
+                      type="email"
+                      value={form.broker_email}
+                      onChange={e => setForm(f => ({ ...f, broker_email: e.target.value }))}
+                      placeholder="broker@example.com"
+                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-4">
                   <button
@@ -927,6 +1110,31 @@ function BusinessPortalPage() {
                               <option key={key} value={key}>{cfg.label}</option>
                             ))}
                           </select>
+                          {/* Feature 4: Delay Report link */}
+                          {s.delay_minutes > 0 && (() => {
+                            const portName = s.port_id ? ports.find(p => p.portId === s.port_id)?.portName || s.port_id : ''
+                            const params = new URLSearchParams({
+                              ref: s.reference_id,
+                              driver: s.driver_name || '',
+                              origin: s.origin || '',
+                              destination: s.destination || '',
+                              port: portName,
+                              expected: s.expected_crossing_at || '',
+                              actual: s.actual_crossing_at || '',
+                              delay: String(s.delay_minutes),
+                              carrier: s.carrier || '',
+                            })
+                            return (
+                              <Link
+                                href={`/business/delay-report?${params.toString()}`}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                title="Generate delay report"
+                                target="_blank"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </Link>
+                            )
+                          })()}
                           <button onClick={() => openEdit(s)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
@@ -1062,6 +1270,103 @@ function BusinessPortalPage() {
             <div>
               <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Port Intelligence Feed</h2>
               <p className="text-xs text-gray-400 dark:text-gray-500">CBP data combined with community reports for a complete operational picture.</p>
+            </div>
+
+            {/* Feature 1: Holiday Surge Alerts */}
+            {upcomingHolidays.length > 0 && (
+              <div className="space-y-2">
+                {upcomingHolidays.map(h => (
+                  <div key={h.name} className={`flex items-start gap-3 rounded-2xl border px-4 py-3 ${
+                    h.daysAway <= 1
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                      : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                  }`}>
+                    <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${h.daysAway <= 1 ? 'text-red-500' : 'text-amber-500'}`} />
+                    <div>
+                      <p className={`text-sm font-semibold ${h.daysAway <= 1 ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                        ⚠️ Heavy crossing expected: {h.name} {h.daysAway === 0 ? 'is today' : `is in ${h.daysAway} day${h.daysAway > 1 ? 's' : ''}`}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${h.daysAway <= 1 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        Plan shipments accordingly — expect significantly longer commercial wait times.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Feature 2: Best Times to Cross This Week */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">Best Times to Cross This Week</p>
+                </div>
+                <select
+                  value={bestWindowsPort}
+                  onChange={e => setBestWindowsPort(e.target.value)}
+                  className="text-xs border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {CROSSING_OPTIONS.map(c => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {bestTimesLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Best window callout */}
+                  {bestTimes.length > 0 && (() => {
+                    const best = [...bestTimes].filter(t => t.samples > 0).sort((a, b) => a.avgWait - b.avgWait)[0]
+                    if (!best) return null
+                    const hourLabel = best.hour === 0 ? '12 AM' : best.hour < 12 ? `${best.hour} AM` : best.hour === 12 ? '12 PM' : `${best.hour - 12} PM`
+                    return (
+                      <div className="mb-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl px-3 py-2">
+                        <p className="text-xs font-semibold text-green-800 dark:text-green-300">
+                          Best window: {hourLabel} (~{Math.round(best.avgWait)} min avg commercial)
+                        </p>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Hour grid: 6am–10pm */}
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from({ length: 17 }, (_, i) => i + 6).map(hour => {
+                      const entry = bestTimes.find(t => t.hour === hour)
+                      const wait = entry?.avgWait ?? null
+                      const hasData = entry && entry.samples > 0
+                      const colorClass = !hasData
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                        : wait! <= 20
+                        ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800'
+                        : wait! <= 45
+                        ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800'
+                        : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
+                      const label = hour === 12 ? '12p' : hour < 12 ? `${hour}a` : `${hour - 12}p`
+                      return (
+                        <div
+                          key={hour}
+                          className={`rounded-lg px-2 py-1.5 text-center min-w-[2.75rem] ${colorClass}`}
+                          title={hasData ? `${label}: ~${Math.round(wait!)} min avg (${entry!.samples} samples)` : `${label}: no data`}
+                        >
+                          <p className="text-xs font-bold leading-tight">{label}</p>
+                          <p className="text-xs leading-tight">{hasData ? `${Math.round(wait!)}m` : '—'}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="flex items-center gap-1 text-xs text-gray-400"><span className="w-2 h-2 rounded-sm bg-green-300 inline-block" /> ≤20m</span>
+                    <span className="flex items-center gap-1 text-xs text-gray-400"><span className="w-2 h-2 rounded-sm bg-yellow-300 inline-block" /> 21–45m</span>
+                    <span className="flex items-center gap-1 text-xs text-gray-400"><span className="w-2 h-2 rounded-sm bg-red-300 inline-block" /> 45m+</span>
+                    <span className="flex items-center gap-1 text-xs text-gray-400"><span className="w-2 h-2 rounded-sm bg-gray-300 inline-block" /> No data</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {sortedByCommercial.map(port => {
