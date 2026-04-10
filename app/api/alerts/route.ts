@@ -43,6 +43,10 @@ export async function POST(req: NextRequest) {
   }
 
   const { portId, laneType, thresholdMinutes } = await req.json()
+  if (!portId) return NextResponse.json({ error: 'portId required' }, { status: 400 })
+  if (!thresholdMinutes || thresholdMinutes < 5 || thresholdMinutes > 180) {
+    return NextResponse.json({ error: 'thresholdMinutes must be between 5 and 180' }, { status: 400 })
+  }
   const { error } = await supabase.from('alert_preferences').insert({
     user_id: user.id,
     port_id: portId,

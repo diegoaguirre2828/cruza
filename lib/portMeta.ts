@@ -79,8 +79,7 @@ export const PORT_META: Record<string, PortMeta> = {
   // ── Andrade / Columbus ─────────────────────────────────
   '250201': { city: 'Andrade',  region: 'Other', lat: 32.7202, lng: -114.7277 },
   '240601': { city: 'Columbus', region: 'Other', lat: 31.8280, lng: -107.6408 },
-  '202401': { city: 'El Paso',  region: 'El Paso', lat: 31.7580, lng: -106.4870 },
-  'l24501': { city: 'Fort Hancock', region: 'El Paso', lat: 31.1120, lng: -105.8490 },
+  '240501': { city: 'Fort Hancock', region: 'El Paso', lat: 31.1120, lng: -105.8490 },
 }
 
 export const ALL_REGIONS = [

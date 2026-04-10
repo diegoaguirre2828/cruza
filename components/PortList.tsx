@@ -184,7 +184,7 @@ export function PortList() {
 
   const timeAgo = fetchedAt ? Math.round((Date.now() - new Date(fetchedAt).getTime()) / 1000 / 60) : null
   const cbpTime = cbpUpdatedAt
-    ? new Date(cbpUpdatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+    ? new Date(cbpUpdatedAt).toLocaleTimeString(lang === 'es' ? 'es-MX' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
     : null
 
   if (loading) {

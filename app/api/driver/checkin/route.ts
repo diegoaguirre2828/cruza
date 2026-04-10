@@ -113,9 +113,11 @@ export async function POST(req: NextRequest) {
                 </p>
               </div>`,
           }),
-        }).catch(() => {}) // non-blocking — never fail the driver check-in
+        }).then(async (r) => {
+          if (!r.ok) console.error('broker email failed:', await r.text())
+        }).catch((err) => console.error('broker email error:', err))
       }
-    } catch {} // non-blocking
+    } catch (err) { console.error('broker notify error:', err) }
   }
 
   return NextResponse.json({ success: true, driverName: driver.name })

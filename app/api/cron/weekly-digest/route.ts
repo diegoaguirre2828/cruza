@@ -91,7 +91,8 @@ export async function GET(req: NextRequest) {
 
     if (!portRows.length) continue
 
-    const { data: { user } } = await db.auth.admin.getUserById(profile.id)
+    const { data: { user }, error: userErr } = await db.auth.admin.getUserById(profile.id)
+    if (userErr) { console.error('weekly-digest: failed to fetch user', profile.id, userErr); continue }
     if (!user?.email) continue
 
     const html = `
@@ -125,7 +126,7 @@ export async function GET(req: NextRequest) {
       </div>
     `
 
-    await fetch('https://api.resend.com/emails', {
+    const emailRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
@@ -138,6 +139,10 @@ export async function GET(req: NextRequest) {
         html,
       }),
     })
+    if (!emailRes.ok) {
+      console.error('weekly-digest: email failed for', user.email, await emailRes.text())
+      continue
+    }
 
     sent++
   }

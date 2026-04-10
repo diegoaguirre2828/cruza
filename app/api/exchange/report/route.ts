@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'house_name required' }, { status: 400 })
   }
   const sell = parseFloat(sell_rate)
-  if (isNaN(sell) || sell < 10 || sell > 30) {
+  if (isNaN(sell) || sell <= 0 || sell < 10 || sell > 30) {
     return NextResponse.json({ error: 'sell_rate must be between 10 and 30 MXN/USD' }, { status: 400 })
   }
 

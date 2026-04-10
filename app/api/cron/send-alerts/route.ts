@@ -116,6 +116,16 @@ export async function GET(req: NextRequest) {
       if (!latest[r.port_id]) latest[r.port_id] = r
     }
 
+    // Batch fetch all users upfront — avoids N+1 query per alert
+    const uniqueUserIds = [...new Set(alerts.map(a => a.user_id))]
+    const userMap: Record<string, { email?: string }> = {}
+    await Promise.all(
+      uniqueUserIds.map(async (uid) => {
+        const { data: { user } } = await supabase.auth.admin.getUserById(uid)
+        if (user) userMap[uid] = { email: user.email }
+      })
+    )
+
     let sent = 0
 
     for (const alert of alerts) {
@@ -130,14 +140,17 @@ export async function GET(req: NextRequest) {
 
       if (wait === null || wait >= alert.threshold_minutes) continue
 
-      const { data: { user } } = await supabase.auth.admin.getUserById(alert.user_id)
+      const user = userMap[alert.user_id]
       if (!user) continue
 
-      await Promise.all([
+      const results = await Promise.allSettled([
         user.email ? sendEmail(user.email, reading.port_name, alert.port_id, wait, alert.threshold_minutes) : null,
         sendPush(alert.user_id, reading.port_name, alert.port_id, wait),
         alert.phone ? sendSms(alert.phone, reading.port_name, alert.port_id, wait) : null,
       ])
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') console.error(`Alert send failed [${['email','push','sms'][i]}] user=${alert.user_id}:`, r.reason)
+      })
 
       await supabase
         .from('alert_preferences')
