@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
   if (!biz) return NextResponse.json({ error: 'Business not found' }, { status: 404 })
   if (biz.claimed) return NextResponse.json({ error: 'Already claimed' }, { status: 409 })
 
-  const updates: Record<string, unknown> = { claimed: true }
+  // Mark as claim_pending — admin must approve, not auto-claim
+  const updates: Record<string, unknown> = { claim_pending: true }
   if (email?.trim()) updates.submitted_by_email = email.trim()
   if (whatsapp?.trim()) updates.whatsapp = whatsapp.trim()
 
@@ -35,5 +36,5 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, message: 'Claim request submitted — we will verify and contact you within 24 hours.' })
 }

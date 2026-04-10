@@ -7,8 +7,9 @@ export async function GET() {
   const db = getServiceClient()
 
   const { data, error } = await db
-    .from('community_leaderboard')
-    .select('*')
+    .from('profiles')
+    .select('id, display_name, points, reports_count, badges')
+    .order('points', { ascending: false })
     .limit(50)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

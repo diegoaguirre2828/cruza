@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
   if (existing) {
     // Remove upvote
     await db.from('report_upvotes').delete().eq('report_id', reportId).eq('user_id', user.id)
-    await db.from('crossing_reports').update({ upvotes: db.rpc('upvotes - 1') }).eq('id', reportId)
+    const { data: cur } = await db.from('crossing_reports').select('upvotes').eq('id', reportId).single()
+    await db.from('crossing_reports').update({ upvotes: Math.max(0, (cur?.upvotes || 1) - 1) }).eq('id', reportId)
     return NextResponse.json({ upvoted: false })
   }
 

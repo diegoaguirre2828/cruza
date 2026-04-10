@@ -110,7 +110,7 @@ export default function AdminPage() {
     setLoadingPost(true)
     try {
       const regionParam = region !== 'all' ? `&region=${region}` : ''
-      const res = await fetch(`/api/generate-post?secret=${process.env.NEXT_PUBLIC_CRON_SECRET || ''}&email=false${regionParam}`)
+      const res = await fetch(`/api/admin/generate-post?email=false${regionParam}`)
       const data = await res.json()
       setCaption(data.caption || '')
     } catch {
