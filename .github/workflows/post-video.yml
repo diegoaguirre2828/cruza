@@ -1,12 +1,7 @@
 name: Post Border Wait Time Video
 
 on:
-  schedule:
-    - cron: '30 10 * * *'  # 5:30am CDT (summer UTC-5)
-    - cron: '30 16 * * *'  # 11:30am CDT
-    - cron: '30 20 * * *'  # 3:30pm CDT
-    - cron: '30 0 * * *'   # 7:00pm CDT
-  workflow_dispatch:
+  workflow_dispatch:  # manual only — video pipeline paused
 
 jobs:
   render-and-post:
