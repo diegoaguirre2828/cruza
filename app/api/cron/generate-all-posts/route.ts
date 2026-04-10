@@ -90,11 +90,12 @@ export async function GET(req: NextRequest) {
 
     const crossings = region.ports
       .map(portId => {
-        const port = ports?.find((p: { portId: string }) => p.portId === portId)
+        const port = ports?.find((p: { portId: string; isClosed?: boolean; noData?: boolean }) => p.portId === portId)
         const wait = port?.vehicle ?? null
-        return { name: PORT_NAMES[portId] || portId, wait, level: getLevel(wait) }
+        const isClosed = port?.isClosed ?? false
+        const noData = port?.noData ?? (wait === null)
+        return { name: PORT_NAMES[portId] || portId, wait, level: getLevel(wait), isClosed, noData }
       })
-      .filter(c => c.wait !== null && c.wait > 0)
 
     if (crossings.length === 0) continue
 
@@ -102,8 +103,12 @@ export async function GET(req: NextRequest) {
       hour: 'numeric', minute: '2-digit', hour12: true, timeZone: region.tz,
     })
 
-    const lines = crossings.map(c => `  ${emoji(c.level)} ${c.name}: ${c.wait} min`)
-    const fastest = crossings.find(c => c.level === 'low')
+    const lines = crossings.map(c => {
+      if (c.isClosed) return `  ⚫ ${c.name}: Cerrado`
+      if (c.noData) return `  ⚪ ${c.name}: Sin datos`
+      return `  ${emoji(c.level)} ${c.name}: ${c.wait} min`
+    })
+    const fastest = crossings.find(c => c.level === 'low' && !c.isClosed && !c.noData)
 
     regionBlocks.push(
       `${region.label} — ${timeStr.toUpperCase()}\n` +

@@ -25,16 +25,53 @@ function parseLanes(value: string | undefined): number | null {
   return isNaN(n) ? null : n
 }
 
-function parseWait(value: string | undefined, lanesOpen: string | undefined): number | null {
-  // N/A or missing means CBP has no data for this lane type
-  if (value === undefined || value === null || value === 'N/A') return null
-  // If 0 lanes are open, the crossing is closed — show as null, not 0-minute wait
-  const lanes = parseInt(lanesOpen ?? '', 10)
-  if (!isNaN(lanes) && lanes === 0) return null
-  // Empty string means lane exists but no measurable delay
-  if (value === '') return 0
-  const n = parseInt(value, 10)
-  return isNaN(n) ? null : n
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getLaneTypes(lanes: any): any[] {
+  if (!lanes) return []
+  return [
+    lanes.standard_lanes,
+    lanes.ready_lanes,
+    lanes.NEXUS_SENTRI_lanes ?? lanes.nexus_sentri_lanes,
+    lanes.FAST_lanes ?? lanes.fast_lanes,
+  ].filter(Boolean)
+}
+
+// Returns best (lowest) wait from any open lane type, plus whether bridge is closed or has no data
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getBestWait(lanes: any): { wait: number | null; isClosed: boolean; noData: boolean } {
+  const laneTypes = getLaneTypes(lanes)
+  if (laneTypes.length === 0) return { wait: null, isClosed: false, noData: true }
+
+  const waits: number[] = []
+  let hasRealData = false
+  let hasOpenLanes = false
+
+  for (const lane of laneTypes) {
+    const opStatus: string = lane.operational_status ?? ''
+    if (opStatus === 'N/A' || opStatus === '') continue
+
+    hasRealData = true
+
+    if (opStatus === 'Lanes Closed') continue
+
+    const lanesOpen = parseInt(lane.lanes_open ?? '', 10)
+    if (!isNaN(lanesOpen) && lanesOpen === 0) continue
+
+    hasOpenLanes = true
+
+    const delay = lane.delay_minutes
+    if (opStatus === 'no delay' || delay === '0') {
+      waits.push(0)
+    } else if (delay && delay !== '') {
+      const n = parseInt(delay, 10)
+      if (!isNaN(n)) waits.push(n)
+    }
+  }
+
+  if (!hasRealData) return { wait: null, isClosed: false, noData: true }
+  if (!hasOpenLanes) return { wait: null, isClosed: true, noData: false }
+  if (waits.length === 0) return { wait: null, isClosed: false, noData: true }
+  return { wait: Math.min(...waits), isClosed: false, noData: false }
 }
 
 export async function fetchRgvWaitTimes(): Promise<PortWaitTime[]> {
@@ -50,27 +87,38 @@ export async function fetchRgvWaitTimes(): Promise<PortWaitTime[]> {
   return data
     .filter((p) => p.border === 'Mexican Border')
     .map((p) => {
-      const vehicleLanesOpen = parseLanes(p.passenger_vehicle_lanes?.standard_lanes?.lanes_open)
-      const pedestrianLanesOpen = parseLanes(p.pedestrian_lanes?.standard_lanes?.lanes_open)
-      const commercialLanesOpen = parseLanes(p.commercial_vehicle_lanes?.standard_lanes?.lanes_open)
-      // A crossing is closed when CBP reports 0 lanes open across all lane types that have data
-      const allZero = [vehicleLanesOpen, pedestrianLanesOpen, commercialLanesOpen].every(l => l === 0)
-      const anyData = [vehicleLanesOpen, pedestrianLanesOpen, commercialLanesOpen].some(l => l !== null)
-      const isClosed = anyData && allZero
+      const pvl = p.passenger_vehicle_lanes
+      const pedl = p.pedestrian_lanes
+      const cvl = p.commercial_vehicle_lanes
+
+      const vehicleResult = getBestWait(pvl)
+      const pedestrianResult = getBestWait(pedl)
+      const commercialResult = getBestWait(cvl)
+
+      // Bridge is closed if ALL lane types with real data are closed
+      const isClosed = vehicleResult.isClosed && pedestrianResult.isClosed && commercialResult.isClosed
+      const noData = vehicleResult.noData && pedestrianResult.noData && commercialResult.noData
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pvlAny = pvl as any
+      const sentriLanes = pvlAny?.NEXUS_SENTRI_lanes ?? pvlAny?.nexus_sentri_lanes
+      const sentriResult = getBestWait({ standard_lanes: sentriLanes })
+
       return {
         portId: p.port_number,
         portName: p.port_name,
         crossingName: p.crossing_name,
         city: p.port_name,
-        vehicle: parseWait(p.passenger_vehicle_lanes?.standard_lanes?.delay_minutes, p.passenger_vehicle_lanes?.standard_lanes?.lanes_open),
-        sentri: parseWait(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.delay_minutes, p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
-        pedestrian: parseWait(p.pedestrian_lanes?.standard_lanes?.delay_minutes, p.pedestrian_lanes?.standard_lanes?.lanes_open),
-        commercial: parseWait(p.commercial_vehicle_lanes?.standard_lanes?.delay_minutes, p.commercial_vehicle_lanes?.standard_lanes?.lanes_open),
-        vehicleLanesOpen,
-        sentriLanesOpen: parseLanes(p.passenger_vehicle_lanes?.nexus_sentri_lanes?.lanes_open),
-        pedestrianLanesOpen,
-        commercialLanesOpen,
+        vehicle: vehicleResult.wait,
+        sentri: sentriResult.wait,
+        pedestrian: pedestrianResult.wait,
+        commercial: commercialResult.wait,
+        vehicleLanesOpen: parseLanes(pvl?.standard_lanes?.lanes_open),
+        sentriLanesOpen: parseLanes(sentriLanes?.lanes_open),
+        pedestrianLanesOpen: parseLanes(pedl?.standard_lanes?.lanes_open),
+        commercialLanesOpen: parseLanes(cvl?.standard_lanes?.lanes_open),
         isClosed,
+        noData,
         recordedAt: p.date_time,
       }
     })

@@ -39,6 +39,7 @@ export interface PortWaitTime {
   pedestrianLanesOpen: number | null
   commercialLanesOpen: number | null
   isClosed: boolean
+  noData: boolean
   recordedAt: string
 }
 
