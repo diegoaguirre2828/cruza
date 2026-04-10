@@ -6,6 +6,16 @@ import { useLang } from '@/lib/LangContext'
 
 const GUIDES = [
   {
+    href: 'https://ttp.cbp.dhs.gov/',
+    emoji: '⚡',
+    title: { en: 'Get SENTRI — Skip the Line', es: 'Obtén SENTRI — Cruza Más Rápido' },
+    desc: { en: 'Trusted Traveler Program for frequent US-Mexico crossers. Save 30–90 min on average. One-time $122.25 fee, valid 5 years.', es: 'Programa para cruzadores frecuentes. Ahorra 30–90 min en promedio. Cuota única de $122.25, válida 5 años.' },
+    color: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+    badge: { en: 'Save up to 2 hrs', es: 'Ahorra hasta 2 hrs' },
+    badgeColor: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+    external: true,
+  },
+  {
     href: '/customs',
     emoji: '✅',
     title: { en: 'Crossing Checklist', es: 'Lista de Cruce' },
@@ -90,7 +100,7 @@ export default function GuidePage() {
         {/* Guide cards */}
         <div className="space-y-3 mb-6">
           {GUIDES.map(guide => (
-            <Link key={guide.href} href={guide.href}>
+            <Link key={guide.href} href={guide.href} target={guide.external ? '_blank' : undefined} rel={guide.external ? 'noopener noreferrer' : undefined}>
               <div className={`rounded-2xl border p-4 hover:shadow-md transition-all active:scale-[0.98] ${guide.color}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl flex-shrink-0">{guide.emoji}</span>

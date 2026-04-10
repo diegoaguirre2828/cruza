@@ -199,7 +199,7 @@ export default function CheckInPage({ params }: { params: Promise<{ token: strin
         </div>
 
         <p className="text-center text-xs text-gray-600 mt-8">
-          Powered by Cruza · cruzaapp.vercel.app
+          Powered by Cruzar · cruzar.app
         </p>
       </div>
     </div>

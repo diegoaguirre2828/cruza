@@ -11,7 +11,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Lang>('en')
 
   useEffect(() => {
-    const saved = localStorage.getItem('cruza_lang') as Lang | null
+    const saved = localStorage.getItem('cruzar_lang') as Lang | null
     if (saved === 'es' || saved === 'en') {
       setLang(saved)
     } else {
@@ -26,7 +26,7 @@ export function LangProvider({ children }: { children: React.ReactNode }) {
   function toggle() {
     const next: Lang = lang === 'en' ? 'es' : 'en'
     setLang(next)
-    localStorage.setItem('cruza_lang', next)
+    localStorage.setItem('cruzar_lang', next)
   }
 
   return <Ctx.Provider value={{ lang, t: translations[lang], toggle }}>{children}</Ctx.Provider>

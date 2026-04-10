@@ -4,7 +4,7 @@ export type Lang = 'en' | 'es'
 
 export const translations = {
   en: {
-    appName: 'Cruza',
+    appName: 'Cruzar',
     subtitle: 'Live border wait times',
     allRegions: '📍 All Regions',
     enteringUS: '🇺🇸 Entering the US',
@@ -133,7 +133,7 @@ export const translations = {
     profileSaved: 'Saved!',
     accountSection: 'Account',
     viewPricingPlans: 'View pricing & plans →',
-    signOutCruza: 'Sign out of Cruza',
+    signOutCruza: 'Sign out of Cruzar',
     // Dashboard
     dashboardTitle: 'My Account',
     savedTab: '⭐ Saved',
@@ -195,7 +195,7 @@ export const translations = {
     upgradeForAlerts: 'Upgrade to Pro for $2.99/mo',
   },
   es: {
-    appName: 'Cruza',
+    appName: 'Cruzar',
     subtitle: 'Tiempos de espera en la frontera en vivo',
     allRegions: '📍 Todas las regiones',
     enteringUS: '🇺🇸 Entrando a EE.UU.',
@@ -324,7 +324,7 @@ export const translations = {
     profileSaved: '¡Guardado!',
     accountSection: 'Cuenta',
     viewPricingPlans: 'Ver precios y planes →',
-    signOutCruza: 'Cerrar sesión de Cruza',
+    signOutCruza: 'Cerrar sesión de Cruzar',
     // Dashboard
     dashboardTitle: 'Mi Cuenta',
     savedTab: '⭐ Guardados',

@@ -5,17 +5,21 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { useTheme } from '@/lib/ThemeContext'
-import { User, Moon, Sun, Building2 } from 'lucide-react'
+import { Settings, Moon, Sun, Building2 } from 'lucide-react'
 
 export function NavBar() {
   const { user, loading } = useAuth()
   const { lang, toggle } = useLang()
   const { theme, toggle: toggleTheme } = useTheme()
   const [tier, setTier] = useState<string>('')
+  const [points, setPoints] = useState<number>(0)
 
   useEffect(() => {
     if (user) {
-      fetch('/api/profile').then(r => r.json()).then(d => setTier(d.profile?.tier || 'free'))
+      fetch('/api/profile').then(r => r.json()).then(d => {
+        setTier(d.profile?.tier || 'free')
+        setPoints(d.profile?.points || 0)
+      })
     }
   }, [user])
 
@@ -52,13 +56,24 @@ export function NavBar() {
       )}
 
       {user ? (
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1 text-xs font-medium text-white px-3 py-1.5 rounded-xl transition-colors bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
-          title="My Account"
-        >
-          <User className="w-3 h-3" />
-        </Link>
+        <>
+          {points > 0 && (
+            <Link
+              href="/rewards"
+              className="flex items-center gap-1 text-xs font-bold text-yellow-300 bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 px-3 py-1.5 rounded-xl transition-colors"
+              title="Points & Rewards"
+            >
+              🏆 {points} pts
+            </Link>
+          )}
+          <Link
+            href="/account"
+            className="flex items-center p-1.5 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-3.5 h-3.5" />
+          </Link>
+        </>
       ) : (
         <Link
           href="/signup"

@@ -90,7 +90,7 @@ export default function DriverPage({ params }: { params: Promise<{ token: string
 
   // Show "Add to Home Screen" tip once
   useEffect(() => {
-    const seen = localStorage.getItem('cruza_home_tip')
+    const seen = localStorage.getItem('cruzar_home_tip')
     if (!seen) setShowHomeScreenTip(true)
   }, [])
 
@@ -138,7 +138,7 @@ export default function DriverPage({ params }: { params: Promise<{ token: string
           `📊 ${statusLabel}\n` +
           (crossing ? `📍 ${crossing}\n` : '') +
           `⏰ ${time}\n\n` +
-          `Sent via Cruza`
+          `Sent via Cruzar`
         )
         window.open(`https://wa.me/${driver.dispatcher_phone}?text=${msg}`, '_blank')
       }
@@ -176,7 +176,7 @@ export default function DriverPage({ params }: { params: Promise<{ token: string
       <div className="bg-gray-900 border-b border-gray-800 px-5 pt-6 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <Truck className="w-4 h-4 text-blue-400" />
-          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Driver Mode · Cruza</span>
+          <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider">Driver Mode · Cruzar</span>
         </div>
         <h1 className="text-xl font-bold text-white">{driver.name}</h1>
         {(driver.company || driver.carrier) && (
@@ -195,7 +195,7 @@ export default function DriverPage({ params }: { params: Promise<{ token: string
               <p className="text-xs text-blue-400 mt-0.5">Tap Share → "Add to Home Screen" for one-tap check-ins without finding this link again.</p>
             </div>
             <button
-              onClick={() => { setShowHomeScreenTip(false); localStorage.setItem('cruza_home_tip', '1') }}
+              onClick={() => { setShowHomeScreenTip(false); localStorage.setItem('cruzar_home_tip', '1') }}
               className="text-blue-500 text-lg leading-none flex-shrink-0"
             >×</button>
           </div>
@@ -310,7 +310,7 @@ export default function DriverPage({ params }: { params: Promise<{ token: string
 
         {/* Footer note */}
         <p className="text-xs text-gray-600 text-center pb-4">
-          Dispatcher sees your status in real time · Powered by Cruza
+          Dispatcher sees your status in real time · Powered by Cruzar
         </p>
       </div>
     </div>

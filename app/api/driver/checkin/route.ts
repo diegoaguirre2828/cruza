@@ -61,18 +61,8 @@ export async function POST(req: NextRequest) {
     last_checkin_at: new Date().toISOString(),
   }).eq('id', driver.id)
 
-  // Log cleared event so dispatcher can be notified (email via cron or future push)
+  // Notify broker if shipment cleared at this port
   if (status === 'cleared') {
-    try {
-      await db.from('driver_events').insert({
-        driver_id: driver.id,
-        owner_id: driver.owner_id,
-        event_type: 'cleared',
-        port_id: portId || null,
-      })
-    } catch {} // table may not exist yet — silent fail
-
-    // Notify broker if there's an active shipment at this port
     try {
       // Only query by port_id if we actually have one — empty string won't match anything
       let shipmentQuery = db
@@ -105,7 +95,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'Cruza Alerts <onboarding@resend.dev>',
+            from: process.env.RESEND_FROM_EMAIL || 'Cruzar Alerts <onboarding@resend.dev>',
             to: [shipment.broker_email],
             subject: `✅ Shipment ${shipment.reference_id} cleared at ${portName}`,
             html: `
@@ -119,7 +109,7 @@ export async function POST(req: NextRequest) {
                   <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px">Cleared at</td><td style="padding:10px 16px;color:#111827;font-size:14px">${time}</td></tr>
                 </table>
                 <p style="color:#9ca3af;font-size:12px;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:16px">
-                  Sent via Cruza Border Intelligence · <a href="https://cruzaapp.vercel.app" style="color:#3b82f6">cruzaapp.vercel.app</a>
+                  Sent via Cruzar Border Intelligence · <a href="https://cruzar.app" style="color:#3b82f6">cruzar.app</a>
                 </p>
               </div>`,
           }),

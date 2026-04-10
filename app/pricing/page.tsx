@@ -34,7 +34,7 @@ export default function PricingPage() {
     {
       id: 'pro',
       name: 'Pro',
-      price: '$4.99',
+      price: '$2.99',
       period: '/month',
       color: 'border-blue-500',
       badge: t.mostPopular,

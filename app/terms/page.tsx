@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata = {
-  title: 'Terms of Service – Cruza',
+  title: 'Terms of Service – Cruzar',
 }
 
 export default function TermsPage() {
@@ -21,17 +21,17 @@ export default function TermsPage() {
 
           <section>
             <h2 className="font-bold text-gray-900 mb-2">1. Acceptance</h2>
-            <p>By using Cruza ("the app"), you agree to these terms. If you don't agree, don't use the app.</p>
+            <p>By using Cruzar ("the app"), you agree to these terms. If you don't agree, don't use the app.</p>
           </section>
 
           <section>
-            <h2 className="font-bold text-gray-900 mb-2">2. What Cruza Is</h2>
-            <p>Cruza provides live and estimated US-Mexico border crossing wait times sourced from the US Customs and Border Protection (CBP) public API and crowdsourced driver reports. Wait times are informational only. We are not affiliated with CBP or any government agency.</p>
+            <h2 className="font-bold text-gray-900 mb-2">2. What Cruzar Is</h2>
+            <p>Cruzar provides live and estimated US-Mexico border crossing wait times sourced from the US Customs and Border Protection (CBP) public API and crowdsourced driver reports. Wait times are informational only. We are not affiliated with CBP or any government agency.</p>
           </section>
 
           <section>
             <h2 className="font-bold text-gray-900 mb-2">3. Accuracy Disclaimer</h2>
-            <p>Wait times are estimates and may not reflect actual conditions at the time of crossing. Do not rely solely on Cruza for time-sensitive travel decisions. Cruza is not responsible for delays, missed appointments, or any consequences of crossing decisions made using this app.</p>
+            <p>Wait times are estimates and may not reflect actual conditions at the time of crossing. Do not rely solely on Cruzar for time-sensitive travel decisions. Cruzar is not responsible for delays, missed appointments, or any consequences of crossing decisions made using this app.</p>
           </section>
 
           <section>
@@ -41,7 +41,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="font-bold text-gray-900 mb-2">5. Driver Reports</h2>
-            <p>By submitting a report, you grant Cruza a non-exclusive license to display it publicly within the app. Do not submit false, misleading, or harmful reports. We reserve the right to remove any report.</p>
+            <p>By submitting a report, you grant Cruzar a non-exclusive license to display it publicly within the app. Do not submit false, misleading, or harmful reports. We reserve the right to remove any report.</p>
           </section>
 
           <section>
@@ -71,7 +71,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="font-bold text-gray-900 mb-2">10. Limitation of Liability</h2>
-            <p>Cruza is provided "as is." We make no warranties about uptime, accuracy, or fitness for any particular purpose. Our liability to you shall not exceed the amount you paid us in the last 3 months.</p>
+            <p>Cruzar is provided "as is." We make no warranties about uptime, accuracy, or fitness for any particular purpose. Our liability to you shall not exceed the amount you paid us in the last 3 months.</p>
           </section>
 
           <section>

@@ -10,8 +10,8 @@ async function notifyOwner(businessName: string, email: string, phone: string, c
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'Cruza <onboarding@resend.dev>',
-      to: [process.env.OWNER_EMAIL || 'hello@cruza.app'],
+      from: process.env.RESEND_FROM_EMAIL || 'Cruzar <onboarding@resend.dev>',
+      to: [process.env.OWNER_EMAIL || 'hello@cruzar.app'],
       subject: `New advertiser inquiry: ${businessName}`,
       html: `
         <div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
@@ -22,7 +22,7 @@ async function notifyOwner(businessName: string, email: string, phone: string, c
             <tr><td style="padding:8px 0;color:#6b7280;">Phone</td><td style="padding:8px 0;color:#111827;">${phone || '—'}</td></tr>
             <tr><td style="padding:8px 0;color:#6b7280;">Crossing</td><td style="padding:8px 0;color:#111827;">${crossing || '—'}</td></tr>
           </table>
-          <a href="https://cruzaapp.vercel.app/admin" style="display:inline-block;margin-top:20px;background:#111827;color:white;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:14px;">View in Admin</a>
+          <a href="https://cruzar.app/admin" style="display:inline-block;margin-top:20px;background:#111827;color:white;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:14px;">View in Admin</a>
         </div>
       `,
     }),

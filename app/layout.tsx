@@ -18,33 +18,33 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cruza – Live US-Mexico Border Wait Times",
+  title: "Cruzar – Live US-Mexico Border Wait Times",
   description: "Live wait times to cross from Mexico into the US at all 52 border ports. Free for commuters and freight.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Cruza",
+    title: "Cruzar",
   },
   openGraph: {
-    title: "Cruza – Live US-Mexico Border Wait Times",
+    title: "Cruzar – Live US-Mexico Border Wait Times",
     description: "Real-time wait times at every US-Mexico border crossing. Free for drivers and freight operators.",
-    url: "https://cruzaapp.vercel.app",
-    siteName: "Cruza",
+    url: "https://cruzar.app",
+    siteName: "Cruzar",
     locale: "en_US",
     type: "website",
     images: [
       {
-        url: "https://cruzaapp.vercel.app/opengraph-image",
+        url: "https://cruzar.app/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Cruza – Live US-Mexico Border Wait Times",
+        alt: "Cruzar – Live US-Mexico Border Wait Times",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cruza – Live US-Mexico Border Wait Times",
+    title: "Cruzar – Live US-Mexico Border Wait Times",
     description: "Real-time wait times at every US-Mexico border crossing.",
   },
   other: {

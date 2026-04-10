@@ -113,14 +113,14 @@ export async function GET(req: NextRequest) {
         </table>
 
         <div style="margin-top:24px;text-align:center;">
-          <a href="https://cruzaapp.vercel.app/dashboard"
+          <a href="https://cruzar.app/dashboard"
              style="display:inline-block;background:#111827;color:white;text-decoration:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:600;">
             View Live Wait Times →
           </a>
         </div>
 
         <p style="margin-top:24px;font-size:12px;color:#9ca3af;text-align:center;">
-          Cruza · <a href="https://cruzaapp.vercel.app/dashboard" style="color:#9ca3af;">Manage preferences</a>
+          Cruzar · <a href="https://cruzar.app/dashboard" style="color:#9ca3af;">Manage preferences</a>
         </p>
       </div>
     `
@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL || 'Cruza <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM_EMAIL || 'Cruzar <onboarding@resend.dev>',
         to: [user.email],
         subject: `🌉 Your weekly border crossing report`,
         html,

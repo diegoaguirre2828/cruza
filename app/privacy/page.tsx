@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata = {
-  title: 'Privacy Policy – Cruza',
+  title: 'Privacy Policy – Cruzar',
 }
 
 export default function PrivacyPage() {
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="font-bold text-gray-900 mb-2">8. Children</h2>
-            <p>Cruza is not directed at children under 13. We do not knowingly collect data from children.</p>
+            <p>Cruzar is not directed at children under 13. We do not knowingly collect data from children.</p>
           </section>
 
           <section>

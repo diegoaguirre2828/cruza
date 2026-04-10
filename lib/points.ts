@@ -10,7 +10,7 @@ export const POINTS = {
 } as const
 
 export const BADGES: Record<string, { label: string; emoji: string; threshold: number; description: string }> = {
-  founder:         { label: 'Community Founder', emoji: '🏅', threshold: 0,    description: 'One of the first 100 Cruza reporters — founding member' },
+  founder:         { label: 'Community Founder', emoji: '🏅', threshold: 0,    description: 'One of the first 100 Cruzar reporters — founding member' },
   first_cross:     { label: 'First Cross',       emoji: '🌉', threshold: 1,    description: 'Submitted your first report' },
   regular:         { label: 'Regular',            emoji: '🔁', threshold: 10,   description: '10 reports submitted' },
   veteran:         { label: 'Border Veteran',     emoji: '⭐', threshold: 50,   description: '50 reports submitted' },

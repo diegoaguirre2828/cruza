@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { useLang } from '@/lib/LangContext'
 import { useAuth } from '@/lib/useAuth'
 
@@ -12,6 +13,13 @@ export function BottomNav() {
   const pathname = usePathname()
   const { lang } = useLang()
   const { user } = useAuth()
+  const [points, setPoints] = useState<number>(0)
+
+  useEffect(() => {
+    if (user) {
+      fetch('/api/profile').then(r => r.json()).then(d => setPoints(d.profile?.points || 0))
+    }
+  }, [user])
 
   if (HIDDEN_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) return null
 
@@ -27,14 +35,15 @@ export function BottomNav() {
       active: pathname === '/',
     },
     {
-      href: '/services',
-      label: lang === 'es' ? 'Servicios' : 'Services',
+      href: '/negocios',
+      label: 'Negocios',
       icon: (active: boolean) => (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3m4-10h2m4 0h2M9 7h1m4 0h1M9 17h6" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 22V12h6v10" />
         </svg>
       ),
-      active: pathname === '/services' || pathname.startsWith('/services'),
+      active: pathname === '/negocios' || pathname.startsWith('/negocios'),
     },
     {
       href: '/guide',
@@ -50,9 +59,16 @@ export function BottomNav() {
       href: user ? '/dashboard' : '/signup',
       label: lang === 'es' ? 'Yo' : 'Me',
       icon: (active: boolean) => (
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
+        <span className="relative">
+          <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          {user && points > 0 && (
+            <span className="absolute -top-1.5 -right-2.5 bg-yellow-400 text-gray-900 text-[9px] font-bold leading-none px-1 py-0.5 rounded-full min-w-[16px] text-center">
+              {points > 999 ? '999+' : points}
+            </span>
+          )}
+        </span>
       ),
       active: pathname === '/dashboard' || pathname === '/account',
     },

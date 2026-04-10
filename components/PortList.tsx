@@ -141,8 +141,8 @@ export function PortList() {
       .join('\n')
 
     const text = lang === 'es'
-      ? `🌉 Tiempos de espera en la frontera ahora mismo:\n\n${list}\n\n📱 Tiempos en vivo: cruzaapp.vercel.app`
-      : `🌉 Border wait times right now:\n\n${list}\n\n📱 Live updates: cruzaapp.vercel.app`
+      ? `🌉 Tiempos de espera en la frontera ahora mismo:\n\n${list}\n\n📱 Tiempos en vivo: cruzar.app`
+      : `🌉 Border wait times right now:\n\n${list}\n\n📱 Live updates: cruzar.app`
 
     if (navigator.share) {
       navigator.share({ text }).catch(() => {})

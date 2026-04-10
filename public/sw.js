@@ -1,4 +1,4 @@
-// Cruza Service Worker — Push Notifications
+// Cruzar Service Worker — Push Notifications
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()))
@@ -7,11 +7,11 @@ self.addEventListener('push', e => {
   if (!e.data) return
   const data = e.data.json()
   e.waitUntil(
-    self.registration.showNotification(data.title || 'Cruza Alert', {
+    self.registration.showNotification(data.title || 'Cruzar Alert', {
       body: data.body || '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      tag: data.tag || 'cruza-alert',
+      tag: data.tag || 'cruzar-alert',
       data: { url: data.url || '/' },
       vibrate: [200, 100, 200],
     })

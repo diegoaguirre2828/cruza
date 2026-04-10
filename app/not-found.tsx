@@ -13,7 +13,7 @@ export default function NotFound() {
           href="/"
           className="inline-block bg-gray-900 text-white font-medium px-6 py-2.5 rounded-xl hover:bg-gray-700 transition-colors text-sm"
         >
-          Back to Cruza
+          Back to Cruzar
         </Link>
       </div>
     </main>

@@ -121,7 +121,7 @@ export default function AccountPage() {
             <div className="flex items-center gap-3">
               <Building2 className="w-5 h-5 text-white" />
               <div>
-                <p className="text-sm font-bold text-white">Cruza Business Portal</p>
+                <p className="text-sm font-bold text-white">Cruzar Business Portal</p>
                 <p className="text-xs text-blue-200">{t.businessPortalDesc}</p>
               </div>
             </div>

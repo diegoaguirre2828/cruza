@@ -182,8 +182,8 @@ export default function CustomsPage() {
 
   function share() {
     const title = lang === 'es'
-      ? `Lista de verificación para cruzar a ${direction === 'us' ? 'EE.UU.' : 'México'} — Cruza`
-      : `${direction === 'us' ? 'Entering the US' : 'Entering Mexico'} crossing checklist — Cruza`
+      ? `Lista de verificación para cruzar a ${direction === 'us' ? 'EE.UU.' : 'México'} — Cruzar`
+      : `${direction === 'us' ? 'Entering the US' : 'Entering Mexico'} crossing checklist — Cruzar`
     if (navigator.share) {
       navigator.share({ title, url: window.location.href }).catch(() => {})
     } else {

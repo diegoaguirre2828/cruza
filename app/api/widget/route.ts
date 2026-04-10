@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       <div style="font-size:13px;font-weight:700;color:${text};">🌉 ${port.portName}</div>
       <div style="font-size:11px;color:${sub};">${port.crossingName}</div>
     </div>
-    <a href="https://cruzaapp.vercel.app/port/${encodeURIComponent(port.portId)}"
+    <a href="https://cruzar.app/port/${encodeURIComponent(port.portId)}"
        target="_blank" rel="noopener"
        style="font-size:10px;color:#3b82f6;text-decoration:none;font-weight:600;">
       Live →
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     ${lanes}
   </div>
   <div style="margin-top:8px;font-size:9px;color:${sub};text-align:right;">
-    Powered by <a href="https://cruzaapp.vercel.app" target="_blank" rel="noopener" style="color:${sub};">Cruza</a>
+    Powered by <a href="https://cruzar.app" target="_blank" rel="noopener" style="color:${sub};">Cruzar</a>
   </div>
 </div>
 </body>

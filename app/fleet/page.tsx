@@ -77,7 +77,7 @@ export default function FleetPage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `cruza-all-crossings-${days}d.csv`
+      a.download = `cruzar-all-crossings-${days}d.csv`
       a.click()
       URL.revokeObjectURL(url)
     }

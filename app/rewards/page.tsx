@@ -104,11 +104,16 @@ export default function RewardsPage() {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-              {lang === 'es' ? '🎁 Recompensas' : '🎁 Rewards'}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {lang === 'es' ? '🎁 Recompensas' : '🎁 Rewards'}
+              </h1>
+              <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">
+                {lang === 'es' ? 'Próximamente' : 'Coming Soon'}
+              </span>
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {lang === 'es' ? 'Canjea tus puntos por descuentos cerca del cruce' : 'Redeem your points for deals near the crossing'}
+              {lang === 'es' ? 'Acumula puntos ahora — canjéalos cuando lleguen los negocios' : 'Earn points now — redeem when businesses go live'}
             </p>
           </div>
           {user && (
@@ -192,22 +197,48 @@ export default function RewardsPage() {
             {[1,2,3].map(i => <div key={i} className="h-28 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />)}
           </div>
         ) : businesses.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-8 text-center">
-            <p className="text-3xl mb-3">🏪</p>
-            <p className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-              {lang === 'es' ? 'Negocios próximamente' : 'Businesses coming soon'}
-            </p>
-            <p className="text-xs text-gray-400 mt-1 mb-4">
-              {lang === 'es'
-                ? '¿Tienes un negocio cerca del puente? ¡Únete gratis!'
-                : 'Own a business near the bridge? Join free!'}
-            </p>
-            <button
-              onClick={() => setShowSignup(true)}
-              className="text-xs font-semibold text-white bg-purple-600 px-5 py-2.5 rounded-xl hover:bg-purple-700"
-            >
-              {lang === 'es' ? 'Registrar mi negocio' : 'Register my business'}
-            </button>
+          <div className="space-y-4">
+            {/* Coming soon banner */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-5 text-white text-center">
+              <p className="text-2xl mb-2">🎁</p>
+              <p className="text-base font-bold mb-1">
+                {lang === 'es' ? 'Descuentos llegando pronto' : 'Deals coming soon'}
+              </p>
+              <p className="text-xs opacity-80 mb-3">
+                {lang === 'es'
+                  ? 'Estamos incorporando negocios cerca de los cruces. Tus puntos ya están acumulándose.'
+                  : "We're onboarding businesses near your crossings. Your points are already stacking up."}
+              </p>
+              {user && userPoints > 0 && (
+                <div className="bg-white/20 rounded-xl px-4 py-2 inline-block">
+                  <p className="text-sm font-bold">
+                    {lang === 'es' ? `Ya tienes ${userPoints} pts listos para canjear` : `You already have ${userPoints} pts ready to redeem`}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Preview categories */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                {lang === 'es' ? 'Tipos de negocios que se unirán' : 'Types of businesses joining'}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { emoji: '🍽️', label: lang === 'es' ? 'Restaurantes' : 'Restaurants' },
+                  { emoji: '⛽', label: lang === 'es' ? 'Gasolineras' : 'Gas Stations' },
+                  { emoji: '💱', label: lang === 'es' ? 'Cambio' : 'Money Exchange' },
+                  { emoji: '🔧', label: lang === 'es' ? 'Talleres' : 'Auto / Tires' },
+                  { emoji: '☕', label: lang === 'es' ? 'Cafés' : 'Cafés' },
+                  { emoji: '🛡️', label: lang === 'es' ? 'Seguros' : 'Insurance' },
+                ].map(c => (
+                  <div key={c.emoji} className="flex flex-col items-center gap-1 p-3 bg-gray-50 dark:bg-gray-700 rounded-xl opacity-60">
+                    <span className="text-xl">{c.emoji}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 text-center leading-tight">{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

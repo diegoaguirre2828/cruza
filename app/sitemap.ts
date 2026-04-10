@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = 'https://cruzaapp.vercel.app'
+  const base = 'https://cruzar.app'
 
   return [
     { url: base, lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },

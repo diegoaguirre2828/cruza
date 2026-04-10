@@ -19,23 +19,23 @@ async function sendEmail(email: string, portName: string, portId: string, wait: 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'Cruza Alerts <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM_EMAIL || 'Cruzar Alerts <onboarding@resend.dev>',
       to: [email],
       subject: `🌉 ${portName} wait dropped to ${wait} min`,
       html: `
         <div style="font-family:-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-          <h2 style="margin:0 0 16px;color:#111827;font-size:20px;">🌉 Cruza Alert</h2>
+          <h2 style="margin:0 0 16px;color:#111827;font-size:20px;">🌉 Cruzar Alert</h2>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:20px;">
             <p style="margin:0;font-size:16px;font-weight:600;color:#166534;">${portName} is now ${wait} min</p>
             <p style="margin:4px 0 0;font-size:14px;color:#16a34a;">Below your ${threshold}-minute alert threshold</p>
           </div>
-          <a href="https://cruzaapp.vercel.app/port/${encodeURIComponent(portId)}"
+          <a href="https://cruzar.app/port/${encodeURIComponent(portId)}"
              style="display:inline-block;background:#111827;color:white;text-decoration:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;">
             View Live Wait Times →
           </a>
           <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;">
-            You're receiving this because you set a wait time alert on Cruza.
-            <a href="https://cruzaapp.vercel.app/dashboard" style="color:#6b7280;">Manage alerts</a>
+            You're receiving this because you set a wait time alert on Cruzar.
+            <a href="https://cruzar.app/dashboard" style="color:#6b7280;">Manage alerts</a>
           </p>
         </div>
       `,
@@ -74,8 +74,8 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
 
 async function sendSms(phone: string, portName: string, portId: string, wait: number) {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) return
-  const url = `https://cruzaapp.vercel.app/port/${encodeURIComponent(portId)}`
-  const body = `🌉 Cruza Alert: ${portName} is now ${wait} min. ${url}`
+  const url = `https://cruzar.app/port/${encodeURIComponent(portId)}`
+  const body = `🌉 Cruzar Alert: ${portName} is now ${wait} min. ${url}`
   const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')
   await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
     method: 'POST',

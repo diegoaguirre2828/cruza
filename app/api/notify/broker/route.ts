@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
         </tr>
       </table>
       <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-        Sent via Cruza Border Intelligence &middot; <a href="https://cruzaapp.vercel.app" style="color: #3b82f6;">cruzaapp.vercel.app</a>
+        Sent via Cruzar Border Intelligence &middot; <a href="https://cruzar.app" style="color: #3b82f6;">cruzar.app</a>
       </p>
     </div>
   `
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'Cruza Alerts <onboarding@resend.dev>',
+      from: process.env.RESEND_FROM_EMAIL || 'Cruzar Alerts <onboarding@resend.dev>',
       to: [brokerEmail],
       subject: `✅ Shipment ${referenceId} cleared at ${portName}`,
       html,

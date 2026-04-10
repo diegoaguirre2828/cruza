@@ -47,8 +47,8 @@ export async function GET(req: NextRequest) {
   ].join('\n')
 
   const filename = portId
-    ? `cruza-${portId}-${days}d.csv`
-    : `cruza-all-crossings-${days}d.csv`
+    ? `cruzar-${portId}-${days}d.csv`
+    : `cruzar-all-crossings-${days}d.csv`
 
   return new NextResponse(csv, {
     headers: {

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 
   const stripe = getStripe()
-  const origin = req.headers.get('origin') || 'https://cruzaapp.vercel.app'
+  const origin = req.headers.get('origin') || 'https://cruzar.app'
 
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripe_customer_id,

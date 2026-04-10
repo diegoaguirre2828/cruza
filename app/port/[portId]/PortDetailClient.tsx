@@ -327,14 +327,14 @@ export function PortDetailClient({ port, portId }: Props) {
           const sentriWait = port.sentri ?? Math.round(port.vehicle * 0.4)
           return port.vehicle - sentriWait >= 10
         })() && (
-          <div className="mt-4 flex items-center justify-between bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3">
+          <div className="mt-4 flex items-center justify-between bg-blue-600 dark:bg-blue-900/20 border border-blue-700 dark:border-blue-800 rounded-xl px-4 py-3">
             <div>
-              <p className="text-xs font-semibold text-blue-900 dark:text-white">
+              <p className="text-xs font-semibold text-white">
                 {es
                   ? `SENTRI te ahorraría ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min aquí`
                   : `SENTRI saves you ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min at this crossing`}
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
+              <p className="text-xs text-blue-100 mt-0.5">
                 {es ? 'Aprobación gratis — válido 5 años' : 'Free to apply — valid 5 years'}
               </p>
             </div>

@@ -465,23 +465,90 @@ export default function ServicesPage() {
           </ul>
         </div>
 
-        {/* List your business CTA */}
+        {/* List your business — tiered */}
         {!showListForm && !submitted && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 mb-4">
-            <h2 className="text-sm font-bold text-blue-900 dark:text-blue-200 mb-1">
-              {lang === 'es' ? '¿Tienes un negocio en México?' : 'Do you own a business in Mexico?'}
-            </h2>
-            <p className="text-xs text-blue-700 dark:text-blue-400 mb-3">
-              {lang === 'es'
-                ? 'Llega a miles de cruzantes que buscan exactamente lo que ofreces. Listado gratuito, sin compromisos.'
-                : 'Reach thousands of crossers actively looking for services like yours. Free listing, no commitment.'}
-            </p>
-            <button
-              onClick={() => setShowListForm(true)}
-              className="text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-xl transition-colors"
-            >
-              {lang === 'es' ? 'Listar mi negocio gratis →' : 'List my business free →'}
-            </button>
+          <div className="mb-4 space-y-3">
+            <div>
+              <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                {lang === 'es' ? '🏪 ¿Tienes un negocio en México?' : '🏪 Own a business in Mexico?'}
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {lang === 'es'
+                  ? 'Llega a cruzantes que buscan exactamente lo que ofreces. Empieza gratis hoy.'
+                  : 'Reach crossers actively looking for services like yours. Get listed free while we launch.'}
+              </p>
+            </div>
+
+            {/* Tier cards */}
+            <div className="space-y-2">
+              {/* Free */}
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{lang === 'es' ? 'Básico' : 'Basic'}</span>
+                    <span className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-2 py-0.5 rounded-full">{lang === 'es' ? 'Gratis' : 'Free'}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowListForm(true)}
+                    className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-xl transition-colors"
+                  >
+                    {lang === 'es' ? 'Empezar →' : 'Get listed →'}
+                  </button>
+                </div>
+                <ul className="space-y-1">
+                  {(lang === 'es'
+                    ? ['Apareces en el directorio de servicios', 'Nombre, categoría, dirección, teléfono', 'Visible para todos los cruzantes']
+                    : ['Listed in the services directory', 'Name, category, address, phone', 'Visible to all crossers']
+                  ).map(f => (
+                    <li key={f} className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                      <span className="text-green-500">✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Featured */}
+              <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{lang === 'es' ? 'Destacado' : 'Featured'}</span>
+                    <span className="text-xs font-bold text-amber-700 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full">$75/mo</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{lang === 'es' ? 'Próximamente' : 'Coming Soon'}</span>
+                  </div>
+                </div>
+                <ul className="space-y-1">
+                  {(lang === 'es'
+                    ? ['Todo lo del plan Básico', 'Apareces primero en tu categoría', 'Tarjeta resaltada con badge "Destacado"', 'Más visibilidad cerca de tu cruce']
+                    : ['Everything in Basic', 'Top placement in your category', 'Highlighted card with "Featured" badge', 'Priority near your crossing']
+                  ).map(f => (
+                    <li key={f} className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                      <span className="text-amber-500">✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Rewards Partner */}
+              <div className="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{lang === 'es' ? 'Socio Rewards' : 'Rewards Partner'}</span>
+                    <span className="text-xs font-bold text-purple-700 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full">$150/mo</span>
+                    <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{lang === 'es' ? 'Próximamente' : 'Coming Soon'}</span>
+                  </div>
+                </div>
+                <ul className="space-y-1">
+                  {(lang === 'es'
+                    ? ['Todo lo del plan Destacado', 'Ofrece descuentos a usuarios con puntos', 'Los usuarios canjean sus puntos en tu negocio', 'Clientes ya motivados a visitarte']
+                    : ['Everything in Featured', 'Offer deals redeemable with Cruzar points', 'Users spend their points at your business', 'Customers already motivated to visit']
+                  ).map(f => (
+                    <li key={f} className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                      <span className="text-purple-500">✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 

@@ -17,15 +17,15 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 
 ## 1. Project Identity
 
-**Name:** Cruza
-**Tagline:** Live border wait times — cruzaapp.vercel.app
+**Name:** Cruzar
+**Tagline:** Live border wait times — cruzar.app
 **What it is:** A real-time border crossing wait time app for the US-Mexico border. Shows live wait times from the CBP (Customs and Border Protection) API, lets users submit community reports, tracks historical patterns, and provides fleet management tools for trucking companies.
-**Why it exists:** The only current solution is Facebook border crossing groups — people manually post wait times in group chats. Cruza replaces this with a structured, real-time, bilingual app.
-**Biggest gap vs. competition:** CONVENIENCE. Facebook groups require you to scroll, read posts, and guess. Cruza shows the number instantly. This is the core pitch.
+**Why it exists:** The only current solution is Facebook border crossing groups — people manually post wait times in group chats. Cruzar replaces this with a structured, real-time, bilingual app.
+**Biggest gap vs. competition:** CONVENIENCE. Facebook groups require you to scroll, read posts, and guess. Cruzar shows the number instantly. This is the core pitch.
 **Status:** Live and deployed. Pre-revenue. ~3-4 test accounts. Goal: 1,000 users in 3 months. First dollar in 3 months.
-**Live URL:** https://cruzaapp.vercel.app
+**Live URL:** https://cruzar.app (domain purchased, pending activation — temporary: cruzaapp.vercel.app)
 **GitHub:** https://github.com/diegoaguirre2828/cruza
-**Social media:** No Cruza social accounts created yet — this is the next marketing step.
+**Social media:** No Cruzar social accounts created yet — this is the next marketing step.
 
 ---
 
@@ -36,7 +36,7 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 - 20+ hours/week available to dedicate to this
 - Goal: build and monetize multiple apps across different verticals
 - Thinking like a startup founder + software entrepreneur
-- Primary focus right now: get Cruza to first revenue, then Insurance Automation Tool
+- Primary focus right now: get Cruzar to first revenue, then Insurance Automation Tool
 - Located in/near the RGV (Rio Grande Valley) border region — knows this market personally
 - Has a family insurance business = guaranteed first customer for next project
 
@@ -70,7 +70,7 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 - Updated sporadically, no structure, no history
 - Can't send push notifications
 - Can't filter by bridge or lane type
-- Cruza's moat: push notifications on wait time drops. Facebook can't do this.
+- Cruzar's moat: push notifications on wait time drops. Facebook can't do this.
 
 **Our growth strategy:** Post in these Facebook groups. The video generator creates content automatically. One post per day, timed to peak crossing hours.
 
@@ -114,8 +114,8 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 - **Framework:** Remotion 4.x
 - **Purpose:** Auto-generates animated wait time videos for social media marketing
 - **Run command:** `cd video-generator && node render.mjs`
-- **Output:** `/video-generator/output/cruza-[date]-[time].mp4` + Spanish caption printed to terminal
-- **How it works:** Fetches live data from cruzaapp.vercel.app/api/ports, renders 10-second vertical (9:16) video showing 8 featured crossings with animated wait times and color coding
+- **Output:** `/video-generator/output/cruzar-[date]-[time].mp4` + Spanish caption printed to terminal
+- **How it works:** Fetches live data from cruzar.app/api/ports (or cruzaapp.vercel.app until domain activates), renders 10-second vertical (9:16) video showing 8 featured crossings with animated wait times and color coding
 
 ---
 
@@ -189,8 +189,9 @@ Alert:         "Bajó la espera en [puente] — [X] min ahorita"
 
 ## 8. Database Schema
 
-**Active schema file:** `supabase-schema-v11.sql` (this is the canonical production schema)
-There are v1-v11 files — only v11 matters. The others are historical.
+**Active schema file:** `supabase-schema-v12.sql` (this is the canonical production schema)
+There are v1-v12 files — only v12 matters. The others are historical.
+**IMPORTANT:** v12 must be run in Supabase SQL Editor if not done yet — adds `exchange_rate_reports` table and new columns to `rewards_businesses`.
 
 ### Key Tables
 | Table | Purpose |
@@ -204,9 +205,10 @@ There are v1-v11 files — only v11 matters. The others are historical.
 | `shipments` | Business tier — shipment tracking with status lifecycle |
 | `drivers` | Business tier — driver tracking via token-based check-in (no login required) |
 | `push_subscriptions` | Web push notification endpoints |
-| `rewards_businesses` | Partner businesses for rewards program |
+| `rewards_businesses` | Business directory (Negocios tab). Free listings go live immediately. Fields: name, category, phone, whatsapp, hours, claimed, listing_tier (free/featured), notes_es |
 | `rewards_deals` | Deals tied to businesses, redeemable with points |
 | `rewards_redemptions` | Tracks who redeemed what |
+| `exchange_rate_reports` | Crowdsourced real casa de cambio rates. Fields: user_id, house_name, sell_rate, buy_rate, port_id, city, reported_at |
 
 ### RLS Policy Summary
 - `wait_time_readings`: Public read, service role write
@@ -227,7 +229,10 @@ There are v1-v11 files — only v11 matters. The others are historical.
 | `/api/reports/recent` | GET | Recent reports across all ports |
 | `/api/reports/upvote` | POST | Upvote a report |
 | `/api/leaderboard` | GET | Top reporters by points |
-| `/api/exchange` | GET | USD/MXN exchange rate |
+| `/api/exchange` | GET | USD/MXN exchange rate — returns official rate + community-reported rates (last 6h) |
+| `/api/exchange/report` | POST | Submit a real casa de cambio sell rate — awards 3 points if authenticated |
+| `/api/negocios` | GET/POST | List businesses (GET) or add a new free listing (POST) |
+| `/api/negocios/claim` | POST | Claim ownership of a business listing (email or WhatsApp) |
 | `/api/widget` | GET | Embeddable wait time widget |
 
 ### Authenticated
@@ -372,7 +377,7 @@ Crossing coordinates are defined in TWO places — keep them in sync:
 - Fetches live data → renders 10-second animated vertical (1080x1920) MP4
 - Shows 8 featured crossings with animated wait time numbers
 - Color-coded green/yellow/red bars
-- Spanish labels and CTA: "cruzaapp.vercel.app"
+- Spanish labels and CTA: "cruzar.app"
 - Also prints ready-to-paste Spanish Facebook caption with hashtags
 - Output saved to `video-generator/output/`
 
@@ -438,7 +443,7 @@ OWNER_EMAIL=                       (set)
 ### Known Gaps
 - `RESEND_FROM_EMAIL` not set → emails send from `onboarding@resend.dev` → only delivers to verified email, not real users. Fix: add custom domain to Resend.
 - Stripe keys may be placeholder values — verify before charging real users.
-- No custom domain yet — using cruzaapp.vercel.app
+- Custom domain: cruzar.app (purchased, pending activation)
 
 ---
 
@@ -457,7 +462,7 @@ vercel deploy --prod
 3. Verify no hardcoded secrets or API keys in code
 4. Confirm portMeta.ts and WaitingMode.tsx have matching coordinates
 5. Deploy with `vercel deploy --prod`
-6. Verify live: `curl https://cruzaapp.vercel.app/api/ports` → should return 50+ ports with data
+6. Verify live: `curl https://cruzar.app/api/ports` → should return 50+ ports with data
 
 ### Cron Jobs (cron-job.org — NOT Vercel)
 Vercel free plan only allows daily crons. All crons run via cron-job.org:
@@ -467,7 +472,7 @@ Vercel free plan only allows daily crons. All crons run via cron-job.org:
 
 To manually trigger any cron for testing:
 ```bash
-curl "https://cruzaapp.vercel.app/api/cron/fetch-wait-times?secret=YOUR_CRON_SECRET"
+curl "https://cruzar.app/api/cron/fetch-wait-times?secret=YOUR_CRON_SECRET"
 ```
 Expected response: `{"saved": 52, "at": "..."}`
 
@@ -573,7 +578,7 @@ For context on future projects (full details in memory):
 
 | Idea | Status | Next Action |
 |---|---|---|
-| Cruza | Live, pre-revenue | Post in Facebook groups TODAY |
+| Cruzar | Live, pre-revenue | Post in Facebook groups TODAY |
 | Insurance Automation | Ready to start | Discovery call with family business |
 | System Fixer / Car+Mechanic Tools | Planned | After Insurance proves out |
 | Felon Job Finder | On roadmap | 6+ months out |

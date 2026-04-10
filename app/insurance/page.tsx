@@ -12,21 +12,21 @@ const PROVIDERS = [
   {
     name: 'Baja Bound',
     description: { en: 'Most popular choice for US residents. Instant online quotes, daily to annual coverage.', es: 'La opción más popular para residentes de EE.UU. Cotizaciones en línea al instante.' },
-    url: 'https://www.bajabound.com/?ref=cruza', // TODO: replace with your affiliate URL
+    url: 'https://www.bajabound.com/?ref=cruzar', // TODO: replace with your affiliate URL
     badge: { en: 'Most Popular', es: 'Más Popular' },
     badgeColor: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
   },
   {
     name: 'MexPro',
     description: { en: 'Competitive rates, strong customer service. Compare rates across multiple carriers.', es: 'Tarifas competitivas y buen servicio al cliente. Compara entre múltiples aseguradoras.' },
-    url: 'https://www.mexpro.com/?ref=cruza', // TODO: replace with your affiliate URL
+    url: 'https://www.mexpro.com/?ref=cruzar', // TODO: replace with your affiliate URL
     badge: null,
     badgeColor: '',
   },
   {
     name: 'Oscar Padilla Mexican Insurance',
     description: { en: 'Trusted since 1979. Covers the full Mexican Republic. 24/7 roadside assistance.', es: 'De confianza desde 1979. Cobertura en toda la República. Asistencia en carretera 24/7.' },
-    url: 'https://www.mexicaninsurance.com/?ref=cruza', // TODO: replace with your affiliate URL
+    url: 'https://www.mexicaninsurance.com/?ref=cruzar', // TODO: replace with your affiliate URL
     badge: null,
     badgeColor: '',
   },

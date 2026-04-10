@@ -13,7 +13,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
-    const stored = localStorage.getItem('cruza-theme') as Theme | null
+    const stored = localStorage.getItem('cruzar-theme') as Theme | null
     const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     const initial = stored ?? preferred
     setTheme(initial)
@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   function toggle() {
     setTheme(prev => {
       const next = prev === 'light' ? 'dark' : 'light'
-      localStorage.setItem('cruza-theme', next)
+      localStorage.setItem('cruzar-theme', next)
       document.documentElement.classList.toggle('dark', next === 'dark')
       return next
     })

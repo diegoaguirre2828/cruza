@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Cruza – Live US-Mexico Border Wait Times'
+export const alt = 'Cruzar – Live US-Mexico Border Wait Times'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -42,7 +42,7 @@ export default function OGImage() {
           <div style={{ fontSize: 52 }}>🌉</div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ color: '#ffffff', fontSize: 52, fontWeight: 800, letterSpacing: -1 }}>
-              Cruza
+              Cruzar
             </span>
           </div>
           <div style={{
@@ -125,7 +125,7 @@ export default function OGImage() {
           borderTop: '1px solid rgba(255,255,255,0.08)',
         }}>
           <span style={{ color: '#475569', fontSize: 18 }}>
-            cruzaapp.vercel.app
+            cruzar.app
           </span>
           <div style={{ display: 'flex', gap: 20 }}>
             {['52 crossings', 'Updated every 15 min', 'Free forever'].map(tag => (

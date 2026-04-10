@@ -9,7 +9,7 @@ export default function WidgetPage() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [copied, setCopied] = useState(false)
 
-  const embedUrl = `https://cruzaapp.vercel.app/api/widget?theme=${theme}${portId ? `&portId=${portId}` : ''}`
+  const embedUrl = `https://cruzar.app/api/widget?theme=${theme}${portId ? `&portId=${portId}` : ''}`
   const iframeCode = `<iframe src="${embedUrl}" width="360" height="120" frameborder="0" scrolling="no" style="border-radius:14px;"></iframe>`
 
   function copy() {
@@ -54,7 +54,7 @@ export default function WidgetPage() {
                 placeholder="e.g. 240401"
                 className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-gray-400 mt-1">Find port IDs at <Link href="/" className="text-blue-500">cruzaapp.vercel.app</Link> → click any crossing → the ID is in the URL</p>
+              <p className="text-xs text-gray-400 mt-1">Find port IDs at <Link href="/" className="text-blue-500">cruzar.app</Link> → click any crossing → the ID is in the URL</p>
             </div>
             <div>
               <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Theme</label>
@@ -96,7 +96,7 @@ export default function WidgetPage() {
         </div>
 
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 text-center">
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Want your business featured on Cruza?</p>
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Want your business featured on Cruzar?</p>
           <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 mb-3">Reach thousands of daily cross-border commuters with a sponsored listing.</p>
           <Link href="/advertise" className="inline-block bg-amber-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-amber-600 transition-colors">
             Advertise Your Business →

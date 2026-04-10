@@ -430,11 +430,11 @@ function BusinessPortalPage() {
           <div className="flex items-start justify-between">
             <div>
               <Link href="/" className="flex items-center gap-1 text-xs text-blue-200 hover:text-white mb-2 transition-colors">
-                <ArrowLeft className="w-3 h-3" /> Back to Cruza
+                <ArrowLeft className="w-3 h-3" /> Back to Cruzar
               </Link>
               <div className="flex items-center gap-2 mb-1">
                 <Building2 className="w-5 h-5 text-white" />
-                <h1 className="text-xl font-bold text-white">Cruza Business</h1>
+                <h1 className="text-xl font-bold text-white">Cruzar Business</h1>
                 <span className="bg-blue-500/60 text-blue-100 text-xs font-semibold px-2 py-0.5 rounded-full">PRO</span>
               </div>
               <p className="text-sm text-blue-200">Your fleet command center</p>

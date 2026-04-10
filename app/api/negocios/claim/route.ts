@@ -1,0 +1,39 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServiceClient } from '@/lib/supabase'
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(req: NextRequest) {
+  const body = await req.json()
+  const { business_id, email, whatsapp } = body
+
+  if (!business_id) return NextResponse.json({ error: 'business_id required' }, { status: 400 })
+  if (!email?.trim() && !whatsapp?.trim()) {
+    return NextResponse.json({ error: 'email or whatsapp required' }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+
+  // Check business exists
+  const { data: biz } = await db
+    .from('rewards_businesses')
+    .select('id, claimed')
+    .eq('id', business_id)
+    .single()
+
+  if (!biz) return NextResponse.json({ error: 'Business not found' }, { status: 404 })
+  if (biz.claimed) return NextResponse.json({ error: 'Already claimed' }, { status: 409 })
+
+  const updates: Record<string, unknown> = { claimed: true }
+  if (email?.trim()) updates.submitted_by_email = email.trim()
+  if (whatsapp?.trim()) updates.whatsapp = whatsapp.trim()
+
+  const { error } = await db
+    .from('rewards_businesses')
+    .update(updates)
+    .eq('id', business_id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ ok: true })
+}
