@@ -16,10 +16,16 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  function getNextPath() {
+    if (typeof window === 'undefined') return '/'
+    const next = new URLSearchParams(window.location.search).get('next')
+    return next && next.startsWith('/') ? next : '/'
+  }
+
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) router.replace('/')
+      if (data.user) router.replace(getNextPath())
     })
   }, [router])
 
@@ -33,7 +39,7 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/')
+      router.push(getNextPath())
     }
   }
 

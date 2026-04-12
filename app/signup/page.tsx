@@ -39,7 +39,11 @@ export default function SignupPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      const nextParam =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next')
+          : null
+      router.push(nextParam && nextParam.startsWith('/') ? nextParam : '/dashboard')
     }
   }
 
