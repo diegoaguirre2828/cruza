@@ -3,7 +3,7 @@
   "name": "Cruzar Ingest",
   "version": "0.1.0",
   "description": "Send Facebook group posts about border wait times to cruzar.app with one click.",
-  "permissions": ["contextMenus", "activeTab", "storage", "scripting"],
+  "permissions": ["contextMenus", "activeTab", "storage", "scripting", "notifications"],
   "host_permissions": [
     "https://*.facebook.com/*",
     "https://m.facebook.com/*",

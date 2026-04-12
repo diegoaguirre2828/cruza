@@ -23,6 +23,7 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
   const [laneType, setLaneType] = useState<string>('vehicle')
   const [submitting, setSubmitting] = useState(false)
   const [pointsEarned, setPointsEarned] = useState(0)
+  const [copiedShare, setCopiedShare] = useState(false)
 
   useEffect(() => {
     if (forceShow) { setShow(true); return }
@@ -52,7 +53,9 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
     sessionStorage.setItem(`crossed_${portId}_${new Date().toDateString()}`, '1')
     setStep('done')
     setSubmitting(false)
-    setTimeout(() => { setShow(false); onSubmitted() }, 2500)
+    // Notify parent that a report was submitted so the feed refreshes,
+    // but DON'T auto-dismiss — we want the user to see the share prompt.
+    onSubmitted()
   }
 
   function dismiss() {
@@ -164,22 +167,82 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
           </>
         )}
 
-        {step === 'done' && (
-          <div className="text-center py-3">
-            <p className="text-3xl mb-2">🙌</p>
-            <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {es ? '¡Gracias!' : 'Thanks!'}
-            </p>
-            {pointsEarned > 0 && (
-              <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">
-                +{pointsEarned} {es ? 'puntos ganados' : 'points earned'}
-              </p>
-            )}
-            <p className="text-xs text-gray-400 mt-1">
-              {es ? 'Estás ayudando a los demás cruzar mejor.' : "You're helping fellow crossers."}
-            </p>
-          </div>
-        )}
+        {step === 'done' && (() => {
+          const conditionLabel =
+            condition === 'fast' ? (es ? 'rápido 🟢' : 'fast 🟢') :
+            condition === 'slow' ? (es ? 'lento 🔴' : 'slow 🔴') :
+            (es ? 'normal 🟡' : 'normal 🟡')
+          const laneLabel =
+            laneType === 'sentri' ? '⚡ SENTRI' :
+            laneType === 'pedestrian' ? (es ? 'a pie 🚶' : 'walking 🚶') :
+            laneType === 'commercial' ? (es ? 'en camión 🚛' : 'by truck 🚛') :
+            (es ? 'en auto 🚗' : 'by car 🚗')
+          const waitPart = actualMinutes ? (es ? ` en ${actualMinutes} min` : ` in ${actualMinutes} min`) : ''
+          const shareText = es
+            ? `Acabo de cruzar ${portName}${waitPart} ${laneLabel} · ${conditionLabel}\n\nTiempos en vivo 👉 cruzar.app`
+            : `Just crossed ${portName}${waitPart} ${laneLabel} · ${conditionLabel}\n\nLive wait times 👉 cruzar.app`
+          const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
+          return (
+            <div>
+              <div className="text-center mb-4">
+                <p className="text-4xl mb-2">🙌</p>
+                <p className="text-lg font-black text-gray-900 dark:text-gray-100">
+                  {es ? '¡Gracias!' : 'Thanks!'}
+                </p>
+                {pointsEarned > 0 && (
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-bold mt-0.5">
+                    +{pointsEarned} {es ? 'puntos ganados' : 'points earned'}
+                  </p>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center mb-1">
+                  {es ? '🚀 Ayuda a más gente — compártelo' : '🚀 Help more people — share it'}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
+                  {es ? 'Pégalo en tu grupo de Facebook o mándalo por WhatsApp' : 'Paste in your Facebook group or send via WhatsApp'}
+                </p>
+
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-base font-bold active:scale-95 transition-all mb-2"
+                >
+                  <span className="text-xl">📲</span>
+                  {es ? 'Compartir por WhatsApp' : 'Share on WhatsApp'}
+                </a>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(shareText)
+                      setCopiedShare(true)
+                      setTimeout(() => setCopiedShare(false), 3000)
+                    } catch { /* ignore */ }
+                  }}
+                  className={`flex items-center justify-center gap-2 w-full py-3 rounded-2xl border-2 text-sm font-bold transition-all active:scale-95 ${
+                    copiedShare
+                      ? 'border-green-500 text-green-600 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  {copiedShare
+                    ? (es ? '✓ Copiado — pégalo en tu grupo' : '✓ Copied — paste in your group')
+                    : (es ? '📋 Copiar para Facebook' : '📋 Copy for Facebook')}
+                </button>
+
+                <button
+                  onClick={() => setShow(false)}
+                  className="w-full mt-3 py-2 text-xs text-gray-400 hover:text-gray-600"
+                >
+                  {es ? 'Cerrar' : 'Close'}
+                </button>
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )

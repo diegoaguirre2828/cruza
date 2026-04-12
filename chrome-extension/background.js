@@ -126,12 +126,34 @@ function arrayBufferToBase64(buffer) {
 }
 
 function notify(message, type) {
-  chrome.notifications?.create?.({
-    type: 'basic',
-    iconUrl: 'icon.png',
-    title: 'Cruzar Ingest',
-    message,
-  })
-  // Fall back to console for debugging if notifications are unavailable
+  // Always log for debugging — view these in the service worker devtools
+  // (chrome://extensions → Cruzar Ingest card → "service worker" link)
   console.log(`[cruzar-ingest][${type}]`, message)
+
+  // System notification (requires "notifications" permission)
+  try {
+    chrome.notifications?.create?.('cruzar-ingest-' + Date.now(), {
+      type: 'basic',
+      iconUrl: 'icon.png',
+      title: 'Cruzar Ingest',
+      message: message.slice(0, 200),
+    })
+  } catch (e) {
+    console.warn('notifications failed:', e)
+  }
+
+  // Badge fallback — always visible on the toolbar icon
+  const badgeText = type === 'success' ? '✓' : type === 'error' ? '!' : '·'
+  const badgeColor =
+    type === 'success' ? '#10b981' :
+    type === 'error'   ? '#ef4444' :
+                         '#64748b'
+  try {
+    chrome.action.setBadgeText({ text: badgeText })
+    chrome.action.setBadgeBackgroundColor({ color: badgeColor })
+    // Clear the badge after 4 seconds so the toolbar stays clean
+    setTimeout(() => chrome.action.setBadgeText({ text: '' }), 4000)
+  } catch (e) {
+    console.warn('badge failed:', e)
+  }
 }
