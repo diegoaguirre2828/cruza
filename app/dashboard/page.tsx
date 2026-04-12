@@ -80,6 +80,28 @@ export default function DashboardPage() {
       if (params.get('upgraded') === 'true') {
         setShowUpgradeBanner(true)
         window.history.replaceState({}, '', '/dashboard')
+        // The Stripe webhook may not have fired yet when we redirect back.
+        // Poll /api/profile for up to 15 s until tier flips, then refresh
+        // all page state. Without this, the page shows 'Free Plan' badges
+        // and upgrade CTAs even though the user just paid.
+        ;(async () => {
+          for (let i = 0; i < 30; i++) {
+            await new Promise((r) => setTimeout(r, 500))
+            try {
+              const res = await fetch('/api/profile', { cache: 'no-store' })
+              if (!res.ok) continue
+              const data = await res.json()
+              const newTier = data?.profile?.tier
+              if (newTier && newTier !== 'free') {
+                setTier(newTier)
+                setBadges(data?.profile?.badges || [])
+                // Also refresh alerts / saved in case the upgrade unlocked features
+                loadData()
+                return
+              }
+            } catch { /* retry */ }
+          }
+        })()
       }
       // Pre-fill alert form when coming from Smart Crossing Planner
       const tabParam = params.get('tab')
@@ -92,6 +114,7 @@ export default function DashboardPage() {
         window.history.replaceState({}, '', '/dashboard')
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function removeSaved(portId: string) {
