@@ -53,11 +53,18 @@ export default function DashboardPage() {
   const [alertLimitHit, setAlertLimitHit] = useState(false)
 
   const loadData = useCallback(async () => {
+    // First, reconcile the DB tier against Stripe reality. This is the
+    // self-healing path that fixes missed webhooks (so a paid user never
+    // sees "Free Plan" just because the webhook dropped).
+    try {
+      await fetch('/api/profile/sync-tier', { method: 'POST', cache: 'no-store' })
+    } catch { /* non-fatal */ }
+
     const [portsRes, savedRes, alertsRes, profileRes] = await Promise.all([
       fetch('/api/ports'),
       fetch('/api/saved'),
       fetch('/api/alerts'),
-      fetch('/api/profile'),
+      fetch('/api/profile', { cache: 'no-store' }),
     ])
     if (portsRes.ok) setPorts((await portsRes.json()).ports || [])
     if (savedRes.ok) setSaved((await savedRes.json()).saved || [])
