@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Cruzar Ingest",
+  "version": "0.1.0",
+  "description": "Send Facebook group posts about border wait times to cruzar.app with one click.",
+  "permissions": ["contextMenus", "activeTab", "storage", "scripting"],
+  "host_permissions": [
+    "https://*.facebook.com/*",
+    "https://m.facebook.com/*",
+    "https://cruzar.app/*",
+    "https://www.cruzar.app/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Cruzar Ingest settings"
+  },
+  "icons": {
+    "16":  "icon.png",
+    "48":  "icon.png",
+    "128": "icon.png"
+  }
+}

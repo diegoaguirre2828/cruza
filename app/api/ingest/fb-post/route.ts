@@ -44,15 +44,24 @@ const PORT_CATALOG = `
   230302  Eagle Pass Bridge II
 `.trim()
 
-type ParsedPost = {
+type Observation = {
   port_id: string | null
   wait_minutes: number | null
   lane_type: 'vehicle' | 'pedestrian' | 'sentri' | 'commercial' | null
   description: string | null
+  has_accident?: boolean
+  has_inspection?: boolean
   confidence: 'high' | 'medium' | 'low'
 }
+type ParsedPost = {
+  observations: Observation[]
+}
 
-async function parseWithClaude(text: string, groupName: string): Promise<ParsedPost | null> {
+async function parseWithClaude(
+  text: string,
+  groupName: string,
+  image?: { base64: string; mediaType: string } | null,
+): Promise<ParsedPost | null> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return null
 
@@ -65,24 +74,50 @@ Post from group "${groupName}":
 """
 ${text}
 """
+${image ? '\nAn image is attached. It is a photo of the border crossing from a user\'s point of view (often from inside their car in the queue, or showing the line ahead/behind).' : ''}
 
-Return ONLY valid JSON matching this schema. Do not wrap in markdown.
+Return ONLY valid JSON matching this schema. No markdown, no prose.
 {
-  "port_id": string or null,            // one of the port_ids above, or null if the post doesn't mention a specific crossing
-  "wait_minutes": number or null,       // estimated wait in minutes; "fluido"/"rapido" = 5, "mucha fila" = 60, "1 hora" = 60, "2 horas" = 120
-  "lane_type": "vehicle" | "pedestrian" | "sentri" | "commercial" | null,
-  "description": string,                // short 1-line Spanish summary (max 100 chars)
-  "confidence": "high" | "medium" | "low"
+  "observations": [
+    {
+      "port_id": string,                                 // one of the port_ids above
+      "wait_minutes": number,                            // estimated wait in minutes for THIS lane
+      "lane_type": "vehicle" | "pedestrian" | "sentri" | "commercial",
+      "description": string,                             // short Spanish summary (max 100 chars) for THIS lane
+      "has_accident": boolean,
+      "has_inspection": boolean,
+      "confidence": "high" | "medium" | "low"
+    }
+  ]
 }
 
 Rules:
-- If the post has NO wait time information (just chit-chat, selling something, unrelated), return all nulls with confidence "low".
-- If ambiguous about which crossing, return port_id=null.
-- "ahorita", "en este momento", "ya" all mean the post is describing CURRENT conditions.
-- "rayos x", "inspección", "retén" = vehicle lane with secondary inspection.
-- "sentri", "sentry", "express" = sentri lane.
-- "a pie", "peatonal", "caminando" = pedestrian.
-- "traila", "tráiler", "camión", "comercial" = commercial.`
+- A single post may describe MULTIPLE lanes or crossings. Emit one observation per lane+crossing.
+  "B&M 20 min, nada de fila en sentri" → [{vehicle, 20}, {sentri, 0}]
+  "Hidalgo lleno pero pharr fluido"   → [{hidalgo vehicle, 60}, {pharr vehicle, 5}]
+- Spanish slang: "fluido"/"fluidito"/"sin fila"/"rapido"/"nada de fila" ≈ 5 min.
+  "mucha fila"/"lleno" (no number) ≈ 60 min. "1 hora"=60, "hora y media"=90, "2 horas"=120.
+- "rayos x", "inspección", "retén" → set has_inspection=true. "choque", "accidente" → has_accident=true.
+- "sentri"/"sentry"/"express lane" = sentri. "a pie"/"peatonal"/"caminando" = pedestrian.
+- "traila"/"tráiler"/"camión"/"comercial"/"carga" = commercial.
+${image ? `- IMAGE ANALYSIS: Look at the attached photo. If it shows a visible queue of cars at a border bridge:
+  - Count the cars visible (approximate is fine — "~25 cars" rather than exact).
+  - Estimate wait minutes using ~3 min per car per open lane (so 25 cars in 2 open lanes ≈ 40 min).
+  - Combine image evidence with the text. If text says "Los Tomates ahorita" and image shows a full queue, emit Los Tomates with the image-derived wait.
+  - If image does NOT clearly show a border crossing line (selfie, landscape, wrong location), ignore it and only use the text.
+  - When the image is the primary signal, set confidence to "medium".` : ''}
+- If the post is a question ("alguien sabe...?") or unrelated chit-chat AND the image doesn't help, return {"observations":[]}.
+- If the crossing is ambiguous and can't be mapped to a port_id, skip that observation.`
+
+  // Multi-modal message content when an image is attached
+  const userContent: Array<Record<string, unknown>> = []
+  if (image) {
+    userContent.push({
+      type: 'image',
+      source: { type: 'base64', media_type: image.mediaType, data: image.base64 },
+    })
+  }
+  userContent.push({ type: 'text', text: prompt })
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -94,8 +129,8 @@ Rules:
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
+        messages: [{ role: 'user', content: userContent }],
       }),
     })
     if (!res.ok) {
@@ -105,9 +140,9 @@ Rules:
     const data = await res.json()
     const content = data?.content?.[0]?.text?.trim()
     if (!content) return null
-    // Sometimes the model wraps the JSON in ```json blocks despite instructions
     const jsonStr = content.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim()
     const parsed = JSON.parse(jsonStr) as ParsedPost
+    if (!parsed || !Array.isArray(parsed.observations)) return { observations: [] }
     return parsed
   } catch (err) {
     console.error('Claude parse error:', err)
@@ -116,7 +151,8 @@ Rules:
 }
 
 // Rough regex fallback — handles the most common post patterns when no API key.
-// Keeps the endpoint useful during local dev and if the LLM call fails.
+// Returns a single observation (not multi-lane); the LLM path handles the
+// fancy cases.
 function parseWithRegex(text: string): ParsedPost | null {
   const t = text.toLowerCase()
   const nameToPort: [RegExp, string][] = [
@@ -148,27 +184,36 @@ function parseWithRegex(text: string): ParsedPost | null {
   else if (minMatch) waitMin = parseInt(minMatch[1], 10)
   else if (/fluido|fluidito|rapid|sin fila|no hay fila/.test(t)) waitMin = 5
 
-  const laneType: ParsedPost['lane_type'] =
+  const laneType: Observation['lane_type'] =
     /sentri|sentry|express/.test(t) ? 'sentri'
     : /a pie|peatonal|caminando/.test(t) ? 'pedestrian'
     : /traila|tráiler|trailer|camión|comercial/.test(t) ? 'commercial'
     : /\b(auto|carro|coche|vehiculo|veh[ií]culo)\b/.test(t) || waitMin != null ? 'vehicle'
     : null
 
-  if (!portId && waitMin == null) return null
+  if (!portId || waitMin == null) return { observations: [] }
   return {
-    port_id: portId,
-    wait_minutes: waitMin,
-    lane_type: laneType,
-    description: text.slice(0, 120),
-    confidence: portId && waitMin != null ? 'medium' : 'low',
+    observations: [{
+      port_id: portId,
+      wait_minutes: waitMin,
+      lane_type: laneType,
+      description: text.slice(0, 120),
+      has_inspection: /rayos x|inspecci[oó]n|ret[eé]n/.test(t),
+      has_accident:  /choque|accidente/.test(t),
+      confidence: 'medium',
+    }],
   }
 }
 
-function laneToReportType(lane: ParsedPost['lane_type'], waitMin: number | null): string {
-  if (waitMin != null && waitMin >= 60) return 'delay'
-  if (waitMin != null && waitMin <= 10) return 'clear'
-  if (lane === 'commercial') return 'commercial'
+// Map a single observation to the existing report_type values used by the UI.
+// Report types in use: 'delay' (shown as "Long Delay"), 'clear', 'accident',
+// 'inspection', 'commercial', 'other'. Keep ≤20 min as 'clear' so the UI
+// doesn't scream "Long Delay" on a fast crossing.
+function classifyObservation(o: Observation): string {
+  if (o.has_accident) return 'accident'
+  if (o.has_inspection) return 'inspection'
+  if (o.lane_type === 'commercial') return 'commercial'
+  if (o.wait_minutes != null && o.wait_minutes <= 20) return 'clear'
   return 'delay'
 }
 
@@ -178,7 +223,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { text?: string; group_name?: string; posted_at?: string }
+  let body: {
+    text?: string
+    group_name?: string
+    posted_at?: string
+    image_base64?: string
+    image_media_type?: string
+  }
   try {
     body = await req.json()
   } catch {
@@ -187,10 +238,23 @@ export async function POST(req: NextRequest) {
 
   const text = (body.text || '').trim()
   const groupName = (body.group_name || 'unknown').trim()
-  if (!text) return NextResponse.json({ error: 'Missing text' }, { status: 400 })
+  const hasImage = !!body.image_base64
+  if (!text && !hasImage) {
+    return NextResponse.json({ error: 'Missing text or image' }, { status: 400 })
+  }
   if (text.length > 2000) {
     return NextResponse.json({ error: 'Text too long' }, { status: 400 })
   }
+  // Reject huge images — Anthropic caps at ~5MB base64 and this keeps payloads sane
+  if (body.image_base64 && body.image_base64.length > 5_000_000) {
+    return NextResponse.json({ error: 'Image too large (max ~3.5MB raw)' }, { status: 400 })
+  }
+  const image = hasImage
+    ? {
+        base64: body.image_base64 as string,
+        mediaType: (body.image_media_type || 'image/jpeg') as string,
+      }
+    : null
 
   const db = getServiceClient()
 
@@ -207,49 +271,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ skipped: 'duplicate', id: existing[0].id })
   }
 
-  // Parse — prefer Claude, fall back to regex
-  let parsed = await parseWithClaude(text, groupName)
+  // Parse — prefer Claude (with optional image), fall back to regex (text-only)
+  let parsed = await parseWithClaude(text, groupName, image)
   if (!parsed) parsed = parseWithRegex(text)
 
-  if (!parsed || !parsed.port_id || parsed.wait_minutes == null) {
-    return NextResponse.json({
-      skipped: 'no_wait_info',
-      parsed,
-    })
-  }
+  const observations = (parsed?.observations ?? []).filter((o): o is Observation =>
+    !!o &&
+    !!o.port_id &&
+    o.wait_minutes != null &&
+    o.wait_minutes >= 0 &&
+    o.wait_minutes <= 360,
+  )
 
-  // Sanity: wait minutes must be plausible
-  if (parsed.wait_minutes < 0 || parsed.wait_minutes > 360) {
-    return NextResponse.json({ skipped: 'implausible_wait', parsed })
+  if (observations.length === 0) {
+    return NextResponse.json({ skipped: 'no_wait_info', parsed })
   }
 
   const postedAt = body.posted_at && !Number.isNaN(Date.parse(body.posted_at))
     ? new Date(body.posted_at).toISOString()
     : new Date().toISOString()
 
+  const rows = observations.map((o) => ({
+    port_id: o.port_id as string,
+    user_id: null,
+    report_type: classifyObservation(o),
+    description: o.description ?? text.slice(0, 120),
+    wait_minutes: o.wait_minutes as number,
+    upvotes: 0,
+    verified: false,
+    source: 'fb_group',
+    source_meta: {
+      group_name: groupName,
+      original_text: text,
+      posted_at: postedAt,
+      confidence: o.confidence,
+      lane_type: o.lane_type,
+      has_accident: !!o.has_accident,
+      has_inspection: !!o.has_inspection,
+      parsed_by: process.env.ANTHROPIC_API_KEY ? 'claude-haiku' : 'regex',
+    },
+    created_at: postedAt,
+  }))
+
   const { data: inserted, error } = await db
     .from('crossing_reports')
-    .insert({
-      port_id: parsed.port_id,
-      user_id: null,
-      report_type: laneToReportType(parsed.lane_type, parsed.wait_minutes),
-      description: parsed.description,
-      wait_minutes: parsed.wait_minutes,
-      upvotes: 0,
-      verified: false,
-      source: 'fb_group',
-      source_meta: {
-        group_name: groupName,
-        original_text: text,
-        posted_at: postedAt,
-        confidence: parsed.confidence,
-        lane_type: parsed.lane_type,
-        parsed_by: process.env.ANTHROPIC_API_KEY ? 'claude-haiku' : 'regex',
-      },
-      created_at: postedAt,
-    })
+    .insert(rows)
     .select('id')
-    .single()
 
   if (error) {
     console.error('fb-post insert error:', error)
@@ -258,7 +325,8 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    id: inserted?.id,
-    parsed,
+    inserted: inserted?.length ?? 0,
+    ids: inserted?.map((r) => r.id) ?? [],
+    observations,
   })
 }

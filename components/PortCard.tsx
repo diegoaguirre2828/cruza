@@ -14,6 +14,7 @@ export interface PortSignal {
   count?: number
   minutesAgo?: number
   waited?: number
+  laneType?: string | null
 }
 
 interface Props {
@@ -166,9 +167,18 @@ export function PortCard({ port, signal }: Props) {
             {signal.type === 'accident' && `💥 ${lang === 'es' ? `${signal.count} reportan accidente` : `${signal.count} reporting accident`}`}
             {signal.type === 'delay'    && `⚠️ ${lang === 'es' ? `${signal.count} reportan más espera` : `${signal.count} reporting longer wait`}`}
             {signal.type === 'clear'    && `🟢 ${lang === 'es' ? `${signal.count} reportan que fluye` : `${signal.count} say it's moving fast`}`}
-            {signal.type === 'crossed'  && `✅ ${lang === 'es'
-              ? `Alguien cruzó hace ${signal.minutesAgo} min${signal.waited ? ` · esperó ${signal.waited} min` : ''}`
-              : `Someone crossed ${signal.minutesAgo} min ago${signal.waited ? ` · waited ${signal.waited} min` : ''}`}`}
+            {signal.type === 'crossed'  && (() => {
+              const laneIcon =
+                signal.laneType === 'sentri' ? '⚡ SENTRI' :
+                signal.laneType === 'pedestrian' ? (lang === 'es' ? '🚶 a pie' : '🚶 walking') :
+                signal.laneType === 'commercial' ? (lang === 'es' ? '🚛 camión' : '🚛 truck') :
+                signal.laneType === 'vehicle' ? (lang === 'es' ? '🚗 en auto' : '🚗 by car') :
+                null
+              const lanePart = laneIcon ? ` · ${laneIcon}` : ''
+              return `✅ ${lang === 'es'
+                ? `Alguien cruzó hace ${signal.minutesAgo} min${signal.waited ? ` · esperó ${signal.waited} min` : ''}${lanePart}`
+                : `Someone crossed ${signal.minutesAgo} min ago${signal.waited ? ` · waited ${signal.waited} min` : ''}${lanePart}`}`
+            })()}
           </div>
         )}
 

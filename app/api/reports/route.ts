@@ -72,7 +72,7 @@ function checkReportRateLimit(key: string, max: number): boolean {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { portId, reportType, condition, description, severity, waitMinutes, note, waitingMode, ref } = body
+  const { portId, reportType, condition, description, severity, waitMinutes, note, waitingMode, ref, laneType } = body
 
   // Support both reportType and condition field names
   const type = reportType || condition || 'other'
@@ -125,6 +125,9 @@ export async function POST(req: NextRequest) {
     reportsCount = profile?.reports_count || 0
   }
 
+  const validLaneTypes = ['vehicle', 'sentri', 'pedestrian', 'commercial']
+  const normalizedLaneType = validLaneTypes.includes(laneType) ? laneType : null
+
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
@@ -133,6 +136,8 @@ export async function POST(req: NextRequest) {
     user_id: user?.id || null,
     wait_minutes: waitMinutes || null,
     username,
+    source: 'cruzar',
+    source_meta: normalizedLaneType ? { lane_type: normalizedLaneType } : null,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

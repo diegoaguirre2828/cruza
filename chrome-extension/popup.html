@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Cruzar Ingest</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1 {
+      font-size: 16px;
+      margin: 0 0 4px;
+      color: #fff;
+    }
+    p.sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin: 0 0 16px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px;
+      background: #3b82f6;
+      border: 0;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #2563eb; }
+    .status {
+      margin-top: 10px;
+      font-size: 11px;
+      text-align: center;
+      color: #10b981;
+      min-height: 14px;
+    }
+    .howto {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #1e293b;
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+    .howto b { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <h1>Cruzar Ingest</h1>
+  <p class="sub">Send FB group posts to cruzar.app with one click.</p>
+
+  <label for="endpoint">Endpoint</label>
+  <input id="endpoint" type="text" placeholder="https://cruzar.app/api/ingest/fb-post" />
+
+  <label for="secret">Ingest Secret</label>
+  <input id="secret" type="password" placeholder="Your INGEST_SECRET from Vercel" />
+
+  <button id="save">Save</button>
+  <div id="status" class="status"></div>
+
+  <div class="howto">
+    <b>How to use:</b> open a Facebook group post, select the text of the report, right-click, pick <b>📥 Enviar a Cruzar</b>.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

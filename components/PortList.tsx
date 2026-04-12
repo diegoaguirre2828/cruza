@@ -125,7 +125,8 @@ export function PortList() {
             signalMap[portId] = { type: 'clear', count: clears }
           } else if (crossed) {
             const minutesAgo = Math.round((Date.now() - new Date(crossed.created_at).getTime()) / 60000)
-            signalMap[portId] = { type: 'crossed', minutesAgo, waited: crossed.wait_minutes }
+            const lane = (crossed as { source_meta?: { lane_type?: string } }).source_meta?.lane_type || null
+            signalMap[portId] = { type: 'crossed', minutesAgo, waited: crossed.wait_minutes, laneType: lane }
           }
         }
         setSignals(signalMap)

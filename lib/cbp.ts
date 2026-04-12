@@ -72,14 +72,16 @@ function parseLanes(value: string | undefined): number | null {
   return isNaN(n) ? null : n
 }
 
+// Regular lane entries for the HEADLINE wait — standard + ready only.
+// SENTRI / NEXUS / FAST are express passes most users don't have, so pulling
+// their (often 0) wait into the min would hide the real line. SENTRI is
+// surfaced separately via its own `sentriResult` extraction below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getLaneTypes(lanes: any): any[] {
   if (!lanes) return []
   return [
     lanes.standard_lanes,
     lanes.ready_lanes,
-    lanes.NEXUS_SENTRI_lanes ?? lanes.nexus_sentri_lanes,
-    lanes.FAST_lanes ?? lanes.fast_lanes,
   ].filter(Boolean)
 }
 
