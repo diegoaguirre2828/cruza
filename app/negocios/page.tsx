@@ -283,24 +283,63 @@ function BusinessCard({ biz, lang, onClaim }: { biz: Business; lang: string; onC
   )
 }
 
+const MEGA_REGION_LABELS: Record<string, { es: string; en: string }> = {
+  rgv:           { es: 'Valle de Texas (RGV)',        en: 'Rio Grande Valley' },
+  laredo:        { es: 'Nuevo Laredo / Laredo',        en: 'Laredo' },
+  'coahuila-tx': { es: 'Piedras Negras / Cd. Acuña',   en: 'Coahuila — Texas' },
+  'el-paso':     { es: 'Cd. Juárez / El Paso',         en: 'El Paso' },
+  'sonora-az':   { es: 'Sonora / Arizona',             en: 'Sonora / Arizona' },
+  baja:          { es: 'Baja California',              en: 'Baja California' },
+  all:           { es: 'Todas las regiones',           en: 'All regions' },
+  other:         { es: 'Otros',                        en: 'Other' },
+}
+
 export default function NegociosPage() {
   const { lang } = useLang()
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [loading, setLoading] = useState(true)
   const [category, setCategory] = useState('all')
+  const [megaRegion, setMegaRegion] = useState<string>('rgv')
   const [claimTarget, setClaimTarget] = useState<Business | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
 
-  function loadBusinesses(cat: string) {
+  // Detect the user's mega region on first load. Priority:
+  //  1. localStorage override (explicit user pick, persists)
+  //  2. last viewed port's mega region (if they've been using the app)
+  //  3. fall back to 'rgv' until we have better info
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const override = localStorage.getItem('cruzar_mega_region')
+      if (override) { setMegaRegion(override); return }
+      const lastPort = localStorage.getItem('cruzar_last_port')
+      if (lastPort) {
+        import('@/lib/portMeta').then(({ portMegaRegion }) => {
+          const region = portMegaRegion(lastPort)
+          if (region && region !== 'other') setMegaRegion(region)
+        })
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  function loadBusinesses(cat: string, region: string) {
     setLoading(true)
-    const params = cat !== 'all' ? `?category=${cat}` : ''
-    fetch(`/api/negocios${params}`)
+    const q = new URLSearchParams()
+    if (cat !== 'all') q.set('category', cat)
+    if (region && region !== 'all') q.set('mega_region', region)
+    const qs = q.toString()
+    fetch(`/api/negocios${qs ? `?${qs}` : ''}`)
       .then(r => r.json())
       .then(d => { setBusinesses(d.businesses || []); setLoading(false) })
       .catch(() => setLoading(false))
   }
 
-  useEffect(() => { loadBusinesses(category) }, [category])
+  useEffect(() => { loadBusinesses(category, megaRegion) }, [category, megaRegion])
+
+  function chooseRegion(r: string) {
+    setMegaRegion(r)
+    try { localStorage.setItem('cruzar_mega_region', r) } catch { /* ignore */ }
+  }
 
   const t = {
     title: 'Negocios',
@@ -341,8 +380,33 @@ export default function NegociosPage() {
         </div>
       </div>
 
+      {/* Region selector — localizes businesses so a Tijuana user doesn't see McAllen shops */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2.5">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              {lang === 'es' ? 'Región' : 'Region'}
+            </p>
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
+              📍 {lang === 'es' ? MEGA_REGION_LABELS[megaRegion]?.es : MEGA_REGION_LABELS[megaRegion]?.en}
+            </p>
+          </div>
+          <select
+            value={megaRegion}
+            onChange={(e) => chooseRegion(e.target.value)}
+            className="text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            {(['rgv','laredo','coahuila-tx','el-paso','sonora-az','baja','all'] as const).map((r) => (
+              <option key={r} value={r}>
+                {lang === 'es' ? MEGA_REGION_LABELS[r].es : MEGA_REGION_LABELS[r].en}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Category pills */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 overflow-x-auto">
+      <div className="sticky top-[60px] z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-2.5 overflow-x-auto">
         <div className="flex gap-2 max-w-2xl mx-auto min-w-max">
           {CATEGORIES.map(c => (
             <button
@@ -426,13 +490,13 @@ export default function NegociosPage() {
         <ClaimModal
           business={claimTarget}
           onClose={() => setClaimTarget(null)}
-          onDone={() => { setClaimTarget(null); loadBusinesses(category) }}
+          onDone={() => { setClaimTarget(null); loadBusinesses(category, megaRegion) }}
         />
       )}
       {showAddForm && (
         <AddBusinessModal
           onClose={() => setShowAddForm(false)}
-          onDone={() => { setShowAddForm(false); loadBusinesses(category) }}
+          onDone={() => { setShowAddForm(false); loadBusinesses(category, megaRegion) }}
         />
       )}
     </main>

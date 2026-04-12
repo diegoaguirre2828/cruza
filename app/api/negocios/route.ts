@@ -20,11 +20,12 @@ function checkNegociosRateLimit(ip: string): boolean {
 export async function GET(req: NextRequest) {
   const category = req.nextUrl.searchParams.get('category')
   const portId = req.nextUrl.searchParams.get('portId')
+  const megaRegion = req.nextUrl.searchParams.get('mega_region')
 
   const db = getServiceClient()
   let query = db
     .from('rewards_businesses')
-    .select('id, name, description, address, port_ids, category, logo_emoji, phone, whatsapp, website, hours, claimed, listing_tier, notes_es, instagram, facebook')
+    .select('id, name, description, address, port_ids, category, logo_emoji, phone, whatsapp, website, hours, claimed, listing_tier, notes_es, instagram, facebook, mega_region')
     .eq('approved', true)
     .order('listing_tier', { ascending: false }) // featured first
     .order('claimed', { ascending: false })       // claimed second
@@ -35,6 +36,11 @@ export async function GET(req: NextRequest) {
   }
   if (portId) {
     query = query.contains('port_ids', [portId])
+  }
+  // Localization: a Tijuana user shouldn't see McAllen panaderías. If the
+  // caller passes a mega_region, filter to it. 'all' or missing = no filter.
+  if (megaRegion && megaRegion !== 'all') {
+    query = query.eq('mega_region', megaRegion)
   }
 
   const { data, error } = await query.limit(100)
@@ -50,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { name, description, address, category, phone, whatsapp, port_ids, submitted_by_email, hours, notes_es } = body
+  const { name, description, address, category, phone, whatsapp, port_ids, submitted_by_email, hours, notes_es, mega_region } = body
 
   if (!name?.trim()) return NextResponse.json({ error: 'name required' }, { status: 400 })
   if (!category) return NextResponse.json({ error: 'category required' }, { status: 400 })
@@ -63,6 +69,16 @@ export async function POST(req: NextRequest) {
   const VALID_CATEGORIES = ['exchange', 'dental', 'pharmacy', 'restaurant', 'cafe', 'gas', 'tire', 'taxi', 'other']
   if (!VALID_CATEGORIES.includes(category)) {
     return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+  }
+
+  // If the caller didn't specify mega_region explicitly, infer it from the
+  // first port_id they associated with. Falls back to 'rgv' as the default
+  // since that's still the vast majority of traffic.
+  let resolvedMegaRegion: string = mega_region || 'rgv'
+  if (!mega_region && Array.isArray(port_ids) && port_ids.length > 0) {
+    const { portMegaRegion } = await import('@/lib/portMeta')
+    const guess = portMegaRegion(port_ids[0])
+    if (guess) resolvedMegaRegion = guess
   }
 
   const db = getServiceClient()
@@ -78,6 +94,7 @@ export async function POST(req: NextRequest) {
     submitted_by_email: submitted_by_email?.trim().slice(0, 200) || null,
     hours: hours?.trim().slice(0, 300) || null,
     notes_es: notes_es?.trim().slice(0, 500) || null,
+    mega_region: resolvedMegaRegion,
     approved: true,   // free listings go live immediately
     claimed: false,
     listing_tier: 'free',

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { fetchRgvWaitTimes } from '@/lib/cbp'
 import { getServiceClient } from '@/lib/supabase'
 import { fetchTrafficWaits } from '@/lib/traffic'
+import { confidenceWeight } from '@/lib/geo'
 import type { PortWaitTime } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ interface RecentReport {
   wait_minutes: number | null
   report_type: string
   created_at: string
+  location_confidence?: string | null
 }
 
 function parseCbpRecorded(s: string | null): Date | null {
@@ -52,7 +54,7 @@ export async function GET() {
     const [reportsRes, trafficWaits] = await Promise.all([
       db
         .from('crossing_reports')
-        .select('port_id, wait_minutes, report_type, created_at')
+        .select('port_id, wait_minutes, report_type, created_at, location_confidence')
         .in('port_id', portIds)
         .gte('created_at', sinceIso)
         .order('created_at', { ascending: false }),
@@ -72,12 +74,18 @@ export async function GET() {
 
     const blended: PortWaitTime[] = ports.map((p) => {
       const reports = reportsByPort.get(p.portId) ?? []
-      const reportsWithWait = reports.filter((r) => r.wait_minutes != null && r.wait_minutes >= 0)
+      // Drop reports flagged as 'far' (troll or wrong bridge). Weight the rest
+      // by location confidence: near/nearby 3×, unknown 1×.
+      const reportsWithWait = reports.filter(
+        (r) => r.wait_minutes != null && r.wait_minutes >= 0 && r.location_confidence !== 'far',
+      )
+      const weightedItems = reportsWithWait.map((r) => ({
+        val: r.wait_minutes as number,
+        weight: confidenceWeight(r.location_confidence),
+      }))
       const reportCount = reportsWithWait.length
       const communityVehicle =
-        reportCount > 0
-          ? Math.round(reportsWithWait.reduce((s, r) => s + (r.wait_minutes as number), 0) / reportCount)
-          : null
+        weightedItems.length > 0 ? weightedAvg(weightedItems) : null
       const lastReportMinAgo =
         reports.length > 0
           ? Math.round((now - new Date(reports[0].created_at).getTime()) / 60000)

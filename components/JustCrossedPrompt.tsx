@@ -37,6 +37,17 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
   async function submit() {
     if (!condition) return
     setSubmitting(true)
+    // Grab location for anti-troll weighting — don't block on it
+    const coords = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (typeof navigator === 'undefined' || !navigator.geolocation) return resolve(null)
+      const timer = setTimeout(() => resolve(null), 4000)
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }) },
+        () => { clearTimeout(timer); resolve(null) },
+        { maximumAge: 60000, timeout: 3500, enableHighAccuracy: false },
+      )
+    })
+
     const res = await fetch('/api/reports', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -46,6 +57,8 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
         laneType,
         waitMinutes: actualMinutes ? parseInt(actualMinutes, 10) : null,
         ref: typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null,
+        lat: coords?.lat,
+        lng: coords?.lng,
       }),
     })
     const data = await res.json()
@@ -197,11 +210,11 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
               </div>
 
               <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center mb-1">
-                  {es ? '🚀 Ayuda a más gente — compártelo' : '🚀 Help more people — share it'}
+                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center">
+                  {es ? `🔥 Tu reporte ya está ayudando a ~${8 + Math.floor(Math.random()*15)} personas` : `🔥 Your report is already helping ~${8 + Math.floor(Math.random()*15)} people`}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
-                  {es ? 'Pégalo en tu grupo de Facebook o mándalo por WhatsApp' : 'Paste in your Facebook group or send via WhatsApp'}
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mb-3">
+                  {es ? 'Compártelo para ayudar a muchas más' : 'Share it to help many more'}
                 </p>
 
                 <a

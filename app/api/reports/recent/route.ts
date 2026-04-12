@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await db
     .from('crossing_reports')
-    .select('id, port_id, report_type, description, wait_minutes, upvotes, created_at, username, source, source_meta')
+    .select('id, port_id, report_type, description, wait_minutes, upvotes, created_at, username, source, source_meta, location_confidence')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(limit)

@@ -72,7 +72,7 @@ function checkReportRateLimit(key: string, max: number): boolean {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { portId, reportType, condition, description, severity, waitMinutes, note, waitingMode, ref, laneType } = body
+  const { portId, reportType, condition, description, severity, waitMinutes, note, waitingMode, ref, laneType, lat, lng } = body
 
   // Support both reportType and condition field names
   const type = reportType || condition || 'other'
@@ -128,6 +128,23 @@ export async function POST(req: NextRequest) {
   const validLaneTypes = ['vehicle', 'sentri', 'pedestrian', 'commercial']
   const normalizedLaneType = validLaneTypes.includes(laneType) ? laneType : null
 
+  // Geo-gate: compute distance from the port and classify the reporter's
+  // location confidence. We intentionally only STORE the distance + bucket,
+  // not the raw coords, to preserve privacy. Reports from too far away are
+  // still accepted but will be dropped from the community blend.
+  let locationConfidence: 'near' | 'nearby' | 'far' | 'unknown' = 'unknown'
+  let reporterDistanceKm: number | null = null
+  if (typeof lat === 'number' && typeof lng === 'number' && Number.isFinite(lat) && Number.isFinite(lng)) {
+    const { getPortMeta } = await import('@/lib/portMeta')
+    const { haversineKm, classifyDistance } = await import('@/lib/geo')
+    const meta = getPortMeta(portId)
+    if (meta?.lat && meta?.lng) {
+      const km = haversineKm(lat, lng, meta.lat, meta.lng)
+      reporterDistanceKm = Math.round(km * 10) / 10
+      locationConfidence = classifyDistance(km)
+    }
+  }
+
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
@@ -138,6 +155,8 @@ export async function POST(req: NextRequest) {
     username,
     source: 'cruzar',
     source_meta: normalizedLaneType ? { lane_type: normalizedLaneType } : null,
+    location_confidence: locationConfidence,
+    reporter_distance_km: reporterDistanceKm,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
