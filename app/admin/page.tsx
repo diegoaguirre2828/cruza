@@ -79,7 +79,7 @@ interface Subscription {
 export default function AdminPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [tab, setTab] = useState<'groups' | 'post' | 'reply' | 'cron' | 'advertisers' | 'subs' | 'stats' | 'blast'>('groups')
+  const [tab, setTab] = useState<'groups' | 'post' | 'reply' | 'cron' | 'advertisers' | 'subs' | 'stats' | 'blast' | 'users'>('groups')
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([])
   const [subs, setSubs] = useState<Subscription[]>([])
   const [stats, setStats] = useState<{
@@ -91,6 +91,32 @@ export default function AdminPage() {
     mrr: number; activeSubscriptions: number; proCount: number; businessCount: number
     recentCharges: { id: string; amount: number; email: string; created: number; description: string }[]
   } | null>(null)
+  type AdminUserRow = {
+    id: string; email: string; display_name: string | null; tier: string; points: number
+    reports_count: number; last_report_at: string | null; last_sign_in_at: string | null
+    created_at: string | null; badges: string[]; sub_status: string | null; sub_tier: string | null
+  }
+  const [usersRows, setUsersRows] = useState<AdminUserRow[]>([])
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [usersPage, setUsersPage] = useState(1)
+  const [usersSearch, setUsersSearch] = useState('')
+  const [usersTier, setUsersTier] = useState<'all' | 'free' | 'pro' | 'business'>('all')
+  const [usersSort, setUsersSort] = useState<'created_desc' | 'reports_desc' | 'points_desc' | 'last_active_desc' | 'last_signin_desc'>('created_desc')
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  type AdminUserDetail = {
+    id: string; email: string; auth_created_at: string | null; last_sign_in_at: string | null
+    email_confirmed_at: string | null; provider: string | null
+    profile: { display_name?: string | null; tier?: string; points?: number; reports_count?: number; badges?: string[]; full_name?: string | null; company?: string | null; role?: string | null; bio?: string | null; created_at?: string | null } | null
+    subscription: { tier?: string; status?: string; current_period_end?: string | null; stripe_subscription_id?: string | null } | null
+    reports: { id: string; port_id: string; report_type: string; wait_minutes: number | null; description: string | null; created_at: string; upvotes: number | null }[]
+    alerts: { id: string; port_id: string; lane_type: string; threshold_minutes: number; active: boolean; last_triggered_at: string | null }[]
+    saved_ports: string[]
+    push_subscription_count: number
+  }
+  const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null)
+  const [userDetailLoading, setUserDetailLoading] = useState(false)
+  const USERS_PAGE_SIZE = 25
   const [blastTitle, setBlastTitle] = useState('')
   const [blastBody, setBlastBody] = useState('')
   const [blastUrl, setBlastUrl] = useState('')
@@ -135,6 +161,35 @@ export default function AdminPage() {
     fetch('/api/admin/stats').then(r => r.json()).then(d => { if (d.users) setStats(d) })
     fetch('/api/admin/revenue').then(r => r.json()).then(d => { if (d.mrr !== undefined) setRevenue(d) })
   }, [user])
+
+  useEffect(() => {
+    if (!user || user.email !== ADMIN_EMAIL) return
+    if (tab !== 'users') return
+    setUsersLoading(true)
+    const params = new URLSearchParams({
+      page: String(usersPage),
+      pageSize: String(USERS_PAGE_SIZE),
+      tier: usersTier,
+      sort: usersSort,
+      search: usersSearch,
+    })
+    fetch(`/api/admin/users?${params}`)
+      .then(r => r.json())
+      .then(d => {
+        setUsersRows(d.users || [])
+        setUsersTotal(d.total || 0)
+      })
+      .finally(() => setUsersLoading(false))
+  }, [user, tab, usersPage, usersTier, usersSort, usersSearch])
+
+  useEffect(() => {
+    if (!selectedUserId) { setUserDetail(null); return }
+    setUserDetailLoading(true)
+    fetch(`/api/admin/users/${selectedUserId}`)
+      .then(r => r.json())
+      .then(d => setUserDetail(d))
+      .finally(() => setUserDetailLoading(false))
+  }, [selectedUserId])
 
   function togglePosted(name: string) {
     setPostedGroups(prev => {
@@ -231,10 +286,11 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 bg-gray-100 rounded-xl p-1 mb-5">
-          {(['stats', 'blast', 'groups', 'post', 'reply', 'cron', 'advertisers', 'subs'] as const).map(t => (
+          {(['stats', 'users', 'blast', 'groups', 'post', 'reply', 'cron', 'advertisers', 'subs'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
               {t === 'stats'       ? '📊 Stats' :
+               t === 'users'       ? '👥 Users' :
                t === 'blast'       ? '📣 Blast' :
                t === 'groups'      ? `Groups (${FACEBOOK_GROUPS.length})` :
                t === 'post'        ? '✍️ Posts' :
@@ -1004,7 +1060,226 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        {tab === 'users' && (
+          <div>
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input
+                type="text"
+                placeholder="Search email or name…"
+                value={usersSearch}
+                onChange={e => { setUsersSearch(e.target.value); setUsersPage(1) }}
+                className="sm:col-span-2 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <select
+                value={usersTier}
+                onChange={e => { setUsersTier(e.target.value as typeof usersTier); setUsersPage(1) }}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+              >
+                <option value="all">All tiers</option>
+                <option value="free">Free</option>
+                <option value="pro">Pro</option>
+                <option value="business">Business</option>
+              </select>
+              <select
+                value={usersSort}
+                onChange={e => { setUsersSort(e.target.value as typeof usersSort); setUsersPage(1) }}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+              >
+                <option value="created_desc">Newest first</option>
+                <option value="last_signin_desc">Last sign-in</option>
+                <option value="last_active_desc">Last report</option>
+                <option value="reports_desc">Most reports</option>
+                <option value="points_desc">Most points</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-gray-500">
+                {usersLoading ? 'Loading…' : `${usersTotal} user${usersTotal === 1 ? '' : 's'} · page ${usersPage} of ${Math.max(1, Math.ceil(usersTotal / USERS_PAGE_SIZE))}`}
+              </p>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setUsersPage(p => Math.max(1, p - 1))}
+                  disabled={usersPage === 1 || usersLoading}
+                  className="px-3 py-1 text-xs bg-gray-100 rounded-lg disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
+                <button
+                  onClick={() => setUsersPage(p => p + 1)}
+                  disabled={usersPage * USERS_PAGE_SIZE >= usersTotal || usersLoading}
+                  className="px-3 py-1 text-xs bg-gray-100 rounded-lg disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+              <div className="hidden sm:grid sm:grid-cols-12 px-4 py-2 bg-gray-50 text-[10px] uppercase tracking-wide text-gray-500 font-semibold">
+                <div className="col-span-4">User</div>
+                <div className="col-span-2">Tier</div>
+                <div className="col-span-1 text-right">Pts</div>
+                <div className="col-span-1 text-right">Rpts</div>
+                <div className="col-span-2">Signed up</div>
+                <div className="col-span-2">Last seen</div>
+              </div>
+              {usersRows.length === 0 && !usersLoading && (
+                <p className="text-gray-400 text-sm p-6 text-center">No users match.</p>
+              )}
+              {usersRows.map(u => {
+                const lastSeen = u.last_sign_in_at || u.last_report_at
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUserId(u.id)}
+                    className="w-full text-left border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="sm:grid sm:grid-cols-12 px-4 py-3 items-center text-sm">
+                      <div className="col-span-4">
+                        <p className="font-medium text-gray-900 truncate">{u.email || '(no email)'}</p>
+                        {u.display_name && u.display_name !== u.email && (
+                          <p className="text-xs text-gray-500 truncate">{u.display_name}</p>
+                        )}
+                      </div>
+                      <div className="col-span-2">
+                        <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          u.tier === 'business' ? 'bg-purple-100 text-purple-700' :
+                          u.tier === 'pro'      ? 'bg-blue-100 text-blue-700' :
+                                                  'bg-gray-100 text-gray-600'
+                        }`}>{u.tier}</span>
+                        {u.sub_status && u.sub_status !== 'active' && (
+                          <span className="ml-1 text-[10px] text-red-500">{u.sub_status}</span>
+                        )}
+                      </div>
+                      <div className="col-span-1 text-right text-gray-700">{u.points}</div>
+                      <div className="col-span-1 text-right text-gray-700">{u.reports_count}</div>
+                      <div className="col-span-2 text-xs text-gray-500">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                      </div>
+                      <div className="col-span-2 text-xs text-gray-500">
+                        {lastSeen ? new Date(lastSeen).toLocaleDateString() : 'never'}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {selectedUserId && (
+          <div
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedUserId(null)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {userDetail?.email || 'Loading…'}
+                  </p>
+                  <p className="text-xs text-gray-400 font-mono">{selectedUserId}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedUserId(null)}
+                  className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
+                >
+                  ×
+                </button>
+              </div>
+              {userDetailLoading && <p className="p-6 text-sm text-gray-500">Loading…</p>}
+              {userDetail && !userDetailLoading && (
+                <div className="p-6 space-y-5 text-sm">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Info label="Tier"         value={userDetail.profile?.tier || 'free'} />
+                    <Info label="Points"       value={String(userDetail.profile?.points ?? 0)} />
+                    <Info label="Provider"     value={userDetail.provider || 'email'} />
+                    <Info label="Email confirmed" value={userDetail.email_confirmed_at ? '✓ yes' : '✗ no'} />
+                    <Info label="Signed up"    value={userDetail.auth_created_at ? new Date(userDetail.auth_created_at).toLocaleString() : '—'} />
+                    <Info label="Last sign-in" value={userDetail.last_sign_in_at ? new Date(userDetail.last_sign_in_at).toLocaleString() : 'never'} />
+                    <Info label="Saved ports"  value={String(userDetail.saved_ports.length)} />
+                    <Info label="Push enabled" value={userDetail.push_subscription_count > 0 ? `✓ (${userDetail.push_subscription_count})` : '✗'} />
+                  </div>
+
+                  {userDetail.subscription && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Subscription</p>
+                      <div className="bg-gray-50 rounded-lg p-3 text-xs">
+                        <p>Tier: <span className="font-medium">{userDetail.subscription.tier}</span></p>
+                        <p>Status: <span className="font-medium">{userDetail.subscription.status}</span></p>
+                        {userDetail.subscription.current_period_end && (
+                          <p>Renews: {new Date(userDetail.subscription.current_period_end).toLocaleDateString()}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Reports ({userDetail.reports.length})
+                    </p>
+                    {userDetail.reports.length === 0 ? (
+                      <p className="text-xs text-gray-400">No reports yet.</p>
+                    ) : (
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {userDetail.reports.map(r => (
+                          <div key={r.id} className="text-xs bg-gray-50 rounded px-2 py-1.5 flex justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <span className="font-mono text-gray-500">{r.port_id}</span>
+                              <span className="ml-2 text-gray-700">{r.report_type}</span>
+                              {r.wait_minutes != null && <span className="ml-2 text-gray-500">{r.wait_minutes} min</span>}
+                            </div>
+                            <span className="text-gray-400 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      Alerts ({userDetail.alerts.length})
+                    </p>
+                    {userDetail.alerts.length === 0 ? (
+                      <p className="text-xs text-gray-400">No alerts configured.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {userDetail.alerts.map(a => (
+                          <div key={a.id} className="text-xs bg-gray-50 rounded px-2 py-1.5 flex justify-between">
+                            <span><span className="font-mono">{a.port_id}</span> · {a.lane_type} · ≤{a.threshold_minutes} min</span>
+                            <span className={a.active ? 'text-green-600' : 'text-gray-400'}>{a.active ? 'active' : 'off'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {userDetail.saved_ports.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Saved crossings</p>
+                      <p className="text-xs font-mono text-gray-600">{userDetail.saved_ports.join(', ')}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </main>
+  )
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-gray-400 font-semibold">{label}</p>
+      <p className="text-sm text-gray-800">{value}</p>
+    </div>
   )
 }
