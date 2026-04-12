@@ -236,6 +236,30 @@ export default function AdminPage() {
     fetch('/api/admin/revenue').then(r => r.json()).then(d => { if (d.mrr !== undefined) setRevenue(d) })
   }, [user])
 
+  // Auto-switch to Ingest tab + prefill text from PWA share target or query param
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const tabParam = params.get('tab')
+    if (tabParam === 'ingest') setTab('ingest')
+    // Query param prefill (bookmarklet path)
+    const textParam = params.get('ingest_text')
+    if (textParam) {
+      setTab('ingest')
+      setIngestText(textParam)
+      window.history.replaceState({}, '', '/admin')
+    }
+    // sessionStorage prefill (PWA share target path)
+    try {
+      const pending = sessionStorage.getItem('cruzar_pending_ingest')
+      if (pending) {
+        setTab('ingest')
+        setIngestText(pending)
+        sessionStorage.removeItem('cruzar_pending_ingest')
+      }
+    } catch { /* ignore */ }
+  }, [])
+
   useEffect(() => {
     if (!user || user.email !== ADMIN_EMAIL) return
     if (tab !== 'users') return
@@ -1190,6 +1214,32 @@ export default function AdminPage() {
               <p className="text-sm font-semibold text-gray-900">📥 Manual Ingest</p>
               <p className="text-xs text-gray-500 mt-0.5">
                 Pega texto de un post de Facebook y/o una captura de pantalla. El LLM lee texto + imagen y crea reportes reales en la app.
+              </p>
+            </div>
+
+            {/* Bookmarklet installer — drag to the bookmark bar, then click while
+                on any FB post. It captures your selection (or the focused post's
+                text) and opens this page with the Ingest tab pre-filled. */}
+            <div className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4">
+              <p className="text-sm font-bold text-gray-900 mb-1">
+                ⚡ Add "Send to Cruzar" to your browser
+              </p>
+              <p className="text-xs text-gray-600 mb-3">
+                Drag this button to your bookmark bar. Then click it while on any Facebook post to grab the selected text and send it here automatically.
+              </p>
+              <a
+                href={`javascript:(function(){var t=window.getSelection().toString().trim();if(!t){var a=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('[role=article]');if(a)t=a.innerText;}if(!t){alert('Select some text from a FB post first');return;}window.open('https://cruzar.app/admin?ingest_text='+encodeURIComponent(t.substring(0,2000)),'_blank');})();`}
+                draggable="true"
+                onClick={(e) => {
+                  e.preventDefault()
+                  alert('Drag this button to your bookmark bar instead of clicking it.')
+                }}
+                className="inline-block px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl cursor-move hover:bg-blue-700"
+              >
+                📥 Send to Cruzar
+              </a>
+              <p className="text-[11px] text-gray-400 mt-2">
+                Or on mobile: install Cruzar as a PWA (Add to Home Screen) and share any FB post to the <b>Cruzar</b> app from the share sheet.
               </p>
             </div>
 
