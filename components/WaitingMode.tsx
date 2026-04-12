@@ -88,7 +88,7 @@ export function WaitingMode({ onNearCrossing }: Props) {
     // Spam limit: max 1 report per bridge per 30 min
     const spamKey = `report_${nearCrossing.portId}`
     const lastReport = localStorage.getItem(spamKey)
-    if (lastReport && Date.now() - parseInt(lastReport) < 30 * 60 * 1000) {
+    if (lastReport && Date.now() - parseInt(lastReport, 10) < 30 * 60 * 1000) {
       dismiss()
       return
     }

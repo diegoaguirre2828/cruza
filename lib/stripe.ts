@@ -1,9 +1,11 @@
 import Stripe from 'stripe'
 
+// Intentionally do NOT pin apiVersion here. Pinning to a version string that
+// doesn't match the installed stripe package version causes the SDK to emit
+// "connection to Stripe" errors on every request, which look like network
+// problems but are actually client-side. Let the SDK use its own default.
 export function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2026-03-25.dahlia',
-  })
+  return new Stripe(process.env.STRIPE_SECRET_KEY!)
 }
 
 export const PLANS = {

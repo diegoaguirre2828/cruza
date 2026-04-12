@@ -9,7 +9,7 @@ const CBP_API_URL = 'https://bwt.cbp.gov/api/bwtnew'
 // Offsets are for April (DST active). When DST ends in November, these are
 // off by 1 hour until we teach this map about standard time — acceptable
 // tradeoff vs hardcoding the full tz database.
-function portUtcOffsetHours(portName: string): number {
+export function portUtcOffsetHours(portName: string): number {
   const name = portName.toLowerCase()
   // Pacific DST: California ports
   if (

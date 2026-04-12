@@ -21,7 +21,7 @@ function DelayReportContent() {
   const port = searchParams?.get('port') || '—'
   const expected = searchParams?.get('expected') || null
   const actual = searchParams?.get('actual') || null
-  const delayMins = parseInt(searchParams?.get('delay') || '0', 10)
+  const delayMins = Math.round(parseFloat(searchParams?.get('delay') || '0'))
   const carrier = searchParams?.get('carrier') || '—'
 
   const delayHours = Math.floor(delayMins / 60)

@@ -15,7 +15,7 @@ export function InstallPrompt() {
     if (window.matchMedia('(display-mode: standalone)').matches) return
     // Don't show if dismissed recently
     const dismissed = localStorage.getItem('install_dismissed')
-    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return
+    if (dismissed && Date.now() - parseInt(dismissed, 10) < 7 * 24 * 60 * 60 * 1000) return
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(navigator.userAgent.includes('CriOS'))
     setIsIos(ios)
