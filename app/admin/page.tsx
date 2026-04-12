@@ -117,6 +117,26 @@ export default function AdminPage() {
   const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null)
   const [userDetailLoading, setUserDetailLoading] = useState(false)
   const USERS_PAGE_SIZE = 25
+  const [testingNotify, setTestingNotify] = useState(false)
+  const [testNotifyResult, setTestNotifyResult] = useState<Record<string, { ok: boolean; detail: string }> | null>(null)
+
+  async function runTestNotify(channel: 'email' | 'push' | 'both') {
+    setTestingNotify(true)
+    setTestNotifyResult(null)
+    try {
+      const res = await fetch('/api/admin/test-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel }),
+      })
+      const data = await res.json()
+      setTestNotifyResult(data.results || { error: { ok: false, detail: data.error || 'Unknown error' } })
+    } catch (err) {
+      setTestNotifyResult({ error: { ok: false, detail: String(err) } })
+    } finally {
+      setTestingNotify(false)
+    }
+  }
   const [blastTitle, setBlastTitle] = useState('')
   const [blastBody, setBlastBody] = useState('')
   const [blastUrl, setBlastUrl] = useState('')
@@ -933,6 +953,54 @@ export default function AdminPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Notifications health */}
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notifications Health</p>
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+                <p className="text-xs text-gray-500 mb-3">
+                  Send a test email and push to yourself to verify each channel end-to-end.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => runTestNotify('both')}
+                    disabled={testingNotify}
+                    className="px-3 py-2 text-xs font-semibold bg-gray-900 text-white rounded-lg disabled:opacity-50"
+                  >
+                    {testingNotify ? 'Sending…' : '🧪 Test email + push'}
+                  </button>
+                  <button
+                    onClick={() => runTestNotify('email')}
+                    disabled={testingNotify}
+                    className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50"
+                  >
+                    📧 Email only
+                  </button>
+                  <button
+                    onClick={() => runTestNotify('push')}
+                    disabled={testingNotify}
+                    className="px-3 py-2 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg disabled:opacity-50"
+                  >
+                    🔔 Push only
+                  </button>
+                </div>
+                {testNotifyResult && (
+                  <div className="mt-3 space-y-2">
+                    {Object.entries(testNotifyResult).map(([channel, result]) => (
+                      <div
+                        key={channel}
+                        className={`text-xs p-2 rounded-lg ${
+                          result.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+                        }`}
+                      >
+                        <span className="font-semibold capitalize">{result.ok ? '✓' : '✗'} {channel}:</span>{' '}
+                        {result.detail}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Reports feed */}
