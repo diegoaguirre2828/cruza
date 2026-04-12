@@ -75,13 +75,21 @@ interface HereSummary {
   routes?: Array<{
     sections?: Array<{
       summary?: {
-        duration?: number          // free-flow seconds
-        baseDuration?: number      // ≈ free flow without traffic
-        trafficDuration?: number   // with current traffic
+        duration?: number          // current seconds (traffic-aware)
+        baseDuration?: number      // free-flow seconds
+        length?: number            // meters
+        trafficDuration?: number   // explicit traffic duration if present
       }
     }>
   }>
 }
+
+// Sanity filter — if HERE routes us via a path very different from the
+// expected queue (we expect ~1.5 km of road from approach to border),
+// the calibration is wrong and we should ignore the result rather than
+// poison the consensus number.
+const MIN_ROUTE_METERS = 800
+const MAX_ROUTE_METERS = 3500
 
 async function fetchOneBridge(portId: string, point: CalibrationPoint): Promise<number | null> {
   const cached = cache.get(portId)

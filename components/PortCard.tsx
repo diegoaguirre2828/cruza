@@ -29,8 +29,8 @@ export function PortCard({ port, signal }: Props) {
     : port.crossingName
   const allNull = port.vehicle === null && port.pedestrian === null && port.sentri === null && port.commercial === null
   const primaryLevel = getWaitLevel(port.vehicle)
-  // Closed = gray dot; no data late at night = green dot; otherwise use wait level
-  const dot = port.isClosed ? 'bg-gray-400' : allNull ? 'bg-green-500' : waitLevelDot(primaryLevel)
+  // Closed or no-data → gray dot (honest); otherwise use the actual wait level
+  const dot = port.isClosed ? 'bg-gray-400' : allNull ? 'bg-gray-400' : waitLevelDot(primaryLevel)
   const primaryWait = port.vehicle ?? port.pedestrian
   const [shared, setShared] = useState(false)
   const [showToast, setShowToast] = useState(false)
@@ -186,8 +186,10 @@ export function PortCard({ port, signal }: Props) {
           </div>
         ) : (
           <div className="flex items-center justify-center gap-1.5 mt-2 py-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-            <p className="text-sm text-green-600 dark:text-green-400 font-semibold">{t.noWaitLowTraffic}</p>
+            <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+              {lang === 'es' ? 'Sin datos recientes · revisa otros puentes' : 'No recent data · check other crossings'}
+            </p>
           </div>
         )}
       </div>
