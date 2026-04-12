@@ -85,35 +85,49 @@ export async function GET() {
       let chosen: number | null = cbpVehicle
       let source: PortWaitTime['source'] = 'cbp'
 
-      const candidates: { val: number; src: NonNullable<PortWaitTime['source']>; weight: number }[] = []
-      if (cbpVehicle != null && !cbpIsStale) candidates.push({ val: cbpVehicle, src: 'cbp', weight: 1 })
-      if (trafficVehicle != null) candidates.push({ val: trafficVehicle, src: 'traffic', weight: 2 })
+      // ────────────────────────────────────────────────────────
+      // Pick the headline number.
+      //
+      // Trust order:
+      //   1. Community reports (≥1 fresh report) — humans on the ground beat any sensor
+      //   2. Otherwise: be CONSERVATIVE — pick the HIGHER of CBP / HERE
+      //      so we never under-promise wait time and look wrong to people
+      //      already at the bridge. Better to slightly over-state than to
+      //      tell someone "0 min" when there's actually a 30 min line.
+      // ────────────────────────────────────────────────────────
       if (communityVehicle != null && reportCount >= 1) {
-        candidates.push({ val: communityVehicle, src: 'community', weight: Math.min(reportCount + 1, 4) })
-      }
+        chosen = communityVehicle
+        source = 'community'
+      } else {
+        const usableCbp = !cbpIsStale ? cbpVehicle : null
+        const numerics: number[] = []
+        if (usableCbp != null) numerics.push(usableCbp)
+        if (trafficVehicle != null) numerics.push(trafficVehicle)
 
-      if (candidates.length > 0) {
-        const nonCbp = candidates.filter((c) => c.src !== 'cbp')
-        const cbpCand = candidates.find((c) => c.src === 'cbp')
-        const diverges =
-          cbpCand != null &&
-          nonCbp.length > 0 &&
-          Math.abs(nonCbp[0].val - cbpCand.val) >= DIVERGE_THRESHOLD_MIN
-
-        if (diverges) {
-          const filtered = candidates.filter((c) => c.src !== 'cbp')
-          chosen = weightedAvg(filtered)
-          source = filtered.length > 1 ? 'consensus' : filtered[0].src
-        } else if (candidates.length === 1) {
-          chosen = candidates[0].val
-          source = candidates[0].src
+        if (numerics.length === 0) {
+          // Fall through to stale CBP if that's all we have
+          if (cbpVehicle != null) {
+            chosen = cbpVehicle
+            source = 'cbp'
+          } else {
+            chosen = null
+            source = 'cbp'
+          }
+        } else if (numerics.length === 1) {
+          chosen = numerics[0]
+          source = usableCbp != null ? 'cbp' : 'traffic'
         } else {
-          chosen = weightedAvg(candidates)
-          source = 'consensus'
+          const max = Math.max(...numerics)
+          chosen = max
+          // Label as consensus only when both sources roughly agree;
+          // otherwise the higher source gets credit
+          const diff = Math.abs(numerics[0] - numerics[1])
+          if (diff < DIVERGE_THRESHOLD_MIN) {
+            source = 'consensus'
+          } else {
+            source = max === usableCbp ? 'cbp' : 'traffic'
+          }
         }
-      } else if (cbpVehicle != null && cbpIsStale) {
-        chosen = cbpVehicle
-        source = 'cbp'
       }
 
       const accidentCount = reports.filter(
