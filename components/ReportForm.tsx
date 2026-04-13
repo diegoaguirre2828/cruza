@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Copy, Check as CheckIcon } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { ReportSentAnimation } from './ReportSentAnimation'
+import { trackShare } from '@/lib/trackShare'
 import type { PortWaitTime } from '@/types'
 
 interface Props {
@@ -148,50 +149,44 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
     const friendlyReply = port && selected ? buildFriendlyReply(port, selected, lang) : null
     const waUrl = friendlyReply ? `https://wa.me/?text=${encodeURIComponent(friendlyReply)}` : null
 
-    // Psychology: instant impact feedback — tell the user their report is
-    // *right now* helping specific people. Reciprocity ask for the share.
-    const viewersGuess = 8 + Math.floor(Math.random() * 15) // 8-22
-
     return (
       <div className="space-y-4">
         {/* Signature broadcast animation */}
         <ReportSentAnimation variant="broadcast" />
         <div className="text-center py-1">
           <p className="text-green-600 font-bold text-lg">
-            {lang === 'es' ? '¡Gracias!' : 'Thanks!'}
+            {lang === 'es' ? 'Reporte enviado' : 'Report sent'}
           </p>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1.5 font-semibold">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1.5 font-medium">
             {lang === 'es'
-              ? `🔥 Tu reporte está ayudando a ~${viewersGuess} personas ahorita`
-              : `🔥 Your report is helping ~${viewersGuess} people right now`}
+              ? 'Gracias por ayudar a la comunidad'
+              : 'Thanks for helping the community'}
           </p>
         </div>
 
         {waUrl && (
-          <div className="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-2xl p-3 space-y-2">
-            <p className="text-sm font-bold text-center text-green-900 dark:text-green-200">
-              {lang === 'es' ? '🚀 Multiplica tu impacto' : '🚀 Multiply your impact'}
-            </p>
-            <p className="text-[11px] text-center text-green-800 dark:text-green-300 leading-snug">
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-3 space-y-2">
+            <p className="text-xs text-center text-gray-700 dark:text-gray-300 leading-snug">
               {lang === 'es'
-                ? 'Tu reporte solo ayuda si la gente lo ve. Compártelo en tu grupo para que lleguen más cruzantes informados.'
-                : "Your report only helps if people see it. Share it with your group so more travelers stay informed."}
+                ? 'Avísale a tu grupo. Tu reporte solo ayuda si más gente lo ve.'
+                : "Let your group know. Your report only helps if more people see it."}
             </p>
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackShare('whatsapp', 'report_form')}
               className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold active:scale-95 transition-transform"
             >
               <span className="text-lg">📲</span>
               {lang === 'es' ? 'Compartir por WhatsApp' : 'Share on WhatsApp'}
             </a>
             <button
-              onClick={() => handleCopy(friendlyReply!)}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border-2 border-green-300 dark:border-green-700 text-sm font-bold text-green-800 dark:text-green-200"
+              onClick={() => { trackShare('copy', 'report_form'); handleCopy(friendlyReply!) }}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               {copied
-                ? <><CheckIcon className="w-4 h-4 text-green-500" />{lang === 'es' ? '¡Copiado! Pégalo en tu grupo' : 'Copied! Paste in your group'}</>
+                ? <><CheckIcon className="w-4 h-4 text-green-500" />{lang === 'es' ? 'Copiado — pégalo en tu grupo' : 'Copied — paste in your group'}</>
                 : <><Copy className="w-4 h-4" />{lang === 'es' ? 'Copiar para Facebook' : 'Copy for Facebook'}</>
               }
             </button>

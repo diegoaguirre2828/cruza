@@ -7,6 +7,7 @@ import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
 import { useLang } from '@/lib/LangContext'
 import { getPortMeta } from '@/lib/portMeta'
+import { trackShare } from '@/lib/trackShare'
 import type { PortWaitTime } from '@/types'
 
 export interface PortSignal {
@@ -49,6 +50,7 @@ export function PortCard({ port, signal }: Props) {
   async function handleShare(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
+    trackShare('native', 'port_card')
 
     const fmt = (n: number) => n === 0 ? '<1 min' : `${n} min`
     const parts: string[] = []

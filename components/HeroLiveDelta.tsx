@@ -5,6 +5,7 @@ import { useLang } from '@/lib/LangContext'
 import { useAuth } from '@/lib/useAuth'
 import { getPortMeta, type MegaRegion } from '@/lib/portMeta'
 import { haversineKm } from '@/lib/geo'
+import { trackShare } from '@/lib/trackShare'
 import type { PortWaitTime } from '@/types'
 
 // The hero moment.
@@ -303,6 +304,7 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
           href={waUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackShare('whatsapp', 'hero_live_delta')}
           className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
         >
           📲 {es ? 'Compartir este puente' : 'Share this crossing'}

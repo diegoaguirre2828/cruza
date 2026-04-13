@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { ReportSentAnimation } from './ReportSentAnimation'
+import { trackShare } from '@/lib/trackShare'
 
 interface Props {
   portId: string
@@ -164,8 +165,8 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
             </div>
 
             {user && (
-              <p className="text-sm text-blue-600 dark:text-blue-400 mb-3 text-center font-bold">
-                +{actualMinutes ? '10' : '5'} {es ? 'puntos por reportar' : 'pts for reporting'}
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 text-center">
+                {es ? 'Tu reporte ayuda a la comunidad' : 'Your report helps the community'}
               </p>
             )}
 
@@ -203,27 +204,23 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
 
               <div className="text-center mb-4">
                 <p className="text-lg font-black text-gray-900 dark:text-gray-100">
-                  {es ? '¡Gracias!' : 'Thanks!'}
+                  {es ? 'Gracias' : 'Thanks'}
                 </p>
-                {pointsEarned > 0 && (
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-bold mt-0.5">
-                    +{pointsEarned} {es ? 'puntos ganados' : 'points earned'}
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {es ? 'Reporte enviado a la comunidad' : 'Report sent to the community'}
+                </p>
               </div>
 
               <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-                <p className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center">
-                  {es ? `🔥 Tu reporte ya está ayudando a ~${8 + Math.floor(Math.random()*15)} personas` : `🔥 Your report is already helping ~${8 + Math.floor(Math.random()*15)} people`}
-                </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 text-center mb-3">
-                  {es ? 'Compártelo para ayudar a muchas más' : 'Share it to help many more'}
+                <p className="text-xs text-gray-500 dark:text-gray-400 text-center mb-3">
+                  {es ? 'Compártelo con tu grupo para que más gente lo vea' : 'Share it with your group so more people see it'}
                 </p>
 
                 <a
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackShare('whatsapp', 'just_crossed')}
                   className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-base font-bold active:scale-95 transition-all mb-2"
                 >
                   <span className="text-xl">📲</span>
@@ -232,6 +229,7 @@ export function JustCrossedPrompt({ portId, portName, onSubmitted, forceShow, on
 
                 <button
                   onClick={async () => {
+                    trackShare('copy', 'just_crossed')
                     try {
                       await navigator.clipboard.writeText(shareText)
                       setCopiedShare(true)
