@@ -11,6 +11,7 @@ import { useLang } from '@/lib/LangContext'
 import { Bell, Star, LogOut, ArrowLeft, Plus, Trash2, Route, Settings, Lock, Navigation, Building2, User } from 'lucide-react'
 import { PushToggle } from '@/components/PushToggle'
 import { PortSearch } from '@/components/PortSearch'
+import { DashboardInstallBanner } from '@/components/DashboardInstallBanner'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
 
@@ -219,6 +220,9 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
+        {/* Install nag — shown to non-standalone users until they install */}
+        <DashboardInstallBanner />
 
         {/* Business portal shortcut — prominent for business users */}
         {isBusiness && (

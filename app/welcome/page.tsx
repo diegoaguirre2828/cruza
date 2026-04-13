@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { usePushNotifications } from '@/lib/usePushNotifications'
+import { InstallGuide } from '@/components/InstallGuide'
 import type { PortWaitTime } from '@/types'
 
 // Forced activation flow. Every new signup lands here before the dashboard.
@@ -35,6 +36,12 @@ function WelcomeInner() {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoTried, setGeoTried] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Two-step flow — step 1 is picking a bridge + setting an alert, step 2
+  // is forced install. On iOS push notifications literally don't work
+  // without home-screen install, so we stage the install as the final
+  // act of the welcome flow, right when the user is most committed.
+  const [step, setStep] = useState<1 | 2>(1)
+  const [alertedPortName, setAlertedPortName] = useState<string>('')
 
   // Redirect guests to signup
   useEffect(() => {
@@ -44,13 +51,23 @@ function WelcomeInner() {
     }
   }, [user, authLoading, router, params])
 
-  // If the user already has an alert (returning user, or somehow landed
-  // here again) — skip the flow and go straight to the dashboard.
+  // If the user already has an alert AND the app is already running as
+  // an installed PWA (standalone display-mode), skip the whole welcome
+  // flow. If they have an alert but haven't installed, route to step 2
+  // directly — they need to finish the install, or their alert can't
+  // actually fire on iOS.
   useEffect(() => {
     if (!user) return
+    const isStandalone =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(display-mode: standalone)').matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true)
     fetch('/api/alerts').then((r) => r.json()).then((data) => {
-      if (data?.alerts && data.alerts.length > 0) {
+      const hasAlert = data?.alerts && data.alerts.length > 0
+      if (hasAlert && isStandalone) {
         router.replace('/dashboard')
+      } else if (hasAlert && !isStandalone) {
+        setStep(2)
       }
     }).catch(() => {})
   }, [user, router])
@@ -126,13 +143,36 @@ function WelcomeInner() {
         try { await subscribePush() } catch { /* non-blocking */ }
       }
 
-      // Redirect to dashboard with celebration flag
-      const next = params?.get('next') || '/dashboard?welcomed=1'
-      router.push(next)
+      // Stash the port name for the step 2 copy
+      const chosenPort = ports.find((p) => p.portId === selected)
+      if (chosenPort) {
+        setAlertedPortName(chosenPort.localNameOverride || chosenPort.portName || '')
+      }
+
+      // If the user is ALREADY running as a standalone PWA (unusual on
+      // first signup but possible), skip step 2 and go to the dashboard.
+      // Otherwise stage the install step.
+      const isStandalone =
+        typeof window !== 'undefined' &&
+        (window.matchMedia('(display-mode: standalone)').matches ||
+          (navigator as Navigator & { standalone?: boolean }).standalone === true)
+
+      if (isStandalone) {
+        const next = params?.get('next') || '/dashboard?welcomed=1'
+        router.push(next)
+      } else {
+        setStep(2)
+        setSubmitting(false)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setSubmitting(false)
     }
+  }
+
+  function skipInstall() {
+    const next = params?.get('next') || '/dashboard?welcomed=1&needs_install=1'
+    router.push(next)
   }
 
   // Compute the 6 bridges to show:
@@ -165,6 +205,62 @@ function WelcomeInner() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-sm text-gray-500">{es ? 'Cargando…' : 'Loading…'}</p>
+      </main>
+    )
+  }
+
+  // Step 2: forced install page. iOS push literally requires home-screen
+  // install to work, so we catch the user here — right after they set
+  // their alert, when they're most committed — and make the install the
+  // final act. Skip exists but is de-prioritized as a grey link.
+  if (step === 2) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-blue-600 via-indigo-700 to-purple-800 text-white">
+        <div className="max-w-lg mx-auto px-5 py-10">
+          <div className="text-center mb-6 cruzar-rise">
+            <p className="text-3xl mb-2">📲</p>
+            <h1 className="text-2xl sm:text-3xl font-black leading-tight">
+              {es ? 'Una cosa más — o tu alerta no te llega' : "One more thing — or your alert won't reach you"}
+            </h1>
+            <p className="text-sm text-blue-100 mt-3 font-medium leading-relaxed">
+              {es
+                ? alertedPortName
+                  ? `Guardamos tu alerta de ${alertedPortName}. Pero Apple no deja que te llegue si Cruzar no está en tu pantalla de inicio — ésta es regla de ellos, no nuestra.`
+                  : 'Guardamos tu alerta. Pero Apple no deja que te llegue si Cruzar no está en tu pantalla de inicio — es regla de ellos, no nuestra.'
+                : alertedPortName
+                  ? `Your ${alertedPortName} alert is saved. But Apple won't deliver it unless Cruzar is on your home screen — that's their rule, not ours.`
+                  : "Your alert is saved. But Apple won't deliver it unless Cruzar is on your home screen — that's their rule, not ours."}
+            </p>
+            <p className="text-[11px] text-blue-200 mt-2 leading-relaxed">
+              {es ? '10 segundos. Después te llega todo en automático.' : '10 seconds. Then everything flows automatically.'}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-3xl p-5 shadow-2xl">
+            <InstallGuide />
+          </div>
+
+          {/* Pro sweetener — mentioned but not the headline */}
+          <div className="mt-4 bg-amber-400/20 border border-amber-300/40 rounded-2xl px-4 py-3 text-center">
+            <p className="text-xs font-bold text-amber-100">
+              {es ? '🎁 Bono: 3 meses de Pro GRATIS cuando instales' : '🎁 Bonus: 3 months Pro FREE when you install'}
+            </p>
+            <p className="text-[10px] text-amber-200 mt-0.5 leading-snug">
+              {es
+                ? 'Alertas ilimitadas · Mejor hora pa\' cruzar · Optimizador de ruta'
+                : 'Unlimited alerts · Best time to cross · Route optimizer'}
+            </p>
+          </div>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={skipInstall}
+              className="text-xs text-blue-200/70 hover:text-blue-100 underline underline-offset-2"
+            >
+              {es ? 'Lo haré después (mi alerta puede no llegar)' : 'I\'ll do it later (my alert may not arrive)'}
+            </button>
+          </div>
+        </div>
       </main>
     )
   }

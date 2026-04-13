@@ -10,7 +10,6 @@ import { WaitingMode } from '@/components/WaitingMode'
 import { BusinessCommandWidget } from '@/components/BusinessCommandWidget'
 import { ExchangeRateWidget } from '@/components/ExchangeRateWidget'
 import { OnboardingTour } from '@/components/OnboardingTour'
-import { InstallPrompt } from '@/components/InstallPrompt'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
 import { LiveActivityTicker } from '@/components/LiveActivityTicker'
@@ -20,9 +19,12 @@ import { useAuth } from '@/lib/useAuth'
 import type { PortWaitTime } from '@/types'
 
 function ShareAppButton({ lang }: { lang: string }) {
+  // Framed as "tell your people" instead of "share the app" — the sender
+  // is taking care of their community, not doing marketing. The psychological
+  // framing is hero, not promoter.
   const text = lang === 'es'
-    ? 'checen cruzar.app pa ver los tiempos en vivo de todos los puentes 🌉'
-    : 'check cruzar.app for live border wait times 🌉'
+    ? 'Le estoy avisando a mi gente que cruza — Cruzar muestra los tiempos de todos los puentes en vivo, sin tener que andar buscando en grupos 🌉'
+    : "I'm letting my people who cross know — Cruzar shows every bridge's wait time live, without scrolling through groups 🌉"
   const url = 'https://cruzar.app'
 
   async function handleShare() {
@@ -39,8 +41,8 @@ function ShareAppButton({ lang }: { lang: string }) {
       onClick={handleShare}
       className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-green-500 text-green-600 dark:text-green-400 text-sm font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors active:scale-95"
     >
-      <span>📲</span>
-      {lang === 'es' ? 'Comparte la app con tus contactos' : 'Share the app with your contacts'}
+      <span>🤝</span>
+      {lang === 'es' ? 'Avisarle a mi gente' : 'Tell my people'}
     </button>
   )
 }
@@ -290,10 +292,11 @@ export function HomeClient({ initialPorts }: Props) {
 
       {/* Overlays render AFTER the hero in DOM so they can't push the
           above-the-fold hero down during hydration. They're fixed/modal
-          anyway — the position in JSX only matters for paint order. */}
+          anyway — the position in JSX only matters for paint order.
+          InstallPrompt removed from the landing page — guests don't care
+          yet, and the forced install step is now part of /welcome. */}
       <InAppBrowserBanner />
       <OnboardingTour />
-      <InstallPrompt />
     </main>
   )
 }

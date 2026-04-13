@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Copy, Check as CheckIcon } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { ReportSentAnimation } from './ReportSentAnimation'
@@ -93,6 +93,18 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [impact, setImpact] = useState<{ subscribers: number; guardiansToday: number } | null>(null)
+
+  // Pull impact numbers the moment the submission lands — shown in the
+  // "Gracias, guardián" screen so the user's contribution feels concrete
+  // instead of abstract ("+5 points").
+  useEffect(() => {
+    if (!done) return
+    fetch(`/api/reports/impact?portId=${encodeURIComponent(portId)}`)
+      .then((r) => r.json())
+      .then((d) => setImpact({ subscribers: d.subscribers || 0, guardiansToday: d.guardiansToday || 0 }))
+      .catch(() => { /* silent — screen still works without numbers */ })
+  }, [done, portId])
 
   async function submit() {
     if (!selected) return
@@ -127,13 +139,17 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
         }),
       })
       setDone(true)
+      // Auto-dismiss extended from 8s → 14s so users have time to read the
+      // impact numbers and tap the share button. The screen is the payoff,
+      // not a transition — don't rush them past it.
       setTimeout(() => {
         setDone(false)
         setSelected(null)
         setDescription('')
         setCopied(false)
+        setImpact(null)
         onSubmitted()
-      }, 8000)
+      }, 14000)
     } finally {
       setSubmitting(false)
     }
@@ -148,28 +164,61 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
   if (done) {
     const friendlyReply = port && selected ? buildFriendlyReply(port, selected, lang) : null
     const waUrl = friendlyReply ? `https://wa.me/?text=${encodeURIComponent(friendlyReply)}` : null
+    const portName = port?.localNameOverride || port?.portName || ''
+    const es = lang === 'es'
 
     return (
       <div className="space-y-4">
         {/* Signature broadcast animation */}
         <ReportSentAnimation variant="broadcast" />
+
         <div className="text-center py-1">
-          <p className="text-green-600 font-bold text-lg">
-            {lang === 'es' ? 'Reporte enviado' : 'Report sent'}
+          <p className="text-green-600 font-black text-xl">
+            {es ? 'Gracias, guardián' : 'Thank you, guardian'}
           </p>
-          <p className="text-sm text-gray-700 dark:text-gray-300 mt-1.5 font-medium">
-            {lang === 'es'
-              ? 'Gracias por ayudar a la comunidad'
-              : 'Thanks for helping the community'}
+          <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1.5 font-medium leading-snug px-2">
+            {es
+              ? 'Tu reporte acaba de salir. Así se cuida a la raza del puente.'
+              : 'Your report is out. This is how we look out for each other at the bridge.'}
           </p>
         </div>
 
+        {/* Impact numbers — two real counts that make the contribution feel
+            concrete. Subscribers = people who asked for alerts on this port,
+            guardians today = unique reporters across the network today. */}
+        {impact && (impact.subscribers > 0 || impact.guardiansToday > 0) && (
+          <div className="grid grid-cols-2 gap-2">
+            {impact.subscribers > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl px-3 py-3 text-center">
+                <p className="text-2xl font-black text-blue-700 dark:text-blue-300 tabular-nums leading-none">
+                  {impact.subscribers}
+                </p>
+                <p className="text-[10px] text-blue-900 dark:text-blue-200 font-bold uppercase tracking-wide mt-1 leading-tight">
+                  {es
+                    ? `esperan aviso de ${portName || 'este puente'}`
+                    : `waiting on ${portName || 'this crossing'}`}
+                </p>
+              </div>
+            )}
+            {impact.guardiansToday > 0 && (
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-3 py-3 text-center">
+                <p className="text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums leading-none">
+                  {impact.guardiansToday}
+                </p>
+                <p className="text-[10px] text-amber-900 dark:text-amber-200 font-bold uppercase tracking-wide mt-1 leading-tight">
+                  {es ? 'guardianes hoy · tú uno de ellos' : "guardians today · you're one"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {waUrl && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-3 space-y-2">
-            <p className="text-xs text-center text-gray-700 dark:text-gray-300 leading-snug">
-              {lang === 'es'
-                ? 'Avísale a tu grupo. Tu reporte solo ayuda si más gente lo ve.'
-                : "Let your group know. Your report only helps if more people see it."}
+            <p className="text-xs text-center text-gray-700 dark:text-gray-300 leading-snug font-medium">
+              {es
+                ? 'Avísale a los tuyos. La raza que cruza hoy te lo va a agradecer.'
+                : "Let your people know. Anyone crossing today will thank you."}
             </p>
             <a
               href={waUrl}
@@ -179,15 +228,15 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
               className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-green-600 hover:bg-green-700 text-white text-sm font-bold active:scale-95 transition-transform"
             >
               <span className="text-lg">📲</span>
-              {lang === 'es' ? 'Compartir por WhatsApp' : 'Share on WhatsApp'}
+              {es ? 'Avisarle a mi gente' : 'Tell my people'}
             </a>
             <button
               onClick={() => { trackShare('copy', 'report_form'); handleCopy(friendlyReply!) }}
               className="flex items-center justify-center gap-2 w-full py-2.5 rounded-2xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
               {copied
-                ? <><CheckIcon className="w-4 h-4 text-green-500" />{lang === 'es' ? 'Copiado — pégalo en tu grupo' : 'Copied — paste in your group'}</>
-                : <><Copy className="w-4 h-4" />{lang === 'es' ? 'Copiar para Facebook' : 'Copy for Facebook'}</>
+                ? <><CheckIcon className="w-4 h-4 text-green-500" />{es ? 'Copiado — pégalo en tu grupo' : 'Copied — paste in your group'}</>
+                : <><Copy className="w-4 h-4" />{es ? 'Copiar para Facebook' : 'Copy for Facebook'}</>
               }
             </button>
           </div>
@@ -308,7 +357,7 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
           : (lang === 'es' ? 'Enviar reporte' : 'Submit report')}
       </button>
       <p className="text-center text-xs text-gray-400">
-        {lang === 'es' ? 'Sin cuenta necesaria · Gana puntos si tienes cuenta' : 'No account needed · Earn points with an account'}
+        {lang === 'es' ? 'Sin cuenta necesaria · Únete a los guardianes del puente' : 'No account needed · Join the bridge guardians'}
       </p>
     </div>
   )

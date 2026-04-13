@@ -240,10 +240,13 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
 
   const waitLabel = (n: number) => (n === 0 ? '<1 min' : `${n} min`)
 
-  // Share text — pre-composed snapshot
+  // Share text — framed as "avisarle a los tuyos" (telling your people),
+  // not "share the app." The sender is taking care of their community,
+  // not promoting a product. Much more authentic in RGV border culture
+  // where favors between neighbors are explicit currency.
   const shareText = es
-    ? `🌉 ${headlineName} ahorita: ${waitLabel(headlineWait)}\n\nCruzar · tiempos en vivo de todos los puentes\ncruzar.app`
-    : `🌉 ${headlineName} right now: ${waitLabel(headlineWait)}\n\nCruzar · live wait times for every crossing\ncruzar.app`
+    ? `Le aviso a mi gente: ${headlineName} tiene ${waitLabel(headlineWait)} ahorita 🌉\n\nSi van a cruzar, ésta es la info en vivo 👉 cruzar.app`
+    : `Heads up: ${headlineName} is at ${waitLabel(headlineWait)} right now 🌉\n\nIf you're crossing today, here's the live data 👉 cruzar.app`
   const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
   // FB sharer opens the share dialog with our OG preview — the user then
   // picks which group / page to post into. This is the Cruzar growth vector.
@@ -454,16 +457,16 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
       <div className="mt-3 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl p-4 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-2xl shadow-md">
-            📣
+            🤝
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-black text-gray-900 dark:text-gray-100 leading-tight">
-              {es ? 'Corre la voz' : 'Spread the word'}
+              {es ? 'Avísale a los tuyos' : 'Tell your people'}
             </p>
             <p className="text-[12px] text-gray-700 dark:text-gray-300 mt-1 leading-snug">
               {es
-                ? 'Comparte esta espera en tu grupo de Facebook o WhatsApp. Ayuda a que otros no se queden atorados en el puente.'
-                : 'Share this wait in your Facebook or WhatsApp group. Help others skip the line.'}
+                ? 'Mándale esta espera a tu gente que cruza hoy. Le ahorras 20 min a alguien sin hacer nada más.'
+                : "Send this wait to someone crossing today. You'll save a friend 20 min without doing anything else."}
             </p>
           </div>
         </div>
