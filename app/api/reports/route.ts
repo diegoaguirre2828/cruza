@@ -223,14 +223,32 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await db
     .from('crossing_reports')
-    .select('id, report_type, description, severity, upvotes, created_at, wait_minutes, username, source_meta')
+    .select('id, user_id, report_type, description, severity, upvotes, created_at, wait_minutes, username, source_meta')
     .eq('port_id', portId)
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(30)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ reports: data })
+
+  // Join reporter tier so the feed can flex a Pro badge next to paid users.
+  // Free flex, not a gate — community features stay open.
+  const userIds = [...new Set((data || []).map(r => r.user_id).filter((id): id is string => !!id))]
+  let tierMap: Record<string, string> = {}
+  if (userIds.length > 0) {
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, tier')
+      .in('id', userIds)
+    tierMap = Object.fromEntries((profiles || []).map(p => [p.id, p.tier]))
+  }
+
+  const reports = (data || []).map(({ user_id, ...rest }) => ({
+    ...rest,
+    reporter_tier: user_id ? (tierMap[user_id] || 'free') : null,
+  }))
+
+  return NextResponse.json({ reports })
 }
 
 // Rate limit: 10 reports/hour for guests, 30 for authenticated users

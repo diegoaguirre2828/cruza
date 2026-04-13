@@ -22,11 +22,31 @@ export function useTier(): { tier: Tier; loading: boolean } {
     const supabase = createClient()
     supabase
       .from('profiles')
-      .select('tier')
+      .select('tier, pro_via_pwa_until')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => {
-        setTier((data?.tier as Tier) || 'free')
+      .then(async ({ data }) => {
+        const dbTier = (data?.tier as Tier) || 'free'
+        const pwaUntil = data?.pro_via_pwa_until ? new Date(data.pro_via_pwa_until).getTime() : 0
+        const pwaExpired = pwaUntil > 0 && pwaUntil < Date.now()
+
+        // If the PWA-granted Pro has expired but the DB still says Pro, the
+        // row is stale. Call sync-tier — it's the idempotent source of truth
+        // that reconciles with Stripe and keeps the user on Pro if they
+        // actually have a paid sub, else downgrades to free.
+        if (dbTier === 'pro' && pwaExpired) {
+          try {
+            const res = await fetch('/api/profile/sync-tier', { method: 'POST' })
+            if (res.ok) {
+              const { tier: syncedTier } = await res.json()
+              setTier((syncedTier as Tier) || 'free')
+              setLoading(false)
+              return
+            }
+          } catch { /* fall through to DB tier */ }
+        }
+
+        setTier(dbTier)
         setLoading(false)
       })
   }, [user, authLoading])

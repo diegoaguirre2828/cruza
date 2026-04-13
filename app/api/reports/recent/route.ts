@@ -11,14 +11,31 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await db
     .from('crossing_reports')
-    .select('id, port_id, report_type, description, wait_minutes, upvotes, created_at, username, source, source_meta, location_confidence')
+    .select('id, user_id, port_id, report_type, description, wait_minutes, upvotes, created_at, username, source, source_meta, location_confidence')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(limit)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Join reporter tier for the Pro badge flex on the feed
+  const userIds = [...new Set((data || []).map(r => r.user_id).filter((id): id is string => !!id))]
+  let tierMap: Record<string, string> = {}
+  if (userIds.length > 0) {
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, tier')
+      .in('id', userIds)
+    tierMap = Object.fromEntries((profiles || []).map(p => [p.id, p.tier]))
+  }
+
+  const reports = (data || []).map(({ user_id, ...rest }) => ({
+    ...rest,
+    reporter_tier: user_id ? (tierMap[user_id] || 'free') : null,
+  }))
+
   return NextResponse.json(
-    { reports: data || [] },
+    { reports },
     {
       headers: {
         // Edge cache — feed doesn't need to be millisecond-fresh. Bumped

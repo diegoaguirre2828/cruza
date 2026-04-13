@@ -33,6 +33,7 @@ interface Report {
   wait_minutes: number | null
   username: string | null
   source_meta?: SourceMeta | null
+  reporter_tier?: 'guest' | 'free' | 'pro' | 'business' | null
 }
 
 const SLOW_LANE_LABEL: Record<string, { es: string; en: string }> = {
@@ -165,8 +166,16 @@ export function ReportsFeed({ portId, refresh }: Props) {
                 })()}
 
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
                     {r.username ? `@${r.username}` : 'Anonymous'}
+                    {(r.reporter_tier === 'pro' || r.reporter_tier === 'business') && (
+                      <span
+                        className="inline-flex items-center gap-0.5 bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none"
+                        title="Verified Pro reporter"
+                      >
+                        ✓ PRO
+                      </span>
+                    )}
                   </span>
                   <button
                     onClick={() => handleUpvote(r.id)}

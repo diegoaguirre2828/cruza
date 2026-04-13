@@ -104,6 +104,26 @@ export default function PricingPage() {
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{t.pricingTitle}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">{t.pricingSubtitle}</p>
+
+          {/* PWA install → 3 months Pro free. This is the primary acquisition
+              hook and needs to be visible above the pricing cards, not hidden
+              inside the install sheet. */}
+          <div className="mt-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-2 border-amber-300 dark:border-amber-700/50 rounded-2xl px-5 py-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl leading-none">🎁</span>
+              <div className="flex-1">
+                <p className="text-sm font-black text-amber-900 dark:text-amber-200 leading-tight">
+                  {es ? '3 meses de Pro GRATIS — sin tarjeta' : '3 months of Pro FREE — no credit card'}
+                </p>
+                <p className="text-xs text-amber-800 dark:text-amber-300 mt-1 leading-snug">
+                  {es
+                    ? 'Agrega Cruzar a tu pantalla de inicio y desbloquea Pro por 90 días. Alertas, patrones históricos y optimizador de ruta — todo gratis.'
+                    : 'Add Cruzar to your home screen and unlock Pro for 90 days. Alerts, historical patterns, and route optimizer — all free.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {checkoutError && (
             <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm rounded-xl px-4 py-3">
               <p className="font-semibold mb-1">

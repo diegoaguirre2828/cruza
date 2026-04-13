@@ -17,6 +17,7 @@ import { WaitBadge } from '@/components/WaitBadge'
 import { PushToggle } from '@/components/PushToggle'
 import { ReportForm } from '@/components/ReportForm'
 import { ReportsFeed } from '@/components/ReportsFeed'
+import { BridgeCameras } from '@/components/BridgeCameras'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
 import { HourlyWaitChart } from '@/components/HourlyWaitChart'
@@ -518,6 +519,11 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       </div>
 
+      {/* Live bridge camera — Pro-gated when a feed is registered for this
+          port. Sits below the wait number so it's the first thing after
+          the data, matching how Fronter uses cameras as the hero upsell. */}
+      <BridgeCameras portId={portId} portName={port.portName} />
+
       {/* Community vs CBP signal */}
       {communitySignal && (() => {
         const cfg = {
@@ -871,9 +877,30 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       )}
 
-      {/* Driver reports feed */}
+      {/* Charla del puente — the reports feed reframed as a live
+          community chat. Same data as before, conversational framing.
+          Non-gated on purpose — community features benefit from scale. */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{es ? 'Reportes de usuarios' : 'Driver Reports'}</h2>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">💬</span>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {es ? 'Charla del puente' : 'Bridge chat'}
+            </h2>
+          </div>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-green-600 dark:text-green-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            {es ? 'EN VIVO' : 'LIVE'}
+          </span>
+        </div>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 -mt-1 leading-snug">
+          {es
+            ? 'Lo que la gente está reportando ahorita · de más reciente a más antiguo'
+            : 'What people are reporting right now · newest first'}
+        </p>
         <ReportsFeed portId={portId} refresh={reportRefresh} />
       </div>
 

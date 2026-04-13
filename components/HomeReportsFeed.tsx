@@ -14,6 +14,7 @@ interface Report {
   upvotes: number
   created_at: string
   username: string | null
+  reporter_tier?: 'guest' | 'free' | 'pro' | 'business' | null
 }
 
 // How long each report type stays "active" in minutes
@@ -181,9 +182,19 @@ export function HomeReportsFeed({ initialReports }: Props = {}) {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-400 truncate mt-0.5">
-                  {r.username ? `@${r.username}` : (lang === 'es' ? 'Anónimo' : 'Anonymous')}
-                  {r.description && r.description !== 'Reported via Just Crossed prompt' && ` · ${r.description}`}
+                <p className="text-xs text-gray-400 truncate mt-0.5 flex items-center gap-1">
+                  <span className="truncate">
+                    {r.username ? `@${r.username}` : (lang === 'es' ? 'Anónimo' : 'Anonymous')}
+                    {r.description && r.description !== 'Reported via Just Crossed prompt' && ` · ${r.description}`}
+                  </span>
+                  {(r.reporter_tier === 'pro' || r.reporter_tier === 'business') && (
+                    <span
+                      className="inline-flex items-center bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none flex-shrink-0"
+                      title={lang === 'es' ? 'Reportero Pro verificado' : 'Verified Pro reporter'}
+                    >
+                      ✓ PRO
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
