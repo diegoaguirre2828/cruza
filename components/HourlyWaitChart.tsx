@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
+import { formatWaitLabel } from '@/lib/formatWait'
 
 interface HourBucket {
   hour: number
@@ -25,7 +26,11 @@ function formatHour(h: number, es: boolean): string {
 }
 
 function colorFor(wait: number | null): string {
-  if (wait == null) return 'bg-gray-100 dark:bg-gray-700'
+  // Null-data slots render as a faint light slot so the column
+  // positions are still anchored visually. Previously these were
+  // dark-gray-on-dark-gray and completely invisible in dark mode,
+  // which made the chart look broken when only a few hours had data.
+  if (wait == null) return 'bg-gray-200 dark:bg-gray-600/60'
   if (wait <= 15) return 'bg-emerald-500'
   if (wait <= 30) return 'bg-lime-500'
   if (wait <= 45) return 'bg-amber-500'
@@ -90,7 +95,7 @@ export function HourlyWaitChart({ portId }: Props) {
         <>
           <div className="flex items-end gap-[3px] h-32">
             {hours.map((h) => {
-              const heightPct = h.avgWait != null && maxWait > 0 ? Math.max(6, (h.avgWait / maxWait) * 100) : 4
+              const heightPct = h.avgWait != null && maxWait > 0 ? Math.max(8, (h.avgWait / maxWait) * 100) : 6
               const isCurrent = h.hour === currentHour
               const isHovered = h.hour === hovered
               return (
@@ -101,8 +106,8 @@ export function HourlyWaitChart({ portId }: Props) {
                   onMouseLeave={() => setHovered(null)}
                   onFocus={() => setHovered(h.hour)}
                   onBlur={() => setHovered(null)}
-                  className="flex-1 flex flex-col justify-end items-center group relative"
-                  aria-label={`${formatHour(h.hour, es)}: ${h.avgWait != null ? `${h.avgWait} min` : 'sin datos'}`}
+                  className="flex-1 h-full flex flex-col justify-end items-center group relative"
+                  aria-label={`${formatHour(h.hour, es)}: ${h.avgWait != null ? formatWaitLabel(h.avgWait, es ? 'es' : 'en') : 'sin datos'}`}
                 >
                   <div
                     className={`w-full rounded-t-sm transition-all ${colorFor(h.avgWait)} ${
@@ -132,10 +137,10 @@ export function HourlyWaitChart({ portId }: Props) {
               </span>
               {focusBucket.avgWait != null ? (
                 <span className="font-semibold text-gray-800 dark:text-gray-100">
-                  ~{focusBucket.avgWait} min {es ? 'promedio' : 'avg'}
+                  ~{formatWaitLabel(focusBucket.avgWait, es ? 'es' : 'en')} {es ? 'promedio' : 'avg'}
                   {focusBucket.todayAvg != null && focusBucket.todayAvg !== focusBucket.avgWait && (
                     <span className="ml-2 text-gray-400 font-normal">
-                      ({es ? 'hoy' : 'today'} ~{focusBucket.todayAvg})
+                      ({es ? 'hoy' : 'today'} ~{formatWaitLabel(focusBucket.todayAvg, es ? 'es' : 'en')})
                     </span>
                   )}
                 </span>
@@ -151,7 +156,7 @@ export function HourlyWaitChart({ portId }: Props) {
                 <div>
                   <p className="text-gray-400 dark:text-gray-500">{es ? 'Mejor hora' : 'Best hour'}</p>
                   <p className="font-bold text-emerald-600 dark:text-emerald-400">
-                    {formatHour(best.hour, es)} · ~{best.avgWait} min
+                    {formatHour(best.hour, es)} · ~{formatWaitLabel(best.avgWait, es ? 'es' : 'en')}
                   </p>
                 </div>
               )}
@@ -159,7 +164,7 @@ export function HourlyWaitChart({ portId }: Props) {
                 <div>
                   <p className="text-gray-400 dark:text-gray-500">{es ? 'Más lento' : 'Worst hour'}</p>
                   <p className="font-bold text-red-600 dark:text-red-400">
-                    {formatHour(peak.hour, es)} · ~{peak.avgWait} min
+                    {formatHour(peak.hour, es)} · ~{formatWaitLabel(peak.avgWait, es ? 'es' : 'en')}
                   </p>
                 </div>
               )}
