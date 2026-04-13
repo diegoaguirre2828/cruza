@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { useTheme } from '@/lib/ThemeContext'
+import { getTitle, getTitleColor } from '@/lib/titles'
 import { Settings, Moon, Sun, Building2, MessageCircle } from 'lucide-react'
 
 export function NavBar() {
@@ -68,23 +69,35 @@ export function NavBar() {
 
       {user ? (
         <>
-          {(reportsCount > 0 || sharesCount > 0) && (
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 text-[11px] font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-400 px-2.5 py-1.5 rounded-xl transition-colors"
-              title={lang === 'es' ? 'Tu actividad en Cruzar' : 'Your Cruzar activity'}
-            >
-              <span className="flex items-center gap-1">
-                <span className="text-gray-400">{lang === 'es' ? 'Reportes' : 'Reports'}</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">{reportsCount}</span>
-              </span>
-              <span className="w-px h-3 bg-gray-300 dark:bg-gray-600" aria-hidden />
-              <span className="flex items-center gap-1">
-                <span className="text-gray-400">{lang === 'es' ? 'Compartidos' : 'Shares'}</span>
-                <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">{sharesCount}</span>
-              </span>
-            </Link>
-          )}
+          {(() => {
+            if (reportsCount === 0 && sharesCount === 0) return null
+            const title = getTitle(reportsCount, sharesCount)
+            const titleLabel = title ? (lang === 'es' ? title.es : title.en) : null
+            const titleColor = getTitleColor(title)
+            return (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 text-[11px] font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-gray-400 px-2.5 py-1.5 rounded-xl transition-colors"
+                title={lang === 'es' ? 'Tu actividad en Cruzar' : 'Your Cruzar activity'}
+              >
+                {titleLabel && (
+                  <>
+                    <span className={`font-bold ${titleColor}`}>{titleLabel}</span>
+                    <span className="w-px h-3 bg-gray-300 dark:bg-gray-600" aria-hidden />
+                  </>
+                )}
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-400">{lang === 'es' ? 'Reportes' : 'Reports'}</span>
+                  <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">{reportsCount}</span>
+                </span>
+                <span className="w-px h-3 bg-gray-300 dark:bg-gray-600" aria-hidden />
+                <span className="flex items-center gap-1">
+                  <span className="text-gray-400">{lang === 'es' ? 'Compartidos' : 'Shares'}</span>
+                  <span className="font-bold text-gray-900 dark:text-gray-100 tabular-nums">{sharesCount}</span>
+                </span>
+              </Link>
+            )
+          })()}
           <Link
             href="/account"
             className="flex items-center p-1.5 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl transition-colors"
