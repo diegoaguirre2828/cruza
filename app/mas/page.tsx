@@ -37,6 +37,7 @@ const ACCOUNT_ITEMS: MenuItem[] = [
 ]
 
 const EXPLORE_ITEMS: MenuItem[] = [
+  { href: '/for-fleets', emoji: '🚛', labelEs: 'Para flotas / Trucking', labelEn: 'For fleets / Trucking', subEs: 'Panel de flota + alertas + ROI', subEn: 'Fleet dashboard + alerts + ROI' },
   { href: '/negocios', emoji: '🏪', labelEs: 'Negocios locales', labelEn: 'Local businesses', subEs: 'Dental, farmacias, cambios', subEn: 'Dental, pharmacy, exchange' },
   { href: '/services', emoji: '🇲🇽', labelEs: 'Servicios en México', labelEn: 'Services in Mexico', subEs: 'Cerca de los puentes', subEn: 'Near the crossings' },
   { href: '/guide', emoji: '📖', labelEs: 'Guía del cruzante', labelEn: 'Crosser\'s guide', subEs: 'Documentos, FMM, SENTRI', subEn: 'Documents, FMM, SENTRI' },
@@ -94,7 +95,7 @@ export default function MasPage() {
             <div className="relative">
               <p className="text-2xl leading-none mb-2">📲</p>
               <p className="text-base font-black leading-tight">
-                {es ? 'Instala Cruzar · 3 meses Pro GRATIS' : 'Install Cruzar · 3 months Pro FREE'}
+                {es ? 'Agrega Cruzar a tu pantalla de inicio · 3 meses Pro GRATIS' : 'Add Cruzar to Home Screen · 3 months Pro FREE'}
               </p>
               <p className="text-[11px] text-blue-100 mt-1 leading-snug">
                 {es

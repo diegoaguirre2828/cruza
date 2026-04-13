@@ -36,7 +36,7 @@ export function InstallPill() {
     >
       <span className="text-base leading-none">📲</span>
       <span className="text-[11px] font-black whitespace-nowrap">
-        {es ? 'Instalar · 3 meses Pro' : 'Install · 3 months Pro'}
+        {es ? 'Agregar a inicio · 3 meses Pro' : 'Add to Home Screen · 3mo Pro'}
       </span>
     </Link>
   )

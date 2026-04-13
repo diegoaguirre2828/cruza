@@ -12,23 +12,31 @@ import type { PortWaitTime } from '@/types'
 
 type RegionKey =
   | 'rgv'
+  | 'progreso'
+  | 'roma'
   | 'brownsville'
   | 'laredo'
   | 'eagle_pass'
+  | 'del_rio'
   | 'el_paso'
   | 'nogales'
+  | 'douglas'
   | 'san_luis'
   | 'tijuana'
   | 'mexicali'
   | 'all'
 
 const REGIONS: { key: RegionKey; label: string; emoji: string }[] = [
-  { key: 'rgv',         label: 'RGV / McAllen',           emoji: '🌵' },
+  { key: 'rgv',         label: 'McAllen / Reynosa',       emoji: '🌵' },
+  { key: 'progreso',    label: 'Progreso / N. Progreso',  emoji: '🌾' },
+  { key: 'roma',        label: 'Roma / Cd. Alemán',       emoji: '🌿' },
   { key: 'brownsville', label: 'Matamoros / Brownsville', emoji: '🏙️' },
   { key: 'laredo',      label: 'Laredo / N. Laredo',      emoji: '🛣️' },
   { key: 'eagle_pass',  label: 'Eagle Pass / P. Negras',  emoji: '🦅' },
+  { key: 'del_rio',     label: 'Del Rio / Cd. Acuña',     emoji: '🏞️' },
   { key: 'el_paso',     label: 'El Paso / Juárez',        emoji: '⛰️' },
-  { key: 'nogales',     label: 'Nogales / Sonora',        emoji: '🌵' },
+  { key: 'nogales',     label: 'Nogales / Sonora',        emoji: '🌮' },
+  { key: 'douglas',     label: 'Douglas / Agua Prieta',   emoji: '🏔️' },
   { key: 'san_luis',    label: 'San Luis RC / Yuma',      emoji: '☀️' },
   { key: 'tijuana',     label: 'Tijuana / San Ysidro',    emoji: '🌊' },
   { key: 'mexicali',    label: 'Mexicali / Calexico',     emoji: '🏜️' },
@@ -38,11 +46,15 @@ const REGIONS: { key: RegionKey; label: string; emoji: string }[] = [
 // Maps the admin region keys to portMeta mega-region slugs
 const REGION_TO_MEGA: Record<RegionKey, string[]> = {
   rgv:         ['rgv'],
+  progreso:    ['rgv'],
+  roma:        ['rgv'],
   brownsville: ['rgv'],
   laredo:      ['laredo'],
   eagle_pass:  ['coahuila-tx'],
+  del_rio:     ['coahuila-tx'],
   el_paso:     ['el-paso'],
   nogales:     ['sonora-az'],
+  douglas:     ['sonora-az'],
   san_luis:    ['sonora-az'],
   tijuana:     ['baja'],
   mexicali:    ['baja'],
@@ -52,13 +64,21 @@ const REGION_TO_MEGA: Record<RegionKey, string[]> = {
 // Also allow by city-name match for fallback (portMeta has `.city`). The
 // mega-region sets are too coarse to separate e.g. Tijuana from Mexicali
 // (both are `baja`), so the city filter is the real disambiguator.
+// Matchers are ordered so narrower cities go into their own region
+// and don't leak back into rgv — Progreso / Donna / Roma / Rio Grande
+// City used to all be bundled under rgv, which meant picking "RGV"
+// featured them and picking "Progreso" didn't exist at all.
 const REGION_CITY_MATCH: Record<RegionKey, (city: string) => boolean> = {
-  rgv:         (c) => ['McAllen', 'Hidalgo', 'Pharr', 'Progreso', 'Donna', 'Rio Grande City', 'Roma'].some(s => c.includes(s)),
+  rgv:         (c) => ['McAllen', 'Hidalgo', 'Pharr'].some(s => c.includes(s)),
+  progreso:    (c) => c.includes('Progreso') || c.includes('Donna'),
+  roma:        (c) => c.includes('Roma') || c.includes('Rio Grande City'),
   brownsville: (c) => c.includes('Brownsville'),
   laredo:      (c) => c.includes('Laredo'),
   eagle_pass:  (c) => c.includes('Eagle Pass'),
+  del_rio:     (c) => c.includes('Del Rio'),
   el_paso:     (c) => c.includes('El Paso'),
-  nogales:     (c) => c.includes('Nogales') || c.includes('Douglas') || c.includes('Naco') || c.includes('Lukeville'),
+  nogales:     (c) => c.includes('Nogales') || c.includes('Lukeville'),
+  douglas:     (c) => c.includes('Douglas') || c.includes('Naco'),
   san_luis:    (c) => c.includes('San Luis') || c.includes('Yuma'),
   tijuana:     (c) => c.includes('San Ysidro') || c.includes('Otay Mesa') || c.includes('Tecate'),
   mexicali:    (c) => c.includes('Calexico') || c.includes('Andrade'),

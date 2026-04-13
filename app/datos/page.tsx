@@ -165,6 +165,9 @@ export default function DatosPage() {
                 {loading ? (es ? 'Cargando…' : 'Loading…') : (es ? 'Sin datos históricos pa\' este puente' : 'No historical data for this crossing')}
               </p>
             )}
+
+            {selectedPortId && <SentriBreakevenCard portId={selectedPortId} es={es} />}
+            {selectedPortId && <AccidentImpactCard portId={selectedPortId} es={es} />}
           </>
         )}
       </div>
@@ -188,6 +191,117 @@ function HourlyBarChart({ data }: { data: Array<{ hour: number; avgWait: number 
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// SENTRI break-even card — shows users whether SENTRI is worth the
+// $122 TTP fee for the bridge they're viewing, based on actual
+// wait-time data from the last 30 days. Pulls from
+// /api/ports/[id]/sentri-breakeven.
+function SentriBreakevenCard({ portId, es }: { portId: string; es: boolean }) {
+  const [data, setData] = useState<{
+    samples: number
+    avgSavingsMin: number | null
+    savingsUsdPerCrossing: number | null
+    breakEvenCrossings: number | null
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/ports/${encodeURIComponent(portId)}/sentri-breakeven`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => setData(null))
+  }, [portId])
+
+  if (!data || data.samples < 10 || data.avgSavingsMin == null || data.avgSavingsMin < 1) return null
+
+  return (
+    <div className="mt-3 bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 border-2 border-amber-300 dark:border-amber-700 rounded-2xl p-4">
+      <p className="text-[10px] uppercase tracking-widest font-black text-amber-700 dark:text-amber-400">
+        ⚡ {es ? '¿Vale la pena SENTRI aquí?' : 'Is SENTRI worth it here?'}
+      </p>
+      <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-1 leading-tight">
+        {es
+          ? `SENTRI te ahorra ~${data.avgSavingsMin} min en promedio`
+          : `SENTRI saves you ~${data.avgSavingsMin} min on average`}
+      </p>
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-2.5">
+          <p className="text-[9px] uppercase tracking-wide font-bold text-gray-500 dark:text-gray-400">
+            {es ? 'Ahorro por cruce' : 'Savings / crossing'}
+          </p>
+          <p className="text-lg font-black text-emerald-700 dark:text-emerald-300 tabular-nums">
+            ${data.savingsUsdPerCrossing?.toFixed(2) || '—'}
+          </p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-2.5">
+          <p className="text-[9px] uppercase tracking-wide font-bold text-gray-500 dark:text-gray-400">
+            {es ? 'Se paga en' : 'Breaks even at'}
+          </p>
+          <p className="text-lg font-black text-blue-700 dark:text-blue-300 tabular-nums">
+            {data.breakEvenCrossings != null ? `${data.breakEvenCrossings} ${es ? 'cruces' : 'uses'}` : '—'}
+          </p>
+        </div>
+      </div>
+      <p className="text-[10px] text-amber-700 dark:text-amber-300 mt-2 leading-snug">
+        {es
+          ? `Calculado con tu tiempo a $40/hr y la tarifa TTP de $122.25. Basado en ${data.samples} lecturas de los últimos 30 días.`
+          : `Calculated at $40/hr for your time and the $122.25 TTP fee. Based on ${data.samples} readings from the last 30 days.`}
+      </p>
+      <a
+        href="https://ttp.cbp.dhs.gov/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl active:scale-95 transition-transform"
+      >
+        {es ? 'Aplicar pa\' SENTRI →' : 'Apply for SENTRI →'}
+      </a>
+    </div>
+  )
+}
+
+// Accident impact card — computed from crossing_reports + wait_time_readings
+// for the last 60 days at this port. "When an accident is reported,
+// wait typically jumps +35 min and recovers in ~80 min."
+function AccidentImpactCard({ portId, es }: { portId: string; es: boolean }) {
+  const [data, setData] = useState<{
+    samples: number
+    avgJumpMin: number | null
+    avgRecoveryMin: number | null
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/ports/${encodeURIComponent(portId)}/accident-impact`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => setData(null))
+  }, [portId])
+
+  if (!data || data.samples < 3 || !data.avgJumpMin) return null
+
+  return (
+    <div className="mt-3 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-2 border-red-300 dark:border-red-800 rounded-2xl p-4">
+      <p className="text-[10px] uppercase tracking-widest font-black text-red-700 dark:text-red-400">
+        🚨 {es ? 'Impacto de incidentes' : 'Incident impact'}
+      </p>
+      <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-1 leading-tight">
+        {es
+          ? `Cuando reportan un incidente aquí, la espera típicamente sube +${data.avgJumpMin} min`
+          : `When an incident is reported here, wait typically jumps +${data.avgJumpMin} min`}
+      </p>
+      {data.avgRecoveryMin != null && (
+        <p className="text-[12px] text-red-800 dark:text-red-300 mt-1 font-semibold">
+          {es
+            ? `y se recupera en ~${data.avgRecoveryMin} min`
+            : `and recovers in ~${data.avgRecoveryMin} min`}
+        </p>
+      )}
+      <p className="text-[10px] text-red-700 dark:text-red-300 mt-2 leading-snug">
+        {es
+          ? `Modelo basado en ${data.samples} incidentes reportados en los últimos 60 días cruzados con las lecturas de espera.`
+          : `Model based on ${data.samples} reported incidents over the last 60 days cross-referenced with wait readings.`}
+      </p>
     </div>
   )
 }

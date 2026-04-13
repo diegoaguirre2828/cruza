@@ -53,8 +53,8 @@ export function DashboardInstallBanner() {
           </p>
           <p className="text-[11px] text-gray-700 dark:text-gray-300 mt-0.5 leading-snug">
             {es
-              ? 'Instala Cruzar en tu pantalla de inicio pa\' que la alerta te llegue. En iPhone no llega si no instalas.'
-              : "Install Cruzar to your home screen so the alert can reach you. On iPhone it won't arrive otherwise."}
+              ? 'Agrega Cruzar a tu pantalla de inicio pa\' que la alerta te llegue. En iPhone no llega si no lo agregas.'
+              : "Add Cruzar to your Home Screen so the alert can reach you. On iPhone it won't arrive otherwise."}
           </p>
           <div className="mt-2 flex items-center gap-2">
             <button

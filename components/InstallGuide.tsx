@@ -108,14 +108,14 @@ export function InstallGuide({ onInstalled, variant = 'welcome' }: Props) {
             onClick={triggerInstall}
             className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-black rounded-2xl active:scale-[0.98] transition-transform shadow-lg"
           >
-            {es ? '📲 Instalar Cruzar en mi teléfono' : '📲 Install Cruzar on my phone'}
+            {es ? '📲 Agregar Cruzar a pantalla de inicio' : '📲 Add Cruzar to Home Screen'}
           </button>
         ) : (
           <div className="space-y-2">
             <p className="text-xs text-gray-700 dark:text-gray-300 leading-snug">
               {es
-                ? 'En Chrome, toca el menú ⋮ arriba a la derecha y escoge "Instalar aplicación".'
-                : 'In Chrome, tap the ⋮ menu in the top right and choose "Install app".'}
+                ? 'En Chrome: toca el menú ⋮ arriba a la derecha y escoge "Agregar a pantalla de inicio" (o "Instalar aplicación").'
+                : 'In Chrome: tap the ⋮ menu in the top right and pick "Add to Home Screen" (or "Install app").'}
             </p>
           </div>
         )}

@@ -18,6 +18,8 @@ import { NearMeRail } from '@/components/NearMeRail'
 import { GuardianProgressCard } from '@/components/GuardianProgressCard'
 import { RegionalSnapshot } from '@/components/RegionalSnapshot'
 import { InstallPill } from '@/components/InstallPill'
+import { ContributionTodayPill } from '@/components/ContributionTodayPill'
+import { HolidayOverlay } from '@/components/HolidayOverlay'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -158,18 +160,27 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         </div>
 
         {/* Pill row — compact replacements for what used to be full-size
-            cards. Install + exchange rate + weather + guardián all live
-            here as single-line pills. Wraps to a second line on narrow
-            screens. Each is tappable. Install pill hides itself when
-            the app is already running as a standalone PWA. */}
+            cards. Install + exchange rate + weather + guardián +
+            "contribution today" all live here as single-line pills.
+            Wraps to a second line on narrow screens. Each is tappable.
+            Install pill hides itself when the app is already running as
+            a standalone PWA. ContributionTodayPill only renders for
+            signed-in users with at least one report today. */}
         {!isBusiness && (
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <InstallPill />
             <ExchangeRatePill />
             <WeatherHook variant="pill" />
             {tier !== 'guest' && <GuardianProgressCard variant="pill" />}
+            {tier !== 'guest' && <ContributionTodayPill />}
           </div>
         )}
+
+        {/* Holiday / heavy-day warning — fires when a known surge date
+            (Thanksgiving, Christmas, Semana Santa, etc.) is within the
+            next 14 days. Gives users planning lead time for the days
+            FB groups can't warn them about in advance. */}
+        {!isBusiness && <HolidayOverlay />}
 
         {/* Hero delta — signed-in users only. Shrunk: no more big share
             card, no more hourly pattern (Pro-gated now). Still the polished
