@@ -1,137 +1,75 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useLang } from '@/lib/LangContext'
-import { X, Share } from 'lucide-react'
+import { useEffect } from 'react'
 
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+// Global PWA plumbing. Renders no UI — the install-prompt UI now lives
+// in InstallPill (home header) and the /mas install card. This file's
+// job is the invisible stuff:
+//
+//   1. Register the service worker
+//   2. Listen for the appinstalled browser event and claim the 3-month
+//      Pro grant for the signed-in user
+//   3. On every page load, if the app is running as a standalone PWA
+//      and the grant hasn't been claimed yet, claim it
+//
+// Previously this file was a legacy scroll-triggered install banner
+// that conflicted with the Phase 2 InstallPill, AND the Pro grant
+// claim only lived in the retired InstallPrompt component which was
+// removed from render in Phase 1. Result: every install between
+// Phase 1 and now silently failed to grant Pro. This fixes that.
+
+const PWA_GRANT_CLAIMED_KEY = 'cruzar_pwa_grant_claimed'
+
+async function tryClaimGrant() {
+  try {
+    const alreadyClaimed = localStorage.getItem(PWA_GRANT_CLAIMED_KEY)
+    if (alreadyClaimed) return
+  } catch { /* ignore */ }
+
+  try {
+    const res = await fetch('/api/user/claim-pwa-pro', { method: 'POST' })
+    if (!res.ok) return
+    const data = await res.json()
+    if (data?.ok) {
+      try { localStorage.setItem(PWA_GRANT_CLAIMED_KEY, String(Date.now())) } catch { /* ignore */ }
+      // Fire a window event so UI components (celebration toast, etc.)
+      // can react to the grant landing if they want to.
+      if (data.granted && data.days) {
+        window.dispatchEvent(
+          new CustomEvent('cruzar:pwa-grant-claimed', { detail: { days: data.days } }),
+        )
+      }
+    }
+  } catch { /* silent — endpoint requires auth, fine to fail for guests */ }
 }
 
 export function PWASetup() {
-  const { lang } = useLang()
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showBanner, setShowBanner] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-
   useEffect(() => {
-    // Register service worker silently
+    if (typeof window === 'undefined') return
+
+    // Service worker registration — unchanged. The SW handles push
+    // notifications, offline caching, and SWR for /api/ports and
+    // /api/reports/recent.
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {})
     }
 
-    // Never show if already running as installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) return
-
-    // Never show if dismissed within last 14 days
-    const dismissed = localStorage.getItem('pwa-dismissed-at')
-    if (dismissed && Date.now() - Number(dismissed) < 14 * 24 * 60 * 60 * 1000) return
-
-    // iOS — Safari doesn't fire beforeinstallprompt
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !('MSStream' in window)
-    setIsIOS(ios)
-
-    if (ios) {
-      // Only show once ever on iOS (instructions don't change)
-      if (localStorage.getItem('pwa-ios-shown')) return
-
-      // Show only after user has scrolled (shows real intent)
-      const onScroll = () => {
-        if (window.scrollY > 200) {
-          setShowBanner(true)
-          window.removeEventListener('scroll', onScroll)
-        }
-      }
-      window.addEventListener('scroll', onScroll, { passive: true })
-      return () => window.removeEventListener('scroll', onScroll)
+    // If we're running as an installed PWA right now, try to claim
+    // the grant immediately. Idempotent server-side, and localStorage
+    // dedupe prevents repeated fetches.
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true
+    if (isStandalone) {
+      tryClaimGrant()
     }
 
-    // Android/Chrome — wait for browser's own install readiness signal
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setInstallPrompt(e as BeforeInstallPromptEvent)
-
-      // Only show after real engagement: scrolled past the fold
-      const onScroll = () => {
-        if (window.scrollY > 200) {
-          setShowBanner(true)
-          window.removeEventListener('scroll', onScroll)
-        }
-      }
-      window.addEventListener('scroll', onScroll, { passive: true })
-      return () => window.removeEventListener('scroll', onScroll)
-    }
-
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    // Listen for the actual install event so users installing NOW get
+    // the grant without needing to reload.
+    const onInstalled = () => tryClaimGrant()
+    window.addEventListener('appinstalled', onInstalled)
+    return () => window.removeEventListener('appinstalled', onInstalled)
   }, [])
 
-  function dismiss() {
-    setShowBanner(false)
-    localStorage.setItem('pwa-dismissed-at', String(Date.now()))
-    if (isIOS) localStorage.setItem('pwa-ios-shown', '1')
-  }
-
-  async function install() {
-    if (!installPrompt) return
-    dismiss()
-    await installPrompt.prompt()
-    setInstallPrompt(null)
-  }
-
-  if (!showBanner) return null
-
-  // iOS: show instructions sheet
-  if (isIOS) {
-    return (
-      <div className="fixed bottom-20 left-3 right-3 z-50 md:hidden">
-        <div className="bg-gray-800/95 backdrop-blur border border-gray-700/60 rounded-2xl px-4 py-3.5 shadow-xl">
-          <div className="flex items-start gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white leading-snug">
-                {lang === 'es' ? 'Agrega Cruzar a tu pantalla de inicio' : 'Add Cruzar to your home screen'}
-              </p>
-              <p className="text-xs text-gray-400 mt-1 leading-snug flex items-center gap-1 flex-wrap">
-                {lang === 'es'
-                  ? <span>Toca <Share className="w-3 h-3 inline" /> luego <strong className="text-gray-300">"Agregar a inicio"</strong></span>
-                  : <span>Tap <Share className="w-3 h-3 inline" /> then <strong className="text-gray-300">"Add to Home Screen"</strong></span>
-                }
-              </p>
-              <p className="text-[10px] text-gray-600 mt-1">cruzar.app</p>
-            </div>
-            <button onClick={dismiss} className="text-gray-500 hover:text-gray-300 flex-shrink-0 mt-0.5">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Android/Chrome: native-style prompt
-  return (
-    <div className="fixed bottom-20 left-3 right-3 z-50 md:hidden">
-      <div className="bg-white rounded-2xl px-4 py-3.5 shadow-xl border border-gray-100 flex items-center gap-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/icon-192.png" alt="" className="w-10 h-10 rounded-xl flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 leading-tight">Cruzar</p>
-          <p className="text-xs text-gray-500 truncate">cruzar.app</p>
-        </div>
-        <button
-          onClick={install}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex-shrink-0 transition-colors"
-        >
-          {lang === 'es' ? 'Instalar' : 'Install'}
-        </button>
-        <button onClick={dismiss} className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-1">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  )
+  return null
 }
