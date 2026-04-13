@@ -264,7 +264,7 @@ export default function DashboardPage() {
             { key: 'crossings', label: t.savedTab },
             { key: 'alerts',    label: t.alertsTab },
             { key: 'route',     label: t.routeTab },
-            { key: 'circle',    label: es ? '👥 Grupo' : '👥 Circle' },
+            { key: 'circle',    label: es ? '👥 Mi Gente' : '👥 My People' },
           ].map(t => (
             <button
               key={t.key}
@@ -641,8 +641,8 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
 
   async function shareLink(url: string, circleName: string) {
     const text = es
-      ? `Te invité a mi grupo "${circleName}" en Cruzar. Acepta aquí: ${url}`
-      : `I invited you to my "${circleName}" circle on Cruzar. Accept here: ${url}`
+      ? `Te agregué a "${circleName}" en Cruzar. Así nos avisamos entre nosotros cuando alguien cruza un puente. Acepta aquí: ${url}`
+      : `I added you to "${circleName}" on Cruzar so we can ping each other when someone crosses. Accept here: ${url}`
     if (typeof navigator !== 'undefined' && 'share' in navigator) {
       try { await navigator.share({ text, url }) } catch { /* cancelled */ }
     } else {
@@ -654,12 +654,12 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
     <div className="space-y-4">
       <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white">
         <p className="text-sm font-bold">
-          {es ? '👥 Grupo de confianza' : '👥 Trusted circle'}
+          {es ? '👥 Tu gente de confianza' : '👥 Your trusted people'}
         </p>
         <p className="text-xs text-blue-100 mt-1 leading-relaxed">
           {es
-            ? 'Invita a familia o compañeros de trabajo. Cuando alguien del grupo cruce un puente, los demás reciben una notificación. Privado, nada público.'
-            : "Invite family or coworkers. When a circle member crosses a bridge, the others get a push notification. Private — nothing public."}
+            ? 'Invita a familia o compañeros de trabajo. Cuando alguien cruce un puente, los demás reciben una notificación. Privado, nada público.'
+            : "Invite family or coworkers. When someone crosses a bridge, the others get a push notification. Private — nothing public."}
         </p>
       </div>
 
@@ -668,19 +668,19 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
       ) : circles.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
           <p className="text-sm font-bold text-gray-900 dark:text-gray-100 mb-1">
-            {es ? 'Crea tu primer grupo' : 'Create your first circle'}
+            {es ? 'Agrega tu primera gente' : 'Add your first people'}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed">
             {es
-              ? 'Ejemplo: "Familia", "Compañeros de trabajo", "Mi ruta"'
-              : 'Example: "Family", "Coworkers", "My route"'}
+              ? 'Dale un nombre — ej: "Familia", "Compañeros", "Mi ruta"'
+              : 'Give it a name — e.g. "Family", "Coworkers", "My route"'}
           </p>
           <div className="flex gap-2">
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder={es ? 'Nombre del grupo' : 'Circle name'}
+              placeholder={es ? 'Nombre del grupo' : 'Group name'}
               maxLength={50}
               className="flex-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyDown={(e) => e.key === 'Enter' && createCircle()}
@@ -760,7 +760,7 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
                 >
                   {inviting === c.id
                     ? (es ? 'Generando…' : 'Generating…')
-                    : (es ? '+ Invitar a alguien' : '+ Invite someone')}
+                    : (es ? '+ Agregar a alguien' : '+ Add someone')}
                 </button>
               )}
             </div>
@@ -770,7 +770,7 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
           {circles.length < 3 && (
             <details className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
               <summary className="text-xs font-bold text-gray-600 dark:text-gray-300 cursor-pointer">
-                {es ? '+ Crear otro grupo' : '+ Create another circle'}
+                {es ? '+ Agregar otro grupo' : '+ Add another group'}
               </summary>
               <div className="flex gap-2 mt-3">
                 <input

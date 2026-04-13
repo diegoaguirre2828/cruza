@@ -60,7 +60,7 @@ export default function CircleJoinPage({ params }: { params: Promise<{ token: st
         {(authLoading || state === 'joining') && (
           <>
             <p className="text-4xl mb-3">🤝</p>
-            <p className="text-lg font-bold">{es ? 'Uniéndote al grupo…' : 'Joining the circle…'}</p>
+            <p className="text-lg font-bold">{es ? 'Uniéndote…' : 'Joining…'}</p>
           </>
         )}
 
@@ -76,8 +76,8 @@ export default function CircleJoinPage({ params }: { params: Promise<{ token: st
             </p>
             <p className="text-sm text-blue-100 mt-2 leading-relaxed">
               {es
-                ? 'Ahora recibirás notificaciones cuando un miembro del grupo cruce algún puente.'
-                : 'You\'ll now get notifications when a circle member crosses a bridge.'}
+                ? 'Ahora recibirás notificaciones cuando alguien de tu gente cruce un puente.'
+                : "You'll now get notifications when someone in your people crosses a bridge."}
             </p>
             <Link
               href="/dashboard"

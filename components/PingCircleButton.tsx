@@ -63,7 +63,7 @@ export function PingCircleButton({ portId, waitMinutes, variant = 'block' }: Pro
           ? (es ? `✓ Enviado a ${sent}` : `✓ Sent to ${sent}`)
           : sending
             ? (es ? 'Enviando…' : 'Sending…')
-            : (es ? '📢 Avisar a mi grupo' : '📢 Tell my circle')}
+            : (es ? '📢 Avisar a mi gente' : '📢 Tell my people')}
       </button>
     )
   }
@@ -79,10 +79,10 @@ export function PingCircleButton({ portId, waitMinutes, variant = 'block' }: Pro
       } disabled:opacity-50`}
     >
       {sent != null
-        ? (es ? `✓ Aviso enviado a ${sent} del grupo` : `✓ Sent to ${sent} in your circle`)
+        ? (es ? `✓ Aviso enviado a ${sent} de tu gente` : `✓ Sent to ${sent} of your people`)
         : sending
           ? (es ? 'Enviando aviso…' : 'Sending heads up…')
-          : (es ? '📢 Avisar a mi grupo sobre este puente' : '📢 Tell my circle about this crossing')}
+          : (es ? '📢 Avisar a mi gente sobre este puente' : '📢 Tell my people about this crossing')}
     </button>
   )
 }
