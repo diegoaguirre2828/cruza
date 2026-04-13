@@ -9,6 +9,10 @@ interface Props {
   ports: PortWaitTime[]
   selectedRegion: string
   onPortClick: (portId: string) => void
+  // Optional — when set, overrides the default 280px height so this
+  // component can fill a full-screen /mapa tab instead of being stuck
+  // at the embedded-on-port-list height.
+  fillParent?: boolean
 }
 
 const LEVEL_COLORS = {
@@ -19,7 +23,7 @@ const LEVEL_COLORS = {
   unknown: '#9ca3af',
 }
 
-export function BorderMap({ ports, selectedRegion, onPortClick }: Props) {
+export function BorderMap({ ports, selectedRegion, onPortClick, fillParent }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<unknown>(null)
 
@@ -65,7 +69,12 @@ export function BorderMap({ ports, selectedRegion, onPortClick }: Props) {
         if (layer instanceof L.CircleMarker) map.removeLayer(layer)
       })
 
-      const filtered = selectedRegion === 'All'
+      // Accept "All" (legacy callers), "all" (Phase 2 callers), or
+      // empty string as "show everything." Previously only "All"
+      // worked, which meant /mapa passing "all" silently rendered
+      // zero markers.
+      const showAll = selectedRegion === 'All' || selectedRegion === 'all' || !selectedRegion
+      const filtered = showAll
         ? ports
         : ports.filter(p => getPortMeta(p.portId).region === selectedRegion)
 
@@ -117,13 +126,19 @@ export function BorderMap({ ports, selectedRegion, onPortClick }: Props) {
         marker.addTo(map)
       })
 
-      // Fit map to filtered ports
-      if (filtered.length > 0 && selectedRegion !== 'All') {
-        const coords = filtered.map(p => {
-          const m = getPortMeta(p.portId)
-          return [m.lat, m.lng] as [number, number]
-        })
-        map.fitBounds(coords, { padding: [40, 40] })
+      // Fit map to filtered ports. When showing everything, still
+      // fit to the port set so /mapa actually zooms to the border
+      // instead of sitting on the default RGV coordinates.
+      if (filtered.length > 0) {
+        const coords = filtered
+          .map(p => {
+            const m = getPortMeta(p.portId)
+            return m.lat && m.lng ? ([m.lat, m.lng] as [number, number]) : null
+          })
+          .filter((c): c is [number, number] => c !== null)
+        if (coords.length > 0) {
+          map.fitBounds(coords, { padding: [40, 40] })
+        }
       }
     }
 
@@ -133,8 +148,8 @@ export function BorderMap({ ports, selectedRegion, onPortClick }: Props) {
   return (
     <div
       ref={mapRef}
-      className="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
-      style={{ height: '280px' }}
+      className={`w-full rounded-2xl overflow-hidden border border-gray-200 shadow-sm ${fillParent ? 'h-full' : ''}`}
+      style={fillParent ? undefined : { height: '280px' }}
     />
   )
 }

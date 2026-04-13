@@ -60,10 +60,11 @@ export default function MapaPage() {
             </Link>
           </div>
         ) : (
-          <div className="h-[calc(100vh-160px)] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="h-[calc(100vh-200px)] rounded-2xl overflow-hidden">
             <BorderMap
               ports={ports}
               selectedRegion="all"
+              fillParent
               onPortClick={(portId) => router.push(`/port/${encodeURIComponent(portId)}`)}
             />
           </div>

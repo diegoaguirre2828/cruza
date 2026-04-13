@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchRgvWaitTimes, portUtcOffsetHours } from '@/lib/cbp'
 import { getServiceClient } from '@/lib/supabase'
+import { fetchAllClusterWeather, weatherForPort } from '@/lib/clusterWeather'
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret')
@@ -13,7 +14,14 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const ports = await fetchRgvWaitTimes()
+    // Fetch CBP wait times + weather for every cluster in parallel so
+    // the weather calls don't block the wait-time insert. Weather is
+    // best-effort — if Open-Meteo is down, the row still gets saved
+    // with null weather fields and the cron succeeds.
+    const [ports, weatherMap] = await Promise.all([
+      fetchRgvWaitTimes(),
+      fetchAllClusterWeather().catch(() => new Map()),
+    ])
     const supabase = getServiceClient()
     const now = new Date()
 
@@ -23,6 +31,8 @@ export async function GET(req: NextRequest) {
       // would contaminate the "best time to cross" historical queries.
       const offsetHours = portUtcOffsetHours(p.portName)
       const portLocal = new Date(now.getTime() + offsetHours * 60 * 60 * 1000)
+      const weather = weatherForPort(p.portId, weatherMap)
+
       return {
         port_id: p.portId,
         port_name: p.portName,
@@ -34,13 +44,36 @@ export async function GET(req: NextRequest) {
         recorded_at: now.toISOString(),
         day_of_week: portLocal.getUTCDay(),
         hour_of_day: portLocal.getUTCHours(),
+
+        // Lane utilization — already in the CBP response, previously
+        // discarded on the way to storage. Capturing now gives us
+        // "how many lanes were open when wait was X" analysis for
+        // each port, which nobody else has.
+        lanes_vehicle_open: p.vehicleLanesOpen,
+        lanes_sentri_open: p.sentriLanesOpen,
+        lanes_pedestrian_open: p.pedestrianLanesOpen,
+        lanes_commercial_open: p.commercialLanesOpen,
+
+        // Weather at reading time — the goldmine. After 30 days
+        // we can publish "rain adds 18 min at Hidalgo on average",
+        // correlations CBP literally cannot know. Fields are nullable;
+        // rows before this column existed stay untouched.
+        weather_temp_c: weather?.tempC ?? null,
+        weather_precip_mm: weather?.precipMm ?? null,
+        weather_wind_kph: weather?.windKph ?? null,
+        weather_visibility_km: weather?.visibilityKm ?? null,
+        weather_condition: weather?.condition ?? null,
       }
     })
 
     const { error } = await supabase.from('wait_time_readings').insert(rows)
     if (error) throw error
 
-    return NextResponse.json({ saved: rows.length, at: now.toISOString() })
+    return NextResponse.json({
+      saved: rows.length,
+      weatherClusters: weatherMap.size,
+      at: now.toISOString(),
+    })
   } catch (err) {
     console.error('Cron error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })
