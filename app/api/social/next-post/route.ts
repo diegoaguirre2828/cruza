@@ -170,8 +170,27 @@ export async function GET(req: NextRequest) {
     )
   }
 
+  // Fallback caption when no port data is available. NEVER return
+  // null for `caption` — Make.com pipes this field into Facebook's
+  // "Create a Post" Message field, and FB rejects empty posts, which
+  // auto-deactivates the scenario after 3 failed runs. Returning a
+  // calm-state post keeps the scenario alive and keeps the page
+  // cadence consistent even on rare CBP API outages.
   if (regionBlocks.length === 0) {
-    return NextResponse.json({ caption: null, peak, message: 'No crossings with data right now' })
+    const fallbackTime = now.toLocaleTimeString('es-MX', {
+      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
+    })
+    const fallbackCaption = `${peakMeta.opener} — ${fallbackTime.toUpperCase()}
+
+CBP no está reportando datos en vivo ahorita mismo — sucede a veces cuando CBP reinicia su sistema.
+
+📱 Los datos vuelven solos en pocos minutos → cruzar.app
+La comunidad sigue reportando en vivo 🙌
+
+${peakMeta.followHook}
+
+#border #frontera #cruzar ${peakMeta.hashtag}`
+    return NextResponse.json({ caption: fallbackCaption, peak, regions: 0, fallback: true })
   }
 
   const timeStrCST = now.toLocaleTimeString('es-MX', {

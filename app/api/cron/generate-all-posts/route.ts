@@ -64,11 +64,37 @@ const PORT_NAMES: Record<string, string> = {
   '240201': 'El Paso / Juárez',
 }
 
-const PEAK_LABELS: { hour: number; label: string }[] = [
-  { hour: 5,  label: 'Mañana — Morning commute' },
-  { hour: 11, label: 'Mediodía — Midday' },
-  { hour: 15, label: 'Tarde — Afternoon rush' },
-  { hour: 19, label: 'Noche — Evening crossing' },
+// Peak hour → full caption opener + follow-page hook. cron-job.org
+// fires this endpoint 4x/day, so each post has its own tone and its
+// own "follow the page" CTA pointed at the Cruzar FB page. The whole
+// point of frequent posting is to train FB's push notification system
+// so followers get pinged at the right commute windows — that only
+// works if we're constantly asking for follows.
+const PEAK_COPY: { hour: number; opener: string; followHook: string; hashtag: string }[] = [
+  {
+    hour: 5,
+    opener: '🌅 BUENOS DÍAS RAZA — tiempos de la mañana',
+    followHook: '👉 Dale follow a la página y te avisamos cada mañana antes de que salgas al puente',
+    hashtag: '#madrugada #commute',
+  },
+  {
+    hour: 11,
+    opener: '☀️ MEDIODÍA — así anda el puente ahorita',
+    followHook: '👉 Síguenos para que te llegue una notificación cuando publiquemos los tiempos — ya no andes buscando',
+    hashtag: '#mediodia',
+  },
+  {
+    hour: 15,
+    opener: '🌤️ TARDE — tiempos antes de la salida de escuela y trabajo',
+    followHook: '👉 Síguenos y te avisamos cada tarde ANTES de que salgas — te ahorras horas',
+    hashtag: '#tarde #commute',
+  },
+  {
+    hour: 19,
+    opener: '🌙 NOCHE — cómo anda el puente para los que cruzan al final del día',
+    followHook: '👉 Dale follow a la página — publicamos los tiempos 4 veces al día en los momentos clave',
+    hashtag: '#noche',
+  },
 ]
 
 export async function GET(req: NextRequest) {
@@ -122,13 +148,39 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, message: 'No crossings with data right now' })
   }
 
-  // Determine peak label based on CST hour
+  // Determine peak window from the current CST hour. Cron fires at
+  // 5:30 / 11:30 / 15:30 / 19:30 CDT so the hour when this runs is
+  // 5 / 11 / 15 / 19 — matches PEAK_COPY. DST is handled by toLocaleString.
   const cstHour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Chicago' }), 10)
-  const peak = PEAK_LABELS.find(p => p.hour === cstHour) || { label: 'Scheduled post' }
+  const peak = PEAK_COPY.find(p => p.hour === cstHour) || {
+    opener: '🌉 TIEMPOS DE ESPERA',
+    followHook: '👉 Dale follow a Cruzar en Facebook para notificaciones con los tiempos',
+    hashtag: '',
+  }
 
+  const timeStrCST = now.toLocaleTimeString('es-MX', {
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
+  })
   const dateStr = now.toLocaleDateString('es-MX', {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Chicago',
   })
+
+  // Build the full ready-to-paste FB caption. This is what goes at
+  // the TOP of the digest email so Diego can copy one block and paste
+  // it straight into Facebook — no editing needed. It's also what a
+  // downstream automation (Make.com, Buffer, etc) could consume if we
+  // ever wire one up again.
+  const fbCaption = `${peak.opener} — ${timeStrCST.toUpperCase()}
+${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
+
+${regionBlocks.join('\n\n─────────────────\n\n')}
+
+📱 Tiempos en vivo → cruzar.app
+Reporta tu tiempo y ayuda a todos en la fila 🙌
+
+${peak.followHook}
+
+#border #frontera #cruzar #espera #tiemposdeespera ${peak.hashtag}`
 
   if (process.env.RESEND_API_KEY && process.env.OWNER_EMAIL) {
     await fetch('https://api.resend.com/emails', {
@@ -140,14 +192,23 @@ export async function GET(req: NextRequest) {
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL || 'Cruzar <onboarding@resend.dev>',
         to: [process.env.OWNER_EMAIL],
-        subject: `📱 ${peak.label} — Todos los puentes — ${dateStr}`,
+        subject: `📱 ${peak.opener} — ${dateStr}`,
         html: `
-          <div style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-            <h2 style="margin:0 0 4px;color:#111827;">📱 Tiempos de Espera — Todos los Puentes</h2>
-            <p style="color:#6b7280;font-size:14px;margin:0 0 24px;">${peak.label} · ${dateStr}</p>
+          <div style="font-family:-apple-system,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
+            <h2 style="margin:0 0 4px;color:#111827;">📱 ${peak.opener}</h2>
+            <p style="color:#6b7280;font-size:14px;margin:0 0 24px;">${dateStr}</p>
+
+            <div style="background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;padding:16px;margin-bottom:16px;">
+              <p style="margin:0 0 8px;font-size:11px;font-weight:bold;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;">
+                📋 Listo pa' copiar y pegar a Facebook
+              </p>
+              <pre style="font-size:13px;color:#111827;white-space:pre-wrap;margin:0;font-family:-apple-system,sans-serif;line-height:1.45;">${fbCaption}</pre>
+            </div>
+
+            <p style="color:#6b7280;font-size:12px;margin:0 0 8px;">Vista por región:</p>
             ${regionBlocks.map(block => `
-              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
-                <pre style="font-size:13px;color:#374151;white-space:pre-wrap;margin:0;font-family:-apple-system,sans-serif;">${block}</pre>
+              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px;">
+                <pre style="font-size:12px;color:#374151;white-space:pre-wrap;margin:0;font-family:-apple-system,sans-serif;">${block}</pre>
               </div>
             `).join('')}
             <a href="https://cruzar.app/admin" style="display:inline-block;background:#111827;color:white;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:14px;margin-top:8px;">
@@ -159,5 +220,5 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  return NextResponse.json({ success: true, regions: regionBlocks.length })
+  return NextResponse.json({ success: true, regions: regionBlocks.length, peak: peak.opener, caption: fbCaption })
 }
