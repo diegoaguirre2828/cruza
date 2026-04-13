@@ -83,8 +83,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <LangProvider>
-            {/* Extra bottom padding on mobile so content clears the tab bar */}
-            <div className="flex-1 pb-16 sm:pb-0">
+            {/* Bottom padding on mobile so content clears the tab bar.
+                The calc() form accounts for Android gesture-nav phones
+                where env(safe-area-inset-bottom) adds real height to
+                the BottomNav — without this the last page element can
+                sit under the system gesture bar. */}
+            <div className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] sm:pb-0">
               {children}
             </div>
             <Footer />

@@ -25,7 +25,12 @@ import { trackEvent } from '@/lib/trackEvent'
 function isInAppBrowser(): boolean {
   if (typeof navigator === 'undefined') return false
   const ua = navigator.userAgent || ''
-  return /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Musical_ly|Bytedance|LINE|MicroMessenger|Messenger/i.test(ua)
+  // Covers the common social/messaging webviews that block
+  // beforeinstallprompt and often break cookies + SPA nav. WhatsApp
+  // and GSA (Google Search App) matter a lot in the RGV since most
+  // link sharing happens there. Twitter/X, Snapchat, Pinterest, and
+  // Reddit webviews round out the common cases.
+  return /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Musical_ly|Bytedance|TikTok|LINE|MicroMessenger|Messenger|WhatsApp|Twitter|X-App|Snapchat|GSA\/|Pinterest|RedditMobile/i.test(ua)
 }
 
 function detectPlatform(): 'ios' | 'android' | 'other' {

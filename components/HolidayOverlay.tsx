@@ -17,10 +17,39 @@ import { useLang } from '@/lib/LangContext'
 
 interface Holiday {
   name: { es: string; en: string }
-  month: number // 1-indexed
-  day: number
+  // Either a fixed month/day, or a resolver that returns the start
+  // date for a given year (used for movable feasts like Holy Week).
+  month?: number // 1-indexed
+  day?: number
+  getDate?: (year: number) => Date
   impact: 'high' | 'extreme'
   note: { es: string; en: string }
+}
+
+// Meeus/Jones/Butcher Gregorian algorithm for Easter Sunday.
+// Returns a local-timezone Date at midnight for the given year.
+function easterSunday(year: number): Date {
+  const a = year % 19
+  const b = Math.floor(year / 100)
+  const c = year % 100
+  const d = Math.floor(b / 4)
+  const e = b % 4
+  const f = Math.floor((b + 8) / 25)
+  const g = Math.floor((b - f + 1) / 3)
+  const h = (19 * a + b - d - g + 15) % 30
+  const i = Math.floor(c / 4)
+  const k = c % 4
+  const l = (32 + 2 * e + 2 * i - h - k) % 7
+  const m = Math.floor((a + 11 * h + 22 * l) / 451)
+  const month = Math.floor((h + l - 7 * m + 114) / 31) // 3 = March, 4 = April
+  const day = ((h + l - 7 * m + 114) % 31) + 1
+  return new Date(year, month - 1, day)
+}
+
+// Palm Sunday = 7 days before Easter — the start of Holy Week.
+function palmSunday(year: number): Date {
+  const easter = easterSunday(year)
+  return new Date(easter.getFullYear(), easter.getMonth(), easter.getDate() - 7)
 }
 
 const HOLIDAYS: Holiday[] = [
@@ -42,7 +71,10 @@ const HOLIDAYS: Holiday[] = [
   },
   {
     name: { es: 'Semana Santa', en: 'Holy Week' },
-    month: 4, day: 14, impact: 'extreme',
+    // Movable feast — Holy Week begins on Palm Sunday, 7 days before Easter.
+    // Previously hardcoded to April 14 which was wrong every year.
+    getDate: (year) => palmSunday(year),
+    impact: 'extreme',
     note: {
       es: 'La semana más pesada del año. Evita cruzar entre 10am–6pm toda la semana.',
       en: 'The heaviest week of the year. Avoid crossing 10am–6pm all week.',
@@ -98,14 +130,20 @@ const HOLIDAYS: Holiday[] = [
   },
 ]
 
-function daysUntil(month: number, day: number): number {
+function resolveHolidayDate(h: Holiday, year: number): Date {
+  if (h.getDate) return h.getDate(year)
+  return new Date(year, (h.month ?? 1) - 1, h.day ?? 1)
+}
+
+function daysUntilHoliday(h: Holiday): number {
   const now = new Date()
-  const year = now.getFullYear()
-  let target = new Date(year, month - 1, day)
-  if (target.getTime() < now.getTime() - 24 * 60 * 60 * 1000) {
-    target = new Date(year + 1, month - 1, day)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  let target = resolveHolidayDate(h, today.getFullYear())
+  // If the holiday already passed this year, look at next year.
+  if (target.getTime() < today.getTime()) {
+    target = resolveHolidayDate(h, today.getFullYear() + 1)
   }
-  return Math.ceil((target.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+  return Math.round((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
 }
 
 export function HolidayOverlay() {
@@ -113,7 +151,7 @@ export function HolidayOverlay() {
   const es = lang === 'es'
 
   const upcoming = useMemo(() => {
-    const withDays = HOLIDAYS.map((h) => ({ ...h, daysAway: daysUntil(h.month, h.day) }))
+    const withDays = HOLIDAYS.map((h) => ({ ...h, daysAway: daysUntilHoliday(h) }))
       .filter((h) => h.daysAway >= 0 && h.daysAway <= 14)
       .sort((a, b) => a.daysAway - b.daysAway)
     return withDays[0] || null

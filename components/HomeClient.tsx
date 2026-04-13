@@ -21,6 +21,7 @@ import { InstallPill } from '@/components/InstallPill'
 import { ContributionTodayPill } from '@/components/ContributionTodayPill'
 import { HolidayOverlay } from '@/components/HolidayOverlay'
 import { ReciprocityCard } from '@/components/ReciprocityCard'
+import { DailyTip } from '@/components/DailyTip'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -188,6 +189,11 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             activity lands on a port they care about. Frames the
             sighting as a debt-to-return. */}
         {!isBusiness && tier !== 'guest' && <ReciprocityCard />}
+
+        {/* Daily tip — rotating bilingual advice card. Shown to
+            guests + free tier (business users already know this
+            stuff cold). Dismissable for the session. */}
+        {!isBusiness && <DailyTip />}
 
         {/* Hero delta — signed-in users only. Shrunk: no more big share
             card, no more hourly pattern (Pro-gated now). Still the polished
