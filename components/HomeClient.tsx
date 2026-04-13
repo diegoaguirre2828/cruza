@@ -8,7 +8,7 @@ import { HomeReportsFeed } from '@/components/HomeReportsFeed'
 import { UrgentAlerts } from '@/components/UrgentAlerts'
 import { WaitingMode } from '@/components/WaitingMode'
 import { BusinessCommandWidget } from '@/components/BusinessCommandWidget'
-import { ExchangeRateWidget } from '@/components/ExchangeRateWidget'
+import { ExchangeRatePill } from '@/components/ExchangeRatePill'
 import { OnboardingTour } from '@/components/OnboardingTour'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
@@ -145,9 +145,10 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto px-4 pb-10">
         <div className="pt-8 pb-2 flex items-start justify-between">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">🌉 {t.appName}</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t.subtitle}</p>
+            {!isBusiness && <ExchangeRatePill />}
           </div>
           <NavBar />
         </div>
@@ -201,8 +202,8 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
           </Link>
         )}
 
-        {/* Exchange rate — hidden for business accounts, moved below the list */}
-        {!isBusiness && <ExchangeRateWidget />}
+        {/* Exchange rate lives as a pill in the header now, on tap it opens
+            the full widget in a bottom sheet — no big card below the list. */}
 
         {/* Services in Mexico banner — moved below the list */}
         {!isBusiness && (
