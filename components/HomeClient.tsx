@@ -16,7 +16,7 @@ import { LiveActivityTicker } from '@/components/LiveActivityTicker'
 import { WeatherHook } from '@/components/WeatherHook'
 import { NearMeRail } from '@/components/NearMeRail'
 import { GuardianProgressCard } from '@/components/GuardianProgressCard'
-import { StaticBorderMap } from '@/components/StaticBorderMap'
+import { RegionalSnapshot } from '@/components/RegionalSnapshot'
 import { InstallPill } from '@/components/InstallPill'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
@@ -197,10 +197,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         <div id="port-list" />
         <PortList />
 
-        {/* SVG border map — moved BELOW the port list. Users should see
-            the list first (that's why they came), then get the visual
-            hook as a secondary exploration prompt. */}
-        {!isBusiness && <StaticBorderMap ports={initialPorts} />}
+        {/* Regional snapshot — replaces the old StaticBorderMap SVG
+            which was an abstract cloud of dots with no labels. This
+            one groups ports by border region and shows green/amber/
+            red counts + the fastest crossing in each region. Users
+            can tap a region to jump straight to its fastest bridge. */}
+        {!isBusiness && <RegionalSnapshot ports={initialPorts} />}
 
         {/* Primary signup hook — guests only, now BELOW the list so the data
             is the first thing they get, and the pitch lands after they've
