@@ -17,24 +17,94 @@ function emoji(level: string) {
   return '🔴'
 }
 
-const RGV_PORTS = [
-  { portId: '230501', name: 'Hidalgo', fullName: 'Hidalgo / McAllen' },
-  { portId: '230502', name: 'Pharr',   fullName: 'Pharr–Reynosa' },
-  { portId: '230503', name: 'Anzaldúas', fullName: 'Anzaldúas' },
-  { portId: '230901', name: 'Progreso',  fullName: 'Progreso' },
-  { portId: '230902', name: 'Donna',     fullName: 'Donna' },
+type RegionPort = { portId: string; name: string; fullName: string; region: string }
+
+const RGV_PORTS: RegionPort[] = [
+  { portId: '230501', name: 'Hidalgo',   fullName: 'Hidalgo / McAllen', region: 'rgv' },
+  { portId: '230502', name: 'Pharr',     fullName: 'Pharr–Reynosa',     region: 'rgv' },
+  { portId: '230503', name: 'Anzaldúas', fullName: 'Anzaldúas',         region: 'rgv' },
+  { portId: '230901', name: 'Progreso',  fullName: 'Progreso',          region: 'rgv' },
+  { portId: '230902', name: 'Donna',     fullName: 'Donna',             region: 'rgv' },
 ]
 
-const ALL_PORTS = [
-  ...RGV_PORTS,
-  { portId: '535501', name: 'Brownsville Gateway',  fullName: 'Brownsville Gateway',  region: 'brownsville' },
-  { portId: '535502', name: 'B\'ville Veterans',    fullName: 'Brownsville Veterans', region: 'brownsville' },
-  { portId: '535503', name: 'Los Tomates',           fullName: 'Los Tomates',          region: 'brownsville' },
-  { portId: '230401', name: 'Laredo I',  fullName: 'Laredo I',           region: 'laredo' },
-  { portId: '230402', name: 'Laredo II', fullName: 'Laredo II',          region: 'laredo' },
-  { portId: '230301', name: 'Eagle Pass', fullName: 'Eagle Pass',        region: 'eagle_pass' },
-  { portId: '240201', name: 'El Paso',   fullName: 'El Paso / Juárez',   region: 'el_paso' },
+const BROWNSVILLE_PORTS: RegionPort[] = [
+  { portId: '535501', name: 'Brownsville Gateway', fullName: 'Brownsville Gateway',  region: 'brownsville' },
+  { portId: '535502', name: "B'ville Veterans",    fullName: 'Brownsville Veterans', region: 'brownsville' },
+  { portId: '535503', name: 'Los Tomates',          fullName: 'Los Tomates',          region: 'brownsville' },
 ]
+
+const LAREDO_PORTS: RegionPort[] = [
+  { portId: '230401', name: 'Laredo I',  fullName: 'Laredo I (Gateway)',    region: 'laredo' },
+  { portId: '230402', name: 'Laredo II', fullName: 'Laredo II (World Trade)', region: 'laredo' },
+]
+
+const EAGLE_PASS_PORTS: RegionPort[] = [
+  { portId: '230301', name: 'Eagle Pass', fullName: 'Eagle Pass / Piedras Negras', region: 'eagle_pass' },
+]
+
+const EL_PASO_PORTS: RegionPort[] = [
+  { portId: '240201', name: 'El Paso',    fullName: 'El Paso / Juárez', region: 'el_paso' },
+]
+
+const NOGALES_PORTS: RegionPort[] = [
+  { portId: '260401', name: 'Deconcini', fullName: 'Nogales Deconcini',         region: 'nogales' },
+  { portId: '260402', name: 'Mariposa',  fullName: 'Nogales Mariposa (Comercial)', region: 'nogales' },
+]
+
+const SAN_LUIS_PORTS: RegionPort[] = [
+  { portId: '260801', name: 'San Luis I',  fullName: 'San Luis I',              region: 'san_luis' },
+  { portId: '260802', name: 'San Luis II', fullName: 'San Luis II (Comercial)', region: 'san_luis' },
+]
+
+const TIJUANA_PORTS: RegionPort[] = [
+  { portId: '250401', name: 'San Ysidro', fullName: 'San Ysidro (La Línea)', region: 'tijuana' },
+  { portId: '250601', name: 'Otay Mesa',  fullName: 'Otay Mesa',             region: 'tijuana' },
+  { portId: '250501', name: 'Tecate',     fullName: 'Tecate',                region: 'tijuana' },
+]
+
+const MEXICALI_PORTS: RegionPort[] = [
+  { portId: '250301', name: 'Calexico East', fullName: 'Calexico East',          region: 'mexicali' },
+  { portId: '250302', name: 'Calexico West', fullName: 'Calexico West',          region: 'mexicali' },
+  { portId: '250201', name: 'Algodones',     fullName: 'Los Algodones ↔ Andrade', region: 'mexicali' },
+]
+
+const PORTS_BY_REGION: Record<string, RegionPort[]> = {
+  rgv:         RGV_PORTS,
+  brownsville: BROWNSVILLE_PORTS,
+  laredo:      LAREDO_PORTS,
+  eagle_pass:  EAGLE_PASS_PORTS,
+  el_paso:     EL_PASO_PORTS,
+  nogales:     NOGALES_PORTS,
+  san_luis:    SAN_LUIS_PORTS,
+  tijuana:     TIJUANA_PORTS,
+  mexicali:    MEXICALI_PORTS,
+}
+
+const ALL_PORTS: RegionPort[] = [
+  ...RGV_PORTS,
+  ...BROWNSVILLE_PORTS,
+  ...LAREDO_PORTS,
+  ...EAGLE_PASS_PORTS,
+  ...EL_PASO_PORTS,
+  ...NOGALES_PORTS,
+  ...SAN_LUIS_PORTS,
+  ...TIJUANA_PORTS,
+  ...MEXICALI_PORTS,
+]
+
+// Shown in openers/closers so posts don't say "RGV" when generating for Tijuana
+const REGION_LABEL: Record<string, string> = {
+  rgv:         'el RGV',
+  brownsville: 'Matamoros / Brownsville',
+  laredo:      'Laredo / Nuevo Laredo',
+  eagle_pass:  'Eagle Pass / Piedras Negras',
+  el_paso:     'Juárez / El Paso',
+  nogales:     'Nogales',
+  san_luis:    'San Luis RC',
+  tijuana:     'Tijuana',
+  mexicali:    'Mexicali',
+  all:         'la frontera',
+}
 
 type Tone = 'morning' | 'midday' | 'afternoon' | 'evening' | 'other'
 
@@ -64,34 +134,36 @@ function buildCaptions(
   const pageLines  = crossings.map(c => `${emoji(c.level)} ${c.fullName}: ${formatWait(c.wait)}`)
 
   // ── Group caption openers by tone ────────────────────────────────────────
+  // Use the region label so posts for Tijuana/Mexicali/etc. don't say "RGV".
+  const rLabel = REGION_LABEL[region] || 'la frontera'
   const openers: Record<Tone, string[]> = {
     morning: [
-      'Buenos días 🌅 Ahorita en los puentes del RGV:',
+      `Buenos días 🌅 Ahorita en los puentes de ${rLabel}:`,
       'Para los que van a cruzar en la mañana 👇',
       '¿Cómo están los puentes ahorita? 🌅',
-      'Mañana en los puentes del RGV:',
+      `Mañana en los puentes de ${rLabel}:`,
     ],
     midday: [
       '¿Van a cruzar al mediodía? Así están los puentes:',
-      'Mediodía en los puentes del RGV 🌞',
+      `Mediodía en los puentes de ${rLabel} 🌞`,
       'Al mediodía así están los tiempos:',
       'Puentes al mediodía — por si van a cruzar:',
     ],
     afternoon: [
       '¿Van a cruzar esta tarde? Así están ahorita 👇',
-      'Tarde en los puentes del RGV:',
+      `Tarde en los puentes de ${rLabel}:`,
       'Para los que salen del trabajo — puentes ahorita:',
       '¿Cómo están los puentes esta tarde? 👇',
     ],
     evening: [
-      'Esta noche en los puentes del RGV 🌙',
+      `Esta noche en los puentes de ${rLabel} 🌙`,
       '¿Van a cruzar ahorita en la noche? Tiempos:',
       'Noche en los puentes — así están ahorita:',
       'Para los que van a cruzar esta noche 👇',
     ],
     other: [
-      'Así están los puentes del RGV ahorita:',
-      'Tiempos en los puentes del RGV:',
+      `Así están los puentes de ${rLabel} ahorita:`,
+      `Tiempos en los puentes de ${rLabel}:`,
     ],
   }
 
@@ -135,12 +207,24 @@ function buildCaptions(
    .trim()
 
   // ── Page post (slightly more structured) ─────────────────────────────────
-  const pageHashtags = region === 'rgv' || region === 'all'
-    ? '#RGV #McAllen #Hidalgo #Pharr #Progreso #Donna #Anzalduas #Reynosa #puente #tiemposdeespera'
-    : '#puente #tiemposdeespera #frontera'
+  const HASHTAGS: Record<string, string> = {
+    rgv:         '#RGV #McAllen #Hidalgo #Pharr #Progreso #Donna #Anzalduas #Reynosa #puente #tiemposdeespera',
+    brownsville: '#Brownsville #Matamoros #LosTomates #Gateway #Veterans #puente #tiemposdeespera',
+    laredo:      '#Laredo #NuevoLaredo #WorldTrade #puente #tiemposdeespera',
+    eagle_pass:  '#EaglePass #PiedrasNegras #puente #tiemposdeespera',
+    el_paso:     '#ElPaso #Juarez #BOTA #PasoDelNorte #Ysleta #puente #tiemposdeespera',
+    nogales:     '#Nogales #Sonora #Deconcini #Mariposa #puente #tiemposdeespera',
+    san_luis:    '#SanLuis #Yuma #Sonora #puente #tiemposdeespera',
+    tijuana:     '#Tijuana #SanYsidro #OtayMesa #Tecate #LaLinea #puente #tiemposdeespera',
+    mexicali:    '#Mexicali #Calexico #LosAlgodones #puente #tiemposdeespera',
+    all:         '#Frontera #Mexico #EEUU #puente #tiemposdeespera',
+  }
+  const pageHashtags = HASHTAGS[region] || HASHTAGS.all
+
+  const pageHeader = `🌉 ESPERA EN ${(REGION_LABEL[region] || 'LA FRONTERA').toUpperCase()} — ${timeStr.toUpperCase()}`
 
   const pageCaption = [
-    `🌉 ESPERA EN EL RGV — ${timeStr.toUpperCase()}`,
+    pageHeader,
     '',
     pageLines.join('\n'),
     bestLine ? `\n${bestLine}` : '',
@@ -171,7 +255,9 @@ export async function GET(req: NextRequest) {
   const portsRes = await fetch('https://cruzar.app/api/ports', { cache: 'no-store' })
   const { ports } = await portsRes.json()
 
-  const portList = regionFilter === 'all' ? ALL_PORTS : RGV_PORTS
+  const portList: RegionPort[] = regionFilter === 'all'
+    ? ALL_PORTS
+    : (PORTS_BY_REGION[regionFilter] || RGV_PORTS)
   const crossings = portList
     .map(p => {
       const port = ports?.find((x: { portId: string }) => x.portId === p.portId)

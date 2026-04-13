@@ -8,7 +8,9 @@ import { HeroGenerator } from '@/components/admin/HeroGenerator'
 
 const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 
-type RegionKey = 'rgv' | 'brownsville' | 'laredo' | 'eagle_pass' | 'el_paso' | 'san_luis' | 'other'
+type RegionKey =
+  | 'rgv' | 'brownsville' | 'laredo' | 'eagle_pass' | 'el_paso'
+  | 'san_luis' | 'nogales' | 'tijuana' | 'mexicali' | 'other'
 
 const REPLY_PORTS: { portId: string; name: string; regionKey: RegionKey }[] = [
   { portId: '230501', name: 'Puente Hidalgo (McAllen)',       regionKey: 'rgv' },
@@ -23,6 +25,14 @@ const REPLY_PORTS: { portId: string; name: string; regionKey: RegionKey }[] = [
   { portId: '230402', name: 'Puente Laredo II (World Trade)', regionKey: 'laredo' },
   { portId: '230301', name: 'Puente Eagle Pass / Piedras Negras', regionKey: 'eagle_pass' },
   { portId: '240201', name: 'Puente El Paso / Juárez',        regionKey: 'el_paso' },
+  { portId: '260401', name: 'Nogales Deconcini',              regionKey: 'nogales' },
+  { portId: '260402', name: 'Nogales Mariposa (Comercial)',   regionKey: 'nogales' },
+  { portId: '250401', name: 'San Ysidro (La Línea)',          regionKey: 'tijuana' },
+  { portId: '250601', name: 'Otay Mesa',                      regionKey: 'tijuana' },
+  { portId: '250501', name: 'Tecate',                         regionKey: 'tijuana' },
+  { portId: '250301', name: 'Calexico East',                  regionKey: 'mexicali' },
+  { portId: '250302', name: 'Calexico West',                  regionKey: 'mexicali' },
+  { portId: '250201', name: 'Los Algodones ↔ Andrade',        regionKey: 'mexicali' },
 ]
 
 const REGIONS: { key: RegionKey; label: string; emoji: string }[] = [
@@ -31,7 +41,10 @@ const REGIONS: { key: RegionKey; label: string; emoji: string }[] = [
   { key: 'laredo',      label: 'Laredo / Nuevo Laredo',            emoji: '🛣️' },
   { key: 'eagle_pass',  label: 'Eagle Pass / Piedras Negras',      emoji: '🦅' },
   { key: 'el_paso',     label: 'El Paso / Juárez',                 emoji: '⛰️' },
-  { key: 'san_luis',    label: 'San Luis RC / Arizona',            emoji: '🌵' },
+  { key: 'nogales',     label: 'Nogales / Sonora',                 emoji: '🌵' },
+  { key: 'san_luis',    label: 'San Luis RC / Yuma',               emoji: '☀️' },
+  { key: 'tijuana',     label: 'Tijuana / San Ysidro / Otay',      emoji: '🌊' },
+  { key: 'mexicali',    label: 'Mexicali / Calexico / Algodones',  emoji: '🏜️' },
   { key: 'other',       label: 'Other',                            emoji: '📍' },
 ]
 
@@ -588,9 +601,20 @@ export default function AdminPage() {
               <p className="text-xs text-gray-500 mt-0.5">Posts to your Page automatically. Generates a group caption to copy-paste.</p>
             </div>
 
-            {/* Region selector */}
+            {/* Region selector — all regions we can generate posts for */}
             <div className="flex flex-wrap gap-2">
-              {[{ key: 'rgv', label: '🌵 RGV' }, { key: 'all', label: '🌎 All Regions' }].map(r => (
+              {[
+                { key: 'all',         label: '🌎 All Regions' },
+                { key: 'rgv',         label: '🌵 RGV' },
+                { key: 'brownsville', label: '🏙️ Brownsville' },
+                { key: 'laredo',      label: '🛣️ Laredo' },
+                { key: 'eagle_pass',  label: '🦅 Eagle Pass' },
+                { key: 'el_paso',     label: '⛰️ El Paso' },
+                { key: 'nogales',     label: '🌵 Nogales' },
+                { key: 'san_luis',    label: '☀️ San Luis' },
+                { key: 'tijuana',     label: '🌊 Tijuana' },
+                { key: 'mexicali',    label: '🏜️ Mexicali' },
+              ].map(r => (
                 <button
                   key={r.key}
                   onClick={() => { setSelectedRegion(r.key); setCaption(''); setPageCaption(''); setPostResult(null) }}
@@ -889,13 +913,43 @@ export default function AdminPage() {
               ],
             },
             {
-              key: 'san_luis', label: 'San Luis RC / Arizona', emoji: '🌵',
+              key: 'nogales', label: 'Nogales / Sonora', emoji: '🌵',
+              tz: 'MST always — no DST (UTC-7 year-round)', note: 'Nogales AZ observes MST year-round (no DST)',
+              jobs: [
+                { local: '5:30am',  utcSummer: '12:30', utcWinter: '12:30', label: 'Morning commute' },
+                { local: '11:30am', utcSummer: '18:30', utcWinter: '18:30', label: 'Midday' },
+                { local: '3:30pm',  utcSummer: '22:30', utcWinter: '22:30', label: 'Afternoon rush' },
+                { local: '7:00pm',  utcSummer: '02:30', utcWinter: '02:30', label: 'Evening' },
+              ],
+            },
+            {
+              key: 'san_luis', label: 'San Luis RC / Yuma', emoji: '☀️',
               tz: 'MST always — no DST (UTC-7 year-round)', note: '',
               jobs: [
                 { local: '5:30am',  utcSummer: '12:30', utcWinter: '12:30', label: 'Morning commute' },
                 { local: '11:30am', utcSummer: '18:30', utcWinter: '18:30', label: 'Midday' },
                 { local: '3:30pm',  utcSummer: '22:30', utcWinter: '22:30', label: 'Afternoon rush' },
                 { local: '7:00pm',  utcSummer: '02:30', utcWinter: '02:30', label: 'Evening' },
+              ],
+            },
+            {
+              key: 'tijuana', label: 'Tijuana / San Ysidro / Otay', emoji: '🌊',
+              tz: 'PST/PDT (Pacific — Baja California observes DST)', note: '',
+              jobs: [
+                { local: '5:30am',  utcSummer: '12:30', utcWinter: '13:30', label: 'Morning commute' },
+                { local: '11:30am', utcSummer: '18:30', utcWinter: '19:30', label: 'Midday' },
+                { local: '3:30pm',  utcSummer: '22:30', utcWinter: '23:30', label: 'Afternoon rush' },
+                { local: '7:00pm',  utcSummer: '02:30', utcWinter: '03:30', label: 'Evening' },
+              ],
+            },
+            {
+              key: 'mexicali', label: 'Mexicali / Calexico / Algodones', emoji: '🏜️',
+              tz: 'PST/PDT (Pacific — Baja California observes DST)', note: '',
+              jobs: [
+                { local: '5:30am',  utcSummer: '12:30', utcWinter: '13:30', label: 'Morning commute' },
+                { local: '11:30am', utcSummer: '18:30', utcWinter: '19:30', label: 'Midday' },
+                { local: '3:30pm',  utcSummer: '22:30', utcWinter: '23:30', label: 'Afternoon rush' },
+                { local: '7:00pm',  utcSummer: '02:30', utcWinter: '03:30', label: 'Evening' },
               ],
             },
           ]
