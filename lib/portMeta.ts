@@ -73,38 +73,42 @@ export const PORT_META: Record<string, PortMeta> = {
   '535504': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.9044, lng: -97.5040, localName: 'Gateway' },
 
   // ── Nuevo Laredo ↔ Laredo ────────────────────────────────
-  '230401': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.4994, lng: -99.5076, localName: 'Puente 1 / Gateway to the Americas' },
-  '230402': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.5628, lng: -99.5019, localName: 'Puente 2 / Juárez-Lincoln' },
+  '230401': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.4994, lng: -99.5076, localName: 'Bridge I (Gateway to the Americas)' },
+  '230402': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.5628, lng: -99.5019, localName: 'Bridge II (Juárez-Lincoln)' },
   '230403': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.6506, lng: -99.5539, localName: 'Colombia Solidarity' },
   '230404': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.5533, lng: -99.4786, localName: 'World Trade Bridge' },
-  '230103': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.5000, lng: -99.5100 },
+  '230103': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.5000, lng: -99.5100, localName: 'Gateway' },
 
   // ── Piedras Negras ↔ Eagle Pass ──────────────────────────
-  '230301': { city: 'Eagle Pass', region: R_EAGLE_PASS, megaRegion: 'coahuila-tx', lat: 28.7091, lng: -100.4995, localName: 'Puente 1' },
-  '230302': { city: 'Eagle Pass', region: R_EAGLE_PASS, megaRegion: 'coahuila-tx', lat: 28.7150, lng: -100.5010, localName: 'Puente 2 (Camino Real)' },
+  // Consistent 'Bridge I / Bridge II' format matches CBP crossing_name.
+  '230301': { city: 'Eagle Pass', region: R_EAGLE_PASS, megaRegion: 'coahuila-tx', lat: 28.7091, lng: -100.4995, localName: 'Bridge I (Puente Viejo)' },
+  '230302': { city: 'Eagle Pass', region: R_EAGLE_PASS, megaRegion: 'coahuila-tx', lat: 28.7150, lng: -100.5010, localName: 'Bridge II (Camino Real)' },
 
   // ── Cd. Acuña ↔ Del Rio ──────────────────────────────────
   '230201': { city: 'Del Rio', region: R_DEL_RIO, megaRegion: 'coahuila-tx', lat: 29.3627, lng: -100.8974 },
 
   // ── Cd. Juárez ↔ El Paso ─────────────────────────────────
-  '202401': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7588, lng: -106.4869, localName: 'Paso del Norte' },
-  '240201': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7619, lng: -106.4850 },
-  '240202': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7588, lng: -106.4869 },
-  '240203': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.6938, lng: -106.3353, localName: 'Ysleta / Zaragoza' },
-  '240204': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7550, lng: -106.4780, localName: 'BOTA (Bridge of the Americas)' },
-  '240207': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7600, lng: -106.4830 },
-  '240215': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7650, lng: -106.4900, localName: 'Stanton' },
-  '240221': { city: 'El Paso', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7619, lng: -106.4850 },
-  '240401': { city: 'Tornillo', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.4336, lng: -106.0728, localName: 'Tornillo / Guadalupe' },
-  '240301': { city: 'Presidio', region: R_EL_PASO, megaRegion: 'el-paso', lat: 29.5602, lng: -104.3718, localName: 'Ojinaga ↔ Presidio' },
-  '240801': { city: 'Santa Teresa', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.8742, lng: -106.6717 },
-  '240601': { city: 'Columbus', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.8280, lng: -107.6408, localName: 'Puerto Palomas ↔ Columbus' },
-  'l24501': { city: 'Fort Hancock', region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.1120, lng: -105.8490 },
+  // Verified against CBP crossing_name field 2026-04-12. Note that CBP has
+  // TWO port numbers for Paso del Norte (202401 and 240202) — keeping both
+  // since they appear in different CBP responses.
+  '202401': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7588, lng: -106.4869, localName: 'Paso del Norte' },
+  '240201': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7619, lng: -106.4850, localName: 'Bridge of the Americas (BOTA)' },
+  '240202': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7588, lng: -106.4869, localName: 'Paso del Norte (PDN)' },
+  '240203': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.6938, lng: -106.3353, localName: 'Ysleta / Zaragoza' },
+  '240204': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7550, lng: -106.4780, localName: 'Stanton DCL' },
+  '240207': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7600, lng: -106.4830, localName: 'BOTA (secondary)' },
+  '240215': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7650, lng: -106.4900, localName: 'BOTA Cargo Facility' },
+  '240221': { city: 'El Paso',     region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.7619, lng: -106.4850, localName: 'El Paso' },
+  '240401': { city: 'Tornillo',    region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.4336, lng: -106.0728, localName: 'Tornillo (Marcelino Serna)' },
+  '240301': { city: 'Presidio',    region: R_EL_PASO, megaRegion: 'el-paso', lat: 29.5602, lng: -104.3718, localName: 'Presidio ↔ Ojinaga' },
+  '240801': { city: 'Santa Teresa',region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.8742, lng: -106.6717, localName: 'Santa Teresa' },
+  '240601': { city: 'Columbus',    region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.8280, lng: -107.6408, localName: 'Columbus ↔ Puerto Palomas' },
+  'l24501': { city: 'Fort Hancock',region: R_EL_PASO, megaRegion: 'el-paso', lat: 31.1120, lng: -105.8490, localName: 'Fort Hancock' },
 
   // ── Nogales, Sonora ↔ Nogales, Arizona ───────────────────
-  '260401': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3364, lng: -110.9388, localName: 'DeConcini' },
-  '260402': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3525, lng: -110.9605, localName: 'Mariposa (commercial)' },
-  '260403': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3380, lng: -110.9380, localName: 'Morley' },
+  '260401': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3364, lng: -110.9388, localName: 'Deconcini' },
+  '260402': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3525, lng: -110.9605, localName: 'Mariposa (Commercial)' },
+  '260403': { city: 'Nogales', region: R_NOGALES, megaRegion: 'sonora-az', lat: 31.3380, lng: -110.9380, localName: 'Morley Gate' },
 
   // ── Agua Prieta ↔ Douglas / Naco / Lukeville ─────────────
   '260101': { city: 'Douglas',   region: R_DOUGLAS, megaRegion: 'sonora-az', lat: 31.3445, lng: -109.5457, localName: 'Agua Prieta ↔ Douglas' },
@@ -113,22 +117,26 @@ export const PORT_META: Record<string, PortMeta> = {
   '260201': { city: 'Lukeville', region: R_DOUGLAS, megaRegion: 'sonora-az', lat: 31.8836, lng: -112.8112, localName: 'Sonoyta ↔ Lukeville' },
 
   // ── San Luis RC ↔ San Luis, Arizona ──────────────────────
-  '260801': { city: 'San Luis', region: R_SAN_LUIS_AZ, megaRegion: 'sonora-az', lat: 32.4846, lng: -114.7899 },
-  '260802': { city: 'San Luis', region: R_SAN_LUIS_AZ, megaRegion: 'sonora-az', lat: 32.4900, lng: -114.7920, localName: 'San Luis II (commercial)' },
+  '260801': { city: 'San Luis', region: R_SAN_LUIS_AZ, megaRegion: 'sonora-az', lat: 32.4846, lng: -114.7899, localName: 'San Luis I' },
+  '260802': { city: 'San Luis', region: R_SAN_LUIS_AZ, megaRegion: 'sonora-az', lat: 32.4900, lng: -114.7920, localName: 'San Luis II (Commercial)' },
 
   // ── Mexicali / Tecate ↔ Calexico ─────────────────────────
-  '250301': { city: 'Calexico', region: R_MEXICALI, megaRegion: 'baja', lat: 32.6793, lng: -115.5088, localName: 'Calexico West' },
-  '250302': { city: 'Calexico', region: R_MEXICALI, megaRegion: 'baja', lat: 32.6676, lng: -115.4788, localName: 'Calexico East' },
+  // Corrected 2026-04-12: CBP returns 250301 as "East" and 250302 as "West".
+  // Previous portMeta had them swapped.
+  '250301': { city: 'Calexico', region: R_MEXICALI, megaRegion: 'baja', lat: 32.6793, lng: -115.5088, localName: 'Calexico East' },
+  '250302': { city: 'Calexico', region: R_MEXICALI, megaRegion: 'baja', lat: 32.6676, lng: -115.4788, localName: 'Calexico West' },
   '250501': { city: 'Tecate',   region: R_MEXICALI, megaRegion: 'baja', lat: 32.5777, lng: -116.6272, localName: 'Tecate' },
 
   // ── Tijuana ↔ San Ysidro / Otay ──────────────────────────
-  '250401': { city: 'San Ysidro', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5432, lng: -117.0281, localName: 'San Ysidro / La Línea' },
+  // Verified 2026-04-12 against CBP crossing_name field. Consistent format:
+  //   '<common local name>' or '<entity> (<type>)' for multi-entry ports.
+  '250401': { city: 'San Ysidro', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5432, lng: -117.0281, localName: 'San Ysidro (La Línea)' },
   '250407': { city: 'San Ysidro', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5408, lng: -117.0271, localName: 'San Ysidro PedWest' },
-  '250409': { city: 'San Ysidro', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5700, lng: -116.9700 },
-  '250601': { city: 'Otay Mesa', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5526, lng: -116.9734, localName: 'Otay Mesa' },
-  '250602': { city: 'Otay Mesa', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5540, lng: -116.9750 },
-  '250608': { city: 'Otay Mesa', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5530, lng: -116.9740, localName: 'Otay Mesa East (commercial)' },
-  '250609': { city: 'Otay Mesa', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5520, lng: -116.9730 },
+  '250409': { city: 'San Ysidro', region: R_TIJUANA, megaRegion: 'baja', lat: 32.5700, lng: -116.9700, localName: 'Cross Border Xpress (Tijuana Airport)' },
+  '250601': { city: 'Otay Mesa',  region: R_TIJUANA, megaRegion: 'baja', lat: 32.5526, lng: -116.9734, localName: 'Otay Mesa (Passenger)' },
+  '250602': { city: 'Otay Mesa',  region: R_TIJUANA, megaRegion: 'baja', lat: 32.5540, lng: -116.9750, localName: 'Otay Mesa (Commercial)' },
+  '250608': { city: 'Otay Mesa',  region: R_TIJUANA, megaRegion: 'baja', lat: 32.5530, lng: -116.9740, localName: 'Otay Mesa East' },
+  '250609': { city: 'Otay Mesa',  region: R_TIJUANA, megaRegion: 'baja', lat: 32.5520, lng: -116.9730, localName: 'Otay Mesa' },
 
   // ── Otros (Andrade) ──────────────────────────────────────
   '250201': { city: 'Andrade',  region: R_OTROS, megaRegion: 'baja', lat: 32.7202, lng: -114.7277, localName: 'Los Algodones ↔ Andrade' },

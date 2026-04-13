@@ -65,6 +65,7 @@ export function PortList() {
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedRegion, setSelectedRegion] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
   const [view, setView] = useState<'list' | 'map'>('list')
   const [direction, setDirection] = useState<Direction>('entering_us')
 
@@ -211,9 +212,28 @@ export function PortList() {
     setTimeout(() => setMexSubmitted(false), 4000)
   }
 
-  const filteredPorts = selectedRegion === 'All'
-    ? ports
-    : ports.filter(p => getPortMeta(p.portId).region === selectedRegion)
+  const filteredPorts = (() => {
+    let list = selectedRegion === 'All'
+      ? ports
+      : ports.filter(p => getPortMeta(p.portId).region === selectedRegion)
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      list = list.filter(p => {
+        const meta = getPortMeta(p.portId)
+        const localName = p.localNameOverride || meta.localName || ''
+        const haystack = [
+          p.portId,
+          p.portName,
+          p.crossingName,
+          meta.city,
+          meta.region,
+          localName,
+        ].filter(Boolean).join(' · ').toLowerCase()
+        return haystack.includes(q)
+      })
+    }
+    return list
+  })()
 
   const sortedByDistance = userLoc
     ? [...ports]
@@ -420,6 +440,33 @@ export function PortList() {
               )}
             </div>
             {geoError && <p className="text-xs text-red-500 dark:text-red-400 px-1">{geoError}</p>}
+
+            {/* Port name search — lets users type 'hidalgo', 'puente nuevo',
+                'tijuana' etc. instead of hunting through the region dropdown */}
+            {!nearMe && (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={lang === 'es' ? 'Busca tu puente — Hidalgo, Puente Nuevo, Tijuana…' : 'Search your bridge — Hidalgo, Puente Nuevo, Tijuana…'}
+                  className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-8 py-2 text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 3a7.5 7.5 0 006.15 13.65z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-700"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Insurance banner — top of list, hidden for business accounts */}

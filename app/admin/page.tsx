@@ -83,7 +83,7 @@ export default function AdminPage() {
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([])
   const [subs, setSubs] = useState<Subscription[]>([])
   const [stats, setStats] = useState<{
-    users: { total: number; new7: number; new30: number; active7: number; active30: number; returning?: number; power?: number; withAlerts?: number; byTier: Record<string, number> }
+    users: { total: number; new7: number; new30: number; active7: number; active30: number; returning?: number; power?: number; withAlerts?: number; totalShares?: number; usersWhoShared?: number; byTier: Record<string, number> }
     reports: { total: number; last7: number; last30: number; recent: { id: string; port_id: string; report_type: string; condition: string; wait_minutes: number | null; created_at: string }[] }
     recentUsers: { id: string; email: string; tier: string; created_at: string }[]
   } | null>(null)
@@ -1120,6 +1120,26 @@ export default function AdminPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Viral loop — admin only. Tracks share buttons tapped
+                      across ReportForm, JustCrossed, PortCard, Hero. Not
+                      shown to users per Diego's 'no gamification' call. */}
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-3">Viral loop (admin only)</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-black text-emerald-700">{stats.users.totalShares ?? 0}</p>
+                        <p className="text-[11px] text-emerald-600 mt-0.5 font-semibold">Total shares</p>
+                      </div>
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-black text-emerald-700">{stats.users.usersWhoShared ?? 0}</p>
+                        <p className="text-[11px] text-emerald-600 mt-0.5 font-semibold">Users who shared</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1.5 text-center italic">
+                      Share count tracked in DB for future redemption — not shown to users.
+                    </p>
                   </div>
 
                   {/* Tiers */}

@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
     reportCountsByUser,
     alertUsers,
     savedUsers,
+    shareCounts,
   ] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
     db.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', ago7),
@@ -59,6 +60,8 @@ export async function GET(req: NextRequest) {
     db.from('alert_preferences').select('user_id').eq('active', true),
     // Users with at least one saved crossing (personalization signal)
     db.from('saved_crossings').select('user_id'),
+    // Share counter aggregate (admin-only metric — not shown to users)
+    db.from('profiles').select('share_count'),
   ])
 
   const activeUsers7Set  = new Set((activeUsers7.data  || []).map(r => r.user_id))
@@ -149,6 +152,15 @@ export async function GET(req: NextRequest) {
     tier: profileTiers[u.id] || 'free',
   }))
 
+  // Total shares across all users (admin-only metric — not shown to users)
+  const totalShares = (shareCounts.data || []).reduce(
+    (sum: number, r: { share_count: number | null }) => sum + (r.share_count || 0),
+    0,
+  )
+  const usersWhoShared = (shareCounts.data || []).filter(
+    (r: { share_count: number | null }) => (r.share_count || 0) > 0,
+  ).length
+
   return NextResponse.json({
     users: {
       total:    profilesAll.count ?? 0,
@@ -159,6 +171,8 @@ export async function GET(req: NextRequest) {
       returning: returningCount,   // 2+ reports OR has alert/saved crossing
       power:     powerCount,        // 3+ reports OR (alert + saved)
       withAlerts: alertUserCount,   // personalization / commitment proxy
+      totalShares,                  // sum of share_count across all profiles
+      usersWhoShared,               // how many distinct users have shared
       byTier:    tiers,
       // keep the old report-only numbers too in case anything reads them
       active7Reports:  activeUsers7Count,
