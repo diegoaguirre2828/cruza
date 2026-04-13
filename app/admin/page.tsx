@@ -125,7 +125,7 @@ export default function AdminPage() {
   const [ingestImageBase64, setIngestImageBase64] = useState<string | null>(null)
   const [ingestImageMime, setIngestImageMime] = useState<string>('image/jpeg')
   const [ingestSubmitting, setIngestSubmitting] = useState(false)
-  const [ingestResult, setIngestResult] = useState<{ ok?: boolean; inserted?: number; skipped?: string; observations?: unknown[]; error?: string; parsed?: unknown } | null>(null)
+  const [ingestResult, setIngestResult] = useState<{ ok?: boolean; inserted?: number; skipped?: string; observations?: unknown[]; error?: string; parsed?: unknown; _filter?: { keptCount: number; totalCount: number; charsBefore: number; charsAfter: number } | null } | null>(null)
 
   async function handleImageFile(file: File) {
     if (!file.type.startsWith('image/')) return
@@ -142,17 +142,72 @@ export default function AdminPage() {
     setIngestImagePreview(`data:${file.type};base64,${base64}`)
   }
 
+  // Client-side pre-filter. When Diego pastes a whole FB feed (Ctrl+A →
+  // Ctrl+C), most of the text is ads, sale posts, comment chrome ('Like',
+  // 'Reply', 'Share'), names, reactions, and chit-chat. Stripping the noise
+  // here saves Claude Haiku tokens AND gives the LLM a much more focused
+  // signal. Heuristic: keep only lines/paragraphs that mention a border
+  // crossing keyword AND a time unit or wait phrase.
+  function filterFbNoise(raw: string): { kept: string; keptCount: number; totalCount: number } {
+    if (!raw) return { kept: '', keptCount: 0, totalCount: 0 }
+
+    // Normalize and split into chunks. Treat blank lines as separators so
+    // each "post" stays together with its comments.
+    const chunks = raw
+      .replace(/\r/g, '')
+      .split(/\n{2,}/g)
+      .map((c) => c.trim())
+      .filter(Boolean)
+
+    const crossingKw = /\b(hidalgo|pharr|anzald[uú]a|progreso|donna|rio grande|roma|brownsville|b&m|gateway|veterans|tomates|indios|laredo|eagle pass|del rio|ju[aá]rez|el paso|nogales|douglas|naco|san luis|mexicali|tecate|san ysidro|otay|calexico|tijuana|garita|puente|fila)\b/i
+    const waitKw = /\b(\d{1,3}\s*(?:min|minuto|hora|h\b))\b|\bfluid|\bmucha fila\b|\bllen[oa]\b|\bsin fila\b|\brapid|\bahorita\b|\brayos x\b|\binspecci[oó]n\b|\bret[eé]n\b|\bsentri\b|\bpeatonal\b|\bcami[oó]n\b|\btraila\b|\btr[aá]iler\b/i
+
+    // Also strip obvious FB chrome lines
+    const chromeLine = /^(like|reply|share|see translation|most relevant|write a (public )?reply|follow|see more|view \d+|replied)$/i
+
+    const kept: string[] = []
+    for (const chunk of chunks) {
+      // Drop each chunk's chrome lines and see what's left
+      const meaningfulLines = chunk
+        .split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l && !chromeLine.test(l))
+      if (meaningfulLines.length === 0) continue
+      const joined = meaningfulLines.join('\n')
+      // Keep only if the chunk mentions a crossing AND something wait-like
+      if (crossingKw.test(joined) && waitKw.test(joined)) {
+        kept.push(joined)
+      }
+    }
+    return {
+      kept: kept.join('\n\n---\n\n'),
+      keptCount: kept.length,
+      totalCount: chunks.length,
+    }
+  }
+
   async function runIngest() {
     if (!ingestText.trim() && !ingestImageBase64) return
     setIngestSubmitting(true)
     setIngestResult(null)
     try {
+      const raw = ingestText.trim()
+      // Only pre-filter if the blob is big enough to plausibly be a bulk paste.
+      // For small inputs (single post), send as-is so we don't accidentally drop
+      // a short but valid report.
+      const SHOULD_FILTER = raw.length > 600
+      const { kept, keptCount, totalCount } = SHOULD_FILTER
+        ? filterFbNoise(raw)
+        : { kept: raw, keptCount: 1, totalCount: 1 }
+
+      const textToSend = SHOULD_FILTER ? (kept || raw) : raw
+
       const res = await fetch('/api/ingest/fb-post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          text: ingestText.trim() || '(foto sin texto)',
+          text: textToSend || '(foto sin texto)',
           group_name: ingestGroup.trim() || 'manual',
           posted_at: new Date().toISOString(),
           image_base64: ingestImageBase64 ?? undefined,
@@ -160,7 +215,10 @@ export default function AdminPage() {
         }),
       })
       const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
-      setIngestResult(data)
+      setIngestResult({
+        ...data,
+        _filter: SHOULD_FILTER ? { keptCount, totalCount, charsBefore: raw.length, charsAfter: textToSend.length } : null,
+      })
       if (data?.ok || data?.inserted) {
         setIngestText('')
         setIngestImagePreview(null)
@@ -1341,6 +1399,11 @@ export default function AdminPage() {
                 )}
                 {(ingestResult.inserted ?? 0) > 0 && (
                   <p className="text-sm text-green-600 font-semibold">✓ {ingestResult.inserted} reporte{ingestResult.inserted === 1 ? '' : 's'} insertado{ingestResult.inserted === 1 ? '' : 's'}</p>
+                )}
+                {ingestResult._filter && (
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    🧹 Filtro: {ingestResult._filter.keptCount}/{ingestResult._filter.totalCount} posts relevantes · {ingestResult._filter.charsBefore.toLocaleString()} → {ingestResult._filter.charsAfter.toLocaleString()} chars ({Math.round((1 - ingestResult._filter.charsAfter / Math.max(1, ingestResult._filter.charsBefore)) * 100)}% ruido descartado)
+                  </p>
                 )}
                 {Array.isArray(ingestResult.observations) && ingestResult.observations.length > 0 && (
                   <pre className="mt-2 text-[10px] bg-gray-50 rounded-lg p-2 overflow-x-auto font-mono text-gray-700">
