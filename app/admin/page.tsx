@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useRouter } from 'next/navigation'
 import { Copy, Check, ExternalLink, RefreshCw } from 'lucide-react'
+import { HeroGenerator } from '@/components/admin/HeroGenerator'
 
 const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 
@@ -79,7 +80,7 @@ interface Subscription {
 export default function AdminPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const [tab, setTab] = useState<'groups' | 'post' | 'reply' | 'cron' | 'advertisers' | 'subs' | 'stats' | 'blast' | 'users' | 'ingest' | 'ports'>('groups')
+  const [tab, setTab] = useState<'groups' | 'post' | 'reply' | 'cron' | 'advertisers' | 'subs' | 'stats' | 'blast' | 'users' | 'ingest' | 'ports' | 'hero'>('groups')
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([])
   const [subs, setSubs] = useState<Subscription[]>([])
   const [stats, setStats] = useState<{
@@ -488,7 +489,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-1 bg-gray-100 rounded-xl p-1 mb-5">
-          {(['stats', 'ingest', 'users', 'ports', 'blast', 'groups', 'post', 'reply', 'cron', 'advertisers', 'subs'] as const).map(t => (
+          {(['stats', 'ingest', 'users', 'ports', 'blast', 'hero', 'groups', 'post', 'reply', 'cron', 'advertisers', 'subs'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors capitalize ${tab === t ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>
               {t === 'stats'       ? '📊 Stats' :
@@ -496,6 +497,7 @@ export default function AdminPage() {
                t === 'users'       ? '👥 Users' :
                t === 'ports'       ? '🌉 Ports' :
                t === 'blast'       ? '📣 Blast' :
+               t === 'hero'        ? '🎨 Hero' :
                t === 'groups'      ? `Groups (${FACEBOOK_GROUPS.length})` :
                t === 'post'        ? '✍️ Posts' :
                t === 'reply'       ? '💬 Reply' :
@@ -505,6 +507,9 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+
+        {/* Hero Generator */}
+        {tab === 'hero' && <HeroGenerator />}
 
         {/* Facebook Groups Tracker */}
         {tab === 'groups' && (

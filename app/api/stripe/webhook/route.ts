@@ -27,7 +27,14 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as { metadata?: { userId?: string; tier?: string }; subscription?: string; customer?: string }
     const userId = session.metadata?.userId
     const tier = session.metadata?.tier
-    if (!userId || !tier) return NextResponse.json({ ok: true })
+    if (!userId || !tier) {
+      console.error('stripe webhook: checkout.session.completed missing metadata', {
+        sessionId: (event.data.object as { id?: string }).id,
+        hasUserId: !!userId,
+        hasTier: !!tier,
+      })
+      return NextResponse.json({ error: 'missing metadata' }, { status: 400 })
+    }
 
     // Update user tier
     await supabase.from('profiles').update({ tier }).eq('id', userId)

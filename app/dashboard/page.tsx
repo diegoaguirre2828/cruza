@@ -51,6 +51,8 @@ export default function DashboardPage() {
   const [tier, setTier] = useState<string>('free')
   const [badges, setBadges] = useState<string[]>([])
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
+  const [pushBannerDismissed, setPushBannerDismissed] = useState(false)
+  const [pushJustEnabled, setPushJustEnabled] = useState(false)
   const [alertLimitHit, setAlertLimitHit] = useState(false)
 
   const loadData = useCallback(async () => {
@@ -111,6 +113,10 @@ export default function DashboardPage() {
           }
         })()
       }
+      // Push nudge dismiss state
+      if (localStorage.getItem('cruzar_push_nudge_dismissed') === '1') {
+        setPushBannerDismissed(true)
+      }
       // Pre-fill alert form when coming from Smart Crossing Planner
       const tabParam = params.get('tab')
       const portIdParam = params.get('portId')
@@ -142,6 +148,12 @@ export default function DashboardPage() {
       if (data.error === 'free_limit') { setAlertLimitHit(true); return }
     }
     setAlertLimitHit(false)
+    // If the user just set up their first alert and hasn't enabled push
+    // yet, trigger the permission prompt in the same gesture. Otherwise
+    // the alert is a silent promise that delivers to nothing.
+    if (pushSupported && !pushSubscribed) {
+      try { await pushSubscribe() } catch { /* non-blocking */ }
+    }
     loadData()
   }
 
@@ -255,6 +267,73 @@ export default function DashboardPage() {
               <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">{t.welcomeProDesc}</p>
             </div>
             <button onClick={() => setShowUpgradeBanner(false)} className="text-green-400 hover:text-green-600 text-lg leading-none">×</button>
+          </div>
+        )}
+
+        {/* Push nudge — shown to users who have alerts set up but haven't
+            enabled phone push notifications yet. Without this, the cron
+            generates alerts that deliver to nothing. Back-fills users who
+            signed up before the /welcome flow added the push prompt. */}
+        {pushSupported && !pushSubscribed && alerts.length > 0 && !pushBannerDismissed && !pushJustEnabled && (
+          <div className="mb-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-4 shadow-lg cruzar-shimmer">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                <span className="text-2xl">🔔</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-white leading-tight">
+                  {es
+                    ? 'Tus alertas no te están llegando al teléfono'
+                    : "Your alerts aren't reaching your phone"}
+                </p>
+                <p className="text-[11px] text-blue-100 mt-1 leading-snug">
+                  {es
+                    ? `Tienes ${alerts.length} ${alerts.length === 1 ? 'alerta activa' : 'alertas activas'} pero no recibes notificaciones. Activa el buzz ahorita.`
+                    : `You have ${alerts.length} active ${alerts.length === 1 ? 'alert' : 'alerts'} but no phone buzz. Turn it on now.`}
+                </p>
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    onClick={async () => {
+                      await pushSubscribe()
+                      setPushJustEnabled(true)
+                      setTimeout(() => setPushJustEnabled(false), 5000)
+                    }}
+                    disabled={pushLoading}
+                    className="bg-white text-indigo-700 text-xs font-black px-4 py-2 rounded-xl hover:bg-blue-50 active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {pushLoading
+                      ? (es ? 'Activando…' : 'Enabling…')
+                      : (es ? '🔔 Activar buzz' : '🔔 Turn on buzz')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setPushBannerDismissed(true)
+                      try { localStorage.setItem('cruzar_push_nudge_dismissed', '1') } catch { /* ignore */ }
+                    }}
+                    className="text-[11px] text-blue-100 hover:text-white font-medium px-2 py-1"
+                  >
+                    {es ? 'Luego' : 'Later'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Celebration after user enables push */}
+        {pushJustEnabled && (
+          <div className="mb-4 bg-green-500 text-white rounded-2xl p-4 flex items-center gap-3 cruzar-stamp">
+            <span className="text-2xl">✅</span>
+            <div>
+              <p className="text-sm font-black">
+                {es ? '¡Listo! Tu teléfono ya va a vibrar' : "Done! Your phone will buzz now"}
+              </p>
+              <p className="text-[11px] text-green-50 mt-0.5">
+                {es
+                  ? 'Te avisaremos cuando tus puentes bajen de tu límite'
+                  : "We'll ping you when your bridges drop below your threshold"}
+              </p>
+            </div>
           </div>
         )}
 

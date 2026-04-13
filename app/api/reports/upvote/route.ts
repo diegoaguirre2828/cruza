@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
     .select('id')
     .eq('report_id', reportId)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (existing) {
     // Remove upvote
     await db.from('report_upvotes').delete().eq('report_id', reportId).eq('user_id', user.id)
-    const { data: cur } = await db.from('crossing_reports').select('upvotes').eq('id', reportId).single()
+    const { data: cur } = await db.from('crossing_reports').select('upvotes').eq('id', reportId).maybeSingle()
     await db.from('crossing_reports').update({ upvotes: Math.max(0, (cur?.upvotes || 1) - 1) }).eq('id', reportId)
     return NextResponse.json({ upvoted: false })
   }
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     .from('crossing_reports')
     .select('upvotes, user_id')
     .eq('id', reportId)
-    .single()
+    .maybeSingle()
 
   if (report) {
     await db.from('crossing_reports')

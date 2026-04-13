@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/auth'
 import { GoogleButton } from '@/components/GoogleButton'
+import { PhoneAuthForm } from '@/components/PhoneAuthForm'
 import { useLang } from '@/lib/LangContext'
+import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
 
 function friendlyLoginError(raw: string, lang: 'es' | 'en'): string {
   const msg = raw.toLowerCase()
@@ -37,7 +39,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [magicMode, setMagicMode] = useState(false)
+  const [mode, setMode] = useState<'password' | 'magic' | 'phone'>('password')
   const [magicSent, setMagicSent] = useState(false)
 
   function getNextPath() {
@@ -112,29 +114,55 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* Mode toggle: password vs magic link */}
-          <div className="flex bg-gray-100 rounded-xl p-1">
+          {/* Mode toggle: phone / password / magic link. Phone tab gated
+              on PHONE_AUTH_ENABLED until Twilio 10DLC registration clears. */}
+          <div className={`grid gap-1.5 ${PHONE_AUTH_ENABLED ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            {PHONE_AUTH_ENABLED && (
+              <button
+                type="button"
+                onClick={() => { setMode('phone'); setError(''); setMagicSent(false) }}
+                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                  mode === 'phone'
+                    ? 'bg-blue-50 border-blue-500 text-blue-700'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-base">📱</span>
+                <span>{es ? 'Por SMS' : 'Text me'}</span>
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => { setMagicMode(false); setError(''); setMagicSent(false) }}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                !magicMode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              onClick={() => { setMode('password'); setError(''); setMagicSent(false) }}
+              className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                mode === 'password'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
               }`}
             >
-              {es ? 'Contraseña' : 'Password'}
+              <span className="text-base">🔒</span>
+              <span>{es ? 'Con clave' : 'Password'}</span>
             </button>
             <button
               type="button"
-              onClick={() => { setMagicMode(true); setError(''); setMagicSent(false) }}
-              className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-                magicMode ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+              onClick={() => { setMode('magic'); setError(''); setMagicSent(false) }}
+              className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                mode === 'magic'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
               }`}
             >
-              ✉️ {es ? 'Link por correo' : 'Email link'}
+              <span className="text-base">✉️</span>
+              <span>{es ? 'Por correo' : 'Email link'}</span>
             </button>
           </div>
 
-          {magicSent ? (
+          {mode === 'phone' ? (
+            <PhoneAuthForm
+              shouldCreateUser={false}
+              onComplete={() => router.push(getNextPath())}
+            />
+          ) : magicSent ? (
             <div className="text-center py-3">
               <p className="text-2xl mb-1">📬</p>
               <p className="text-sm font-bold text-gray-900">{es ? 'Link enviado a' : 'Link sent to'}</p>
@@ -144,7 +172,7 @@ export default function LoginPage() {
               </p>
             </div>
           ) : (
-            <form onSubmit={magicMode ? handleMagicLink : handleLogin} className="space-y-4">
+            <form onSubmit={mode === 'magic' ? handleMagicLink : handleLogin} className="space-y-4">
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2">
                   {error}
@@ -164,7 +192,7 @@ export default function LoginPage() {
                   placeholder="you@email.com"
                 />
               </div>
-              {!magicMode && (
+              {mode === 'password' && (
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-medium text-gray-700">{t.passwordLabel}</label>
@@ -190,7 +218,7 @@ export default function LoginPage() {
               >
                 {loading
                   ? (es ? 'Enviando…' : 'Sending…')
-                  : magicMode
+                  : mode === 'magic'
                     ? (es ? '✉️ Enviarme link' : '✉️ Send me a link')
                     : t.signInBtn}
               </button>

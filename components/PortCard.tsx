@@ -192,12 +192,49 @@ export function PortCard({ port, signal }: Props) {
             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Closed</p>
           </div>
         ) : !allNull || port.vehicleClosed || port.pedestrianClosed || port.commercialClosed ? (
-          <div className="flex gap-3 mt-2 justify-around">
-            {(port.vehicle !== null || port.vehicleClosed) && <WaitBadge minutes={port.vehicle} label={t.laneCar} lanesOpen={port.vehicleLanesOpen} isClosed={port.vehicleClosed} />}
-            {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} lanesOpen={port.sentriLanesOpen} />}
-            {(port.pedestrian !== null || port.pedestrianClosed) && <WaitBadge minutes={port.pedestrian} label={t.laneWalk} lanesOpen={port.pedestrianLanesOpen} isClosed={port.pedestrianClosed} />}
-            {(port.commercial !== null || port.commercialClosed) && <WaitBadge minutes={port.commercial} label={t.laneTruck} lanesOpen={port.commercialLanesOpen} isClosed={port.commercialClosed} />}
-          </div>
+          <>
+            {(() => {
+              // Highlight the fastest lane when it's meaningfully faster
+              // than the standard car lane — biggest power-user win.
+              const car = port.vehicle
+              const lanes: { key: 'sentri' | 'pedestrian'; min: number; label: string; emoji: string }[] = []
+              if (port.sentri != null && car != null && port.sentri < car - 10) {
+                lanes.push({
+                  key: 'sentri',
+                  min: port.sentri,
+                  label: 'SENTRI',
+                  emoji: '⚡',
+                })
+              }
+              if (port.pedestrian != null && car != null && port.pedestrian < car - 15) {
+                lanes.push({
+                  key: 'pedestrian',
+                  min: port.pedestrian,
+                  label: lang === 'es' ? 'A pie' : 'Walking',
+                  emoji: '🚶',
+                })
+              }
+              if (lanes.length === 0 || car == null) return null
+              const best = lanes.reduce((a, b) => (b.min < a.min ? b : a))
+              const savings = car - best.min
+              return (
+                <div className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <span className="text-sm">{best.emoji}</span>
+                  <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                    {lang === 'es'
+                      ? `${best.label} ahorra ${savings} min`
+                      : `${best.label} saves ${savings} min`}
+                  </span>
+                </div>
+              )
+            })()}
+            <div className="flex gap-3 mt-2 justify-around">
+              {(port.vehicle !== null || port.vehicleClosed) && <WaitBadge minutes={port.vehicle} label={t.laneCar} lanesOpen={port.vehicleLanesOpen} isClosed={port.vehicleClosed} />}
+              {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} lanesOpen={port.sentriLanesOpen} />}
+              {(port.pedestrian !== null || port.pedestrianClosed) && <WaitBadge minutes={port.pedestrian} label={t.laneWalk} lanesOpen={port.pedestrianLanesOpen} isClosed={port.pedestrianClosed} />}
+              {(port.commercial !== null || port.commercialClosed) && <WaitBadge minutes={port.commercial} label={t.laneTruck} lanesOpen={port.commercialLanesOpen} isClosed={port.commercialClosed} />}
+            </div>
+          </>
         ) : (
           <div
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}

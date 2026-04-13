@@ -60,9 +60,12 @@ export function InstallPrompt() {
       return
     }
 
-    // Don't show if dismissed recently
-    const dismissed = localStorage.getItem('install_dismissed')
-    if (dismissed && Date.now() - parseInt(dismissed, 10) < 7 * 24 * 60 * 60 * 1000) return
+    // Use a versioned dismiss key so users who dismissed the older
+    // install banner (before the 3-month-Pro offer existed) will see
+    // the new offer once. Cooldown is 3 days for users who dismiss the
+    // current version.
+    const dismissed = localStorage.getItem('install_dismissed_pwa_pro_v1')
+    if (dismissed && Date.now() - parseInt(dismissed, 10) < 3 * 24 * 60 * 60 * 1000) return
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(navigator.userAgent.includes('CriOS'))
     setIsIos(ios)
@@ -100,7 +103,7 @@ export function InstallPrompt() {
   }, [user])
 
   function dismiss() {
-    localStorage.setItem('install_dismissed', Date.now().toString())
+    localStorage.setItem('install_dismissed_pwa_pro_v1', Date.now().toString())
     setShow(false)
   }
 

@@ -99,6 +99,89 @@ async function notifyCircleMembers(
   )
 }
 
+// Fire push notifications immediately when an urgent incident is
+// reported at a port (accident, inspection, hazard). Only users who
+// have an active alert preference for the port get notified, and we
+// rate-limit per (user, port, type) via alert_preferences.last_triggered_at
+// to avoid spam if multiple reports come in for the same incident.
+async function notifyUrgentSubscribers(
+  portId: string,
+  reportType: string,
+  description: string | null,
+) {
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
+
+  const URGENT_TYPES = ['accident', 'inspection', 'road_hazard', 'reckless_driver', 'officer_secondary', 'officer_k9']
+  if (!URGENT_TYPES.includes(reportType)) return
+
+  const db = getServiceClient()
+  const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+
+  // Find active alert preferences for this port that haven't been
+  // urgently triggered in the last 15 minutes.
+  const { data: alerts } = await db
+    .from('alert_preferences')
+    .select('id, user_id, last_urgent_at')
+    .eq('port_id', portId)
+    .eq('active', true)
+    .or(`last_urgent_at.is.null,last_urgent_at.lt.${fifteenMinAgo}`)
+
+  if (!alerts || alerts.length === 0) return
+
+  const userIds = [...new Set(alerts.map(a => a.user_id))]
+  const { data: subs } = await db
+    .from('push_subscriptions')
+    .select('user_id, endpoint, p256dh, auth')
+    .in('user_id', userIds)
+
+  if (!subs || subs.length === 0) return
+
+  const meta = getPortMeta(portId)
+  const portLabel = meta?.localName ? `${meta.city} (${meta.localName})` : meta?.city || portId
+
+  const typeLabel: Record<string, { es: string; en: string; emoji: string }> = {
+    accident: { es: 'Accidente', en: 'Accident', emoji: '🚨' },
+    inspection: { es: 'Inspección', en: 'Inspection', emoji: '🛂' },
+    road_hazard: { es: 'Peligro en el camino', en: 'Road hazard', emoji: '⚠️' },
+    reckless_driver: { es: 'Conductor peligroso', en: 'Reckless driver', emoji: '⚠️' },
+    officer_secondary: { es: 'Inspección secundaria', en: 'Secondary inspection', emoji: '🛂' },
+    officer_k9: { es: 'Unidad K9', en: 'K9 unit', emoji: '🐕' },
+  }
+  const t = typeLabel[reportType] || { es: 'Alerta', en: 'Alert', emoji: '⚠️' }
+
+  const title = `${t.emoji} ${t.es} en ${portLabel}`
+  const body = description?.slice(0, 120) || `Reporte urgente — ${t.es.toLowerCase()}`
+
+  await Promise.allSettled(
+    subs.map(async (sub) => {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify({
+            title,
+            body,
+            url: `/port/${encodeURIComponent(portId)}`,
+            tag: `urgent-${portId}-${reportType}`,
+            requireInteraction: true,
+          }),
+          { urgency: 'high', TTL: 900 }
+        )
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'statusCode' in err && (err as { statusCode: number }).statusCode === 410) {
+          await db.from('push_subscriptions').delete().eq('user_id', sub.user_id)
+        }
+      }
+    })
+  )
+
+  // Mark all triggered alerts so we don't re-fire within 15 min
+  const now = new Date().toISOString()
+  await db
+    .from('alert_preferences')
+    .update({ last_urgent_at: now })
+    .in('id', alerts.map(a => a.id))
+}
+
 async function getUser() {
   const cookieStore = await cookies()
   const supabase = createServerClient(
@@ -267,6 +350,12 @@ export async function POST(req: NextRequest) {
       console.error('circle notify failed:', err)
     })
   }
+
+  // Urgent fan-out: accident/inspection/hazard reports get pushed
+  // immediately to anyone with an active alert pref on this port.
+  notifyUrgentSubscribers(portId, mappedType, (description || note) || null).catch((err) => {
+    console.error('urgent notify failed:', err)
+  })
 
   // Award points if logged in
   let pointsEarned = 0

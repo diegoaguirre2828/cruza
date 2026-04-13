@@ -19,6 +19,7 @@ import { ReportForm } from '@/components/ReportForm'
 import { ReportsFeed } from '@/components/ReportsFeed'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
+import { HourlyWaitChart } from '@/components/HourlyWaitChart'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
 import Link from 'next/link'
@@ -774,6 +775,9 @@ export function PortDetailClient({ port, portId }: Props) {
           </span>
         </div>
       </div>
+
+      {/* Typical day pattern — free for everyone, builds trust */}
+      <HourlyWaitChart portId={portId} />
 
       {/* AI Predictions — Pro+ only */}
       {canAccess(tier, 'ai_predictions') ? (

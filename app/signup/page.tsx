@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/auth'
 import { GoogleButton } from '@/components/GoogleButton'
+import { PhoneAuthForm } from '@/components/PhoneAuthForm'
 import { useLang } from '@/lib/LangContext'
+import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
 
-type Mode = 'password' | 'magic'
+type Mode = 'password' | 'magic' | 'phone'
 
 // Translate Supabase auth error codes into friendly, non-scary text.
 // The raw messages are English and technical; this maps them to the user's
@@ -151,31 +153,73 @@ export default function SignupPage() {
           <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
         </div>
 
-        {/* Mode toggle */}
-        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-3">
+        {/* Mode toggle — ways to sign up. Phone tab is gated on
+            PHONE_AUTH_ENABLED until Twilio 10DLC registration clears. */}
+        <div className={`grid gap-1.5 mb-3 ${PHONE_AUTH_ENABLED ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {PHONE_AUTH_ENABLED && (
+            <button
+              type="button"
+              onClick={() => { setMode('phone'); setMagicSent(false); setError('') }}
+              className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                mode === 'phone'
+                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              <span className="text-base">📱</span>
+              <span>{es ? 'Por SMS' : 'Text me'}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => { setMode('password'); setMagicSent(false); setError('') }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-              mode === 'password' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'
+            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+              mode === 'password'
+                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
             }`}
           >
-            {es ? 'Contraseña' : 'Password'}
+            <span className="text-base">🔒</span>
+            <span>{es ? 'Con clave' : 'Password'}</span>
           </button>
           <button
             type="button"
             onClick={() => { setMode('magic'); setMagicSent(false); setError('') }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
-              mode === 'magic' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'
+            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+              mode === 'magic'
+                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
             }`}
           >
-            ✉️ {es ? 'Link por correo' : 'Email link'}
+            <span className="text-base">✉️</span>
+            <span>{es ? 'Por correo' : 'Email link'}</span>
           </button>
         </div>
 
         {/* Form — visible by default, no hidden <details> wrapper */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-          {magicSent ? (
+          {mode === 'phone' ? (
+            <PhoneAuthForm
+              shouldCreateUser={true}
+              onComplete={(isNew) => {
+                const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
+                if (ref && isNew) {
+                  fetch('/api/referral/award', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
+                  }).catch(() => {})
+                }
+                const nextParam = typeof window !== 'undefined'
+                  ? new URLSearchParams(window.location.search).get('next')
+                  : null
+                const destination = nextParam && nextParam.startsWith('/')
+                  ? nextParam
+                  : isNew ? '/welcome' : '/dashboard'
+                router.push(destination)
+              }}
+            />
+          ) : magicSent ? (
             <div className="text-center py-3">
               <p className="text-2xl mb-2">📬</p>
               <p className="text-sm font-bold text-gray-900 dark:text-gray-100">

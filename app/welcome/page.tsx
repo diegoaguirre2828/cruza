@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
+import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
 
 // Forced activation flow. Every new signup lands here before the dashboard.
@@ -25,6 +26,7 @@ function WelcomeInner() {
   const params = useSearchParams()
   const { lang } = useLang()
   const es = lang === 'es'
+  const { supported: pushSupported, subscribe: subscribePush } = usePushNotifications()
 
   const [ports, setPorts] = useState<PortWaitTime[]>([])
   const [loading, setLoading] = useState(true)
@@ -114,6 +116,16 @@ function WelcomeInner() {
         setSubmitting(false)
         return
       }
+
+      // Trigger push permission prompt RIGHT HERE — this is the only
+      // moment a browser will accept the request, because it must be
+      // tied to a user gesture. Without this step, the alert we just
+      // created can only deliver via email (no vibration on phone).
+      // If the user denies, we still proceed — email still works.
+      if (pushSupported) {
+        try { await subscribePush() } catch { /* non-blocking */ }
+      }
+
       // Redirect to dashboard with celebration flag
       const next = params?.get('next') || '/dashboard?welcomed=1'
       router.push(next)

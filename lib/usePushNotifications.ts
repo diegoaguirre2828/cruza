@@ -22,9 +22,31 @@ export function usePushNotifications() {
   async function subscribe() {
     setLoading(true)
     try {
+      // Ensure permission is granted (will prompt the user if default)
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        const result = await Notification.requestPermission()
+        if (result !== 'granted') {
+          setLoading(false)
+          return
+        }
+      }
+      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        setLoading(false)
+        return
+      }
+
       const reg = await navigator.serviceWorker.ready
       const existing = await reg.pushManager.getSubscription()
-      if (existing) { setSubscribed(true); setLoading(false); return }
+      if (existing) {
+        // Make sure the server has this endpoint recorded (it may have
+        // been created before the user was logged in)
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(existing),
+        }).catch(() => {})
+        setSubscribed(true); setLoading(false); return
+      }
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if (!vapidKey) throw new Error('VAPID key not configured')

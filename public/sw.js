@@ -1,6 +1,6 @@
 // Cruzar Service Worker — Push Notifications + Offline Shell
 
-const CACHE = 'cruzar-v2'
+const CACHE = 'cruzar-v3'
 const SHELL = ['/', '/offline']
 
 self.addEventListener('install', e => {
@@ -48,15 +48,27 @@ self.addEventListener('fetch', e => {
 
 self.addEventListener('push', e => {
   if (!e.data) return
-  const data = e.data.json()
+  let data = {}
+  try { data = e.data.json() } catch { data = { title: 'Cruzar', body: e.data.text() } }
+
+  // Urgent alerts (accidents, inspections, wait drops) get a stronger
+  // buzz and stay on screen until the user taps. Normal pushes use a
+  // softer double-pulse.
+  const isUrgent = !!data.requireInteraction || (data.tag || '').startsWith('urgent-')
+  const vibrate = data.vibrate
+    || (isUrgent ? [400, 120, 400, 120, 400, 120, 600] : [250, 100, 250])
+
   e.waitUntil(
-    self.registration.showNotification(data.title || 'Cruzar Alert', {
+    self.registration.showNotification(data.title || 'Cruzar', {
       body: data.body || '',
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       tag: data.tag || 'cruzar-alert',
       data: { url: data.url || '/' },
-      vibrate: [200, 100, 200],
+      vibrate,
+      requireInteraction: isUrgent,
+      renotify: true,
+      silent: false,
     })
   )
 })

@@ -61,8 +61,10 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
         title: `🌉 ${portName} — ${wait} min wait`,
         body: `Wait dropped below your threshold. Tap to view live times.`,
         url: `/port/${encodeURIComponent(portId)}`,
-        tag: `alert-${portId}`,
-      })
+        tag: `urgent-alert-${portId}`,
+        requireInteraction: true,
+      }),
+      { urgency: 'high', TTL: 600 }
     )
   } catch (err: unknown) {
     // Subscription expired — remove it
