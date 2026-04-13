@@ -275,7 +275,9 @@ export function HeroGenerator() {
           {/* Brand row */}
           <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-3xl font-black leading-none tracking-tight">Cruzar</p>
+              <p className="text-3xl font-black leading-none tracking-tight">
+                Cruzar<span className="text-blue-300">.app</span>
+              </p>
               <p className="text-[11px] text-blue-200 font-semibold mt-0.5">Tiempos de espera en vivo</p>
             </div>
             <div className="text-right">
