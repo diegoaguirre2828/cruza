@@ -139,6 +139,7 @@ export function NearMeRail({ ports }: Props) {
                   {name}
                 </p>
                 <div className="mt-1.5 flex items-baseline gap-1">
+                  <span className="text-[11px] leading-none" aria-hidden="true">🚗</span>
                   {(() => {
                     const w = waitText(port.vehicle ?? null)
                     return (
@@ -151,6 +152,24 @@ export function NearMeRail({ ports }: Props) {
                     )
                   })()}
                 </div>
+                {(port.pedestrian != null || port.pedestrianClosed) && (
+                  <div className="mt-0.5 flex items-baseline gap-1 text-gray-500 dark:text-gray-400">
+                    <span className="text-[10px] leading-none" aria-hidden="true">🚶</span>
+                    {port.pedestrian != null ? (
+                      (() => {
+                        const w = waitText(port.pedestrian)
+                        return (
+                          <>
+                            <span className="text-xs font-bold tabular-nums leading-none">{w.value}</span>
+                            <span className="text-[9px] font-bold">{w.unit}</span>
+                          </>
+                        )
+                      })()
+                    ) : (
+                      <span className="text-[9px] font-bold">{es ? 'cerrado' : 'closed'}</span>
+                    )}
+                  </div>
+                )}
                 {dist != null && (
                   <p className="text-[10px] text-gray-400 mt-1">
                     {dist < 1 ? '<1 km' : `${dist.toFixed(0)} km`}

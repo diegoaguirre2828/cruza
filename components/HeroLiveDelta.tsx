@@ -293,6 +293,7 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
               {headlineName}
             </p>
             <div className="mt-2 flex items-baseline gap-2 cruzar-rise cruzar-rise-delay-1">
+              <span className="text-lg leading-none" aria-hidden="true">🚗</span>
               {(() => {
                 const split = splitWaitLabel(headlineWait)
                 return (
@@ -305,6 +306,35 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
                 )
               })()}
             </div>
+
+            {/* Walk (pedestrian) wait — compact secondary stat so users
+                see both modes at a glance. Pedestrian crossings matter
+                a lot for downtown bridges (Hidalgo, Brownsville Gateway,
+                etc.) where foot traffic is 30-50% of daily crossers.
+                Hidden when the walk lane has no data or is closed. */}
+            {(() => {
+              const walk = headlinePort.pedestrian
+              const walkClosed = headlinePort.pedestrianClosed
+              if (walk == null && !walkClosed) return null
+              const split = walk != null ? splitWaitLabel(walk) : null
+              return (
+                <div className="mt-2 inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 cruzar-rise cruzar-rise-delay-1">
+                  <span className="text-sm leading-none" aria-hidden="true">🚶</span>
+                  <span className="text-[11px] uppercase tracking-wider font-bold text-blue-100">
+                    {es ? 'Peatonal' : 'Walk'}
+                  </span>
+                  {split ? (
+                    <span className="text-sm font-black text-white tabular-nums">
+                      {split.value}<span className="text-[11px] font-bold text-blue-100 ml-0.5">{split.unit}</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-bold text-white/80">
+                      {es ? 'cerrado' : 'closed'}
+                    </span>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* Loss-aversion microcopy: staying = uncertainty, signing up = certainty.
                 Only shown to guests — logged-in users have already committed. */}
