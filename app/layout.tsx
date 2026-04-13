@@ -9,6 +9,7 @@ import { CruzFab } from "@/components/CruzFab";
 import { ReactionsWelcomeToast } from "@/components/ReactionsWelcomeToast";
 import { PWASetup } from "@/components/PWASetup";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -92,6 +93,7 @@ export default function RootLayout({
           </LangProvider>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
           <Script
             async
