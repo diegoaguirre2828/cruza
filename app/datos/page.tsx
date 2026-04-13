@@ -168,6 +168,8 @@ export default function DatosPage() {
 
             {selectedPortId && <SentriBreakevenCard portId={selectedPortId} es={es} />}
             {selectedPortId && <AccidentImpactCard portId={selectedPortId} es={es} />}
+            {selectedPortId && <LaneStatsCard portId={selectedPortId} es={es} />}
+            {selectedPortId && <WeatherImpactCard portId={selectedPortId} es={es} />}
           </>
         )}
       </div>
@@ -301,6 +303,134 @@ function AccidentImpactCard({ portId, es }: { portId: string; es: boolean }) {
         {es
           ? `Modelo basado en ${data.samples} incidentes reportados en los últimos 60 días cruzados con las lecturas de espera.`
           : `Model based on ${data.samples} reported incidents over the last 60 days cross-referenced with wait readings.`}
+      </p>
+    </div>
+  )
+}
+
+// Lane-level community stats card — aggregates the source_meta
+// lane_info that Enrique's feature captures. "The sin-rayos lane
+// was marked slowest in 68% of reports."
+function LaneStatsCard({ portId, es }: { portId: string; es: boolean }) {
+  const [data, setData] = useState<{
+    samples: number
+    slowLaneCounts: Record<string, number>
+    slowLanePct: Record<string, number>
+    avgLanesOpen: number | null
+    avgLanesXray: number | null
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/ports/${encodeURIComponent(portId)}/lane-stats`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => setData(null))
+  }, [portId])
+
+  if (!data || data.samples < 3) return null
+
+  const slowLaneLabels: Record<string, { es: string; en: string }> = {
+    con_rayos: { es: 'Con rayos X', en: 'With X-ray' },
+    sin_rayos: { es: 'Sin rayos X', en: 'No X-ray' },
+    sentri:    { es: 'SENTRI',      en: 'SENTRI' },
+    parejo:    { es: 'Parejas',     en: 'All similar' },
+  }
+
+  const ordered = Object.entries(data.slowLanePct).sort((a, b) => b[1] - a[1])
+  const topSlow = ordered[0]
+
+  return (
+    <div className="mt-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-300 dark:border-purple-800 rounded-2xl p-4">
+      <p className="text-[10px] uppercase tracking-widest font-black text-purple-700 dark:text-purple-400">
+        🛣️ {es ? 'Datos de filas (de la gente)' : 'Lane data (from the community)'}
+      </p>
+      {topSlow && topSlow[1] > 0 && (
+        <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-1 leading-tight">
+          {es
+            ? `"${slowLaneLabels[topSlow[0]]?.es || topSlow[0]}" marcada como más lenta el ${topSlow[1]}% del tiempo`
+            : `"${slowLaneLabels[topSlow[0]]?.en || topSlow[0]}" marked slowest ${topSlow[1]}% of the time`}
+        </p>
+      )}
+      {(data.avgLanesOpen != null || data.avgLanesXray != null) && (
+        <p className="text-[12px] text-purple-800 dark:text-purple-300 mt-1 font-semibold">
+          {es ? 'Típicamente ' : 'Typically '}
+          {data.avgLanesOpen != null ? `${data.avgLanesOpen} ${es ? 'filas abiertas' : 'lanes open'}` : ''}
+          {data.avgLanesOpen != null && data.avgLanesXray != null ? ' · ' : ''}
+          {data.avgLanesXray != null ? `${data.avgLanesXray} ${es ? 'con rayos X' : 'with X-ray'}` : ''}
+        </p>
+      )}
+      <p className="text-[10px] text-purple-700 dark:text-purple-300 mt-2 leading-snug">
+        {es
+          ? `Basado en ${data.samples} reportes de la comunidad con detalles de fila.`
+          : `Based on ${data.samples} community reports with lane details.`}
+      </p>
+    </div>
+  )
+}
+
+// Weather impact card — bucket avg waits by weather condition.
+// Depends on schema-v24's weather columns being populated, which
+// kicks in ~15 min after the migration lands and the cron fires.
+// Gracefully hides when there aren't enough readings per bucket.
+function WeatherImpactCard({ portId, es }: { portId: string; es: boolean }) {
+  const [data, setData] = useState<{
+    samples: number
+    baselineCondition: string | null
+    baselineWaitMin: number | null
+    conditions: Array<{
+      key: string
+      label: { emoji: string; es: string; en: string }
+      avgWaitMin: number
+      samples: number
+      deltaVsBaselineMin: number
+    }>
+  } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/ports/${encodeURIComponent(portId)}/weather-impact`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => setData(null))
+  }, [portId])
+
+  if (!data || data.conditions.length < 2) return null
+
+  return (
+    <div className="mt-3 bg-gradient-to-br from-sky-50 to-cyan-50 dark:from-sky-900/20 dark:to-cyan-900/20 border-2 border-sky-300 dark:border-sky-800 rounded-2xl p-4">
+      <p className="text-[10px] uppercase tracking-widest font-black text-sky-700 dark:text-sky-400">
+        🌤️ {es ? 'Impacto del clima' : 'Weather impact'}
+      </p>
+      <p className="text-xs text-sky-800 dark:text-sky-300 mt-0.5 font-semibold leading-snug">
+        {es
+          ? `Cómo cambia la espera con el clima en este puente.`
+          : `How wait time shifts with weather at this bridge.`}
+      </p>
+      <div className="mt-3 space-y-1.5">
+        {data.conditions.map((c) => (
+          <div key={c.key} className="flex items-center gap-2 text-xs">
+            <span className="text-base leading-none w-5 text-center">{c.label.emoji}</span>
+            <span className="font-bold text-gray-800 dark:text-gray-200 flex-1 min-w-0 truncate">
+              {es ? c.label.es : c.label.en}
+            </span>
+            <span className="font-black text-gray-900 dark:text-gray-100 tabular-nums">
+              ~{c.avgWaitMin} min
+            </span>
+            {c.deltaVsBaselineMin !== 0 && (
+              <span
+                className={`text-[10px] font-black tabular-nums w-12 text-right ${
+                  c.deltaVsBaselineMin > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                }`}
+              >
+                {c.deltaVsBaselineMin > 0 ? '+' : ''}{c.deltaVsBaselineMin} min
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className="text-[10px] text-sky-700 dark:text-sky-300 mt-2 leading-snug">
+        {es
+          ? `${data.samples} lecturas de los últimos 30 días.`
+          : `${data.samples} readings from the last 30 days.`}
       </p>
     </div>
   )

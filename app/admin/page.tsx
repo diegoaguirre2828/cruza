@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Copy, Check, ExternalLink, RefreshCw } from 'lucide-react'
 import { HeroGenerator } from '@/components/admin/HeroGenerator'
 import { ViralLoopDetail } from '@/components/admin/ViralLoopDetail'
+import { DivergenceTile } from '@/components/admin/DivergenceTile'
 
 const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 
@@ -1198,6 +1199,7 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <ViralLoopDetail />
+                    <DivergenceTile />
                   </div>
 
                   {/* Tiers */}

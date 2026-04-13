@@ -101,6 +101,8 @@ const SLOW_LANE_OPTIONS = [
   { value: 'parejo',     es: 'Todas parejas',    en: 'All similar' },
 ]
 
+const FIRST_WELCOME_KEY = 'cruzar_guardian_welcomed_v1'
+
 export function ReportForm({ portId, onSubmitted, port }: Props) {
   const { lang } = useLang()
   const [selected, setSelected] = useState<string | null>(null)
@@ -113,6 +115,7 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
   const [lanesOpen, setLanesOpen] = useState<number | null>(null)
   const [lanesXray, setLanesXray] = useState<number | null>(null)
   const [slowLane, setSlowLane] = useState<string | null>(null)
+  const [isFirstReport, setIsFirstReport] = useState(false)
 
   // Pull impact numbers the moment the submission lands — shown in the
   // "Gracias, guardián" screen so the user's contribution feels concrete
@@ -172,6 +175,16 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
       // as they scroll. Pure client-side — no DB query needed to check
       // "did I report this" on every port card render.
       saveMyReport(portId, selected, null)
+
+      // First-ever report from this device → flip into the welcome
+      // state so the done screen shows the bigger "bienvenido a los
+      // guardianes" celebration instead of the standard thank-you.
+      try {
+        if (!localStorage.getItem(FIRST_WELCOME_KEY)) {
+          setIsFirstReport(true)
+          localStorage.setItem(FIRST_WELCOME_KEY, String(Date.now()))
+        }
+      } catch { /* ignore */ }
       setDone(true)
       // Auto-dismiss extended from 8s → 14s so users have time to read the
       // impact numbers and tap the share button. The screen is the payoff,
@@ -217,14 +230,61 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
         <ReportSentAnimation variant="broadcast" />
 
         <div className="text-center py-1">
-          <p className="text-green-600 font-black text-xl">
-            {es ? 'Gracias, guardián' : 'Thank you, guardian'}
-          </p>
-          <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1.5 font-medium leading-snug px-2">
-            {es
-              ? 'Tu reporte acaba de salir. Así se cuida a la raza del puente.'
-              : 'Your report is out. This is how we look out for each other at the bridge.'}
-          </p>
+          {isFirstReport ? (
+            <>
+              <p className="text-2xl mb-1">🎉</p>
+              <p className="text-green-600 font-black text-2xl leading-tight">
+                {es ? 'Bienvenido, guardián' : 'Welcome, guardian'}
+              </p>
+              <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-2 font-medium leading-snug px-2">
+                {es
+                  ? 'Tu primer reporte acaba de salir. Oficialmente eres parte de la raza que cuida a los que cruzan.'
+                  : "Your first report is out. You're officially part of the community that looks out for every crosser."}
+              </p>
+              <div className="mt-3 grid grid-cols-5 gap-1 px-2">
+                {[
+                  { at: 1, emoji: '🌱', es: 'Novato', en: 'Novice' },
+                  { at: 5, emoji: '🛡️', es: 'Confiable', en: 'Trusted' },
+                  { at: 10, emoji: '⚔️', es: 'Veterano', en: 'Veteran' },
+                  { at: 20, emoji: '👑', es: 'Legendario', en: 'Legend' },
+                  { at: 50, emoji: '🔥', es: 'Mítico', en: 'Mythic' },
+                ].map((t, i) => (
+                  <div
+                    key={t.at}
+                    className={`text-center rounded-lg py-1.5 ${
+                      i === 0
+                        ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700'
+                        : 'bg-gray-100 dark:bg-gray-800/60'
+                    }`}
+                  >
+                    <p className="text-base leading-none">{t.emoji}</p>
+                    <p className={`text-[9px] font-bold leading-tight mt-0.5 ${i === 0 ? 'text-amber-800 dark:text-amber-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {es ? t.es : t.en}
+                    </p>
+                    <p className={`text-[9px] leading-none tabular-nums ${i === 0 ? 'text-amber-700 dark:text-amber-300' : 'text-gray-400 dark:text-gray-500'}`}>
+                      {t.at}+
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2.5 leading-snug">
+                {es
+                  ? '4 reportes más y subes a Guardián Confiable 🛡️'
+                  : '4 more reports and you become a Trusted Guardian 🛡️'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-green-600 font-black text-xl">
+                {es ? 'Gracias, guardián' : 'Thank you, guardian'}
+              </p>
+              <p className="text-[13px] text-gray-600 dark:text-gray-300 mt-1.5 font-medium leading-snug px-2">
+                {es
+                  ? 'Tu reporte acaba de salir. Así se cuida a la raza del puente.'
+                  : 'Your report is out. This is how we look out for each other at the bridge.'}
+              </p>
+            </>
+          )}
         </div>
 
         {/* "Your report is now live" — the FB-like moment where the user

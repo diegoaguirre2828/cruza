@@ -20,6 +20,7 @@ import { RegionalSnapshot } from '@/components/RegionalSnapshot'
 import { InstallPill } from '@/components/InstallPill'
 import { ContributionTodayPill } from '@/components/ContributionTodayPill'
 import { HolidayOverlay } from '@/components/HolidayOverlay'
+import { ReciprocityCard } from '@/components/ReciprocityCard'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -181,6 +182,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             next 14 days. Gives users planning lead time for the days
             FB groups can't warn them about in advance. */}
         {!isBusiness && <HolidayOverlay />}
+
+        {/* Reciprocity card — signed-in users with saved bridges see
+            a "someone reported your bridge" pill when fresh community
+            activity lands on a port they care about. Frames the
+            sighting as a debt-to-return. */}
+        {!isBusiness && tier !== 'guest' && <ReciprocityCard />}
 
         {/* Hero delta — signed-in users only. Shrunk: no more big share
             card, no more hourly pattern (Pro-gated now). Still the polished
