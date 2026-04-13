@@ -21,8 +21,10 @@ export async function GET(req: NextRequest) {
     { reports: data || [] },
     {
       headers: {
-        // Edge cache — feed doesn't need to be millisecond-fresh
-        'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=60',
+        // Edge cache — feed doesn't need to be millisecond-fresh. Bumped
+        // from 20s → 60s to drop DB hit rate on this query to ~1/min
+        // regardless of traffic.
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=180',
       },
     }
   )

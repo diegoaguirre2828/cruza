@@ -207,11 +207,12 @@ export async function GET() {
       },
       {
         headers: {
-          // Vercel edge cache: serve fresh for 15s, stale-while-revalidate
-          // up to 60s. At the same 1-2 req/s traffic we just hit, this
-          // collapses ~80-95% of /api/ports calls onto the edge instead
-          // of hitting Supabase + CBP + HERE every single time.
-          'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=60',
+          // Vercel edge cache: serve fresh for 30s, stale-while-revalidate
+          // up to 2min. CBP data itself only updates every few minutes and
+          // HERE traffic doesn't move second-to-second, so 30s is generous.
+          // Bumped from 15s → 30s to halve the DB/CBP/HERE hit rate under
+          // load after the Supabase disk-IO spike.
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
         },
       },
     )
