@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Send, Bot, User, AlertCircle } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 
@@ -28,8 +29,9 @@ const SUGGESTED_EN = [
   'What happens if I get sent to secondary inspection?',
 ]
 
-export default function ChatPage() {
+function ChatInner() {
   const { lang } = useLang()
+  const params = useSearchParams()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -37,6 +39,19 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const suggested = lang === 'es' ? SUGGESTED_ES : SUGGESTED_EN
+  const autoSentRef = useRef(false)
+
+  // Support ?q= pre-filled queries from the CruzAskCard on the homepage
+  // so suggested questions land inside the chat already answering.
+  useEffect(() => {
+    if (autoSentRef.current) return
+    const q = params?.get('q')
+    if (q && q.trim().length > 0 && q.trim().length < 500) {
+      autoSentRef.current = true
+      send(q.trim())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -248,5 +263,13 @@ export default function ChatPage() {
         </p>
       </div>
     </main>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-gray-950" />}>
+      <ChatInner />
+    </Suspense>
   )
 }

@@ -84,14 +84,46 @@ export function HomeReportsFeed({ initialReports }: Props = {}) {
   const [reports, setReports] = useState<Report[]>(() => initialReports || [])
   const [loading, setLoading] = useState(() => !initialReports || initialReports.length === 0)
   const [showExpired, setShowExpired] = useState(false)
+  const [freshIds, setFreshIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    // Skip the round-trip if the server already handed us data.
-    if (initialReports && initialReports.length > 0) return
-    fetch('/api/reports/recent')
-      .then(r => r.json())
-      .then(d => setReports(d.reports || []))
-      .finally(() => setLoading(false))
+    let cancelled = false
+
+    function load(isInitial: boolean) {
+      fetch('/api/reports/recent')
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return
+          const incoming: Report[] = d.reports || []
+          if (!isInitial) {
+            // Flag any report IDs we haven't seen before — these are the
+            // "new" items that get the fade-in animation. The auto-refresh
+            // creates the Twitter-style "stay and watch" effect.
+            setReports(prev => {
+              const existing = new Set(prev.map(r => r.id))
+              const newOnes = incoming.filter(r => !existing.has(r.id))
+              if (newOnes.length > 0) {
+                setFreshIds(new Set(newOnes.map(r => r.id)))
+                // Clear the fresh flag after the animation settles so
+                // subsequent renders don't keep re-animating the same items.
+                setTimeout(() => { if (!cancelled) setFreshIds(new Set()) }, 2500)
+              }
+              return incoming
+            })
+          } else {
+            setReports(incoming)
+          }
+        })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }
+
+    // Skip the mount fetch if the server already handed us data, but
+    // still start the auto-refresh ticker — the feed should feel live.
+    if (!initialReports || initialReports.length === 0) {
+      load(true)
+    }
+    const refresh = setInterval(() => load(false), 30_000)
+    return () => { cancelled = true; clearInterval(refresh) }
   }, [initialReports])
 
   if (loading) return (
@@ -123,11 +155,15 @@ export function HomeReportsFeed({ initialReports }: Props = {}) {
       {visible.map((r, i) => {
         const label = TYPE_LABEL[r.report_type] ?? { en: 'Update', es: 'Actualización' }
         const expired = isExpired(r)
-        // Stagger the rise-in entrance so the feed feels alive on first paint
-        const delayClass = i < 3 ? `cruzar-rise cruzar-rise-delay-${i + 1}` : 'cruzar-rise'
+        const isFresh = freshIds.has(r.id)
+        // Stagger the rise-in entrance so the feed feels alive on first paint.
+        // Fresh (newly-arrived) items re-play the animation so users notice them.
+        const delayClass = isFresh
+          ? 'cruzar-rise'
+          : i < 3 ? `cruzar-rise cruzar-rise-delay-${i + 1}` : 'cruzar-rise'
         return (
           <Link key={r.id} href={`/port/${encodeURIComponent(r.port_id)}`}>
-            <div className={`${delayClass} bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${expired ? 'opacity-50' : ''}`}>
+            <div className={`${delayClass} bg-white dark:bg-gray-800 rounded-xl border p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${expired ? 'opacity-50' : ''} ${isFresh ? 'border-green-400 dark:border-green-600 ring-2 ring-green-200 dark:ring-green-900/50' : 'border-gray-200 dark:border-gray-700'}`}>
               <span className="text-2xl flex-shrink-0 leading-none">{TYPE_EMOJI[r.report_type] ?? '💬'}</span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">

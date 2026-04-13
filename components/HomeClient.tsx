@@ -13,6 +13,11 @@ import { OnboardingTour } from '@/components/OnboardingTour'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
 import { LiveActivityTicker } from '@/components/LiveActivityTicker'
+import { CruzAskCard } from '@/components/CruzAskCard'
+import { WeatherHook } from '@/components/WeatherHook'
+import { NearMeRail } from '@/components/NearMeRail'
+import { GuardianProgressCard } from '@/components/GuardianProgressCard'
+import { StaticBorderMap } from '@/components/StaticBorderMap'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -165,6 +170,24 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             makes the page feel alive and creates a reason to come back. */}
         {!isBusiness && tier === 'guest' && <LiveActivityTicker initialReports={initialReports} />}
 
+        {/* Weather hook — only surfaces when there's something actionable
+            (rain, fog, high winds) in the next 6h. Otherwise hides itself. */}
+        {!isBusiness && <WeatherHook />}
+
+        {/* Near-me horizontal rail — swipeable preview of the 8 nearest
+            crossings. Every flick is an interaction, each card deep-links
+            into port detail. */}
+        {!isBusiness && <NearMeRail ports={initialPorts} />}
+
+        {/* Guardián progress card — only shown to signed-in users. Shows
+            their weekly report count and the next milestone they're
+            working toward. */}
+        {!isBusiness && tier !== 'guest' && <GuardianProgressCard />}
+
+        {/* Ask Cruz — AI chat entry point with three suggested questions.
+            Infra already built at /chat, just surfaced prominently. */}
+        {!isBusiness && <CruzAskCard />}
+
         {/* Business Command Center — visible only to business tier */}
         <BusinessCommandWidget />
 
@@ -174,7 +197,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         {/* Urgent alerts — accidents & inspections from last 30 min, above the list */}
         {!isBusiness && <UrgentAlerts initialReports={initialReports} />}
 
+        {/* Tiny SVG map showing the whole border color-coded by wait level.
+            Pure inline SVG — no Leaflet, no tiles, no network weight. */}
+        {!isBusiness && <StaticBorderMap ports={initialPorts} />}
+
         <SavedCrossings initialPorts={initialPorts} />
+        <div id="port-list" />
         <PortList />
 
         {/* Primary signup hook — guests only, now BELOW the list so the data
