@@ -36,6 +36,9 @@ export async function GET(req: NextRequest) {
     activeUsers30,
     tierCounts,
     recentReports,
+    reportCountsByUser,
+    alertUsers,
+    savedUsers,
   ] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
     db.from('profiles').select('id', { count: 'exact', head: true }).gte('created_at', ago7),
@@ -50,10 +53,18 @@ export async function GET(req: NextRequest) {
       .select('id, port_id, report_type, wait_minutes, created_at')
       .order('created_at', { ascending: false })
       .limit(20),
+    // Aggregate total report counts per user (for power-user segmentation)
+    db.from('crossing_reports').select('user_id').not('user_id', 'is', null),
+    // Users with at least one active alert (commitment signal)
+    db.from('alert_preferences').select('user_id').eq('active', true),
+    // Users with at least one saved crossing (personalization signal)
+    db.from('saved_crossings').select('user_id'),
   ])
 
-  const activeUsers7Count  = new Set((activeUsers7.data  || []).map(r => r.user_id)).size
-  const activeUsers30Count = new Set((activeUsers30.data || []).map(r => r.user_id)).size
+  const activeUsers7Set  = new Set((activeUsers7.data  || []).map(r => r.user_id))
+  const activeUsers30Set = new Set((activeUsers30.data || []).map(r => r.user_id))
+  const activeUsers7Count  = activeUsers7Set.size
+  const activeUsers30Count = activeUsers30Set.size
 
   const tiers: Record<string, number> = {}
   for (const p of (tierCounts.data || [])) {
@@ -61,8 +72,64 @@ export async function GET(req: NextRequest) {
     tiers[t] = (tiers[t] || 0) + 1
   }
 
-  // Recent signups via auth admin API
-  const { data: authUsers } = await db.auth.admin.listUsers({ page: 1, perPage: 20 })
+  // Build per-user report counts for segmentation
+  const reportsByUser = new Map<string, number>()
+  for (const r of (reportCountsByUser.data || [])) {
+    if (r.user_id) reportsByUser.set(r.user_id, (reportsByUser.get(r.user_id) || 0) + 1)
+  }
+  const usersWithAlerts = new Set((alertUsers.data || []).map((a) => a.user_id).filter(Boolean))
+  const usersWithSaved  = new Set((savedUsers.data || []).map((s) => s.user_id).filter(Boolean))
+
+  // Pull auth users for last_sign_in_at activity signal
+  const { data: authUsers } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  const signedIn7 = new Set<string>()
+  const signedIn30 = new Set<string>()
+  const now7  = Date.now() - 7  * 24 * 60 * 60 * 1000
+  const now30 = Date.now() - 30 * 24 * 60 * 60 * 1000
+  for (const u of (authUsers?.users || [])) {
+    if (!u.last_sign_in_at) continue
+    const t = new Date(u.last_sign_in_at).getTime()
+    if (t >= now7) signedIn7.add(u.id)
+    if (t >= now30) signedIn30.add(u.id)
+  }
+
+  // Compute behavioral segments
+  //
+  // Active (7d):    any signal within 7 days — sign-in OR report
+  // Active (30d):   any signal within 30 days
+  // Returning:      2+ reports OR 1+ active alert OR 1+ saved crossing
+  //                 (implicit "came back to engage with the product")
+  // Power:          3+ reports OR 2+ alerts OR (saved + alert combo)
+  //                 (deeply engaged, most likely to convert to Pro)
+  const activeAny7 = new Set<string>([...activeUsers7Set, ...signedIn7].filter(Boolean))
+  const activeAny30 = new Set<string>([...activeUsers30Set, ...signedIn30].filter(Boolean))
+
+  const allUserIds = new Set<string>()
+  for (const p of (tierCounts.data || [])) {
+    // tierCounts only selected 'tier' — we need ids, re-fetch
+  }
+  // Pull the full profile id list for segmentation math
+  const { data: allProfileIds } = await db.from('profiles').select('id')
+  for (const p of (allProfileIds || [])) allUserIds.add(p.id)
+
+  let returningCount = 0
+  let powerCount = 0
+  let alertUserCount = 0
+  for (const id of allUserIds) {
+    const rpts = reportsByUser.get(id) || 0
+    const hasAlert = usersWithAlerts.has(id)
+    const hasSaved = usersWithSaved.has(id)
+    const alertsForUser = hasAlert ? 1 : 0  // we don't have a per-user alert count here
+
+    const isReturning = rpts >= 2 || hasAlert || hasSaved
+    const isPower = rpts >= 3 || (hasAlert && hasSaved) || alertsForUser >= 2
+
+    if (isReturning) returningCount++
+    if (isPower) powerCount++
+    if (hasAlert) alertUserCount++
+  }
+
+  // Recent signups — reuse the already-fetched authUsers list above
   const recentUsers = (authUsers?.users || [])
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 15)
@@ -87,9 +154,15 @@ export async function GET(req: NextRequest) {
       total:    profilesAll.count ?? 0,
       new7:     newUsers7.count   ?? 0,
       new30:    newUsers30.count  ?? 0,
-      active7:  activeUsers7Count,
-      active30: activeUsers30Count,
-      byTier:   tiers,
+      active7:  activeAny7.size,   // now includes sign-in OR report in 7d
+      active30: activeAny30.size,  // includes sign-in OR report in 30d
+      returning: returningCount,   // 2+ reports OR has alert/saved crossing
+      power:     powerCount,        // 3+ reports OR (alert + saved)
+      withAlerts: alertUserCount,   // personalization / commitment proxy
+      byTier:    tiers,
+      // keep the old report-only numbers too in case anything reads them
+      active7Reports:  activeUsers7Count,
+      active30Reports: activeUsers30Count,
     },
     reports: {
       total:  reportsAll.count ?? 0,

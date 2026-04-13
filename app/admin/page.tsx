@@ -83,7 +83,7 @@ export default function AdminPage() {
   const [advertisers, setAdvertisers] = useState<Advertiser[]>([])
   const [subs, setSubs] = useState<Subscription[]>([])
   const [stats, setStats] = useState<{
-    users: { total: number; new7: number; new30: number; active7: number; active30: number; byTier: Record<string, number> }
+    users: { total: number; new7: number; new30: number; active7: number; active30: number; returning?: number; power?: number; withAlerts?: number; byTier: Record<string, number> }
     reports: { total: number; last7: number; last30: number; recent: { id: string; port_id: string; report_type: string; condition: string; wait_minutes: number | null; created_at: string }[] }
     recentUsers: { id: string; email: string; tier: string; created_at: string }[]
   } | null>(null)
@@ -1078,18 +1078,48 @@ export default function AdminPage() {
                 <p className="text-sm text-gray-400">Loading...</p>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {[
-                      { label: 'Total', value: stats.users.total },
-                      { label: 'New (7d)', value: stats.users.new7 },
-                      { label: 'New (30d)', value: stats.users.new30 },
-                      { label: 'Active (7d)', value: stats.users.active7 },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm text-center">
-                        <p className="text-2xl font-bold text-gray-900">{value}</p>
-                        <p className="text-xs text-gray-500 mt-1">{label}</p>
-                      </div>
-                    ))}
+                  {/* Funnel: total → active → returning → power */}
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Funnel</p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {(() => {
+                        const total = stats.users.total
+                        const active = stats.users.active7
+                        const returning = stats.users.returning ?? 0
+                        const power = stats.users.power ?? 0
+                        const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0
+                        const cards = [
+                          { label: 'Total signups',          value: total,     sub: '100%',               color: 'text-gray-900'  },
+                          { label: 'Active (7d)',             value: active,    sub: `${pct(active)}%`,    color: 'text-blue-700',  hint: 'signed in or reported in last 7 days' },
+                          { label: 'Returning',               value: returning, sub: `${pct(returning)}%`, color: 'text-emerald-700', hint: '2+ reports OR alert OR saved crossing' },
+                          { label: 'Power users',             value: power,     sub: `${pct(power)}%`,     color: 'text-purple-700', hint: '3+ reports OR alert + saved combo' },
+                        ]
+                        return cards.map(({ label, value, sub, color, hint }) => (
+                          <div key={label} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm text-center" title={hint}>
+                            <p className={`text-3xl font-black ${color}`}>{value}</p>
+                            <p className="text-[10px] text-gray-400 font-bold">{sub}</p>
+                            <p className="text-[11px] text-gray-500 mt-1 font-medium">{label}</p>
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Acquisition stats */}
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 mt-3">Acquisition</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { label: 'New (7d)',  value: stats.users.new7 },
+                        { label: 'New (30d)', value: stats.users.new30 },
+                        { label: 'Active (30d)', value: stats.users.active30 },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="bg-gray-50 rounded-xl border border-gray-200 p-3 text-center">
+                          <p className="text-xl font-bold text-gray-900">{value}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">{label}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Tiers */}
