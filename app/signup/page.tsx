@@ -7,153 +7,237 @@ import { createClient } from '@/lib/auth'
 import { GoogleButton } from '@/components/GoogleButton'
 import { useLang } from '@/lib/LangContext'
 
-const BENEFITS_ES = [
-  { emoji: '🔔', text: 'Te avisamos cuando tu puente baje de 30 min' },
-  { emoji: '⭐', text: 'Guarda tus puentes favoritos para verlos primero' },
-  { emoji: '⚡', text: 'Toma 10 segundos — sin tarjeta, sin spam' },
-]
+type Mode = 'password' | 'magic'
 
-const BENEFITS_EN = [
-  { emoji: '🔔', text: 'We ping you when your bridge drops below 30 min' },
-  { emoji: '⭐', text: 'Save your favorite crossings to see them first' },
-  { emoji: '⚡', text: 'Takes 10 seconds — no card, no spam' },
-]
+// Translate Supabase auth error codes into friendly, non-scary text.
+// The raw messages are English and technical; this maps them to the user's
+// language and rewrites the worst offenders.
+function friendlyError(raw: string, lang: 'es' | 'en'): string {
+  const msg = raw.toLowerCase()
+  const es = lang === 'es'
+  if (msg.includes('rate limit') || msg.includes('email_send_rate')) {
+    return es
+      ? 'Demasiados registros en este momento. Usa el botón de Google arriba — es instantáneo.'
+      : 'Too many signups right now. Use the Google button above — instant.'
+  }
+  if (msg.includes('already registered') || msg.includes('already been registered')) {
+    return es
+      ? 'Ya tienes una cuenta con este correo. Entra en la parte de abajo.'
+      : 'You already have an account with this email. Sign in below.'
+  }
+  if (msg.includes('invalid email')) {
+    return es ? 'Ese correo no parece válido. Revísalo.' : "That email doesn't look valid. Double check it."
+  }
+  if (msg.includes('password') && (msg.includes('short') || msg.includes('6'))) {
+    return es ? 'La contraseña debe tener mínimo 6 caracteres.' : 'Password must be at least 6 characters.'
+  }
+  if (msg.includes('password')) {
+    return es ? 'Revisa tu contraseña.' : 'Check your password.'
+  }
+  if (msg.includes('network') || msg.includes('failed to fetch')) {
+    return es
+      ? 'Problema de conexión. Revisa tu internet e intenta de nuevo.'
+      : 'Connection issue. Check your internet and try again.'
+  }
+  // Fallback — surface the raw message but not the stack trace
+  return raw
+}
 
 export default function SignupPage() {
   const router = useRouter()
   const { lang } = useLang()
+  const es = lang === 'es'
+  const [mode, setMode] = useState<Mode>('password')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-
-  const benefits = lang === 'es' ? BENEFITS_ES : BENEFITS_EN
+  const [magicSent, setMagicSent] = useState(false)
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined,
+      },
+    })
     if (error) {
-      const msg = error.message.toLowerCase()
-      // Supabase free-tier SMTP is capped at ~4 emails/hr. When that hits,
-      // it returns "email rate limit exceeded" — useless to the user. Reroute them.
-      if (msg.includes('rate limit') || msg.includes('email_send_rate')) {
-        setError(
-          lang === 'es'
-            ? 'Demasiados registros en este momento. Usa el botón de Google arriba — es instantáneo y no requiere confirmación por correo.'
-            : 'Too many signups right now. Use the Google button above — instant, no email confirmation needed.'
-        )
-      } else {
-        setError(error.message)
-      }
+      setError(friendlyError(error.message, lang))
       setLoading(false)
-    } else {
-      const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
-      if (ref) {
-        try {
-          await fetch('/api/referral/award', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
-          })
-        } catch { /* non-critical */ }
-      }
-      const nextParam =
-        typeof window !== 'undefined'
-          ? new URLSearchParams(window.location.search).get('next')
-          : null
-      router.push(nextParam && nextParam.startsWith('/') ? nextParam : '/dashboard')
+      return
     }
+    // Capture referral if present in localStorage
+    const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
+    if (ref) {
+      try {
+        await fetch('/api/referral/award', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
+        })
+      } catch { /* non-critical */ }
+    }
+    const nextParam = typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('next')
+      : null
+    router.push(nextParam && nextParam.startsWith('/') ? nextParam : '/dashboard')
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined,
+      },
+    })
+    if (error) {
+      setError(friendlyError(error.message, lang))
+      setLoading(false)
+      return
+    }
+    setMagicSent(true)
+    setLoading(false)
   }
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
 
-        {/* Header */}
+        {/* Header — tight, free-first, clear value prop */}
         <div className="text-center mb-5">
-          <div className="text-4xl mb-3">🔔</div>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">
-            {lang === 'es' ? 'Avísame cuando baje mi puente' : 'Ping me when my bridge drops'}
+          <h1 className="text-3xl font-black text-gray-900 dark:text-gray-100 leading-tight">
+            {es ? 'Entra gratis' : 'Sign up free'}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            {lang === 'es'
-              ? 'Activa tu primera alerta gratis — toma 10 segundos'
-              : 'Turn on your first free alert — takes 10 seconds'}
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            {es
+              ? 'Te avisamos cuando tu puente baje de 30 min'
+              : "We'll ping you when your bridge drops below 30 min"}
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 text-[11px] font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1 rounded-full">
+            ⚡ {es ? '10 segundos · sin tarjeta · sin spam' : '10 seconds · no card · no spam'}
+          </div>
         </div>
 
-        {/* Fast paths — Google OAuth */}
-        <div className="space-y-3 mb-5">
-          <GoogleButton label={lang === 'es' ? 'Continuar con Google' : 'Continue with Google'} />
+        {/* Google — dominant fast path */}
+        <div className="mb-4">
+          <GoogleButton label={es ? 'Continuar con Google' : 'Continue with Google'} />
         </div>
 
-        {/* Benefits — moved below the fast paths so they don't push the buttons offscreen */}
-        <div className="space-y-2 mb-5">
-          {benefits.map((b, i) => (
-            <div key={i} className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-2xl px-4 py-2.5 border border-gray-100 dark:border-gray-700">
-              <span className="text-lg flex-shrink-0">{b.emoji}</span>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{b.text}</p>
+        {/* OR divider */}
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
+            {es ? 'o con correo' : 'or with email'}
+          </span>
+          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+        </div>
+
+        {/* Mode toggle */}
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-3">
+          <button
+            type="button"
+            onClick={() => { setMode('password'); setMagicSent(false); setError('') }}
+            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              mode === 'password' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            {es ? 'Contraseña' : 'Password'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode('magic'); setMagicSent(false); setError('') }}
+            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${
+              mode === 'magic' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm' : 'text-gray-500'
+            }`}
+          >
+            ✉️ {es ? 'Link por correo' : 'Email link'}
+          </button>
+        </div>
+
+        {/* Form — visible by default, no hidden <details> wrapper */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+          {magicSent ? (
+            <div className="text-center py-3">
+              <p className="text-2xl mb-2">📬</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                {es ? 'Link enviado a' : 'Link sent to'}
+              </p>
+              <p className="text-sm text-blue-600 dark:text-blue-400 break-all">{email}</p>
+              <p className="text-xs text-gray-500 mt-2">
+                {es ? 'Ábrelo desde el mismo dispositivo.' : 'Open it from the same device.'}
+              </p>
             </div>
-          ))}
+          ) : (
+            <form onSubmit={mode === 'magic' ? handleMagicLink : handleSignup} className="space-y-3">
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl px-3 py-2">
+                  {error}
+                </div>
+              )}
+
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoFocus
+                autoComplete="email"
+                inputMode="email"
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={es ? 'tu correo' : 'your email'}
+              />
+
+              {mode === 'password' && (
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  autoComplete="new-password"
+                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={es ? 'contraseña (mín. 6 caracteres)' : 'password (min. 6 chars)'}
+                />
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {loading
+                  ? (es ? 'Enviando…' : 'Sending…')
+                  : mode === 'magic'
+                    ? (es ? '✉️ Enviarme link' : '✉️ Send me a link')
+                    : (es ? 'Crear cuenta →' : 'Create account →')}
+              </button>
+            </form>
+          )}
         </div>
 
-        {/* Email fallback — collapsed by default, only for users who insist */}
-        <details className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-          <summary className="text-sm font-medium text-gray-600 dark:text-gray-300 cursor-pointer text-center">
-            {lang === 'es' ? 'O usar correo y contraseña' : 'Or use email & password'}
-          </summary>
-          <form onSubmit={handleSignup} className="space-y-3 mt-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">
-                {error}
-              </div>
-            )}
-
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={lang === 'es' ? 'tu correo' : 'your email'}
-            />
-
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={lang === 'es' ? 'contraseña (mín. 6 caracteres)' : 'password (min. 6 chars)'}
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
-            >
-              {loading
-                ? (lang === 'es' ? 'Creando cuenta...' : 'Creating account...')
-                : (lang === 'es' ? 'Activar mis alertas gratis →' : 'Activate my free alerts →')}
-            </button>
-          </form>
-        </details>
-
-        {/* Trust signals */}
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
-          {lang === 'es'
-            ? 'Sin spam. Sin tarjeta de crédito. Cancela cuando quieras.'
-            : 'No spam. No credit card. Cancel anytime.'}
-        </p>
-
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-3">
-          {lang === 'es' ? '¿Ya tienes cuenta?' : 'Already have an account?'}{' '}
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+          {es ? '¿Ya tienes cuenta?' : 'Already have an account?'}{' '}
           <Link href="/login" className="text-blue-600 font-medium hover:underline">
-            {lang === 'es' ? 'Entrar' : 'Sign in'}
+            {es ? 'Entrar' : 'Sign in'}
+          </Link>
+        </p>
+        <p className="text-center mt-2">
+          <Link href="/" className="text-[11px] text-gray-400 hover:underline">
+            {es ? '← Volver al mapa' : '← Back to map'}
           </Link>
         </p>
       </div>

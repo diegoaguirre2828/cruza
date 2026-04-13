@@ -110,6 +110,21 @@ export default function HomePage() {
   const { tier } = useTier()
   const isBusiness = tier === 'business'
 
+  // Capture referrer ID on any landing path so shares that point to the
+  // homepage ('cruzar.app/?ref=...') actually credit the inviter. Previously
+  // this was only done on port detail pages, which meant WhatsApp / FB shares
+  // pointing at the root URL lost the ref entirely.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref && ref.length > 10 && ref.length < 100) {
+      try {
+        localStorage.setItem('cruzar_ref', ref)
+        localStorage.setItem('cruzar_ref_ts', String(Date.now()))
+      } catch { /* ignore */ }
+    }
+  }, [])
+
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <OnboardingTour />
