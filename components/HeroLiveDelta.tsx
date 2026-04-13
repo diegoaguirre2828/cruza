@@ -45,6 +45,7 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoDenied, setGeoDenied] = useState(false)
   const [reportCount, setReportCount] = useState<number | null>(null)
+  const [hourly, setHourly] = useState<{ peak: { hour: number; avgWait: number } | null; best: { hour: number; avgWait: number } | null } | null>(null)
 
   // Detect preferred region from localStorage or last-viewed port
   useEffect(() => {
@@ -208,6 +209,23 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
     }
   }, [ports, userLoc, region])
 
+  // Fetch the hourly pattern for whichever port the hero is showing.
+  // Powers the "today's pattern" hook below the hero — pulls users
+  // deeper into the page instead of letting them bounce.
+  const heroPortId = display?.port?.portId
+  useEffect(() => {
+    if (!heroPortId) return
+    let cancelled = false
+    fetch(`/api/ports/${encodeURIComponent(heroPortId)}/hourly`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return
+        setHourly({ peak: d.peak ?? null, best: d.best ?? null })
+      })
+      .catch(() => { if (!cancelled) setHourly(null) })
+    return () => { cancelled = true }
+  }, [heroPortId])
+
   if (!ports || !display) return <HeroSkeleton />
 
   const headlinePort = display.port
@@ -281,15 +299,65 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
               </span>
               <span className="text-xl font-bold text-blue-100">min</span>
             </div>
+
+            {/* Loss-aversion microcopy: staying = uncertainty, signing up = certainty.
+                Only shown to guests — logged-in users have already committed. */}
+            {!user && (
+              <p className="mt-2 text-[11px] text-amber-200 font-semibold leading-snug cruzar-rise cruzar-rise-delay-1">
+                {es
+                  ? '⚠️ Esta espera cambia cada 5 minutos. Te puede subir 20 min sin avisarte.'
+                  : '⚠️ This wait changes every 5 min. It can jump 20 min without warning.'}
+              </p>
+            )}
           </div>
 
-          {/* The CTA stripe — makes the click target obvious */}
-          <div className="mt-4 flex items-center justify-between bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-3 cruzar-rise cruzar-rise-delay-2">
-            <p className="text-sm font-bold text-white">
-              {user
-                ? (es ? 'Ver detalles del puente →' : 'See crossing details →')
-                : (es ? 'Crea tu cuenta gratis — activa tu alerta →' : 'Create your free account — turn on your alert →')}
-            </p>
+          {/* Fake notification preview — shows GUESTS the product they get.
+              This is the climax of the card: "here's literally what arrives
+              on your phone when you sign up." Hidden for logged-in users. */}
+          {!user && (
+            <div className="mt-4 bg-white rounded-2xl px-3 py-2.5 shadow-xl cruzar-rise cruzar-rise-delay-2 border border-white/40">
+              <div className="flex items-start gap-2.5">
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-sm font-black text-white">
+                  C
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">Cruzar</p>
+                    <p className="text-[9px] text-gray-400 flex-shrink-0">{es ? 'ahora' : 'now'}</p>
+                  </div>
+                  <p className="text-[11px] font-bold text-gray-900 leading-snug truncate">
+                    🌉 {headlineName} — {Math.max(5, headlineWait - 15)} min
+                  </p>
+                  <p className="text-[10px] text-gray-600 leading-snug">
+                    {es
+                      ? 'La espera bajó. Es tu mejor momento pa\' cruzar.'
+                      : 'The wait just dropped. Your best window to cross.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* The CTA button — now the visual climax, not a passive stripe */}
+          <div className="mt-3 cruzar-rise cruzar-rise-delay-2">
+            {user ? (
+              <div className="bg-white/15 backdrop-blur-sm rounded-2xl px-4 py-3 text-center">
+                <p className="text-sm font-bold text-white">
+                  {es ? 'Ver detalles del puente →' : 'See crossing details →'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white text-indigo-700 rounded-2xl px-4 py-3.5 text-center shadow-lg cruzar-shimmer">
+                <p className="text-base font-black leading-tight">
+                  {es ? 'Activa tu alerta gratis →' : 'Turn on your free alert →'}
+                </p>
+                <p className="text-[11px] text-indigo-500 font-semibold mt-0.5 leading-snug">
+                  {es
+                    ? 'Te avisamos en 30 segundos cuando baje. 10 segundos pa\' registrarte.'
+                    : "We ping you within 30 seconds when it drops. 10 sec to sign up."}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Social proof */}
@@ -329,6 +397,39 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
             <span className="flex-shrink-0 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
               →
             </span>
+          </div>
+        </a>
+      )}
+
+      {/* Today's pattern hook — pulls users deeper. Shows the peak/worst
+          hour and the best hour for the bridge they're looking at, with
+          a click-through that converts to signup for guests. Only renders
+          when there's enough historical data to mean anything. */}
+      {hourly && hourly.peak && hourly.best && hourly.peak.avgWait > hourly.best.avgWait + 15 && (
+        <a
+          href={clickHref}
+          className="mt-2 block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3.5 shadow-sm active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-lg">
+              📊
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400">
+                {es ? `Patrón de hoy en ${headlineName}` : `Today's pattern at ${headlineName}`}
+              </p>
+              <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-0.5 leading-tight">
+                {es
+                  ? `Pico ${formatHourLabel(hourly.peak.hour, true)}: sube a ~${hourly.peak.avgWait} min`
+                  : `Peak ${formatHourLabel(hourly.peak.hour, false)}: jumps to ~${hourly.peak.avgWait} min`}
+              </p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                {es
+                  ? `Mejor hora ${formatHourLabel(hourly.best.hour, true)} · solo ${hourly.best.avgWait} min`
+                  : `Best hour ${formatHourLabel(hourly.best.hour, false)} · only ${hourly.best.avgWait} min`}
+              </p>
+            </div>
+            <span className="flex-shrink-0 text-gray-400 text-lg">→</span>
           </div>
         </a>
       )}
@@ -377,6 +478,14 @@ function LivePulse({ es, secondsAgo, contextLabel }: { es: boolean; secondsAgo: 
       {contextLabel && <span className="text-[10px] text-white/60">· {contextLabel}</span>}
     </div>
   )
+}
+
+function formatHourLabel(h: number, es: boolean): string {
+  if (es) return `${h.toString().padStart(2, '0')}:00`
+  if (h === 0) return '12am'
+  if (h < 12) return `${h}am`
+  if (h === 12) return '12pm'
+  return `${h - 12}pm`
 }
 
 function HeroSkeleton() {
