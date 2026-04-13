@@ -711,8 +711,8 @@ export default function AdminPage() {
           return (
             <div>
               <div className="mb-4">
-                <p className="text-sm font-semibold text-gray-900">Respuestas para Grupos de Facebook</p>
-                <p className="text-xs text-gray-500">Selecciona de qué están preguntando y genera una respuesta casual con datos en vivo.</p>
+                <p className="text-sm font-semibold text-gray-900">Facebook Group Replies</p>
+                <p className="text-xs text-gray-500">Pick what they&apos;re asking about and generate a casual reply with live data. The reply itself will be in Spanish (it&apos;s what users actually paste into groups).</p>
               </div>
 
               {/* Language toggle */}
@@ -730,7 +730,7 @@ export default function AdminPage() {
 
               {/* Topic selector */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-4">
-                <label className="text-xs font-semibold text-gray-600 block mb-3">¿De qué están preguntando?</label>
+                <label className="text-xs font-semibold text-gray-600 block mb-3">What are they asking about?</label>
                 <div className="grid grid-cols-2 gap-2">
                   {TOPICS.map(t => (
                     <button
@@ -747,7 +747,7 @@ export default function AdminPage() {
               {/* Bridge picker — only shows when topic is "wait" */}
               {selectedTopic.needsBridge && (
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-4">
-                  <label className="text-xs font-semibold text-gray-600 block mb-3">¿Cuál puente?</label>
+                  <label className="text-xs font-semibold text-gray-600 block mb-3">Which bridge?</label>
                   <div className="grid grid-cols-2 gap-2">
                     {REPLY_PORTS.map(p => (
                       <button
@@ -767,7 +767,7 @@ export default function AdminPage() {
                 disabled={loadingReply}
                 className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 mb-4"
               >
-                {loadingReply ? 'Generando...' : `⚡ Generar Respuesta — ${selectedTopic.emoji} ${selectedTopic.label}`}
+                {loadingReply ? 'Generating…' : `⚡ Generate Reply — ${selectedTopic.emoji} ${selectedTopic.label}`}
               </button>
 
               {replyText && (
@@ -808,20 +808,20 @@ export default function AdminPage() {
                       }`}
                     >
                       {replyCopied
-                        ? <><Check className="w-4 h-4" /> ¡Copiado!</>
-                        : <><Copy className="w-4 h-4" /> Copiar respuesta</>}
+                        ? <><Check className="w-4 h-4" /> Copied!</>
+                        : <><Copy className="w-4 h-4" /> Copy reply</>}
                     </button>
                   </div>
                 </div>
               )}
 
               <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-xs font-semibold text-blue-800 mb-1">💡 Cómo usar</p>
+                <p className="text-xs font-semibold text-blue-800 mb-1">💡 How to use</p>
                 <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-                  <li>Ves un post en el grupo — selecciona el tema arriba</li>
-                  <li>Si es sobre fila, selecciona el puente específico</li>
-                  <li>Toca "Generar Respuesta" y cópiala</li>
-                  <li>Pégala como comentario — toca "Otra" para otra variante</li>
+                  <li>You see a post in a group — pick the topic above</li>
+                  <li>If it&apos;s about wait times, pick the specific bridge</li>
+                  <li>Tap &quot;Generate Reply&quot; and copy it</li>
+                  <li>Paste as a comment — tap &quot;Another&quot; for a different variant</li>
                 </ol>
               </div>
             </div>
@@ -1497,7 +1497,7 @@ export default function AdminPage() {
 
             <input
               type="text"
-              placeholder="Filtrar por ciudad, puente, port_id…"
+              placeholder="Filter by city, bridge, port_id…"
               value={portFilter}
               onChange={(e) => setPortFilter(e.target.value)}
               className="w-full mb-3 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"

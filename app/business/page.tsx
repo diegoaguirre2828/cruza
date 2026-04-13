@@ -12,6 +12,7 @@ import {
   AlertTriangle, CheckCircle, Plus, X, Pencil, DollarSign, Users, Map,
   ChevronDown, ChevronUp, Filter, Download, Link2, UserCheck, Phone, Building2
 } from 'lucide-react'
+import { PortSearch } from '@/components/PortSearch'
 import type { PortWaitTime } from '@/types'
 
 interface Driver {
@@ -968,18 +969,12 @@ function BusinessPortalPage() {
                   </div>
                   <div className="col-span-2">
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Crossing port</label>
-                    <select
+                    <PortSearch
+                      ports={ports}
                       value={form.port_id}
-                      onChange={e => setForm(f => ({ ...f, port_id: e.target.value }))}
-                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">— Select crossing —</option>
-                      {ports.map(p => (
-                        <option key={p.portId} value={p.portId}>
-                          {p.portName} – {p.crossingName} {p.commercial !== null ? `(${p.commercial}m truck)` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(portId) => setForm(f => ({ ...f, port_id: portId }))}
+                      placeholder="Search crossing — Laredo, Otay, Los Tomates…"
+                    />
                   </div>
                   <div className="col-span-2">
                     <label className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1 block">Notes</label>
