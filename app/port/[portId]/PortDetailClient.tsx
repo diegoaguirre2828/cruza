@@ -61,6 +61,27 @@ export function PortDetailClient({ port, portId }: Props) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [reportRefresh, setReportRefresh] = useState(0)
+  const [reportPulse, setReportPulse] = useState(false)
+
+  // When the user lands from the no-data 'Be the first to report' CTA
+  // (?report=1 or #report), jump straight to the report form and
+  // highlight it briefly so they don't have to hunt.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const wants = params.get('report') === '1' || window.location.hash === '#report'
+    if (!wants) return
+    // Wait a tick for the form to be mounted, then scroll into view
+    const id = setTimeout(() => {
+      const el = document.getElementById('report')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        setReportPulse(true)
+        setTimeout(() => setReportPulse(false), 2400)
+      }
+    }, 120)
+    return () => clearTimeout(id)
+  }, [])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showAlertNudge, setShowAlertNudge] = useState(false)
@@ -856,7 +877,14 @@ export function PortDetailClient({ port, portId }: Props) {
       <PingCircleButton portId={portId} waitMinutes={port?.vehicle ?? null} />
 
       {/* Submit report */}
-      <div id="report" className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-blue-500 dark:border-blue-600 p-5 shadow-sm scroll-mt-20">
+      <div
+        id="report"
+        className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-5 shadow-sm scroll-mt-20 transition-all ${
+          reportPulse
+            ? 'border-blue-500 ring-4 ring-blue-500/30 shadow-xl'
+            : 'border-blue-500 dark:border-blue-600'
+        }`}
+      >
         <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
           📣 {es ? '¿Cruzaste? Reporta aquí' : 'Did you cross? Report here'}
         </h2>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
+import { trackBusinessClick } from '@/lib/trackClick'
 import { Phone, MessageCircle, Globe, Clock, CheckCircle, Plus, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react'
 
 interface Business {
@@ -246,7 +247,11 @@ function BusinessCard({ biz, lang, onClaim }: { biz: Business; lang: string; onC
       {expanded && (
         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex flex-wrap gap-2">
           {biz.phone && (
-            <a href={`tel:${biz.phone}`} className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium px-3 py-2 rounded-xl transition-colors">
+            <a
+              href={`tel:${biz.phone}`}
+              onClick={() => trackBusinessClick({ business_id: biz.id, click_type: 'phone', referrer: 'negocios_list' })}
+              className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium px-3 py-2 rounded-xl transition-colors"
+            >
               <Phone className="w-3.5 h-3.5" />
               {lang === 'es' ? 'Llamar' : 'Call'}
             </a>
@@ -256,6 +261,7 @@ function BusinessCard({ biz, lang, onClaim }: { biz: Business; lang: string; onC
               href={`https://wa.me/${biz.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackBusinessClick({ business_id: biz.id, click_type: 'whatsapp', referrer: 'negocios_list' })}
               className="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 text-xs font-medium px-3 py-2 rounded-xl transition-colors"
             >
               <MessageCircle className="w-3.5 h-3.5" />
@@ -263,7 +269,11 @@ function BusinessCard({ biz, lang, onClaim }: { biz: Business; lang: string; onC
             </a>
           )}
           {biz.website && (
-            <a href={biz.website} target="_blank" rel="noopener noreferrer"
+            <a
+              href={biz.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackBusinessClick({ business_id: biz.id, click_type: 'website', referrer: 'negocios_list' })}
               className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 text-xs font-medium px-3 py-2 rounded-xl transition-colors">
               <Globe className="w-3.5 h-3.5" />
               {lang === 'es' ? 'Sitio web' : 'Website'}

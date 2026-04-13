@@ -200,7 +200,7 @@ export function PortCard({ port, signal }: Props) {
           </div>
         ) : (
           <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}#report` }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
             className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
           >
             <div className="flex-1 min-w-0">
