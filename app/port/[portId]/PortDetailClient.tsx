@@ -17,6 +17,7 @@ import { WaitBadge } from '@/components/WaitBadge'
 import { PushToggle } from '@/components/PushToggle'
 import { ReportForm } from '@/components/ReportForm'
 import { ReportsFeed } from '@/components/ReportsFeed'
+import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
@@ -850,6 +851,9 @@ export function PortDetailClient({ port, portId }: Props) {
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{es ? 'Reportes de usuarios' : 'Driver Reports'}</h2>
         <ReportsFeed portId={portId} refresh={reportRefresh} />
       </div>
+
+      {/* Proactive circle ping — only visible to logged-in users with circles */}
+      <PingCircleButton portId={portId} waitMinutes={port?.vehicle ?? null} />
 
       {/* Submit report */}
       <div id="report" className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-blue-500 dark:border-blue-600 p-5 shadow-sm scroll-mt-20">
