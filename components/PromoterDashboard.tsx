@@ -12,6 +12,7 @@ import {
   type TemplateCategory,
 } from '@/lib/promoterContent'
 import { FACEBOOK_GROUPS, REGION_LABELS, type FbGroupRegion, type FacebookGroup } from '@/lib/facebookGroups'
+import { AiGeneratorCard } from '@/components/AiGeneratorCard'
 
 // Extended group type returned by /api/promoter/groups — includes a
 // DB id so the delete button knows what to call. Core (hardcoded)
@@ -416,6 +417,16 @@ export function PromoterDashboard() {
             <Languages className="w-3 h-3" />
             {en ? 'EN' : 'ES'}
           </button>
+        </div>
+
+        {/* ─── AI Generator ───────────────────────────────
+            Claude-backed reply/post/comment generator. Pasted first
+            in the promoter dashboard so it's the very first tool
+            promoters see — Diego's directive: "the promoter tab
+            should be as easy to use as possible, I think the ai to
+            generate responses, posts, and comments would be best." */}
+        <div className="mb-4">
+          <AiGeneratorCard />
         </div>
 
         {/* ─── Referral link card ──────────────────────────── */}
