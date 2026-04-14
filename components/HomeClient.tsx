@@ -10,7 +10,7 @@ import { WaitingMode } from '@/components/WaitingMode'
 import { BusinessCommandWidget } from '@/components/BusinessCommandWidget'
 import { ExchangeRatePill } from '@/components/ExchangeRatePill'
 import { RegionPicker } from '@/components/RegionPicker'
-import { FbPageFollowCard } from '@/components/FbPageFollowCard'
+import { FbPagePill } from '@/components/FbPagePill'
 import { OnboardingTour } from '@/components/OnboardingTour'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
@@ -136,7 +136,7 @@ interface Props {
 export function HomeClient({ initialPorts, initialReports }: Props) {
   const { t, lang } = useLang()
   const { tier } = useTier()
-  const { user, loading: authLoading } = useAuth()
+  const { loading: authLoading } = useAuth()
   const isBusiness = tier === 'business'
 
   // Capture referrer ID on any landing path so shares that point to the
@@ -178,6 +178,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             <InstallPill />
             <ExchangeRatePill />
             <WeatherHook variant="pill" />
+            <FbPagePill />
             {tier !== 'guest' && <GuardianProgressCard variant="pill" />}
             {tier !== 'guest' && <ContributionTodayPill />}
           </div>
@@ -191,19 +192,19 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
 
         {/* Reciprocity card — signed-in users with saved bridges see
             a "someone reported your bridge" pill when fresh community
-            activity lands on a port they care about. Frames the
-            sighting as a debt-to-return. */}
+            activity lands on a port they care about. Conditional and
+            rare, so kept as a widget (it's more of an alert than
+            ambient content). */}
         {!isBusiness && tier !== 'guest' && <ReciprocityCard />}
 
-        {/* Daily tip — rotating bilingual advice card. Shown to
-            guests + free tier (business users already know this
-            stuff cold). Dismissable for the session. */}
-        {!isBusiness && <DailyTip />}
-
-        {/* Hero carousel — swipeable slides so signed-in users keep
-            access to the live community ticker AND the personalized
-            nearest/fastest crossing hero. Guests see both too; the
-            hero handles its own "sign up" CTA internally. */}
+        {/* Hero carousel — three swipeable slides on mobile, grid on
+            desktop. Slides:
+              1. HeroLiveDelta (personalized nearest/fastest crossing)
+              2. LiveActivityTicker (live community reporting)
+              3. DailyTip (rotating bilingual advice)
+            Everyone gets all three regardless of auth state — the
+            carousel absorbs what used to be three separate widgets
+            that ate vertical space serially. */}
         {!isBusiness && authLoading && (
           <div
             aria-hidden="true"
@@ -230,6 +231,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
                 labelEn: 'Live reports',
                 content: <LiveActivityTicker initialReports={initialReports} />,
               },
+              {
+                key: 'tip',
+                labelEs: 'Consejo',
+                labelEn: 'Tip',
+                content: <DailyTip variant="carousel" />,
+              },
             ]}
           />
         )}
@@ -241,16 +248,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         {/* Urgent alerts — real-time accidents / inspections. Stays above
             the list because these are actionable warnings, not fluff. */}
         {!isBusiness && <UrgentAlerts initialReports={initialReports} />}
-
-        {/* Passive FB page follow CTA — only shown to authenticated
-            non-business users. Guests see the LiveActivityTicker /
-            HeroLiveDelta hero already, so the home surface is busy
-            for them; signed-in users have room for one more ask. */}
-        {!isBusiness && !authLoading && user && (
-          <div className="mt-3">
-            <FbPageFollowCard variant="compact" source="home" />
-          </div>
-        )}
 
         {/* Business Command Center — visible only to business tier */}
         <BusinessCommandWidget />

@@ -57,11 +57,24 @@ export function HeroCarousel({ slides }: Props) {
 
   if (slides.length === 0) return null
 
+  // Layout branch:
+  //   - Mobile (< md):  horizontal swipe carousel with scroll-snap
+  //   - Desktop (≥ md): grid-cols-2 rows — all slides visible at once
+  //
+  // Why the split: on narrow screens vertical space is precious and
+  // slides make sense because users swipe to pick one. On wide screens
+  // there's plenty of horizontal room and forcing a swipe adds cost
+  // with no benefit. Grid view makes everything visible at once on
+  // desktop without wasting space.
+  //
+  // The dots indicator only renders on mobile since on desktop all
+  // slides are visible simultaneously.
   return (
     <div className="mt-3">
+      {/* Mobile: swipe carousel */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto snap-x snap-mandatory"
+        className="flex overflow-x-auto snap-x snap-mandatory md:hidden"
         style={{
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -78,8 +91,17 @@ export function HeroCarousel({ slides }: Props) {
         ))}
       </div>
 
-      {/* Tab indicators — clickable dots with active-slide label */}
-      <div className="flex items-center justify-center gap-3 mt-2">
+      {/* Desktop: grid layout, all visible */}
+      <div className="hidden md:grid md:grid-cols-2 md:gap-3">
+        {slides.map((slide) => (
+          <div key={slide.key} className="min-w-0">
+            {slide.content}
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile-only dots indicator — hidden on desktop where all slides are visible */}
+      <div className="flex items-center justify-center gap-3 mt-2 md:hidden">
         <div className="flex items-center gap-1.5">
           {slides.map((slide, idx) => (
             <button
