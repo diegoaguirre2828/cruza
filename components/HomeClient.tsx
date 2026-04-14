@@ -158,19 +158,22 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto px-4 pb-10">
         <div className="pt-8 pb-2 flex items-start justify-between">
-          <div className="min-w-0 flex items-center gap-2">
-            {/* Real app logo — blue square with black suspension bridge.
-                Replaces the generic 🌉 emoji that used to lead the title. */}
+          <div className="min-w-0 flex items-center gap-3">
+            {/* Real app logo — dark navy square with a white arch bridge.
+                Paired with the lowercase "cruzar" wordmark in the design
+                Diego locked on 2026-04-13. Source SVG in public/logo-icon.svg. */}
             <img
               src="/logo-icon.svg"
               alt=""
-              width={40}
-              height={40}
+              width={48}
+              height={48}
               className="rounded-xl flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-tight">{t.appName}</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{t.subtitle}</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
+                cruzar
+              </h1>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">{t.subtitle}</p>
             </div>
           </div>
           <NavBar />

@@ -67,31 +67,39 @@ export default async function OGImage() {
         }}
       >
         {/* Header — real logo rendered via Satori-compatible JSX.
-            Blue rounded square with a simplified black suspension
-            bridge inside. Matches the home page header and the PWA
-            icon so the brand mark is consistent everywhere. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
+            Dark navy square with a white arch-bridge mark (deck +
+            pillars). Arch curve itself is approximated by the
+            varying pillar heights since Satori doesn't render
+            curved SVG paths. Matches public/logo-icon.svg and the
+            home page header wordmark. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 12 }}>
           <div
             style={{
-              width: 80,
-              height: 80,
-              background: '#2563eb',
-              borderRadius: 18,
+              width: 100,
+              height: 100,
+              background: '#0f172a',
+              borderRadius: 22,
               position: 'relative',
               display: 'flex',
             }}
           >
-            {/* Left tower */}
-            <div style={{ position: 'absolute', left: 18, top: 22, width: 6, height: 32, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
-            {/* Right tower */}
-            <div style={{ position: 'absolute', right: 18, top: 22, width: 6, height: 32, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
-            {/* Road base */}
-            <div style={{ position: 'absolute', left: 10, right: 10, top: 52, height: 5, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
-            {/* Road dash */}
-            <div style={{ position: 'absolute', left: 36, top: 53, width: 8, height: 3, background: '#2563eb', borderRadius: 1, display: 'flex' }} />
+            {/* Horizontal deck spanning the width */}
+            <div style={{ position: 'absolute', left: 14, right: 14, top: 68, height: 4, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            {/* Short support legs under the deck */}
+            <div style={{ position: 'absolute', left: 17, top: 72, width: 2, height: 8, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', right: 17, top: 72, width: 2, height: 8, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            {/* Vertical pillars. Heights approximate the arch curve
+                so the tops form an implied arch shape. */}
+            <div style={{ position: 'absolute', left: 21, top: 56, width: 2, height: 12, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 29, top: 41, width: 2, height: 27, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 39, top: 30, width: 2, height: 38, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 49, top: 26, width: 2.5, height: 42, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 59, top: 30, width: 2, height: 38, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 69, top: 41, width: 2, height: 27, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+            <div style={{ position: 'absolute', left: 77, top: 56, width: 2, height: 12, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
           </div>
-          <span style={{ color: '#ffffff', fontSize: 56, fontWeight: 800, letterSpacing: -1 }}>
-            Cruzar
+          <span style={{ color: '#ffffff', fontSize: 72, fontWeight: 700, letterSpacing: -2, textTransform: 'lowercase' }}>
+            cruzar
           </span>
           <div style={{
             marginLeft: 12,

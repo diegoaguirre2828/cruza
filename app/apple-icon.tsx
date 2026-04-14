@@ -1,9 +1,8 @@
 import { ImageResponse } from 'next/og'
 
-// iOS home screen icon for Cruzar. Next.js app router auto-detects
-// this file and serves it as /apple-icon at 180x180, the size iOS
-// actually uses for home screen shortcuts. Matches the favicon /icon
-// and public/logo-icon.svg so the brand is consistent.
+// iOS home screen icon for Cruzar. Served at 180×180, the size iOS
+// uses for add-to-home-screen shortcuts. Same arch-bridge silhouette
+// as app/icon.tsx, public/logo-icon.svg, and the OG image header.
 
 export const runtime = 'edge'
 export const size = { width: 180, height: 180 }
@@ -16,23 +15,25 @@ export default function AppleIcon() {
         style={{
           width: 180,
           height: 180,
-          background: '#2563eb',
+          background: '#0f172a',
           borderRadius: 40,
           position: 'relative',
           display: 'flex',
         }}
       >
-        {/* Left tower */}
-        <div style={{ position: 'absolute', left: 40, top: 48, width: 14, height: 74, background: '#0f172a', borderRadius: 3, display: 'flex' }} />
-        {/* Right tower */}
-        <div style={{ position: 'absolute', right: 40, top: 48, width: 14, height: 74, background: '#0f172a', borderRadius: 3, display: 'flex' }} />
-        {/* Tower tops */}
-        <div style={{ position: 'absolute', left: 37, top: 40, width: 20, height: 10, background: '#0f172a', borderRadius: 3, display: 'flex' }} />
-        <div style={{ position: 'absolute', right: 37, top: 40, width: 20, height: 10, background: '#0f172a', borderRadius: 3, display: 'flex' }} />
-        {/* Road base */}
-        <div style={{ position: 'absolute', left: 22, right: 22, top: 115, height: 11, background: '#0f172a', borderRadius: 3, display: 'flex' }} />
-        {/* Road dash */}
-        <div style={{ position: 'absolute', left: 80, top: 117, width: 20, height: 7, background: '#2563eb', borderRadius: 2, display: 'flex' }} />
+        {/* Deck */}
+        <div style={{ position: 'absolute', left: 25, right: 25, top: 122, height: 7, background: '#ffffff', borderRadius: 1, display: 'flex' }} />
+        {/* Support legs */}
+        <div style={{ position: 'absolute', left: 31, top: 129, width: 4, height: 14, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', right: 31, top: 129, width: 4, height: 14, background: '#ffffff', display: 'flex' }} />
+        {/* Pillars — arch approximated by varying heights */}
+        <div style={{ position: 'absolute', left: 38, top: 101, width: 3.5, height: 21, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 53, top: 74, width: 3.5, height: 48, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 71, top: 54, width: 3.5, height: 68, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 88, top: 47, width: 4.5, height: 75, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 105, top: 54, width: 3.5, height: 68, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 123, top: 74, width: 3.5, height: 48, background: '#ffffff', display: 'flex' }} />
+        <div style={{ position: 'absolute', left: 138, top: 101, width: 3.5, height: 21, background: '#ffffff', display: 'flex' }} />
       </div>
     ),
     { ...size }
