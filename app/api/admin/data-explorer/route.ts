@@ -86,7 +86,7 @@ export async function GET() {
     db.from('crossing_reports').select('id', { count: 'exact', head: true }).gte('created_at', today),
     // Need full rows for the last 30d to count per port + join with user tiers
     db.from('crossing_reports')
-      .select('port_id, user_id, report_type, created_at, location_confidence, source, lane_type, x_ray_active, incident_flag, idle_time_minutes, flow_rate_estimate, first_stop_to_booth_minutes')
+      .select('port_id, user_id, report_type, created_at, location_confidence, source, lane_type, x_ray_active, incident_flag, idle_time_minutes, flow_rate_estimate, first_stop_to_booth_minutes, vehicle_type, trip_purpose, trusted_traveler_program, secondary_inspection, made_it_on_time, satisfaction_score, cargo_summary, weather_snapshot, wait_minutes')
       .gte('created_at', ago30)
       .limit(5000),
     // Separate small sample for all-time sensor-field capture rates
@@ -224,6 +224,130 @@ export async function GET() {
     incidentFlagPct: fillRate(sampleSize - (reportsByIncidentFlag.null || 0)),
   }
 
+  // ────────────────────────────────────────────────────────────
+  // Section 3b: Data moat slices from the new data_moat_fields columns
+  // ────────────────────────────────────────────────────────────
+  type LaneSplit = { commercial: number; passenger: number }
+  const commercialVsPassenger: Record<string, LaneSplit> = {}
+  type TrustedSpeedup = { withProgram: number[]; without: number[] }
+  const trustedTravelerSpeedup: Record<string, TrustedSpeedup> = {}
+  const secondaryInspectionByPort: Record<string, { total: number; sent: number }> = {}
+  const madeItOnTimeRates: Record<string, { total: number; onTime: number }> = {}
+  const vehicleTypeCounts: Counter = {}
+  const tripPurposeCounts: Counter = {}
+  const trustedTravelerCounts: Counter = {}
+  const cargoSummaryCounts: Counter = {}
+  const satisfactionByPort: Record<string, { total: number; count: number }> = {}
+  const weatherBuckets: Counter = {}
+
+  for (const r of (reports30Full.data || [])) {
+    // Commercial vs passenger split
+    if (r.lane_type === 'commercial' || r.lane_type === 'fast') {
+      commercialVsPassenger[r.port_id] = commercialVsPassenger[r.port_id] || { commercial: 0, passenger: 0 }
+      commercialVsPassenger[r.port_id].commercial++
+    } else if (r.lane_type && r.lane_type !== 'unknown') {
+      commercialVsPassenger[r.port_id] = commercialVsPassenger[r.port_id] || { commercial: 0, passenger: 0 }
+      commercialVsPassenger[r.port_id].passenger++
+    }
+
+    // Trusted traveler speedup (need wait_minutes to compute)
+    if (r.wait_minutes != null && r.trusted_traveler_program) {
+      trustedTravelerSpeedup[r.port_id] = trustedTravelerSpeedup[r.port_id] || { withProgram: [], without: [] }
+      if (r.trusted_traveler_program === 'none') {
+        trustedTravelerSpeedup[r.port_id].without.push(r.wait_minutes)
+      } else {
+        trustedTravelerSpeedup[r.port_id].withProgram.push(r.wait_minutes)
+      }
+    }
+
+    // Secondary inspection rate
+    if (typeof r.secondary_inspection === 'boolean') {
+      secondaryInspectionByPort[r.port_id] = secondaryInspectionByPort[r.port_id] || { total: 0, sent: 0 }
+      secondaryInspectionByPort[r.port_id].total++
+      if (r.secondary_inspection) secondaryInspectionByPort[r.port_id].sent++
+    }
+
+    // Made it on time rates
+    if (typeof r.made_it_on_time === 'boolean') {
+      madeItOnTimeRates[r.port_id] = madeItOnTimeRates[r.port_id] || { total: 0, onTime: 0 }
+      madeItOnTimeRates[r.port_id].total++
+      if (r.made_it_on_time) madeItOnTimeRates[r.port_id].onTime++
+    }
+
+    // Simple counter buckets
+    if (r.vehicle_type) vehicleTypeCounts[r.vehicle_type] = (vehicleTypeCounts[r.vehicle_type] || 0) + 1
+    if (r.trip_purpose) tripPurposeCounts[r.trip_purpose] = (tripPurposeCounts[r.trip_purpose] || 0) + 1
+    if (r.trusted_traveler_program) trustedTravelerCounts[r.trusted_traveler_program] = (trustedTravelerCounts[r.trusted_traveler_program] || 0) + 1
+    if (r.cargo_summary) cargoSummaryCounts[r.cargo_summary] = (cargoSummaryCounts[r.cargo_summary] || 0) + 1
+
+    // Satisfaction by port
+    if (typeof r.satisfaction_score === 'number') {
+      satisfactionByPort[r.port_id] = satisfactionByPort[r.port_id] || { total: 0, count: 0 }
+      satisfactionByPort[r.port_id].total += r.satisfaction_score
+      satisfactionByPort[r.port_id].count++
+    }
+
+    // Weather correlation
+    const cond = (r.weather_snapshot as { condition?: string } | null)?.condition
+    if (cond) weatherBuckets[cond] = (weatherBuckets[cond] || 0) + 1
+  }
+
+  // Flatten the trusted-traveler speedup into {portId, avgWith, avgWithout, savingsMin}
+  const trustedTravelerSpeedupArr = Object.entries(trustedTravelerSpeedup)
+    .filter(([, v]) => v.withProgram.length >= 3 && v.without.length >= 3)
+    .map(([portId, v]) => {
+      const avg = (arr: number[]) => arr.reduce((s, n) => s + n, 0) / arr.length
+      const avgWith = Math.round(avg(v.withProgram))
+      const avgWithout = Math.round(avg(v.without))
+      return {
+        portId,
+        avgWith,
+        avgWithout,
+        savingsMin: avgWithout - avgWith,
+        withSamples: v.withProgram.length,
+        withoutSamples: v.without.length,
+      }
+    })
+    .sort((a, b) => b.savingsMin - a.savingsMin)
+    .slice(0, 15)
+
+  const commercialVsPassengerArr = Object.entries(commercialVsPassenger)
+    .map(([portId, v]) => ({ portId, ...v, total: v.commercial + v.passenger }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 15)
+
+  const secondaryInspectionArr = Object.entries(secondaryInspectionByPort)
+    .filter(([, v]) => v.total >= 3)
+    .map(([portId, v]) => ({
+      portId,
+      total: v.total,
+      sent: v.sent,
+      ratePct: Math.round((v.sent / v.total) * 100),
+    }))
+    .sort((a, b) => b.ratePct - a.ratePct)
+    .slice(0, 15)
+
+  const madeItOnTimeArr = Object.entries(madeItOnTimeRates)
+    .filter(([, v]) => v.total >= 3)
+    .map(([portId, v]) => ({
+      portId,
+      total: v.total,
+      onTime: v.onTime,
+      ratePct: Math.round((v.onTime / v.total) * 100),
+    }))
+    .sort((a, b) => a.ratePct - b.ratePct)
+    .slice(0, 15)
+
+  const satisfactionArr = Object.entries(satisfactionByPort)
+    .filter(([, v]) => v.count >= 3)
+    .map(([portId, v]) => ({
+      portId,
+      avgScore: Math.round((v.total / v.count) * 10) / 10,
+      samples: v.count,
+    }))
+    .sort((a, b) => a.avgScore - b.avgScore)
+    .slice(0, 15)
+
   // Top ports last 7 days
   const reports7Buckets: Record<string, number> = {}
   for (const r of (reports30Full.data || [])) {
@@ -307,6 +431,48 @@ export async function GET() {
   // ────────────────────────────────────────────────────────────
   // Response
   // ────────────────────────────────────────────────────────────
+  // ────────────────────────────────────────────────────────────
+  // Photo intel (community photo layer)
+  // ────────────────────────────────────────────────────────────
+  const [photoAllCount, photoDeletedCount, photoLiveByPort, photoVisionSample] = await Promise.all([
+    db.from('port_photos').select('id', { count: 'exact', head: true }),
+    db.from('port_photos').select('id', { count: 'exact', head: true }).not('photo_deleted_at', 'is', null),
+    db.from('port_photos').select('port_id').gt('expires_at', new Date().toISOString()).eq('moderation_status', 'live').is('photo_deleted_at', null),
+    db.from('port_photos').select('port_id, vision_features').not('vision_features', 'is', null).order('created_at', { ascending: false }).limit(2000),
+  ])
+
+  const photoLiveByPortCounts: Counter = {}
+  for (const p of (photoLiveByPort.data || [])) {
+    photoLiveByPortCounts[p.port_id] = (photoLiveByPortCounts[p.port_id] || 0) + 1
+  }
+  const photoLiveByPortArr = Object.entries(photoLiveByPortCounts)
+    .map(([portId, count]) => ({ portId, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15)
+
+  // Aggregate Vision features
+  const visionAggr = {
+    xRayObservations: 0,
+    incidentObservations: 0,
+    constructionObservations: 0,
+    totalLanesVisible: 0,
+    lanesSampleCount: 0,
+  }
+  for (const row of (photoVisionSample.data || [])) {
+    const f = row.vision_features as Record<string, unknown> | null
+    if (!f) continue
+    if (f.x_ray_visible === true) visionAggr.xRayObservations++
+    if (Array.isArray(f.incidents_visible) && f.incidents_visible.length > 0) visionAggr.incidentObservations++
+    if (f.construction_visible === true) visionAggr.constructionObservations++
+    if (typeof f.lanes_visible === 'number') {
+      visionAggr.totalLanesVisible += f.lanes_visible
+      visionAggr.lanesSampleCount++
+    }
+  }
+  const avgLanesVisible = visionAggr.lanesSampleCount > 0
+    ? Math.round((visionAggr.totalLanesVisible / visionAggr.lanesSampleCount) * 10) / 10
+    : 0
+
   return NextResponse.json({
     generatedAt: new Date().toISOString(),
     users: {
@@ -318,6 +484,29 @@ export async function GET() {
       savedByTier: flattenPortTier(savedByPortTier),
       alertsByTier: flattenPortTier(alertsByPortTier),
       reportsByTier: flattenPortTier(reportsByPortTier),
+    },
+    dataMoat: {
+      commercialVsPassenger: commercialVsPassengerArr,
+      trustedTravelerSpeedup: trustedTravelerSpeedupArr,
+      secondaryInspection: secondaryInspectionArr,
+      madeItOnTime: madeItOnTimeArr,
+      satisfactionByPort: satisfactionArr,
+      vehicleTypeCounts,
+      tripPurposeCounts,
+      trustedTravelerCounts,
+      cargoSummaryCounts,
+      weatherBuckets,
+    },
+    photoIntel: {
+      totalSubmissions: photoAllCount.count ?? 0,
+      totalDeleted: photoDeletedCount.count ?? 0,
+      liveNow: (photoLiveByPort.data || []).length,
+      liveByPort: photoLiveByPortArr,
+      visionSampleSize: photoVisionSample.data?.length || 0,
+      xRayObservations: visionAggr.xRayObservations,
+      incidentObservations: visionAggr.incidentObservations,
+      constructionObservations: visionAggr.constructionObservations,
+      avgLanesVisible,
     },
     capture: {
       reportsTotal: reportsAllCount.count ?? 0,

@@ -304,6 +304,21 @@ export async function POST(req: NextRequest) {
     firstStopToBoothMinutes,
     incidentFlag,
     reportSource,
+    // Data moat fields — 2026-04-14 (supabase/data_moat_fields_20260414.sql).
+    // Every one of these maps to a segment that would pay for the data.
+    // Progressive disclosure in ReportForm.tsx surfaces these only to
+    // experienced reporters (3+ previous reports) so first-timers aren't
+    // overwhelmed by a giant form.
+    vehicleType,
+    tripPurpose,
+    trustedTravelerProgram,
+    secondaryInspection,
+    madeItOnTime,
+    satisfactionScore,
+    partySize,
+    vehicleOrigin,
+    cargoSummary,
+    boothNumber,
   } = body
 
   // Support both reportType and condition field names
@@ -495,6 +510,32 @@ export async function POST(req: NextRequest) {
     return rounded
   }
 
+  // Data moat enum validators
+  const validString = (v: unknown, allowed: readonly string[]): string | null => {
+    if (typeof v !== 'string') return null
+    const lower = v.toLowerCase().trim()
+    return allowed.includes(lower) ? lower : null
+  }
+  const VEHICLE_TYPES = ['passenger_car', 'pickup', 'suv', 'cargo_van', 'semi_truck', 'rv', 'trailer', 'motorcycle', 'pedestrian', 'bicycle'] as const
+  const TRIP_PURPOSES = ['commute', 'leisure', 'commercial', 'medical', 'shopping', 'family', 'other'] as const
+  const TRUSTED_TRAVELER = ['none', 'sentri', 'nexus', 'fast', 'global_entry', 'ready'] as const
+  const VEHICLE_ORIGINS = ['us_plate', 'mx_plate', 'other'] as const
+  const CARGO_SUMMARIES = ['empty', 'perishable', 'electronics', 'auto_parts', 'hazmat', 'household', 'mixed'] as const
+
+  const normalizedVehicleType     = validString(vehicleType, VEHICLE_TYPES)
+  const normalizedTripPurpose     = validString(tripPurpose, TRIP_PURPOSES)
+  const normalizedTrustedTraveler = validString(trustedTravelerProgram, TRUSTED_TRAVELER)
+  const normalizedVehicleOrigin   = validString(vehicleOrigin, VEHICLE_ORIGINS)
+  const normalizedCargoSummary    = validString(cargoSummary, CARGO_SUMMARIES)
+
+  // Weather snapshot — fire-and-resolve, non-blocking on failure.
+  // 3s abort inside the helper so a flaky OpenWeatherMap can't delay
+  // the report submission path. Null if no API key set or fetch fails.
+  const { fetchWeatherSnapshot } = await import('@/lib/weather')
+  const weatherSnapshot = rawGpsLat != null && rawGpsLng != null
+    ? await fetchWeatherSnapshot(rawGpsLat, rawGpsLng)
+    : null
+
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
@@ -525,6 +566,20 @@ export async function POST(req: NextRequest) {
     incident_flag: derivedIncidentFlag,
     gps_lat: rawGpsLat,
     gps_lng: rawGpsLng,
+    // Data moat fields — data_moat_fields_20260414.sql. All optional.
+    // Validated + normalized by the helpers below. Graceful-fallback
+    // path strips these if the migration hasn't been applied.
+    vehicle_type: normalizedVehicleType,
+    trip_purpose: normalizedTripPurpose,
+    trusted_traveler_program: normalizedTrustedTraveler,
+    secondary_inspection: typeof secondaryInspection === 'boolean' ? secondaryInspection : null,
+    made_it_on_time: typeof madeItOnTime === 'boolean' ? madeItOnTime : null,
+    satisfaction_score: clampInt(satisfactionScore, 1, 5),
+    party_size: clampInt(partySize, 1, 20),
+    vehicle_origin: normalizedVehicleOrigin,
+    cargo_summary: normalizedCargoSummary,
+    booth_number: clampInt(boothNumber, 1, 50),
+    weather_snapshot: weatherSnapshot,
   }).select('id').single().then(async (result) => {
     // Graceful fallback — if the migration hasn't been applied yet,
     // PostgREST returns a 400 with "column does not exist". Retry

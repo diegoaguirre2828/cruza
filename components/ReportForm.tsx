@@ -153,6 +153,32 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
   const [slowLane, setSlowLane] = useState<string | null>(null)
   const [isFirstReport, setIsFirstReport] = useState(false)
 
+  // ─── Data moat fields (progressive disclosure) ──────────────
+  // Surfaced only to users who've filed 3+ reports previously. First-
+  // timers get the simple form; power users get the full sensor spec.
+  // Lifetime counter lives in localStorage under `cruzar_report_lifetime`.
+  const [showDetailed, setShowDetailed] = useState(false)
+  const [lifetimeReports, setLifetimeReports] = useState(0)
+  const [vehicleType, setVehicleType] = useState<string | null>(null)
+  const [tripPurpose, setTripPurpose] = useState<string | null>(null)
+  const [trustedTravelerProgram, setTrustedTravelerProgram] = useState<string | null>(null)
+  const [secondaryInspection, setSecondaryInspection] = useState<boolean | null>(null)
+  const [madeItOnTime, setMadeItOnTime] = useState<boolean | null>(null)
+  const [satisfactionScore, setSatisfactionScore] = useState<number | null>(null)
+  const [cargoSummary, setCargoSummary] = useState<string | null>(null)
+  const [boothNumber, setBoothNumber] = useState<number | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cruzar_report_lifetime')
+      const n = raw ? parseInt(raw, 10) || 0 : 0
+      setLifetimeReports(n)
+    } catch { /* ignore */ }
+  }, [])
+
+  // Veteran threshold: power-user fields unlock at 3 previous reports.
+  const isVeteran = lifetimeReports >= 3
+
   // Flat list of every selected tag across all three groups — used for
   // lane-detail gating, submit enablement, and the "done" screen summary.
   const allTags: string[] = [
@@ -239,8 +265,25 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
           ref: typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null,
           lat: coords?.lat,
           lng: coords?.lng,
+          // Data moat fields — progressive disclosure. Only sent if
+          // filled. Server validates enums + clamps numerics.
+          vehicleType,
+          tripPurpose,
+          trustedTravelerProgram,
+          secondaryInspection,
+          madeItOnTime,
+          satisfactionScore,
+          cargoSummary,
+          boothNumber,
         }),
       })
+
+      // Increment lifetime counter so veteran fields unlock after 3 reports.
+      try {
+        const next = lifetimeReports + 1
+        localStorage.setItem('cruzar_report_lifetime', String(next))
+        setLifetimeReports(next)
+      } catch { /* ignore */ }
 
       // Remember this report locally so the user sees ownership badges
       // on port cards + a pinned "tu reporte" row in the live ticker
@@ -717,6 +760,257 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
           rows={2}
           maxLength={500}
         />
+      )}
+
+      {/* ─── Detailed reporter fields (veteran unlock) ───────────
+          Only offered to reporters who've filed 3+ reports. First-
+          timers get the simple flow above; power users help build
+          the moat by filling these extra fields. Single toggle so
+          it's ignorable but available. */}
+      {hasSelection && isVeteran && (
+        <div className="border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowDetailed((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-left"
+          >
+            <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
+              {lang === 'es' ? '⭐ Reportero detallado' : '⭐ Detailed reporter'}
+            </span>
+            <span className="text-[10px] text-amber-700 dark:text-amber-300">
+              {showDetailed ? (lang === 'es' ? 'ocultar' : 'hide') : (lang === 'es' ? 'agregar detalles' : 'add details')}
+            </span>
+          </button>
+          {showDetailed && (
+            <div className="p-3 space-y-3 bg-white dark:bg-gray-800">
+              {/* Vehicle type */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  {lang === 'es' ? 'Tipo de vehículo' : 'Vehicle type'}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { v: 'passenger_car', es: 'Auto', en: 'Car' },
+                    { v: 'pickup', es: 'Pickup', en: 'Pickup' },
+                    { v: 'suv', es: 'SUV', en: 'SUV' },
+                    { v: 'semi_truck', es: 'Trailer', en: 'Semi' },
+                    { v: 'cargo_van', es: 'Van', en: 'Van' },
+                    { v: 'pedestrian', es: 'A pie', en: 'Walking' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => setVehicleType(vehicleType === opt.v ? null : opt.v)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                        vehicleType === opt.v
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {lang === 'es' ? opt.es : opt.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trip purpose */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  {lang === 'es' ? 'Por qué cruzas' : 'Trip purpose'}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { v: 'commute', es: 'Trabajo', en: 'Commute' },
+                    { v: 'leisure', es: 'Paseo', en: 'Leisure' },
+                    { v: 'commercial', es: 'Comercial', en: 'Commercial' },
+                    { v: 'medical', es: 'Médico', en: 'Medical' },
+                    { v: 'shopping', es: 'Compras', en: 'Shopping' },
+                    { v: 'family', es: 'Familia', en: 'Family' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => setTripPurpose(tripPurpose === opt.v ? null : opt.v)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                        tripPurpose === opt.v
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {lang === 'es' ? opt.es : opt.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trusted traveler program */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  {lang === 'es' ? 'Programa de cruzante' : 'Trusted traveler'}
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { v: 'none', es: 'Ninguno', en: 'None' },
+                    { v: 'sentri', es: 'SENTRI', en: 'SENTRI' },
+                    { v: 'ready', es: 'Ready Lane', en: 'Ready' },
+                    { v: 'fast', es: 'FAST', en: 'FAST' },
+                    { v: 'nexus', es: 'NEXUS', en: 'NEXUS' },
+                    { v: 'global_entry', es: 'Global Entry', en: 'Global Entry' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() => setTrustedTravelerProgram(trustedTravelerProgram === opt.v ? null : opt.v)}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                        trustedTravelerProgram === opt.v
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      {lang === 'es' ? opt.es : opt.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cargo type (only if commercial trip purpose) */}
+              {tripPurpose === 'commercial' && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                    {lang === 'es' ? 'Tipo de carga' : 'Cargo type'}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { v: 'empty', es: 'Vacío', en: 'Empty' },
+                      { v: 'perishable', es: 'Perecedero', en: 'Perishable' },
+                      { v: 'electronics', es: 'Electrónicos', en: 'Electronics' },
+                      { v: 'auto_parts', es: 'Auto partes', en: 'Auto parts' },
+                      { v: 'hazmat', es: 'Peligroso', en: 'Hazmat' },
+                      { v: 'mixed', es: 'Mixto', en: 'Mixed' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() => setCargoSummary(cargoSummary === opt.v ? null : opt.v)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+                          cargoSummary === opt.v
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                        }`}
+                      >
+                        {lang === 'es' ? opt.es : opt.en}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Secondary inspection toggle */}
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                  {lang === 'es' ? '¿Te mandaron a secundaria?' : 'Sent to secondary inspection?'}
+                </p>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSecondaryInspection(secondaryInspection === true ? null : true)}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                      secondaryInspection === true
+                        ? 'bg-red-600 text-white border-red-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    {lang === 'es' ? 'Sí' : 'Yes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSecondaryInspection(secondaryInspection === false ? null : false)}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                      secondaryInspection === false
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    {lang === 'es' ? 'No' : 'No'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Made it on time toggle */}
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                  {lang === 'es' ? '¿Llegaste a tiempo?' : 'Made it on time?'}
+                </p>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMadeItOnTime(madeItOnTime === true ? null : true)}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                      madeItOnTime === true
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    {lang === 'es' ? 'Sí' : 'Yes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMadeItOnTime(madeItOnTime === false ? null : false)}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                      madeItOnTime === false
+                        ? 'bg-red-600 text-white border-red-600'
+                        : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    {lang === 'es' ? 'No' : 'No'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Satisfaction 1-5 */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  {lang === 'es' ? 'Satisfacción' : 'Satisfaction'}
+                </p>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setSatisfactionScore(satisfactionScore === n ? null : n)}
+                      className={`flex-1 text-base py-1.5 rounded-lg border ${
+                        satisfactionScore != null && satisfactionScore >= n
+                          ? 'bg-amber-400 text-white border-amber-500'
+                          : 'bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600'
+                      }`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Booth number (optional integer input) */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+                  {lang === 'es' ? 'Caseta # (opcional)' : 'Booth # (optional)'}
+                </p>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={boothNumber ?? ''}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10)
+                    setBoothNumber(Number.isFinite(n) && n >= 1 && n <= 50 ? n : null)
+                  }}
+                  className="w-full text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="—"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <button

@@ -38,6 +38,29 @@ interface DataExplorerResponse {
     alertsByTier: PortTierRow[]
     reportsByTier: PortTierRow[]
   }
+  dataMoat: {
+    commercialVsPassenger: Array<{ portId: string; commercial: number; passenger: number; total: number }>
+    trustedTravelerSpeedup: Array<{ portId: string; avgWith: number; avgWithout: number; savingsMin: number; withSamples: number; withoutSamples: number }>
+    secondaryInspection: Array<{ portId: string; total: number; sent: number; ratePct: number }>
+    madeItOnTime: Array<{ portId: string; total: number; onTime: number; ratePct: number }>
+    satisfactionByPort: Array<{ portId: string; avgScore: number; samples: number }>
+    vehicleTypeCounts: Record<string, number>
+    tripPurposeCounts: Record<string, number>
+    trustedTravelerCounts: Record<string, number>
+    cargoSummaryCounts: Record<string, number>
+    weatherBuckets: Record<string, number>
+  }
+  photoIntel: {
+    totalSubmissions: number
+    totalDeleted: number
+    liveNow: number
+    liveByPort: Array<{ portId: string; count: number }>
+    visionSampleSize: number
+    xRayObservations: number
+    incidentObservations: number
+    constructionObservations: number
+    avgLanesVisible: number
+  }
   capture: {
     reportsTotal: number
     reports30Days: number
@@ -293,6 +316,150 @@ export function DataExplorer() {
                 </span>
               </div>
             ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* ─── Section 7: Data Moat (buyer-relevant slices) ─── */}
+      <Card title="💰 Data Moat Slices" subtitle="The fields buyers (trucking, insurance, OEMs, CBP) actually pay for">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">🚛 Commercial vs Passenger (30d)</p>
+            <div className="space-y-1">
+              {data.dataMoat.commercialVsPassenger.slice(0, 10).map((r) => {
+                const total = r.total || 1
+                const pctCom = (r.commercial / total) * 100
+                return (
+                  <div key={r.portId} className="bg-gray-50 rounded-lg px-2.5 py-1.5">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[11px] font-medium text-gray-800 truncate">{portLabel(r.portId)}</span>
+                      <span className="text-[10px] text-gray-500 tabular-nums">{r.total}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden flex">
+                      <div className="h-full bg-amber-500" style={{ width: `${pctCom}%` }} />
+                      <div className="h-full bg-blue-500" style={{ width: `${100 - pctCom}%` }} />
+                    </div>
+                    <div className="flex justify-between mt-0.5 text-[9px] font-bold">
+                      <span className="text-amber-700">🚛 {r.commercial}</span>
+                      <span className="text-blue-700">🚗 {r.passenger}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">🎫 Trusted Traveler Speedup</p>
+            {data.dataMoat.trustedTravelerSpeedup.length === 0 ? (
+              <p className="text-[11px] text-gray-400">Need 3+ samples per side</p>
+            ) : (
+              <div className="space-y-1">
+                {data.dataMoat.trustedTravelerSpeedup.slice(0, 10).map((r) => (
+                  <div key={r.portId} className="bg-gray-50 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-gray-800 truncate flex-1">{portLabel(r.portId)}</span>
+                    <span className="text-[10px] text-gray-500 tabular-nums mx-2">{r.avgWithout}m → {r.avgWith}m</span>
+                    <span className="text-xs font-black text-green-700 tabular-nums">−{r.savingsMin}m</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">🔍 Secondary Inspection Rate</p>
+            {data.dataMoat.secondaryInspection.length === 0 ? (
+              <p className="text-[11px] text-gray-400">Need 3+ samples per port</p>
+            ) : (
+              <div className="space-y-1">
+                {data.dataMoat.secondaryInspection.slice(0, 10).map((r) => (
+                  <div key={r.portId} className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-700 flex-1 truncate">{portLabel(r.portId)}</span>
+                    <span className="text-[10px] text-gray-400 tabular-nums">{r.total}</span>
+                    <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${r.ratePct >= 30 ? 'bg-red-500' : r.ratePct >= 10 ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${Math.min(100, r.ratePct)}%` }} />
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-800 tabular-nums w-9 text-right">{r.ratePct}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">⏰ On-Time Arrival Rate</p>
+            {data.dataMoat.madeItOnTime.length === 0 ? (
+              <p className="text-[11px] text-gray-400">Need 3+ samples per port</p>
+            ) : (
+              <div className="space-y-1">
+                {data.dataMoat.madeItOnTime.slice(0, 10).map((r) => (
+                  <div key={r.portId} className="flex items-center gap-2">
+                    <span className="text-[11px] text-gray-700 flex-1 truncate">{portLabel(r.portId)}</span>
+                    <span className="text-[10px] text-gray-400 tabular-nums">{r.total}</span>
+                    <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${r.ratePct >= 80 ? 'bg-green-500' : r.ratePct >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${Math.min(100, r.ratePct)}%` }} />
+                    </div>
+                    <span className="text-[11px] font-bold text-gray-800 tabular-nums w-9 text-right">{r.ratePct}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <BucketTable title="Vehicle type distribution" data={data.dataMoat.vehicleTypeCounts} />
+          <BucketTable title="Trip purpose distribution" data={data.dataMoat.tripPurposeCounts} />
+          <BucketTable title="Trusted traveler program" data={data.dataMoat.trustedTravelerCounts} />
+          <BucketTable title="Cargo type (commercial)" data={data.dataMoat.cargoSummaryCounts} />
+          <BucketTable title="Weather conditions" data={data.dataMoat.weatherBuckets} />
+        </div>
+      </Card>
+
+      {/* ─── Section 8: Community photo intel ─── */}
+      <Card title="📸 Community Photo Intel" subtitle="Lane-level ground truth from users physically at the bridge">
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          <Stat label="All time" value={data.photoIntel.totalSubmissions} big />
+          <Stat label="Live now" value={data.photoIntel.liveNow} />
+          <Stat label="Blobs deleted" value={data.photoIntel.totalDeleted} />
+          <Stat label="Vision extracted" value={data.photoIntel.visionSampleSize} />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Vision-extracted observations</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-medium text-gray-800">🔍 X-ray visible</span>
+                <span className="text-xs font-black text-indigo-700 tabular-nums">{data.photoIntel.xRayObservations}</span>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-medium text-gray-800">🚨 Incidents visible</span>
+                <span className="text-xs font-black text-indigo-700 tabular-nums">{data.photoIntel.incidentObservations}</span>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-medium text-gray-800">🚧 Construction</span>
+                <span className="text-xs font-black text-indigo-700 tabular-nums">{data.photoIntel.constructionObservations}</span>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-medium text-gray-800">📏 Avg lanes visible</span>
+                <span className="text-xs font-black text-indigo-700 tabular-nums">{data.photoIntel.avgLanesVisible}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Live photos by port</p>
+            {data.photoIntel.liveByPort.length === 0 ? (
+              <p className="text-[11px] text-gray-400">No live photos right now</p>
+            ) : (
+              <div className="space-y-1">
+                {data.photoIntel.liveByPort.slice(0, 10).map((p) => (
+                  <div key={p.portId} className="flex items-center justify-between bg-gray-50 rounded-lg px-2.5 py-1.5">
+                    <span className="text-[11px] font-medium text-gray-800 truncate">{portLabel(p.portId)}</span>
+                    <span className="text-xs font-black text-amber-700 tabular-nums">{p.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </Card>
