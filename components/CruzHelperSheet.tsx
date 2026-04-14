@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { X, MessageCircle, Compass, Bell, MapPin, Zap, Camera, Trophy } from 'lucide-react'
+import { X, MessageCircle, Compass, Bell, MapPin, Zap, Camera, Trophy, Sparkles } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { trackEvent } from '@/lib/trackEvent'
 
@@ -60,6 +60,16 @@ export function CruzHelperSheet({ open, onClose }: Props) {
 
   const actions = [
     {
+      key: 'features',
+      icon: <Sparkles className="w-5 h-5" />,
+      labelEs: 'Todo lo que hace Cruzar',
+      labelEn: 'Everything Cruzar does',
+      subEs: 'Índice completo · ninguna función oculta',
+      subEn: 'Complete index · no hidden features',
+      href: '/features',
+      color: 'from-indigo-600 to-purple-700 text-white',
+    },
+    {
       key: 'tour',
       icon: <Compass className="w-5 h-5" />,
       labelEs: 'Dame un tour rápido',
@@ -68,7 +78,6 @@ export function CruzHelperSheet({ open, onClose }: Props) {
       subEn: '5 screens · essentials in 30 seconds',
       onClick: startTour,
       href: null,
-      color: 'from-indigo-600 to-purple-700 text-white',
     },
     {
       key: 'alerts',

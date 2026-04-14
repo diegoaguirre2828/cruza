@@ -32,6 +32,7 @@ interface MenuItem {
 }
 
 const ACCOUNT_ITEMS: MenuItem[] = [
+  { href: '/features', emoji: '✨', labelEs: 'Todo lo que hace Cruzar', labelEn: 'Everything Cruzar does', subEs: 'Índice completo de funciones', subEn: 'Complete feature index' },
   { href: '/dashboard', emoji: '🏠', labelEs: 'Mi panel', labelEn: 'My dashboard', subEs: 'Alertas · favoritos · progreso', subEn: 'Alerts · saved · progress' },
   { href: '/account', emoji: '⚙️', labelEs: 'Cuenta', labelEn: 'Account', subEs: 'Perfil y configuración', subEn: 'Profile & settings' },
   { href: '/pricing', emoji: '⭐', labelEs: 'Planes', labelEn: 'Plans', subEs: 'Free · Pro · Business', subEn: 'Free · Pro · Business' },
