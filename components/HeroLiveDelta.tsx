@@ -353,8 +353,8 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
           {!user && (
             <div className="mt-4 bg-white rounded-2xl px-3 py-2.5 shadow-xl cruzar-rise cruzar-rise-delay-2 border border-white/40">
               <div className="flex items-start gap-2.5">
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-sm font-black text-white">
-                  C
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[#0f172a] flex items-center justify-center text-sm leading-none">
+                  🌉
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">

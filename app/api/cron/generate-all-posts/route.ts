@@ -74,28 +74,28 @@ const PEAK_COPY: { hour: number; opener: string; featurePitch: string; followHoo
     hour: 5,
     opener: '🌅 BUENOS DÍAS',
     featurePitch: '🔔 La app también te avisa cuando baja la espera de TU puente',
-    followHook: '👉 Sigue la página: facebook.com/cruzar (notificación cada mañana)',
+    followHook: '👉 Sigue la página: cruzar.app/fb (notificación cada mañana)',
     hashtag: '#cruzar #madrugada #commute',
   },
   {
     hour: 11,
     opener: '☀️ MEDIODÍA',
     featurePitch: "📊 La app tiene historial por hora pa\' saber cuándo cruzar",
-    followHook: '👉 Sigue la página: facebook.com/cruzar (4 veces al día en tu feed)',
+    followHook: '👉 Sigue la página: cruzar.app/fb (4 veces al día en tu feed)',
     hashtag: '#cruzar #mediodia',
   },
   {
     hour: 15,
     opener: '🌤️ TARDE',
     featurePitch: '📹 La app tiene cámaras en vivo + reportes de la gente en la fila',
-    followHook: '👉 Sigue la página: facebook.com/cruzar (notificación directo al teléfono)',
+    followHook: '👉 Sigue la página: cruzar.app/fb (notificación directo al teléfono)',
     hashtag: '#cruzar #tarde #commute',
   },
   {
     hour: 19,
     opener: '🌙 NOCHE',
     featurePitch: '⚠️ La app te alerta cuando hay accidentes o inspecciones fuertes',
-    followHook: '👉 Sigue la página: facebook.com/cruzar (publicamos 4 veces al día)',
+    followHook: '👉 Sigue la página: cruzar.app/fb (publicamos 4 veces al día)',
     hashtag: '#cruzar #noche',
   },
 ]
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
   const peak = PEAK_COPY.find(p => p.hour === cstHour) || {
     opener: '🌉 TIEMPOS DE ESPERA',
     featurePitch: '📱 Tiempos en vivo + cámaras + alertas',
-    followHook: '👉 Sigue la página: facebook.com/cruzar',
+    followHook: '👉 Sigue la página: cruzar.app/fb',
     hashtag: '#cruzar',
   }
 

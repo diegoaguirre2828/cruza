@@ -17,7 +17,10 @@ import { useLang } from '@/lib/LangContext'
 // The Cruzar FB page slug is the vanity URL set on the page itself.
 // Update FB_PAGE_URL here if the vanity slug changes.
 
-const FB_PAGE_URL = 'https://www.facebook.com/cruzar'
+// Clean /fb redirect that goes through our own domain then 302s
+// to the real numeric-ID Facebook page. Lets us track clicks and
+// keeps the vanity cruzar.app URL in captions and buttons.
+const FB_PAGE_URL = 'https://cruzar.app/fb'
 
 interface Props {
   variant?: 'compact' | 'full' | 'inline'

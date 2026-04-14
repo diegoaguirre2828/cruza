@@ -14,7 +14,8 @@ import { trackEvent } from '@/lib/trackEvent'
 // All clicks log to app_events so we can measure conversion
 // vs the previous widget placement.
 
-const FB_PAGE_URL = 'https://www.facebook.com/cruzar'
+// Clean /fb redirect through our own domain. See app/fb/route.ts.
+const FB_PAGE_URL = 'https://cruzar.app/fb'
 
 export function FbPagePill() {
   const { lang } = useLang()

@@ -137,7 +137,10 @@ export function PromoterDashboard() {
   const [addResult, setAddResult] = useState<string | null>(null)
 
   const refLink = user ? `https://cruzar.app/?ref=${user.id}` : 'https://cruzar.app'
-  const fbPageUrl = 'https://www.facebook.com/cruzar'
+  // cruzar.app/fb is a 302 redirect to our actual FB page — keeps
+  // the vanity URL in pasted pitches and routes clicks through our
+  // domain for tracking before landing on Facebook.
+  const fbPageUrl = 'https://cruzar.app/fb'
   // Page recruitment pitch stays in Spanish — this is what gets
   // pasted into groups. The language toggle only affects chrome.
   const pagePitch = `Raza, síganse a Cruzar en Facebook — publica los tiempos de los puentes 4 veces al día (mañana, mediodía, tarde, noche). Les llega una notificación directo al teléfono, ya no tienen que andar buscando en los grupos 👉 ${fbPageUrl}`
