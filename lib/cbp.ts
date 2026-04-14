@@ -131,10 +131,25 @@ function getBestWait(lanes: any): { wait: number | null; isClosed: boolean; noDa
 }
 
 export const fetchRgvWaitTimes = cache(async function fetchRgvWaitTimes(): Promise<PortWaitTime[]> {
-  const res = await fetch(CBP_API_URL, {
-    next: { revalidate: 0 },
-    headers: { Accept: 'application/json' },
-  })
+  // CBP API is unreliable at peak crossing hours — sometimes slow,
+  // sometimes hangs outright. Without a hard timeout, the home page
+  // server component awaits this forever, the HTML never arrives,
+  // and users see "stuck loading" across PWA/mobile/desktop with
+  // NO error code. The outer .catch(() => null) doesn't help
+  // because a hanging fetch never rejects, it just never resolves.
+  // 2026-04-14: this was the root cause of the peak-hour outage.
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 5000)
+  let res: Response
+  try {
+    res = await fetch(CBP_API_URL, {
+      next: { revalidate: 0 },
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
 
   if (!res.ok) throw new Error(`CBP API error: ${res.status}`)
 
