@@ -248,7 +248,19 @@ export async function GET(req: NextRequest) {
     reporter_tier: user_id ? (tierMap[user_id] || 'free') : null,
   }))
 
-  return NextResponse.json({ reports })
+  // Edge cache — reports are fine to be ~30s stale on port detail
+  // pages. This drops the per-port-page DB hit rate from "every
+  // request" to "at most 2/min per port" regardless of traffic.
+  // Was uncached before, which contributed to disk IO pressure
+  // once the Pro-tier join added a second query per call.
+  return NextResponse.json(
+    { reports },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120',
+      },
+    },
+  )
 }
 
 // Rate limit: 10 reports/hour for guests, 30 for authenticated users

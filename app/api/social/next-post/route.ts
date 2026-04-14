@@ -36,31 +36,65 @@ function emoji(level: string) {
 
 type PeakWindow = 'morning' | 'midday' | 'afternoon' | 'evening'
 
+// Teaser captions: the opener is a short time-stamped headline, the
+// featurePitch rotates a different app feature per peak so readers
+// see the value prop across the day, and followHook is the primary
+// CTA pushing followers to the FB page. Short body is the goal —
+// readers should see two fastest crossings, get hooked on "the rest
+// of the 52", and follow to get the full picture.
 const PEAK_COPY: Record<PeakWindow, {
   opener: string
+  featurePitch: string
   followHook: string
   hashtag: string
 }> = {
   morning: {
-    opener: '🌅 BUENOS DÍAS RAZA — tiempos de la mañana',
-    followHook: '👉 Dale follow a la página y te avisamos cada mañana antes de que salgas al puente',
-    hashtag: '#madrugada #commute',
+    opener: '🌅 BUENOS DÍAS',
+    featurePitch: '🔔 La app también te avisa cuando baja la espera de TU puente',
+    followHook: "👉 Sigue la página: facebook.com/cruzar (notificación cada mañana)",
+    hashtag: '#cruzar #madrugada #commute',
   },
   midday: {
-    opener: '☀️ MEDIODÍA — así anda el puente ahorita',
-    followHook: '👉 Síguenos para que te llegue una notificación cuando publiquemos los tiempos — ya no andes buscando',
-    hashtag: '#mediodia',
+    opener: '☀️ MEDIODÍA',
+    featurePitch: "📊 La app tiene historial por hora pa\' saber cuándo cruzar",
+    followHook: '👉 Sigue la página: facebook.com/cruzar (4 veces al día en tu feed)',
+    hashtag: '#cruzar #mediodia',
   },
   afternoon: {
-    opener: '🌤️ TARDE — tiempos antes de la salida de escuela y trabajo',
-    followHook: '👉 Síguenos y te avisamos cada tarde ANTES de que salgas — te ahorras horas',
-    hashtag: '#tarde #commute',
+    opener: '🌤️ TARDE',
+    featurePitch: '📹 La app tiene cámaras en vivo + reportes de la gente en la fila',
+    followHook: "👉 Sigue la página: facebook.com/cruzar (notificación directo al teléfono)",
+    hashtag: '#cruzar #tarde #commute',
   },
   evening: {
-    opener: '🌙 NOCHE — cómo anda el puente para los que cruzan al final del día',
-    followHook: '👉 Dale follow a la página — publicamos los tiempos 4 veces al día en los momentos clave',
-    hashtag: '#noche',
+    opener: '🌙 NOCHE',
+    featurePitch: '⚠️ La app te alerta cuando hay accidentes o inspecciones fuertes',
+    followHook: "👉 Sigue la página: facebook.com/cruzar (publicamos 4 veces al día)",
+    hashtag: '#cruzar #noche',
   },
+}
+
+// Short region tag for each mega region — used next to the port name
+// so a viewer can tell at a glance if a crossing is in their zone.
+const REGION_TAG: Record<string, string> = {
+  rgv:         'RGV',
+  brownsville: 'Matamoros',
+  laredo:      'Laredo',
+  eagle_pass:  'Eagle Pass',
+  el_paso:     'El Paso',
+  san_luis:    'San Luis',
+  nogales:     'Nogales',
+  tijuana:     'Tijuana',
+  mexicali:    'Mexicali',
+  other:       '',
+}
+
+// Reverse lookup: portId → region key
+function portRegion(portId: string): string {
+  for (const region of REGIONS) {
+    if (region.ports.includes(portId)) return region.key
+  }
+  return 'other'
 }
 
 // Pick the nearest peak window based on current time in CST — used
@@ -136,81 +170,70 @@ export async function GET(req: NextRequest) {
   const { ports } = await portsRes.json()
 
   const now = new Date()
-  const regionBlocks: string[] = []
+  const timeStrCST = now.toLocaleTimeString('es-MX', {
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
+  })
 
+  // Flatten every port with usable vehicle data across all regions
+  // and sort ascending by wait time. We pick the top 2 fastest as
+  // the teaser — the whole point is to show readers that SOME bridge
+  // is fast right now without revealing the full picture (which is
+  // the hook to follow the page for the next drop).
+  interface TeaserCrossing { name: string; wait: number; level: string; region: string }
+  const allCrossings: TeaserCrossing[] = []
   for (const region of REGIONS) {
-    if (region.ports.length === 0) continue
-
-    const crossings = region.ports.map(portId => {
-      const port = ports?.find((p: { portId: string; isClosed?: boolean; noData?: boolean }) => p.portId === portId)
-      const wait = port?.vehicle ?? null
-      const isClosed = port?.isClosed ?? false
-      const noData = port?.noData ?? (wait === null)
-      return { name: PORT_NAMES[portId] || portId, wait, level: getLevel(wait), isClosed, noData }
-    })
-
-    if (crossings.length === 0) continue
-
-    const timeStr = now.toLocaleTimeString('es-MX', {
-      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: region.tz,
-    })
-
-    const lines = crossings.map(c => {
-      if (c.isClosed) return `  ⚫ ${c.name}: Cerrado`
-      if (c.noData || c.wait === null) return `  ⚪ ${c.name}: Sin datos`
-      return `  ${emoji(c.level)} ${c.name}: ${c.wait === 0 ? '<1' : c.wait} min`
-    })
-    const fastest = crossings.find(c => c.level === 'low' && !c.isClosed && !c.noData)
-
-    regionBlocks.push(
-      `${region.label} — ${timeStr.toUpperCase()}\n` +
-      lines.join('\n') +
-      (fastest ? `\n  ✅ Más rápido: ${fastest.name}` : '') +
-      `\n  ${region.hashtags}`
-    )
+    for (const portId of region.ports) {
+      const port = ports?.find((p: { portId: string; isClosed?: boolean; vehicle?: number | null }) => p.portId === portId)
+      if (!port || port.isClosed) continue
+      const wait = port.vehicle
+      if (wait == null || wait < 0) continue
+      allCrossings.push({
+        name: PORT_NAMES[portId] || portId,
+        wait,
+        level: getLevel(wait),
+        region: REGION_TAG[region.key] || '',
+      })
+    }
   }
+  allCrossings.sort((a, b) => a.wait - b.wait)
 
   // Fallback caption when no port data is available. NEVER return
   // null for `caption` — Make.com pipes this field into Facebook's
   // "Create a Post" Message field, and FB rejects empty posts, which
-  // auto-deactivates the scenario after 3 failed runs. Returning a
-  // calm-state post keeps the scenario alive and keeps the page
-  // cadence consistent even on rare CBP API outages.
-  if (regionBlocks.length === 0) {
-    const fallbackTime = now.toLocaleTimeString('es-MX', {
-      hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
-    })
-    const fallbackCaption = `${peakMeta.opener} — ${fallbackTime.toUpperCase()}
+  // auto-deactivates the scenario after 3 failed runs.
+  if (allCrossings.length === 0) {
+    const fallbackCaption = `${peakMeta.opener} · ${timeStrCST.toUpperCase()}
 
-CBP no está reportando datos en vivo ahorita mismo — sucede a veces cuando CBP reinicia su sistema.
+CBP no está reportando datos en vivo ahorita — sucede a veces cuando CBP reinicia su sistema. Los datos vuelven solos en pocos minutos.
 
-📱 Los datos vuelven solos en pocos minutos → cruzar.app
-La comunidad sigue reportando en vivo 🙌
+📱 cruzar.app · tiempos en vivo + reportes de la comunidad
 
 ${peakMeta.followHook}
 
-#border #frontera #cruzar ${peakMeta.hashtag}`
+${peakMeta.hashtag}`
     return NextResponse.json({ caption: fallbackCaption, peak, regions: 0, fallback: true })
   }
 
-  const timeStrCST = now.toLocaleTimeString('es-MX', {
-    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
+  const fastest = allCrossings.slice(0, 2)
+  const fastestLines = fastest.map(c => {
+    const regionTag = c.region ? ` (${c.region})` : ''
+    const waitStr = c.wait === 0 ? '<1' : String(c.wait)
+    return `  ${emoji(c.level)} ${c.name}${regionTag} · ${waitStr} min`
   })
-  const dateStrFB = now.toLocaleDateString('es-MX', {
-    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Chicago',
-  })
 
-  const caption = `${peakMeta.opener} — ${timeStrCST.toUpperCase()}
-${dateStrFB.charAt(0).toUpperCase() + dateStrFB.slice(1)}
+  // Teaser caption — short, follow-centric, feature-aware. The page
+  // URL is inline as plain text so FB auto-linkifies it (becomes
+  // clickable for both direct page posts and copy-pasted group posts).
+  const caption = `${peakMeta.opener} · ${timeStrCST.toUpperCase()}
 
-${regionBlocks.join('\n\n─────────────────\n\n')}
-
-📱 Tiempos en vivo → cruzar.app
-Reporta tu tiempo y ayuda a todos en la fila 🙌
+⚡ Los puentes más fluidos ahorita:
+${fastestLines.join('\n')}
 
 ${peakMeta.followHook}
 
-#border #frontera #cruzar #espera #tiemposdeespera ${peakMeta.hashtag}`
+${peakMeta.featurePitch} — cruzar.app
 
-  return NextResponse.json({ caption, regions: regionBlocks.length, peak })
+${peakMeta.hashtag}`
+
+  return NextResponse.json({ caption, regions: allCrossings.length, peak })
 }
