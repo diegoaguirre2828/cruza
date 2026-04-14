@@ -26,6 +26,7 @@ import { ReciprocityCard } from '@/components/ReciprocityCard'
 import { ContextualNudge } from '@/components/ContextualNudge'
 import { HeroTriad } from '@/components/HeroTriad'
 import { UserCrossingInsights } from '@/components/UserCrossingInsights'
+import { HomeForecast } from '@/components/HomeForecast'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -356,8 +357,13 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         {!isBusiness && !authLoading && user && favoritePortId && (
           <>
             <HeroTriad ports={initialPorts} favoritePortId={favoritePortId} />
-            {/* Tier 1 personalization — rollup of the user's own crossing
-                patterns. Self-hides when totalReports < 3. */}
+            {/* Tier 2 — forecast card with NOW + 4-hour preview + time-shift
+                hint, scoped to the user's saved bridge. Reuses the same
+                /api/ports/[portId]/forecast endpoint that powers the port
+                detail card rail. */}
+            <HomeForecast favoritePortId={favoritePortId} />
+            {/* Tier 1 — rollup of the user's own crossing patterns.
+                Self-hides when totalReports < 3. */}
             <UserCrossingInsights />
           </>
         )}

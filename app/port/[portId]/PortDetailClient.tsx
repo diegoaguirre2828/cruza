@@ -15,16 +15,14 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts'
-import { WaitBadge } from '@/components/WaitBadge'
 import { PushToggle } from '@/components/PushToggle'
 import { ReportForm } from '@/components/ReportForm'
 import { ReportsFeed } from '@/components/ReportsFeed'
 import { BridgeCameras } from '@/components/BridgeCameras'
 import { CommunityBridgePhotos } from '@/components/CommunityBridgePhotos'
-import { PortDetailSoftWall } from '@/components/PortDetailSoftWall'
+import { PortDetailHero } from '@/components/PortDetailHero'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
-import { HourlyWaitChart } from '@/components/HourlyWaitChart'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
 import Link from 'next/link'
@@ -391,133 +389,19 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       )}
 
-      {/* Current wait times */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            {es ? 'Tiempos de espera' : 'Current Wait Times'}
-          </h2>
-          {avgVehicleWait !== null && !loadingHistory && (
-            <span className="text-xs font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
-              {es ? `promedio: ${avgVehicleWait} min` : `avg today: ${avgVehicleWait} min`}
-            </span>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
-            <span className="text-xs text-gray-500 mb-1">{es ? 'Vehículo' : 'Passenger Vehicle'}</span>
-            <WaitBadge minutes={port.vehicle} label="" />
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap justify-center">
-              {!loadingHistory && history.length > 1 && (
-                <>
-                  {vehicleTrend.dir === 'up' && (
-                    <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
-                      ↑ +{vehicleTrend.delta} min
-                    </span>
-                  )}
-                  {vehicleTrend.dir === 'down' && (
-                    <span className="text-xs font-bold text-white bg-green-500 px-2 py-0.5 rounded-full">
-                      ↓ {vehicleTrend.delta} min
-                    </span>
-                  )}
-                  {vehicleTrend.dir === 'stable' && (
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-                      → {es ? 'estable' : 'stable'}
-                    </span>
-                  )}
-                </>
-              )}
-              {port.vehicleLanesOpen !== null && (
-                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-                  {port.vehicleLanesOpen} {es ? 'carriles' : 'lanes'}
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
-            <span className="text-xs text-gray-500 mb-1">SENTRI / Ready Lane</span>
-            {port.sentri !== null ? (
-              <>
-                <WaitBadge minutes={port.sentri} label="" />
-                {port.sentriLanesOpen !== null && (
-                  <span className="text-xs text-gray-400 mt-1">
-                    {port.sentriLanesOpen} {es ? 'carriles' : 'lanes open'}
-                  </span>
-                )}
-              </>
-            ) : port.isClosed ? (
-              <span className="text-xs font-medium text-gray-400 mt-2">{es ? 'Cerrado' : 'Closed'}</span>
-            ) : port.vehicle !== null && port.vehicle > 0 ? (
-              // CBP doesn't always report SENTRI — estimate at ~40% of standard lane
-              <>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className="text-lg font-bold text-blue-600">~{Math.round(port.vehicle * 0.4)}</span>
-                  <span className="text-xs text-gray-400">min</span>
-                </div>
-                <span className="text-xs text-blue-400 mt-0.5">{es ? 'estimado' : 'estimated'}</span>
-                <span className="text-xs text-gray-400 mt-0.5 text-center leading-tight">
-                  {es ? 'CBP no reportó' : 'CBP not reporting'}
-                </span>
-              </>
-            ) : (
-              <span className="text-xs text-gray-400 mt-3">—</span>
-            )}
-          </div>
-        </div>
-
-        {/* SENTRI enrollment nudge — show when SENTRI is (or is estimated to be) at least 10 min faster */}
-        {port.vehicle !== null && port.vehicle > 0 && (() => {
-          const sentriWait = port.sentri ?? Math.round(port.vehicle * 0.4)
-          return port.vehicle - sentriWait >= 10
-        })() && (
-          <div className="mt-4 flex items-center justify-between bg-blue-600 dark:bg-blue-900/20 border border-blue-700 dark:border-blue-800 rounded-xl px-4 py-3">
-            <div>
-              <p className="text-xs font-semibold text-white">
-                {es
-                  ? `SENTRI te ahorraría ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min aquí`
-                  : `SENTRI saves you ~${port.vehicle! - (port.sentri ?? Math.round(port.vehicle! * 0.4))} min at this crossing`}
-              </p>
-              <p className="text-xs text-blue-100 mt-0.5">
-                {es ? 'Aprobación gratis — válido 5 años' : 'Free to apply — valid 5 years'}
-              </p>
-            </div>
-            <a
-              href="https://ttp.cbp.dhs.gov/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 ml-3 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-xl transition-colors"
-            >
-              {es ? 'Solicitar →' : 'Apply →'}
-            </a>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
-            <span className="text-xs text-gray-500 mb-1">{es ? 'Peatón' : 'Pedestrian'}</span>
-            <WaitBadge minutes={port.pedestrian} label="" />
-            {port.pedestrianLanesOpen !== null && (
-              <span className="text-xs text-gray-400 mt-1">
-                {es ? `${port.pedestrianLanesOpen} carriles abiertos` : `${port.pedestrianLanesOpen} lanes open`}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col items-center p-3 bg-gray-50 rounded-xl">
-            <span className="text-xs text-gray-500 mb-1">{es ? 'Comercial / Camión' : 'Commercial / Truck'}</span>
-            <WaitBadge minutes={port.commercial} label="" />
-            {port.commercialLanesOpen !== null && (
-              <span className="text-xs text-gray-400 mt-1">
-                {es ? `${port.commercialLanesOpen} carriles abiertos` : `${port.commercialLanesOpen} lanes open`}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Soft signup wall — dismissible sheet + persistent sticky bar
-          for guests. Renders nothing for authed users. Lives high in
-          the tree so it's mounted alongside the data, not after. */}
-      <PortDetailSoftWall portId={portId} portName={port.portName} />
+      {/* Border Times-style hero — lane tabs + card rail with Best /
+          Rush / Today / forward forecasts. Replaces the old stacked
+          "Current Wait Times" card. All the nerd stats (Sentri
+          breakeven, accident impact, lane stats, weather impact,
+          full hourly pattern) now live at /port/[id]/advanced which
+          redirects to /datos?port=X. See
+          memory/project_cruzar_port_detail_redesign.md */}
+      <PortDetailHero
+        port={port}
+        portId={portId}
+        preferredLane={null}
+        exchangeRate={null}
+      />
 
       {/* Live bridge camera — Pro-gated when a feed is registered for this
           port. Sits below the wait number so it's the first thing after
@@ -788,8 +672,9 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       </div>
 
-      {/* Typical day pattern — free for everyone, builds trust */}
-      <HourlyWaitChart portId={portId} />
+      {/* HourlyWaitChart + AI Predictions moved to /port/[id]/advanced
+          (which redirects to /datos?port=X) as part of the 2026-04-14
+          port detail redesign. Link is on PortDetailHero's "Deep stats →". */}
 
       {/* AI Predictions — Pro+ only */}
       {canAccess(tier, 'ai_predictions') ? (

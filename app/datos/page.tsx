@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { getPortMeta } from '@/lib/portMeta'
@@ -28,9 +29,10 @@ function formatHour(h: number): string {
   return `${h.toString().padStart(2, '0')}:00`
 }
 
-export default function DatosPage() {
+function DatosPageInner() {
   const { lang } = useLang()
   const { tier } = useTier()
+  const searchParams = useSearchParams()
   const es = lang === 'es'
   const isPro = tier === 'pro' || tier === 'business'
 
@@ -45,11 +47,19 @@ export default function DatosPage() {
       .then((d) => {
         const list: PortWaitTime[] = (d.ports || []).filter((p: PortWaitTime) => !p.isClosed && p.vehicle != null)
         setPorts(list)
-        if (list.length > 0 && !selectedPortId) setSelectedPortId(list[0].portId)
+        if (list.length > 0 && !selectedPortId) {
+          // Honor ?port= query param so /port/[id]/advanced can deep-link
+          // into this page pre-scoped to a specific bridge.
+          const portFromQuery = searchParams?.get('port')
+          const preferred = portFromQuery && list.find((p) => p.portId === portFromQuery)
+            ? portFromQuery
+            : list[0].portId
+          setSelectedPortId(preferred)
+        }
       })
       .catch(() => { /* ignore */ })
       .finally(() => setLoading(false))
-  }, [selectedPortId])
+  }, [selectedPortId, searchParams])
 
   useEffect(() => {
     if (!selectedPortId || !isPro) return
@@ -184,6 +194,17 @@ export default function DatosPage() {
         )}
       </div>
     </main>
+  )
+}
+
+// Suspense wrapper — required because DatosPageInner uses
+// useSearchParams which needs to be inside a Suspense boundary
+// per Next.js 14+ App Router rules.
+export default function DatosPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-gray-50 dark:bg-gray-950" />}>
+      <DatosPageInner />
+    </Suspense>
   )
 }
 
