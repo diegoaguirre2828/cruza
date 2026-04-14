@@ -1,10 +1,63 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Camera, Lock } from 'lucide-react'
 import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
 import { getBridgeCamera } from '@/lib/bridgeCameras'
+
+// HLS video player sub-component. Dynamically imports hls.js ONLY when
+// a video element mounts with an hls-kind feed, so guest/free/non-hls
+// users never download the library. Safari natively supports HLS via
+// the video element's src attribute, so we short-circuit for that case
+// and skip loading hls.js entirely. Fired from state 2 (Pro unlocked).
+function HlsVideo({ src, title }: { src: string; title: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    // Safari / iOS can play HLS natively — just set src.
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+      return
+    }
+
+    // Everyone else needs hls.js. Dynamic import so the library is only
+    // fetched for users who actually land on a port with an hls feed.
+    let hls: { destroy: () => void } | null = null
+    let cancelled = false
+    import('hls.js').then((mod) => {
+      if (cancelled || !videoRef.current) return
+      const Hls = mod.default
+      if (Hls.isSupported()) {
+        const instance = new Hls({ enableWorker: true })
+        instance.loadSource(src)
+        instance.attachMedia(videoRef.current)
+        hls = instance
+      }
+    }).catch(() => { /* hls.js failed to load — silent fallback */ })
+
+    return () => {
+      cancelled = true
+      hls?.destroy()
+    }
+  }, [src])
+
+  return (
+    <video
+      ref={videoRef}
+      className="w-full h-full object-cover"
+      autoPlay
+      muted
+      playsInline
+      controls
+      title={title}
+    />
+  )
+}
 
 interface Props {
   portId: string
@@ -99,6 +152,9 @@ export function BridgeCameras({ portId, portName }: Props) {
               alt={`${portName} live camera`}
               className="w-full h-full object-cover"
             />
+          )}
+          {feed.kind === 'hls' && (
+            <HlsVideo src={feed.src} title={`${portName} live camera`} />
           )}
         </div>
         {feed.note && (
