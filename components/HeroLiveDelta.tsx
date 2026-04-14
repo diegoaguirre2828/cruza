@@ -5,6 +5,7 @@ import { useLang } from '@/lib/LangContext'
 import { useAuth } from '@/lib/useAuth'
 import { getPortMeta, type MegaRegion } from '@/lib/portMeta'
 import { haversineKm } from '@/lib/geo'
+import { useHomeRegion } from '@/lib/useHomeRegion'
 import { trackShare } from '@/lib/trackShare'
 import { formatWaitLabel, splitWaitLabel } from '@/lib/formatWait'
 import type { PortWaitTime } from '@/types'
@@ -19,7 +20,7 @@ import type { PortWaitTime } from '@/types'
 //   - Signed-in → /port/{id}
 //
 // Fallback when location is unavailable: show the fastest crossing in
-// their mega region (detected from localStorage or default to rgv).
+// their home mega region (shared with NearMeRail/PortList via useHomeRegion).
 
 const MEGA_REGION_LABEL: Record<MegaRegion, { es: string; en: string }> = {
   rgv:           { es: 'Valle de Texas',           en: 'Rio Grande Valley' },
@@ -42,25 +43,18 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
   const [ports, setPorts] = useState<PortWaitTime[] | null>(propPorts ?? null)
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null)
   const [secondsAgo, setSecondsAgo] = useState(0)
-  const [region, setRegion] = useState<MegaRegion>('rgv')
+  // Share the home-region source with NearMeRail, PortList, etc. so hero and
+  // list never disagree about which region the user is "in". Previously this
+  // component read localStorage independently and drifted — e.g. hero would
+  // claim "YOUR NEAREST CROSSING: Bridge II (Laredo)" while the NearMe rail
+  // showed Brownsville, because hero's region came from cruzar_last_port and
+  // NearMe's came from profile.home_region.
+  const { homeRegion } = useHomeRegion()
+  const region: MegaRegion = homeRegion ?? 'rgv'
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoDenied, setGeoDenied] = useState(false)
   const [reportCount, setReportCount] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
-
-  // Detect preferred region from localStorage or last-viewed port
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try {
-      const override = localStorage.getItem('cruzar_mega_region') as MegaRegion | null
-      if (override) { setRegion(override); return }
-      const lastPort = localStorage.getItem('cruzar_last_port')
-      if (lastPort) {
-        const meta = getPortMeta(lastPort)
-        if (meta.megaRegion && meta.megaRegion !== 'other') setRegion(meta.megaRegion)
-      }
-    } catch { /* ignore */ }
-  }, [])
 
   // Ask for geolocation once. Non-blocking: if denied or times out we fall
   // back to the region-based fastest. We don't retry — that'd be annoying.
@@ -131,8 +125,13 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
   }, [])
 
   // Compute the display port:
-  //   1. If we have geolocation → nearest OPEN port globally
-  //   2. Else → fastest OPEN port in the user's mega region
+  //   1. If we have geolocation → nearest OPEN port with data (unbounded).
+  //      Matches NearMeRail's sort so the hero and the rail always agree
+  //      on which port is "yours." Previously this was capped at 300 km,
+  //      which caused a false fall-through to Path 2 when the user was in
+  //      a region where every RGV port was "Update Pending" — hero then
+  //      picked the fastest port in a totally different mega region.
+  //   2. Else → fastest OPEN port in the user's home mega region
   const display = useMemo(() => {
     if (!ports) return null
     const open = ports.filter(
@@ -149,7 +148,7 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
         const d = haversineKm(userLoc.lat, userLoc.lng, meta.lat, meta.lng)
         if (!best || d < best.dist) best = { port: p, dist: d }
       }
-      if (best && best.dist < 300) {
+      if (best) {
         const bestMeta = getPortMeta(best.port.portId)
         const bestName = (best.port.localNameOverride || bestMeta.localName || best.port.crossingName || '').toLowerCase().trim()
 

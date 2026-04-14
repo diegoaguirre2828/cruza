@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useLang } from '@/lib/LangContext'
 import { CruzHelperSheet } from './CruzHelperSheet'
@@ -32,6 +32,25 @@ export function CruzFab() {
   const pathname = usePathname()
   const es = lang === 'es'
   const [open, setOpen] = useState(false)
+  // Expanded = full "Ask Cruz" pill. Collapses to a 44px icon-only
+  // bubble after the user has had a moment to notice it OR scrolls.
+  // Reason: Diego was seeing content (exchange rate sheet, insights
+  // dropdown list, chat input) getting covered by the wide pill on
+  // every tab. Icon-only stays discoverable without obscuring.
+  const [expanded, setExpanded] = useState(true)
+
+  useEffect(() => {
+    // Reset to expanded whenever the user changes route so they see
+    // the full label once per page visit.
+    setExpanded(true)
+    const collapseTimer = setTimeout(() => setExpanded(false), 4500)
+    const collapseOnScroll = () => setExpanded(false)
+    window.addEventListener('scroll', collapseOnScroll, { passive: true })
+    return () => {
+      clearTimeout(collapseTimer)
+      window.removeEventListener('scroll', collapseOnScroll)
+    }
+  }, [pathname])
 
   if (HIDDEN_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) return null
 
@@ -45,16 +64,22 @@ export function CruzFab() {
       <button
         type="button"
         onClick={handleOpen}
+        onMouseEnter={() => setExpanded(true)}
         aria-label={es ? 'Preguntarle a Cruz' : 'Ask Cruz'}
-        className="fixed z-40 right-4 group flex items-center gap-2 bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-700 text-white rounded-full pl-1.5 pr-4 py-1.5 shadow-2xl active:scale-95 transition-all hover:pr-5"
+        className={`fixed z-40 right-4 group flex items-center bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-700 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-300 ease-out ${
+          expanded ? 'gap-2 pl-1.5 pr-4 py-1.5' : 'gap-0 p-1'
+        }`}
         style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
       >
-        {/* Pulsing ring — 3 second cycle so it's gentle, not obnoxious */}
-        <span
-          className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-400 to-pink-500 opacity-40 animate-ping"
-          style={{ animationDuration: '3s' }}
-          aria-hidden="true"
-        />
+        {/* Pulsing ring — only while expanded, otherwise it's just a
+            quiet icon and the ping becomes visual noise. */}
+        {expanded && (
+          <span
+            className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-400 to-pink-500 opacity-40 animate-ping"
+            style={{ animationDuration: '3s' }}
+            aria-hidden="true"
+          />
+        )}
         <span className="relative flex-shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-inner overflow-hidden">
           <img
             src="/logo-icon.svg"
@@ -64,7 +89,11 @@ export function CruzFab() {
             className="rounded-md"
           />
         </span>
-        <span className="relative text-xs font-black leading-none whitespace-nowrap">
+        <span
+          className={`relative text-xs font-black leading-none whitespace-nowrap overflow-hidden transition-[max-width,opacity] duration-300 ${
+            expanded ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'
+          }`}
+        >
           {es ? '¿Dudas? Pregúntale a Cruz' : 'Got questions? Ask Cruz'}
         </span>
       </button>
