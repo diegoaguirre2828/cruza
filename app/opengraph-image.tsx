@@ -66,10 +66,31 @@ export default async function OGImage() {
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 52 }}>🌉</div>
-          <span style={{ color: '#ffffff', fontSize: 52, fontWeight: 800, letterSpacing: -1 }}>
+        {/* Header — real logo rendered via Satori-compatible JSX.
+            Blue rounded square with a simplified black suspension
+            bridge inside. Matches the home page header and the PWA
+            icon so the brand mark is consistent everywhere. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
+          <div
+            style={{
+              width: 80,
+              height: 80,
+              background: '#2563eb',
+              borderRadius: 18,
+              position: 'relative',
+              display: 'flex',
+            }}
+          >
+            {/* Left tower */}
+            <div style={{ position: 'absolute', left: 18, top: 22, width: 6, height: 32, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
+            {/* Right tower */}
+            <div style={{ position: 'absolute', right: 18, top: 22, width: 6, height: 32, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
+            {/* Road base */}
+            <div style={{ position: 'absolute', left: 10, right: 10, top: 52, height: 5, background: '#0f172a', borderRadius: 2, display: 'flex' }} />
+            {/* Road dash */}
+            <div style={{ position: 'absolute', left: 36, top: 53, width: 8, height: 3, background: '#2563eb', borderRadius: 1, display: 'flex' }} />
+          </div>
+          <span style={{ color: '#ffffff', fontSize: 56, fontWeight: 800, letterSpacing: -1 }}>
             Cruzar
           </span>
           <div style={{
