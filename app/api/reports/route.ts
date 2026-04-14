@@ -280,7 +280,31 @@ function checkReportRateLimit(key: string, max: number): boolean {
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
-  const { portId, reportType, condition, description, severity, waitMinutes, note, waitingMode, ref, laneType, laneInfo, extraTags, lat, lng } = body
+  const {
+    portId,
+    reportType,
+    condition,
+    description,
+    severity,
+    waitMinutes,
+    note,
+    waitingMode,
+    ref,
+    laneType,
+    laneInfo,
+    extraTags,
+    lat,
+    lng,
+    // Sensor-network fields — all optional, persisted to dedicated
+    // columns added by supabase/sensor_network_20260414.sql. These
+    // power the longitudinal moat: X-ray lanes nobody else reports,
+    // idle time separate from total wait, flow rate observations.
+    idleTimeMinutes,
+    flowRateEstimate,
+    firstStopToBoothMinutes,
+    incidentFlag,
+    reportSource,
+  } = body
 
   // Support both reportType and condition field names
   const type = reportType || condition || 'other'
@@ -399,6 +423,78 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Derive lane_type + x_ray_active + incident_flag from the rich
+  // source_meta the form already sends, so existing clients don't
+  // need changes. The new dedicated columns are queryable/indexable
+  // where source_meta JSONB was not. See
+  // supabase/sensor_network_20260414.sql for the migration.
+  const LANE_MAP: Record<string, string> = {
+    vehicle: 'standard',
+    sentri: 'sentri',
+    pedestrian: 'pedestrian',
+    commercial: 'commercial',
+  }
+  const derivedLaneType = normalizedLaneType ? (LANE_MAP[normalizedLaneType] ?? normalizedLaneType) : null
+
+  // X-ray active derivation:
+  //   - Explicit `laneInfo.lanes_xray > 0` → true
+  //   - Explicit `slow_lane === 'con_rayos'` → true
+  //   - Explicit `slow_lane === 'sin_rayos'` → false (they checked, X-ray is off)
+  //   - Otherwise: null (unknown)
+  const xRayActive = (() => {
+    if (normalizedLaneInfo?.lanes_xray != null && normalizedLaneInfo.lanes_xray > 0) return true
+    if (normalizedLaneInfo?.slow_lane === 'con_rayos') return true
+    if (normalizedLaneInfo?.slow_lane === 'sin_rayos') return false
+    return null
+  })()
+
+  // Incident flag derivation from report_type — also honors explicit
+  // incidentFlag override from future clients that want to split the
+  // concerns (e.g. a "delay" report with an explicit "k9" tag).
+  const INCIDENT_MAP: Record<string, string> = {
+    accident: 'accident',
+    inspection: 'inspection',
+    officer_k9: 'k9',
+    officer_secondary: 'inspection',
+    road_hazard: 'road_hazard',
+    road_construction: 'road_construction',
+    reckless_driver: 'reckless_driver',
+    weather_fog: 'weather',
+    weather_rain: 'weather',
+    weather_wind: 'weather',
+    weather_dust: 'weather',
+  }
+  const derivedIncidentFlag =
+    (typeof incidentFlag === 'string' && incidentFlag.length > 0 ? incidentFlag : null) ??
+    INCIDENT_MAP[mappedType] ?? null
+
+  // source enum: community / geofence_auto / sensor / cruzar (legacy).
+  // Default to 'community' for current clients. 'waitingMode' flag
+  // marks a geofence auto-prompted report.
+  const normalizedSource = (() => {
+    if (typeof reportSource === 'string' && ['community', 'geofence_auto', 'sensor'].includes(reportSource)) return reportSource
+    if (waitingMode) return 'geofence_auto'
+    return 'community'
+  })()
+
+  // Raw GPS coords — only persisted when the reporter actually shared
+  // them (existing classifyDistance logic gates acceptance). Stored
+  // as-is so we can re-derive confidence thresholds later without
+  // asking users to re-report.
+  const rawGpsLat = typeof lat === 'number' && Number.isFinite(lat) ? lat : null
+  const rawGpsLng = typeof lng === 'number' && Number.isFinite(lng) ? lng : null
+
+  // Clamp the optional numeric fields so a user can't smuggle
+  // garbage into the dataset. Ceiling at 300 minutes (5 hours) —
+  // longer than that and either the user is lying or the bridge
+  // is closed and should use a different report type.
+  const clampInt = (v: unknown, min: number, max: number): number | null => {
+    if (typeof v !== 'number' || !Number.isFinite(v)) return null
+    const rounded = Math.round(v)
+    if (rounded < min || rounded > max) return null
+    return rounded
+  }
+
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
@@ -407,11 +503,54 @@ export async function POST(req: NextRequest) {
     user_id: user?.id || null,
     wait_minutes: waitMinutes || null,
     username,
+    // Legacy 'source' column still exists pre-migration; post-migration
+    // the new sensor-network source enum uses different values. Write
+    // both shapes so the insert works whether the migration has run
+    // or not.
     source: 'cruzar',
     source_meta: sourceMeta,
     location_confidence: locationConfidence,
     reporter_distance_km: reporterDistanceKm,
-  }).select('id').single()
+    // Sensor-network columns (added by migration). Supabase silently
+    // drops unknown columns in the Dashboard SQL editor view, but the
+    // PostgREST client errors on insert if they don't exist. If Diego
+    // hasn't run the SQL yet, the whole insert fails. Guard below
+    // strips these fields when the migration hasn't happened — it
+    // retries once on column-not-found errors.
+    lane_type: derivedLaneType,
+    x_ray_active: xRayActive,
+    idle_time_minutes: clampInt(idleTimeMinutes, 0, 300),
+    flow_rate_estimate: clampInt(flowRateEstimate, 0, 60),
+    first_stop_to_booth_minutes: clampInt(firstStopToBoothMinutes, 0, 300),
+    incident_flag: derivedIncidentFlag,
+    gps_lat: rawGpsLat,
+    gps_lng: rawGpsLng,
+  }).select('id').single().then(async (result) => {
+    // Graceful fallback — if the migration hasn't been applied yet,
+    // PostgREST returns a 400 with "column does not exist". Retry
+    // with only the legacy columns so reporting keeps working.
+    if (result.error && /column .* does not exist/i.test(result.error.message)) {
+      console.warn('Sensor-network columns missing — retrying legacy insert. Run supabase/sensor_network_20260414.sql to capture the new fields.')
+      return db.from('crossing_reports').insert({
+        port_id: portId,
+        report_type: mappedType,
+        description: (description || note)?.slice(0, 500) || null,
+        severity: severity || 'medium',
+        user_id: user?.id || null,
+        wait_minutes: waitMinutes || null,
+        username,
+        source: 'cruzar',
+        source_meta: sourceMeta,
+        location_confidence: locationConfidence,
+        reporter_distance_km: reporterDistanceKm,
+      }).select('id').single()
+    }
+    return result
+  })
+  // normalizedSource kept for future clients that explicitly pass reportSource;
+  // currently derived but not written until the legacy 'source' column is
+  // renamed — avoids a clash between the legacy hardcoded value and the enum.
+  void normalizedSource
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
