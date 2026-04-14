@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Copy, Check, ExternalLink, TrendingUp, Users, MessageSquare, Share2, ArrowLeft, Languages, Zap } from 'lucide-react'
+import { Copy, Check, ExternalLink, TrendingUp, Users, MessageSquare, Share2, ArrowLeft, Languages, Zap, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import {
@@ -11,7 +11,15 @@ import {
   renderTemplate,
   type TemplateCategory,
 } from '@/lib/promoterContent'
-import { FACEBOOK_GROUPS, REGION_LABELS, type FbGroupRegion } from '@/lib/facebookGroups'
+import { FACEBOOK_GROUPS, REGION_LABELS, type FbGroupRegion, type FacebookGroup } from '@/lib/facebookGroups'
+
+// Extended group type returned by /api/promoter/groups — includes a
+// DB id so the delete button knows what to call. Core (hardcoded)
+// groups from lib/facebookGroups.ts don't have an id and are
+// non-deletable.
+interface GroupWithId extends FacebookGroup {
+  id?: string
+}
 
 // Promoter dashboard — the Raul panel.
 //
@@ -121,6 +129,12 @@ export function PromoterDashboard() {
   const [liveCaption, setLiveCaption] = useState<string | null>(null)
   const [livePeak, setLivePeak] = useState<string | null>(null)
   const [liveLoading, setLiveLoading] = useState(true)
+  const [userGroups, setUserGroups] = useState<GroupWithId[]>([])
+  const [addPanelOpen, setAddPanelOpen] = useState(false)
+  const [bulkText, setBulkText] = useState('')
+  const [bulkRegion, setBulkRegion] = useState<FbGroupRegion>('rgv')
+  const [adding, setAdding] = useState(false)
+  const [addResult, setAddResult] = useState<string | null>(null)
 
   const refLink = user ? `https://cruzar.app/?ref=${user.id}` : 'https://cruzar.app'
   const fbPageUrl = 'https://www.facebook.com/cruzar'
@@ -171,7 +185,56 @@ export function PromoterDashboard() {
       })
       .catch(() => { /* silent */ })
       .finally(() => setLiveLoading(false))
+
+    // Fetch user-added groups from the database so they show up
+    // alongside the hardcoded core list in lib/facebookGroups.ts.
+    fetch('/api/promoter/groups')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.groups) setUserGroups(data.groups as GroupWithId[])
+      })
+      .catch(() => { /* silent */ })
   }, [user, authLoading])
+
+  async function submitBulkGroups() {
+    if (!bulkText.trim()) return
+    setAdding(true)
+    setAddResult(null)
+    try {
+      const res = await fetch('/api/promoter/groups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bulkText, region: bulkRegion }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAddResult(data.error || 'Error')
+      } else {
+        setAddResult(`✓ ${data.added} agregados${data.skipped > 0 ? ` · ${data.skipped} duplicados` : ''}`)
+        setBulkText('')
+        // Refetch to update the display
+        const refresh = await fetch('/api/promoter/groups')
+        if (refresh.ok) {
+          const refreshData = await refresh.json()
+          if (refreshData?.groups) setUserGroups(refreshData.groups)
+        }
+      }
+    } catch (err) {
+      setAddResult(`Error: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function deleteUserGroup(id: string) {
+    if (!confirm(en ? 'Delete this group?' : '¿Borrar este grupo?')) return
+    try {
+      const res = await fetch(`/api/promoter/groups/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setUserGroups((prev) => prev.filter((g) => g.id !== id))
+      }
+    } catch { /* ignore */ }
+  }
 
   async function logShare(templateId: string, category: string, channel: string, targetGroup?: string) {
     try {
@@ -254,11 +317,34 @@ export function PromoterDashboard() {
       : PROMOTER_TEMPLATES.filter((t) => t.category === categoryFilter)
   }, [categoryFilter])
 
+  // Merge hardcoded core groups with user-added database groups. The
+  // hardcoded ones never have an id; the user-added ones do, so the
+  // render side can decide whether to show a delete button.
+  const allGroups: GroupWithId[] = useMemo(() => {
+    const seenUrls = new Set<string>()
+    const merged: GroupWithId[] = []
+    // Database groups first so their id is preserved if a URL collides
+    for (const g of userGroups) {
+      if (!seenUrls.has(g.url)) {
+        merged.push(g)
+        seenUrls.add(g.url)
+      }
+    }
+    // Then core groups (non-deletable, no id)
+    for (const g of FACEBOOK_GROUPS) {
+      if (!seenUrls.has(g.url)) {
+        merged.push(g)
+        seenUrls.add(g.url)
+      }
+    }
+    return merged
+  }, [userGroups])
+
   const visibleGroups = useMemo(() => {
     return regionFilter === 'all'
-      ? FACEBOOK_GROUPS
-      : FACEBOOK_GROUPS.filter((g) => g.region === regionFilter)
-  }, [regionFilter])
+      ? allGroups
+      : allGroups.filter((g) => g.region === regionFilter)
+  }, [regionFilter, allGroups])
 
   // ─── Gating states ─────────────────────────────────────────
   if (authLoading || loading) {
@@ -619,25 +705,112 @@ export function PromoterDashboard() {
 
           <div className="space-y-1.5">
             {visibleGroups.map((group) => (
-              <a
+              <div
                 key={group.url}
-                href={group.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => logShare('group-open', 'evergreen', 'group_open', group.name)}
-                className="flex items-center justify-between gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pr-1.5"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
-                    {group.name}
-                  </p>
-                  <p className="text-[10px] text-gray-400 truncate">
-                    {REGION_LABELS[group.region].label}
+                <a
+                  href={group.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => logShare('group-open', 'evergreen', 'group_open', group.name)}
+                  className="flex items-center justify-between gap-2 flex-1 min-w-0 pl-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-l-xl"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {group.name}
+                    </p>
+                    <p className="text-[10px] text-gray-400 truncate">
+                      {REGION_LABELS[group.region].label}
+                    </p>
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                </a>
+                {group.id && (
+                  <button
+                    onClick={() => deleteUserGroup(group.id!)}
+                    className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    title={en ? 'Delete group' : 'Borrar grupo'}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Bulk add panel — collapsed by default, opens a textarea
+              for Diego to paste many URLs at once and save to the DB. */}
+          <div className="mt-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl overflow-hidden">
+            <button
+              onClick={() => setAddPanelOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">
+                  {en ? 'Add more groups' : 'Agregar más grupos'}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">{addPanelOpen ? '▲' : '▼'}</span>
+            </button>
+
+            {addPanelOpen && (
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-gray-700">
+                <div className="pt-3">
+                  <label className="block text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                    {en ? 'Region for all groups in this batch' : 'Región para todos los grupos en este batch'}
+                  </label>
+                  <select
+                    value={bulkRegion}
+                    onChange={(e) => setBulkRegion(e.target.value as FbGroupRegion)}
+                    className="w-full text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2"
+                  >
+                    {(Object.keys(REGION_LABELS) as FbGroupRegion[]).map((r) => (
+                      <option key={r} value={r}>
+                        {REGION_LABELS[r].emoji} {REGION_LABELS[r].label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">
+                    {en ? 'Paste URLs (one per line)' : 'Pega los URLs (uno por línea)'}
+                  </label>
+                  <textarea
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    placeholder={en
+                      ? 'https://www.facebook.com/groups/123\nGroup name | https://www.facebook.com/groups/456\nAnother name, https://www.facebook.com/groups/789'
+                      : 'https://www.facebook.com/groups/123\nNombre del grupo | https://www.facebook.com/groups/456\nOtro nombre, https://www.facebook.com/groups/789'}
+                    rows={6}
+                    className="w-full text-xs font-mono bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1 leading-snug">
+                    {en
+                      ? 'Formats supported: plain URL, "Name | URL", or "Name, URL". Duplicates are skipped automatically.'
+                      : 'Formatos: URL solo, "Nombre | URL", o "Nombre, URL". Los duplicados se omiten automáticamente.'}
                   </p>
                 </div>
-                <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
-              </a>
-            ))}
+
+                <button
+                  onClick={submitBulkGroups}
+                  disabled={adding || !bulkText.trim()}
+                  className="w-full bg-gray-900 dark:bg-gray-100 dark:text-gray-900 text-white text-sm font-bold py-2.5 rounded-2xl disabled:opacity-40"
+                >
+                  {adding ? (en ? 'Adding…' : 'Agregando…') : (en ? 'Add groups' : 'Agregar grupos')}
+                </button>
+
+                {addResult && (
+                  <p className={`text-[11px] text-center font-semibold ${
+                    addResult.startsWith('✓') ? 'text-green-600' : 'text-red-500'
+                  }`}>
+                    {addResult}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </section>
       </div>
