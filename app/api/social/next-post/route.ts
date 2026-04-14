@@ -74,28 +74,9 @@ const PEAK_COPY: Record<PeakWindow, {
   },
 }
 
-// Short region tag for each mega region — used next to the port name
-// so a viewer can tell at a glance if a crossing is in their zone.
-const REGION_TAG: Record<string, string> = {
-  rgv:         'RGV',
-  brownsville: 'Matamoros',
-  laredo:      'Laredo',
-  eagle_pass:  'Eagle Pass',
-  el_paso:     'El Paso',
-  san_luis:    'San Luis',
-  nogales:     'Nogales',
-  tijuana:     'Tijuana',
-  mexicali:    'Mexicali',
-  other:       '',
-}
-
-// Reverse lookup: portId → region key
-function portRegion(portId: string): string {
-  for (const region of REGIONS) {
-    if (region.ports.includes(portId)) return region.key
-  }
-  return 'other'
-}
+// REGION_TAG / portRegion helpers removed — the per-region section
+// structure means we don't need inline region tags on port lines
+// anymore, and portRegion was only used by the old flattening logic.
 
 // Pick the nearest peak window based on current time in CST — used
 // as a fallback when Make.com doesn't pass ?peak explicitly.
@@ -174,34 +155,49 @@ export async function GET(req: NextRequest) {
     hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago',
   })
 
-  // Flatten every port with usable vehicle data across all regions
-  // and sort ascending by wait time. We pick the top 2 fastest as
-  // the teaser — the whole point is to show readers that SOME bridge
-  // is fast right now without revealing the full picture (which is
-  // the hook to follow the page for the next drop).
-  interface TeaserCrossing { name: string; wait: number; level: string; region: string }
-  const allCrossings: TeaserCrossing[] = []
+  // Build a per-region section. Someone in Brownsville doesn't care
+  // that Tijuana is fast — they want to see THEIR region's bridges.
+  // So instead of the old "top 2 fastest border-wide" teaser, we show
+  // the top N per region, skip regions with nothing to report, and
+  // cap the post length so FB doesn't truncate. Regions are processed
+  // in geographic order (RGV → Brownsville → Laredo → Eagle Pass → El Paso).
+  interface RegionSection {
+    key: string
+    label: string
+    lines: string[]
+  }
+  const TOP_PER_REGION = 3
+  const sections: RegionSection[] = []
+  let totalCrossings = 0
   for (const region of REGIONS) {
+    const regionCrossings: Array<{ name: string; wait: number; level: string }> = []
     for (const portId of region.ports) {
       const port = ports?.find((p: { portId: string; isClosed?: boolean; vehicle?: number | null }) => p.portId === portId)
       if (!port || port.isClosed) continue
       const wait = port.vehicle
       if (wait == null || wait < 0) continue
-      allCrossings.push({
+      regionCrossings.push({
         name: PORT_NAMES[portId] || portId,
         wait,
         level: getLevel(wait),
-        region: REGION_TAG[region.key] || '',
       })
     }
+    regionCrossings.sort((a, b) => a.wait - b.wait)
+    if (regionCrossings.length === 0) continue
+    const top = regionCrossings.slice(0, TOP_PER_REGION)
+    const lines = top.map((c) => {
+      const waitStr = c.wait === 0 ? '<1' : String(c.wait)
+      return `  ${emoji(c.level)} ${c.name} · ${waitStr} min`
+    })
+    sections.push({ key: region.key, label: region.label, lines })
+    totalCrossings += top.length
   }
-  allCrossings.sort((a, b) => a.wait - b.wait)
 
-  // Fallback caption when no port data is available. NEVER return
-  // null for `caption` — Make.com pipes this field into Facebook's
-  // "Create a Post" Message field, and FB rejects empty posts, which
-  // auto-deactivates the scenario after 3 failed runs.
-  if (allCrossings.length === 0) {
+  // Fallback caption when no port data is available in ANY region.
+  // NEVER return null for `caption` — Make.com pipes this field into
+  // Facebook's "Create a Post" Message field, and FB rejects empty
+  // posts, which auto-deactivates the scenario after 3 failed runs.
+  if (sections.length === 0) {
     const fallbackCaption = `${peakMeta.opener} · ${timeStrCST.toUpperCase()}
 
 CBP no está reportando datos en vivo ahorita — sucede a veces cuando CBP reinicia su sistema. Los datos vuelven solos en pocos minutos.
@@ -214,20 +210,19 @@ ${peakMeta.hashtag}`
     return NextResponse.json({ caption: fallbackCaption, peak, regions: 0, fallback: true })
   }
 
-  const fastest = allCrossings.slice(0, 2)
-  const fastestLines = fastest.map(c => {
-    const regionTag = c.region ? ` (${c.region})` : ''
-    const waitStr = c.wait === 0 ? '<1' : String(c.wait)
-    return `  ${emoji(c.level)} ${c.name}${regionTag} · ${waitStr} min`
-  })
+  const sectionBlocks = sections
+    .map((s) => `${s.label}\n${s.lines.join('\n')}`)
+    .join('\n\n')
 
-  // Teaser caption — short, follow-centric, feature-aware. The page
-  // URL is inline as plain text so FB auto-linkifies it (becomes
-  // clickable for both direct page posts and copy-pasted group posts).
+  // Per-region breakdown caption. Longer than the old teaser but
+  // actually useful to cross-regional readers. Ends with the same
+  // follow hook + pitch + hashtag tail so page-growth mechanics
+  // don't change.
   const caption = `${peakMeta.opener} · ${timeStrCST.toUpperCase()}
 
-⚡ Los puentes más fluidos ahorita:
-${fastestLines.join('\n')}
+⚡ Tiempos por región ahorita:
+
+${sectionBlocks}
 
 ${peakMeta.followHook}
 
@@ -235,5 +230,5 @@ ${peakMeta.featurePitch} — cruzar.app
 
 ${peakMeta.hashtag}`
 
-  return NextResponse.json({ caption, regions: allCrossings.length, peak })
+  return NextResponse.json({ caption, regions: sections.length, totalCrossings, peak })
 }

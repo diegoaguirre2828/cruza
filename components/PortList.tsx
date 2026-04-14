@@ -87,11 +87,12 @@ export function PortList() {
   const [view, setView] = useState<'list' | 'map'>('list')
   const [direction, setDirection] = useState<Direction>('entering_us')
 
-  // Near Me
+  // Proximity sort. No explicit "Near Me" button anymore — the list is
+  // auto-organized by distance when geolocation is available, and falls
+  // back to region grouping when it's not. Derived directly from userLoc:
+  // having coords means we're in proximity mode, full stop.
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
-  const [nearMe, setNearMe] = useState(false)
-  const [geoLoading, setGeoLoading] = useState(false)
-  const [geoError, setGeoError] = useState<string | null>(null)
+  const nearMe = userLoc != null
 
   // Share
   const [shareLabel, setShareLabel] = useState<'idle' | 'copied'>('idle')
@@ -191,33 +192,16 @@ export function PortList() {
     }
   }, [fetchPorts])
 
-  // Auto-sort by proximity on load
+  // Auto-sort by proximity on load. If the user denies geolocation
+  // we stay in region-grouping mode — no explicit re-request button.
   useEffect(() => {
     if (!navigator.geolocation) return
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude })
-        setNearMe(true)
-      },
+      pos => setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => { /* denied — stay with region grouping */ },
-      { timeout: 6000 }
+      { timeout: 6000 },
     )
   }, [])
-
-  function requestNearMe() {
-    if (nearMe) { setNearMe(false); setGeoError(null); return }
-    if (!navigator.geolocation) {
-      setGeoError(lang === 'es' ? 'Geolocalización no disponible' : 'Geolocation not available')
-      return
-    }
-    setGeoLoading(true)
-    setGeoError(null)
-    navigator.geolocation.getCurrentPosition(
-      pos => { setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setNearMe(true); setGeoLoading(false) },
-      () => { setGeoError(lang === 'es' ? 'No se pudo obtener tu ubicación' : 'Could not get your location'); setGeoLoading(false) },
-      { timeout: 8000 }
-    )
-  }
 
   function handleShare() {
     const list = (selectedRegion === 'All' ? ports : ports.filter(p => getPortMeta(p.portId).region === selectedRegion))
@@ -465,42 +449,28 @@ export function PortList() {
             </div>
           </div>
 
-          {/* Near Me + Region row */}
+          {/* Organization row — distance hint when geo granted, region
+              selector when it isn't. No explicit Near Me button: the
+              list auto-organizes by proximity if location is available,
+              and falls back to region grouping when it's not. */}
           <div className="mb-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={requestNearMe}
-                disabled={geoLoading}
-                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors flex-shrink-0 ${
-                  nearMe
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-blue-400'
-                }`}
+            {nearMe ? (
+              <p className="px-1 text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-1.5">
+                <Navigation className="w-3 h-3" />
+                {lang === 'es' ? 'Ordenados por distancia desde ti' : 'Sorted by distance from you'}
+              </p>
+            ) : (
+              <select
+                value={selectedRegion}
+                onChange={e => setSelectedRegion(e.target.value)}
+                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {geoLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : nearMe ? <X className="w-3 h-3" /> : <Navigation className="w-3 h-3" />}
-                {lang === 'es' ? 'Cerca' : 'Near Me'}
-              </button>
-
-              {!nearMe && (
-                <select
-                  value={selectedRegion}
-                  onChange={e => setSelectedRegion(e.target.value)}
-                  className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-gray-100 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="All">{lang === 'es' ? '🗺️ Todos los cruces' : '🗺️ All crossings'}</option>
-                  {ALL_REGIONS.filter(r => r !== 'All' && r !== 'Other').map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              )}
-
-              {nearMe && (
-                <p className="flex-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
-                  {lang === 'es' ? 'Ordenado por distancia' : 'Sorted by distance'}
-                </p>
-              )}
-            </div>
-            {geoError && <p className="text-xs text-red-500 dark:text-red-400 px-1">{geoError}</p>}
+                <option value="All">{lang === 'es' ? '🗺️ Todos los cruces' : '🗺️ All crossings'}</option>
+                {ALL_REGIONS.filter(r => r !== 'All' && r !== 'Other').map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            )}
 
             {/* Port name search — lets users type 'hidalgo', 'puente nuevo',
                 'tijuana' etc. instead of hunting through the region dropdown */}

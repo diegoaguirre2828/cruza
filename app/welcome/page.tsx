@@ -96,15 +96,25 @@ function WelcomeInner() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Fetch ports list
+  // Fetch ports list. Hardened with a 6s abort signal so the welcome
+  // step never hangs on "Buscando puentes…" forever if /api/ports is
+  // slow — another common cause of the post-signup "stuck loading"
+  // symptom Diego reported on 2026-04-14.
   useEffect(() => {
-    fetch('/api/ports', { cache: 'no-store' })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 6000)
+    fetch('/api/ports', { cache: 'no-store', signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         setPorts(data.ports || [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
+      .finally(() => clearTimeout(timer))
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
   }, [])
 
   async function confirm() {

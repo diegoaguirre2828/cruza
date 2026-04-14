@@ -55,7 +55,14 @@ export async function GET() {
     const sinceIso = new Date(Date.now() - REPORT_FRESH_MIN * 60 * 1000).toISOString()
     const portIds = ports.map((p) => p.portId)
 
-    const [reportsRes, trafficWaits, overridesRes] = await Promise.all([
+    // Current UTC hour doesn't necessarily match the port's local hour,
+    // but wait_time_readings.hour_of_day is recorded in UTC via the cron,
+    // so matching on UTC hour keeps the lookup consistent with what we
+    // wrote. If we ever move to local hours here we'd have to backfill.
+    const currentHourUtc = new Date().getUTCHours()
+    const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [reportsRes, trafficWaits, overridesRes, historicalRes] = await Promise.all([
       db
         .from('crossing_reports')
         .select('port_id, wait_minutes, report_type, created_at, location_confidence')
@@ -67,7 +74,37 @@ export async function GET() {
       // admin Ports tab without needing a redeploy. Defaults to static
       // portMeta.localName if no override row exists.
       db.from('port_overrides').select('port_id, local_name'),
+      // Historical readings for the CURRENT hour-of-day across the last
+      // 30 days. Grouped and averaged in JS since postgREST doesn't
+      // expose GROUP BY directly. ~1500 rows at most (53 ports × 30 days),
+      // well within the latency budget for this hot path.
+      db
+        .from('wait_time_readings')
+        .select('port_id, vehicle_wait')
+        .in('port_id', portIds)
+        .eq('hour_of_day', currentHourUtc)
+        .not('vehicle_wait', 'is', null)
+        .gte('recorded_at', thirtyDaysAgoIso),
     ])
+
+    // Build a port_id → historical average map. Median would be more
+    // robust but for MVP avg is fine — outliers get washed out across
+    // 30 samples and the number is framed as "usual at this hour"
+    // rather than "exact."
+    const historicalByPort = new Map<string, number>()
+    if (!historicalRes.error && historicalRes.data) {
+      const sums = new Map<string, { total: number; count: number }>()
+      for (const row of historicalRes.data as Array<{ port_id: string; vehicle_wait: number }>) {
+        if (row.vehicle_wait == null) continue
+        const cur = sums.get(row.port_id) ?? { total: 0, count: 0 }
+        cur.total += row.vehicle_wait
+        cur.count += 1
+        sums.set(row.port_id, cur)
+      }
+      for (const [portId, { total, count }] of sums.entries()) {
+        if (count >= 3) historicalByPort.set(portId, Math.round(total / count))
+      }
+    }
 
     const overrideMap = new Map<string, string>()
     for (const o of overridesRes.data || []) {
@@ -196,6 +233,7 @@ export async function GET() {
         lastReportMinAgo,
         cbpStaleMin,
         localNameOverride: overrideMap.get(p.portId) ?? null,
+        historicalVehicle: historicalByPort.get(p.portId) ?? null,
       }
     })
 

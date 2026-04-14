@@ -317,20 +317,47 @@ export function PortCard({ port, signal }: Props) {
               {(port.commercial !== null || port.commercialClosed) && <WaitBadge minutes={port.commercial} label={t.laneTruck} lanesOpen={port.commercialLanesOpen} isClosed={port.commercialClosed} />}
             </div>
           </>
-        ) : (
+        ) : port.historicalVehicle != null ? (
+          // Fallback: show the historical average for this port at this
+          // hour-of-day. Framed as "typical" so the user knows it's a
+          // prediction, not live. Diego's rule: never show "no data" —
+          // either live, historical, "no wait times," or "closed."
           <div
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
-            className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+            className="mt-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
-                {lang === 'es' ? '🌉 Sin datos — sé el primero' : '🌉 No data — be the first'}
+              <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                {lang === 'es'
+                  ? `📊 ~${port.historicalVehicle} min · típico pa' esta hora`
+                  : `📊 ~${port.historicalVehicle} min · usual at this hour`}
               </p>
-              <p className="text-[11px] text-blue-700 dark:text-blue-300">
-                {lang === 'es' ? 'Reporta este puente y gana puntos' : 'Report this crossing and earn points'}
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300">
+                {lang === 'es'
+                  ? 'Promedio de los últimos 30 días · reporta pa\' actualizar'
+                  : 'Average from the last 30 days · report to update'}
               </p>
             </div>
-            <span className="text-xs font-bold text-white bg-blue-600 rounded-lg px-3 py-1.5 whitespace-nowrap">
+            <span className="text-xs font-bold text-white bg-indigo-600 rounded-lg px-3 py-1.5 whitespace-nowrap">
+              {lang === 'es' ? 'Reportar' : 'Report'}
+            </span>
+          </div>
+        ) : (
+          // Last resort: no live data AND no historical pattern yet.
+          // Neutral copy — not alarming, not begging for a report.
+          <div
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
+            className="mt-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {lang === 'es' ? '⏳ Sin tiempos de espera ahora' : '⏳ No wait times right now'}
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                {lang === 'es' ? 'Reporta y ayuda a la comunidad' : 'Report and help the community'}
+              </p>
+            </div>
+            <span className="text-xs font-bold text-white bg-gray-700 dark:bg-gray-600 rounded-lg px-3 py-1.5 whitespace-nowrap">
               {lang === 'es' ? 'Reportar' : 'Report'}
             </span>
           </div>

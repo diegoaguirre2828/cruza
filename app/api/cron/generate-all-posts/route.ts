@@ -100,18 +100,6 @@ const PEAK_COPY: { hour: number; opener: string; featurePitch: string; followHoo
   },
 ]
 
-// Short region tag for each mega region — used next to the port
-// name in the teaser so a viewer can tell at a glance if the bridge
-// is in their zone. Empty string for "other".
-const REGION_TAG: Record<string, string> = {
-  rgv:         'RGV',
-  brownsville: 'Matamoros',
-  laredo:      'Laredo',
-  eagle_pass:  'Eagle Pass',
-  el_paso:     'El Paso',
-  san_luis:    'San Luis',
-}
-
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret')
   if (secret !== process.env.CRON_SECRET) {
@@ -181,43 +169,48 @@ export async function GET(req: NextRequest) {
     weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Chicago',
   })
 
-  // Build a flat list of every crossing with usable data so we can
-  // pick the top-2 fastest across all regions for the teaser. Same
-  // logic as /api/social/next-post so both pipelines produce the
-  // same caption format.
-  interface TeaserCrossing { name: string; wait: number; level: string; region: string }
-  const flatCrossings: TeaserCrossing[] = []
+  // Build a per-region breakdown. Someone in Brownsville doesn't care
+  // that Tijuana is fast — they want to see their region's bridges.
+  // Matches /api/social/next-post exactly so both pipelines produce
+  // the same caption format.
+  const TOP_PER_REGION = 3
+  interface RegionSection { key: string; label: string; lines: string[] }
+  const sections: RegionSection[] = []
   for (const region of REGIONS) {
+    const regionCrossings: Array<{ name: string; wait: number; level: string }> = []
     for (const portId of region.ports) {
       const port = ports?.find((p: { portId: string; isClosed?: boolean; vehicle?: number | null }) => p.portId === portId)
       if (!port || port.isClosed) continue
       const wait = port.vehicle
       if (wait == null || wait < 0) continue
-      flatCrossings.push({
+      regionCrossings.push({
         name: PORT_NAMES[portId] || portId,
         wait,
         level: getLevel(wait),
-        region: REGION_TAG[region.key] || '',
       })
     }
+    regionCrossings.sort((a, b) => a.wait - b.wait)
+    if (regionCrossings.length === 0) continue
+    const top = regionCrossings.slice(0, TOP_PER_REGION)
+    const lines = top.map((c) => {
+      const waitStr = c.wait === 0 ? '<1' : String(c.wait)
+      return `  ${emoji(c.level)} ${c.name} · ${waitStr} min`
+    })
+    sections.push({ key: region.key, label: region.label, lines })
   }
-  flatCrossings.sort((a, b) => a.wait - b.wait)
 
-  // Teaser caption — goes at the TOP of the email AND is what Make.com
-  // / Diego pastes into FB. Short, follow-centric, feature-aware.
-  // Shows only the top-2 fastest crossings to create curiosity for
-  // the rest of the 52. Page URL is inline text so FB auto-linkifies.
-  const fastest = flatCrossings.slice(0, 2)
-  const fastestLines = fastest.map(c => {
-    const regionTag = c.region ? ` (${c.region})` : ''
-    const waitStr = c.wait === 0 ? '<1' : String(c.wait)
-    return `  ${emoji(c.level)} ${c.name}${regionTag} · ${waitStr} min`
-  })
-  const fbCaption = fastest.length > 0
+  // Per-region caption — goes at the TOP of the email AND is what
+  // Make.com / Diego pastes into FB. Ends with the follow hook +
+  // pitch + hashtags tail so growth mechanics don't change.
+  const sectionBlocks = sections
+    .map((s) => `${s.label}\n${s.lines.join('\n')}`)
+    .join('\n\n')
+  const fbCaption = sections.length > 0
     ? `${peak.opener} · ${timeStrCST.toUpperCase()}
 
-⚡ Los puentes más fluidos ahorita:
-${fastestLines.join('\n')}
+⚡ Tiempos por región ahorita:
+
+${sectionBlocks}
 
 ${peak.followHook}
 

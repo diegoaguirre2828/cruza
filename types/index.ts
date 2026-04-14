@@ -57,6 +57,12 @@ export interface PortWaitTime {
   // Runtime override for localName set via /admin Ports tab. Wins over the
   // static portMeta.localName when present.
   localNameOverride?: string | null
+  // Historical average vehicle wait at this hour-of-day, computed from the
+  // last 30 days of wait_time_readings. Used as a fallback when CBP is
+  // null / Update Pending so the card can show "~X min · usual at this
+  // hour" instead of "no data — be the first." Part of the sensor-network
+  // retention play — the more we capture, the smarter the fallback.
+  historicalVehicle?: number | null
 }
 
 export interface WaitTimeReading {
