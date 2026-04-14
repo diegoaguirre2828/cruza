@@ -15,6 +15,7 @@ import { OnboardingTour } from '@/components/OnboardingTour'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
 import { LiveActivityTicker } from '@/components/LiveActivityTicker'
+import { HeroCarousel } from '@/components/HeroCarousel'
 import { WeatherHook } from '@/components/WeatherHook'
 import { NearMeRail } from '@/components/NearMeRail'
 import { GuardianProgressCard } from '@/components/GuardianProgressCard'
@@ -199,15 +200,10 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             stuff cold). Dismissable for the session. */}
         {!isBusiness && <DailyTip />}
 
-        {/* Hero delta — signed-in users only. Shrunk: no more big share
-            card, no more hourly pattern (Pro-gated now). Still the polished
-            personalized moment as a post-signup reward.
-            IMPORTANT: we gate the hero/ticker swap on authLoading — useAuth
-            starts with user=null (which looks like a guest) and resolves
-            asynchronously. Rendering based on tier alone used to flash the
-            guest LiveActivityTicker for ~300ms before swapping to the
-            signed-in hero, which was jarring. The skeleton placeholder
-            below reserves the space until auth resolves. */}
+        {/* Hero carousel — swipeable slides so signed-in users keep
+            access to the live community ticker AND the personalized
+            nearest/fastest crossing hero. Guests see both too; the
+            hero handles its own "sign up" CTA internally. */}
         {!isBusiness && authLoading && (
           <div
             aria-hidden="true"
@@ -219,10 +215,24 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             <div className="h-12 w-full bg-white/15 rounded-2xl mt-4" />
           </div>
         )}
-        {!isBusiness && !authLoading && user && <HeroLiveDelta ports={initialPorts} />}
-
-        {/* Live community activity ticker — replaces the hero for guests. */}
-        {!isBusiness && !authLoading && !user && <LiveActivityTicker initialReports={initialReports} />}
+        {!isBusiness && !authLoading && (
+          <HeroCarousel
+            slides={[
+              {
+                key: 'hero',
+                labelEs: 'Tu cruce',
+                labelEn: 'Your crossing',
+                content: <HeroLiveDelta ports={initialPorts} />,
+              },
+              {
+                key: 'ticker',
+                labelEs: 'Reportes en vivo',
+                labelEn: 'Live reports',
+                content: <LiveActivityTicker initialReports={initialReports} />,
+              },
+            ]}
+          />
+        )}
 
         {/* Near-me horizontal rail — swipeable preview of the 8 nearest
             crossings. Every flick is an interaction. */}
