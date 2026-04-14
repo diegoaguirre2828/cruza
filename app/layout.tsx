@@ -10,6 +10,8 @@ import { ReactionsWelcomeToast } from "@/components/ReactionsWelcomeToast";
 import { FirstVisitInstallSheet } from "@/components/FirstVisitInstallSheet";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PWASetup } from "@/components/PWASetup";
+import { ClaimProInPwa } from "@/components/ClaimProInPwa";
+import { PwaGrantCelebration } from "@/components/PwaGrantCelebration";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -98,6 +100,8 @@ export default function RootLayout({
             <FirstVisitInstallSheet />
             <OfflineBanner />
             <PWASetup />
+            <ClaimProInPwa />
+            <PwaGrantCelebration />
           </LangProvider>
         </ThemeProvider>
         <Analytics />

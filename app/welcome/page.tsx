@@ -38,10 +38,16 @@ function WelcomeInner() {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoTried, setGeoTried] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Two-step flow — step 1 is picking a bridge + setting an alert, step 2
-  // is forced install. On iOS push notifications literally don't work
-  // without home-screen install, so we stage the install as the final
-  // act of the welcome flow, right when the user is most committed.
+  // Two-step flow — REVERSED 2026-04-14 per PWA funnel audit.
+  //   Step 1: INSTALL + claim Pro (carrot: "3 months Pro FREE")
+  //   Step 2: Pick a bridge + set an alert (soft mandatory)
+  //
+  // Previously the order was alert-first, install-second — which meant
+  // any user who bailed on the alert step never saw the install offer,
+  // and the Pro carrot only appeared on step 2 so step-1 abandoners
+  // never heard about it. Now the user gets the biggest carrot first,
+  // commits to the install, and step 2 (alert setup) becomes the easy
+  // followup because they've already "won" something.
   const [step, setStep] = useState<1 | 2>(1)
   const [alertedPortName, setAlertedPortName] = useState<string>('')
 
@@ -53,22 +59,24 @@ function WelcomeInner() {
     }
   }, [user, authLoading, router, params])
 
-  // If the user already has an alert AND the app is already running as
-  // an installed PWA (standalone display-mode), skip the whole welcome
-  // flow. If they have an alert but haven't installed, route to step 2
-  // directly — they need to finish the install, or their alert can't
-  // actually fire on iOS.
+  // Reversed-step routing logic — matches the new order.
   //
-  // IMPORTANT — on /api/alerts fetch failure, DO NOT fall through as
-  // if the user has no alert. Returning users with saved alerts were
-  // being sent back to step 1 ("pick a bridge") on every Supabase
-  // hiccup. One retry attempt, then stay neutral.
+  //   - Already running standalone → they installed already. Check if
+  //     they also already have an alert; if yes skip welcome and jump
+  //     to /dashboard. Otherwise jump to step 2 (pick a bridge).
+  //   - Not standalone → stay on step 1 (install + claim Pro).
+  //
+  // On /api/alerts failure we retry once, then default to step 2 for
+  // already-standalone users rather than misrouting back to step 1.
   useEffect(() => {
     if (!user) return
     const isStandalone =
       typeof window !== 'undefined' &&
       (window.matchMedia('(display-mode: standalone)').matches ||
         (navigator as Navigator & { standalone?: boolean }).standalone === true)
+
+    if (!isStandalone) return
+
     const check = async (attempt = 0): Promise<void> => {
       try {
         const controller = new AbortController()
@@ -78,19 +86,19 @@ function WelcomeInner() {
         if (!res.ok) throw new Error(`status ${res.status}`)
         const data = await res.json()
         const hasAlert = data?.alerts && data.alerts.length > 0
-        if (hasAlert && isStandalone) {
+        if (hasAlert) {
           router.replace('/dashboard')
-        } else if (hasAlert && !isStandalone) {
+        } else {
           setStep(2)
         }
       } catch {
         if (attempt < 1) {
-          // One retry after a short backoff before giving up
           setTimeout(() => check(attempt + 1), 1200)
+          return
         }
-        // If retry also fails, stay on step 1 silently — worst case the
-        // user picks a bridge they already picked, which upserts cleanly
-        // via /api/saved + /api/alerts. No data loss.
+        // Retry failed — they're standalone, go to step 2 anyway so
+        // they land on the bridge picker instead of the install flow.
+        setStep(2)
       }
     }
     check()
@@ -177,36 +185,20 @@ function WelcomeInner() {
         try { await subscribePush() } catch { /* non-blocking */ }
       }
 
-      // Stash the port name for the step 2 copy
+      // Stash port name for downstream UI
       const chosenPort = ports.find((p) => p.portId === selected)
       if (chosenPort) {
         setAlertedPortName(chosenPort.localNameOverride || chosenPort.portName || '')
       }
 
-      // If the user is ALREADY running as a standalone PWA (unusual on
-      // first signup but possible), skip step 2 and go to the dashboard.
-      // Otherwise stage the install step.
-      const isStandalone =
-        typeof window !== 'undefined' &&
-        (window.matchMedia('(display-mode: standalone)').matches ||
-          (navigator as Navigator & { standalone?: boolean }).standalone === true)
-
-      if (isStandalone) {
-        const next = params?.get('next') || '/dashboard?welcomed=1'
-        router.push(next)
-      } else {
-        setStep(2)
-        setSubmitting(false)
-      }
+      // The reversal means bridge-pick is now the FINAL welcome step.
+      // Navigate straight to /dashboard after successful alert setup.
+      const next = params?.get('next') || '/dashboard?welcomed=1'
+      router.push(next)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setSubmitting(false)
     }
-  }
-
-  function skipInstall() {
-    const next = params?.get('next') || '/dashboard?welcomed=1&needs_install=1'
-    router.push(next)
   }
 
   // Compute the 6 bridges to show:
@@ -262,55 +254,62 @@ function WelcomeInner() {
     )
   }
 
-  // Step 2: forced install page. iOS push literally requires home-screen
-  // install to work, so we catch the user here — right after they set
-  // their alert, when they're most committed — and make the install the
-  // final act. Skip exists but is de-prioritized as a grey link.
-  if (step === 2) {
+  // Step 1 — INSTALL + claim Pro (the reversal).
+  // This is the biggest carrot Cruzar offers, so it's the first thing
+  // a new signed-up user sees. Pro is framed as the hero reward, not
+  // a sweetener. Once they install, step 2 asks for their bridge —
+  // much easier to get there because they've already "won" something.
+  if (step === 1) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-600 via-indigo-700 to-purple-800 text-white">
+      <main className="min-h-screen bg-gradient-to-b from-amber-500 via-orange-600 to-pink-700 text-white">
         <div className="max-w-lg mx-auto px-5 py-10">
           <div className="text-center mb-6 cruzar-rise">
-            <p className="text-3xl mb-2">📲</p>
+            <p className="text-4xl mb-2">🎁</p>
             <h1 className="text-2xl sm:text-3xl font-black leading-tight">
-              {es ? 'Una cosa más — o tu alerta no te llega' : "One more thing — or your alert won't reach you"}
+              {es ? '3 meses de Pro, gratis' : '3 months of Pro, free'}
             </h1>
-            <p className="text-sm text-blue-100 mt-3 font-medium leading-relaxed">
+            <p className="text-sm text-amber-100 mt-3 font-semibold leading-relaxed">
               {es
-                ? alertedPortName
-                  ? `Guardamos tu alerta de ${alertedPortName}. Pero Apple no deja que te llegue si Cruzar no está en tu pantalla de inicio — ésta es regla de ellos, no nuestra.`
-                  : 'Guardamos tu alerta. Pero Apple no deja que te llegue si Cruzar no está en tu pantalla de inicio — es regla de ellos, no nuestra.'
-                : alertedPortName
-                  ? `Your ${alertedPortName} alert is saved. But Apple won't deliver it unless Cruzar is on your home screen — that's their rule, not ours.`
-                  : "Your alert is saved. But Apple won't deliver it unless Cruzar is on your home screen — that's their rule, not ours."}
+                ? 'Agrega Cruzar a tu pantalla de inicio y te damos Pro automático por 3 meses — sin tarjeta, sin trucos.'
+                : 'Add Cruzar to your home screen and you get Pro automatically for 3 months — no card, no tricks.'}
             </p>
-            <p className="text-[11px] text-blue-200 mt-2 leading-relaxed">
-              {es ? '10 segundos. Después te llega todo en automático.' : '10 seconds. Then everything flows automatically.'}
+          </div>
+
+          <div className="bg-white/15 backdrop-blur-sm border border-white/25 rounded-2xl px-4 py-3 mb-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-100 mb-1.5">
+              {es ? 'Lo que desbloqueas' : 'What you unlock'}
             </p>
+            <ul className="space-y-1">
+              {[
+                { es: 'Alertas push cuando tu puente baja de 30 min', en: 'Push alerts when your bridge drops below 30 min' },
+                { es: 'Cámaras en vivo de los puentes', en: 'Live bridge cameras' },
+                { es: 'Mejor hora pa\' cruzar basado en tus datos', en: 'Best hour to cross based on your data' },
+                { es: 'Optimizador de ruta + predicciones por hora', en: 'Route optimizer + hourly predictions' },
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-[12px] text-white leading-snug">
+                  <span className="text-amber-200 mt-0.5">✓</span>
+                  <span>{es ? item.es : item.en}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-3xl p-5 shadow-2xl">
             <InstallGuide />
           </div>
 
-          {/* Pro sweetener — mentioned but not the headline */}
-          <div className="mt-4 bg-amber-400/20 border border-amber-300/40 rounded-2xl px-4 py-3 text-center">
-            <p className="text-xs font-bold text-amber-100">
-              {es ? '🎁 Bono: 3 meses de Pro GRATIS cuando instales' : '🎁 Bonus: 3 months Pro FREE when you install'}
-            </p>
-            <p className="text-[10px] text-amber-200 mt-0.5 leading-snug">
-              {es
-                ? 'Alertas ilimitadas · Mejor hora pa\' cruzar · Optimizador de ruta'
-                : 'Unlimited alerts · Best time to cross · Route optimizer'}
-            </p>
-          </div>
+          <p className="mt-4 text-[11px] text-amber-100/90 text-center leading-relaxed">
+            {es
+              ? '10 segundos pa\' agregarlo. Después escoges tu puente y listo.'
+              : '10 seconds to add it. Then pick your bridge and you are in.'}
+          </p>
 
-          <div className="mt-6 text-center">
+          <div className="mt-5 text-center">
             <button
-              onClick={skipInstall}
-              className="text-xs text-blue-200/70 hover:text-blue-100 underline underline-offset-2"
+              onClick={() => setStep(2)}
+              className="text-xs text-amber-200/80 hover:text-amber-100 underline underline-offset-2"
             >
-              {es ? 'Lo haré después (mi alerta puede no llegar)' : 'I\'ll do it later (my alert may not arrive)'}
+              {es ? 'Lo haré después (saltarme los 3 meses)' : "I'll do it later (skip the 3 months)"}
             </button>
           </div>
         </div>
