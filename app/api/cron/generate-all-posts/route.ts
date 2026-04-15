@@ -74,28 +74,28 @@ const PEAK_COPY: { hour: number; opener: string; featurePitch: string; followHoo
     hour: 5,
     opener: '🌅 BUENOS DÍAS',
     featurePitch: '🔔 La app también te avisa cuando baja la espera de TU puente',
-    followHook: '👉 Sigue la página: cruzar.app/fb (notificación cada mañana)',
+    followHook: "👉 Dale seguir 👆 pa' la notificación cada mañana",
     hashtag: '#cruzar #madrugada #commute',
   },
   {
     hour: 11,
     opener: '☀️ MEDIODÍA',
     featurePitch: "📊 La app tiene historial por hora pa\' saber cuándo cruzar",
-    followHook: '👉 Sigue la página: cruzar.app/fb (4 veces al día en tu feed)',
+    followHook: "👉 Dale seguir 👆 pa' los updates 4 veces al día",
     hashtag: '#cruzar #mediodia',
   },
   {
     hour: 15,
     opener: '🌤️ TARDE',
     featurePitch: '📹 La app tiene cámaras en vivo + reportes de la gente en la fila',
-    followHook: '👉 Sigue la página: cruzar.app/fb (notificación directo al teléfono)',
+    followHook: "👉 Dale seguir 👆 pa' la notificación directo a tu feed",
     hashtag: '#cruzar #tarde #commute',
   },
   {
     hour: 19,
     opener: '🌙 NOCHE',
     featurePitch: '⚠️ La app te alerta cuando hay accidentes o inspecciones fuertes',
-    followHook: '👉 Sigue la página: cruzar.app/fb (publicamos 4 veces al día)',
+    followHook: "👉 Dale seguir 👆 pa' no perderte ningún update",
     hashtag: '#cruzar #noche',
   },
 ]
@@ -158,7 +158,7 @@ export async function GET(req: NextRequest) {
   const peak = PEAK_COPY.find(p => p.hour === cstHour) || {
     opener: '🌉 TIEMPOS DE ESPERA',
     featurePitch: '📱 Tiempos en vivo + cámaras + alertas',
-    followHook: '👉 Sigue la página: cruzar.app/fb',
+    followHook: '👉 Dale seguir 👆 pa\' los updates',
     hashtag: '#cruzar',
   }
 
@@ -212,16 +212,16 @@ export async function GET(req: NextRequest) {
 
 ${sectionBlocks}
 
-${peak.followHook}
-
 ${peak.featurePitch} — cruzar.app
+
+${peak.followHook}
 
 ${peak.hashtag}`
     : `${peak.opener} · ${timeStrCST.toUpperCase()}
 
 CBP no está reportando datos en vivo ahorita — vuelven solos en pocos minutos.
 
-📱 cruzar.app · tiempos en vivo + reportes de la comunidad
+📱 Mientras tanto, los reportes de la comunidad siguen en vivo — cruzar.app
 
 ${peak.followHook}
 

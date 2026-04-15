@@ -51,25 +51,25 @@ const PEAK_COPY: Record<PeakWindow, {
   morning: {
     opener: '🌅 BUENOS DÍAS',
     featurePitch: '🔔 La app también te avisa cuando baja la espera de TU puente',
-    followHook: "👉 Sigue la página: cruzar.app/fb (notificación cada mañana)",
+    followHook: "👉 Dale seguir 👆 pa' la notificación cada mañana",
     hashtag: '#cruzar #madrugada #commute',
   },
   midday: {
     opener: '☀️ MEDIODÍA',
     featurePitch: "📊 La app tiene historial por hora pa\' saber cuándo cruzar",
-    followHook: '👉 Sigue la página: cruzar.app/fb (4 veces al día en tu feed)',
+    followHook: '👉 Dale seguir 👆 pa\' los updates 4 veces al día',
     hashtag: '#cruzar #mediodia',
   },
   afternoon: {
     opener: '🌤️ TARDE',
     featurePitch: '📹 La app tiene cámaras en vivo + reportes de la gente en la fila',
-    followHook: "👉 Sigue la página: cruzar.app/fb (notificación directo al teléfono)",
+    followHook: "👉 Dale seguir 👆 pa' la notificación directo a tu feed",
     hashtag: '#cruzar #tarde #commute',
   },
   evening: {
     opener: '🌙 NOCHE',
     featurePitch: '⚠️ La app te alerta cuando hay accidentes o inspecciones fuertes',
-    followHook: "👉 Sigue la página: cruzar.app/fb (publicamos 4 veces al día)",
+    followHook: "👉 Dale seguir 👆 pa' no perderte ningún update",
     hashtag: '#cruzar #noche',
   },
 }
@@ -202,7 +202,7 @@ export async function GET(req: NextRequest) {
 
 CBP no está reportando datos en vivo ahorita — sucede a veces cuando CBP reinicia su sistema. Los datos vuelven solos en pocos minutos.
 
-📱 cruzar.app · tiempos en vivo + reportes de la comunidad
+📱 Mientras tanto, los reportes de la comunidad siguen en vivo — cruzar.app
 
 ${peakMeta.followHook}
 
@@ -224,9 +224,9 @@ ${peakMeta.hashtag}`
 
 ${sectionBlocks}
 
-${peakMeta.followHook}
-
 ${peakMeta.featurePitch} — cruzar.app
+
+${peakMeta.followHook}
 
 ${peakMeta.hashtag}`
 
