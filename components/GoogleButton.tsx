@@ -1,7 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/auth'
+
+// Detects Facebook / Instagram / TikTok in-app browsers, which are
+// notorious for breaking OAuth flows — they block cross-origin
+// redirects silently and trap users in a webview that can't complete
+// the Google consent screen. If we detect one, we warn the user up
+// front to open the page in the system browser instead of letting
+// them tap the button and hit a dead end.
+function detectInAppBrowser(): string | null {
+  if (typeof navigator === 'undefined') return null
+  const ua = navigator.userAgent || ''
+  if (/FBAN|FBAV|FB_IAB/i.test(ua)) return 'Facebook'
+  if (/Instagram/i.test(ua)) return 'Instagram'
+  if (/TikTok/i.test(ua)) return 'TikTok'
+  if (/Line\//i.test(ua)) return 'Line'
+  return null
+}
+
+// Detects PWA standalone mode. Used to log + adjust the redirect
+// strategy because PWA standalone has quirky cross-origin navigation
+// rules that plain browser tabs don't.
+function isStandalone(): boolean {
+  if (typeof window === 'undefined') return false
+  // iOS Safari sets navigator.standalone; other platforms use the
+  // display-mode media query.
+  const nav = window.navigator as Navigator & { standalone?: boolean }
+  return !!nav.standalone || window.matchMedia?.('(display-mode: standalone)').matches
+}
 
 export function GoogleButton({
   label = 'Continue with Google',
@@ -10,6 +37,13 @@ export function GoogleButton({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [stalled, setStalled] = useState(false)
+  const [inAppBrowser, setInAppBrowser] = useState<string | null>(null)
+
+  // Run detection on mount so guest users see the warning BEFORE
+  // they tap the button and hit a broken OAuth flow.
+  useEffect(() => {
+    setInAppBrowser(detectInAppBrowser())
+  }, [])
 
   async function handleGoogle() {
     setError(null)
@@ -20,27 +54,44 @@ export function GoogleButton({
       const origin = typeof window !== 'undefined'
         ? window.location.origin
         : (process.env.NEXT_PUBLIC_APP_URL || 'https://cruzar.app')
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+
+      // skipBrowserRedirect: true tells Supabase to return the OAuth
+      // URL instead of navigating automatically. We navigate manually
+      // with window.location.assign, which is more robust than the
+      // default `href = url` in PWA standalone mode — some mobile
+      // browsers silently refuse cross-origin nav from that assignment
+      // when installed as a PWA, leaving the user on a dead page.
+      // This was the round-3 "signup funnel dead" bug: default redirect
+      // ran but produced no navigation, so the 3s stall warning fired
+      // on every single Google signup attempt from a PWA.
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // Route through /auth/callback so the PKCE code is exchanged
-          // server-side. Without this, the session cookie doesn't land
-          // before the user hits a protected page.
           redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          skipBrowserRedirect: true,
         },
       })
-      if (oauthError) {
-        setError(oauthError.message)
+
+      if (oauthError || !data?.url) {
+        setError(oauthError?.message || 'Could not start Google sign-in')
         setLoading(false)
         return
       }
-      // Safety net: if the redirect hasn't fired in 3 seconds, surface
-      // a "stalled" hint so the user knows to tap again instead of
-      // staring at a spinner. Previously this was a silent 6s wait.
+
+      // Manual navigation. window.location.assign() is the most
+      // reliable cross-origin navigation in PWA standalone mode
+      // across iOS Safari, Android Chrome, and Samsung Internet.
+      // We DON'T use window.open(url, '_self') because it sometimes
+      // opens a new tab the user never sees when run inside a PWA.
+      window.location.assign(data.url)
+
+      // Safety net: if assign() is silently blocked (extremely rare
+      // but documented on some Android WebAPK builds), surface a
+      // hint after 4 seconds instead of leaving the spinner forever.
       setTimeout(() => {
         setLoading(false)
         setStalled(true)
-      }, 3000)
+      }, 4000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
       setLoading(false)
@@ -49,6 +100,16 @@ export function GoogleButton({
 
   return (
     <div>
+      {inAppBrowser && (
+        <div className="mb-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-snug">
+          <p className="font-bold mb-1">
+            Abre esta página en tu navegador · Open in your browser
+          </p>
+          <p>
+            {inAppBrowser} bloquea el inicio de sesión con Google. Toca los 3 puntos arriba y elige &ldquo;Abrir en Chrome / Safari&rdquo; — o usa email abajo.
+          </p>
+        </div>
+      )}
       <button
         type="button"
         onClick={handleGoogle}
@@ -70,7 +131,9 @@ export function GoogleButton({
       )}
       {stalled && !error && (
         <p className="mt-2 text-xs text-amber-600 text-center">
-          Didn&apos;t redirect? Tap the button again, or try another sign-in method below.
+          {isStandalone()
+            ? 'Google no abre en el modo app · cierra la app y abre cruzar.app en el navegador, o usa email abajo.'
+            : 'Didn\u2019t redirect? Tap the button again, or use email below.'}
         </p>
       )}
     </div>

@@ -64,11 +64,26 @@ export function PWASetup() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    // Service worker registration — unchanged. The SW handles push
-    // notifications, offline caching, and SWR for /api/ports and
-    // /api/reports/recent.
+    // Service worker registration — handles push notifications,
+    // offline caching, and SWR for /api/ports and /api/reports/recent.
+    //
+    // On every page load we also force an update check via
+    // registration.update() so users pick up new SW versions on the
+    // NEXT launch instead of needing a full browser restart. This is
+    // how existing PWA users get the v5 cache-first strategy that
+    // fixes the 30s cold-start hang: one slow launch (downloads v5
+    // in the background), then fast from there on.
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {})
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .then((registration) => {
+          // Force an update check on every page load. Cheap — just
+          // a HEAD-equivalent to see if sw.js changed. If yes, the
+          // new SW downloads and activates in the background thanks
+          // to our skipWaiting + clients.claim in sw.js.
+          registration.update().catch(() => {})
+        })
+        .catch(() => {})
     }
 
     const isStandalone =
