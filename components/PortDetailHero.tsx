@@ -178,6 +178,24 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
         })}
       </div>
 
+      {/* Best-time-today strip — hoisted from the compact rail so it's
+          visible above the fold on every port. Matches BorderCross's
+          prominent "Best time today" callout without losing our lane
+          tabs or big number. */}
+      {forecast?.bestHour && (
+        <div className="mb-3 flex items-center justify-between gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl px-4 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <TrendingDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+              {es ? 'Mejor hora hoy' : 'Best time today'}
+            </p>
+          </div>
+          <p className="text-xs font-black text-emerald-900 dark:text-emerald-100 tabular-nums flex-shrink-0">
+            {formatHourRange(forecast.bestHour.hour)} · ~{forecast.bestHour.avgWait} min
+          </p>
+        </div>
+      )}
+
       {/* Big wait number for selected lane */}
       <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-3xl p-5 shadow-xl text-white mb-3 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-white/10 rounded-full blur-3xl pointer-events-none" />
@@ -234,6 +252,15 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
           </div>
         </Link>
       )}
+
+      {/* All Lanes — scannable comparison table. Every lane CBP publishes
+          for this crossing, side-by-side, so a commuter can see Standard
+          vs SENTRI vs Ready without tapping tabs. Matches BorderCross's
+          "All Lanes" detail table. Cruzar's moat over them: the community
+          X-ray tag that can surface on any row when a recent report flags
+          that lane as the X-ray lane today. See project_cruzar_lane_details
+          for the full moat rationale. */}
+      <AllLanesTable port={port} es={es} activeTab={activeTab} onPickLane={setActiveTab} />
 
       {/* Card rail */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4 md:grid md:grid-cols-3 md:gap-3 md:mx-0 md:px-0 md:overflow-visible">
@@ -366,5 +393,145 @@ function dayNameEs(dow: number): string {
 }
 function dayNameEn(dow: number): string {
   return ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dow] || ''
+}
+
+interface AllLanesRow {
+  key: LaneKey
+  iconEmoji: string
+  labelEs: string
+  labelEn: string
+  wait: number | null
+  lanesOpen: number | null
+  closed: boolean
+}
+
+function AllLanesTable({
+  port,
+  es,
+  activeTab,
+  onPickLane,
+}: {
+  port: PortWaitTime
+  es: boolean
+  activeTab: LaneKey
+  onPickLane: (lane: LaneKey) => void
+}) {
+  const rows: AllLanesRow[] = [
+    {
+      key: 'standard',
+      iconEmoji: '🚗',
+      labelEs: 'General',
+      labelEn: 'Standard',
+      wait: port.vehicle,
+      lanesOpen: port.vehicleLanesOpen,
+      closed: port.vehicleClosed,
+    },
+    {
+      key: 'sentri',
+      iconEmoji: '⚡',
+      labelEs: 'SENTRI / NEXUS',
+      labelEn: 'SENTRI / NEXUS',
+      wait: port.sentri,
+      lanesOpen: port.sentriLanesOpen,
+      closed: false,
+    },
+    {
+      key: 'pedestrian',
+      iconEmoji: '🚶',
+      labelEs: 'A pie',
+      labelEn: 'Pedestrian',
+      wait: port.pedestrian,
+      lanesOpen: port.pedestrianLanesOpen,
+      closed: port.pedestrianClosed,
+    },
+    {
+      key: 'commercial',
+      iconEmoji: '🚛',
+      labelEs: 'Carga',
+      labelEn: 'Commercial',
+      wait: port.commercial,
+      lanesOpen: port.commercialLanesOpen,
+      closed: port.commercialClosed,
+    },
+  ]
+
+  // Hide rows with nothing to show at all (null + not closed).
+  const visibleRows = rows.filter((r) => r.wait != null || r.closed || (r.lanesOpen != null && r.lanesOpen > 0))
+
+  if (visibleRows.length <= 1) return null
+
+  // Find the fastest open lane so we can tag it with a green "fastest" chip.
+  const openWaits = visibleRows.filter((r) => !r.closed && r.wait != null) as (AllLanesRow & { wait: number })[]
+  const fastest = openWaits.length > 1 ? openWaits.reduce((a, b) => (b.wait < a.wait ? b : a)) : null
+
+  return (
+    <div className="mb-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">
+          {es ? 'Todos los carriles' : 'All Lanes'}
+        </p>
+        <p className="text-[10px] text-gray-400 dark:text-gray-500">
+          {es ? 'Según CBP' : 'Per CBP'}
+        </p>
+      </div>
+      <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+        {visibleRows.map((r) => {
+          const isActive = activeTab === r.key || (activeTab === 'all' && r.key === 'standard')
+          const isFastest = fastest?.key === r.key
+          const waitColor =
+            r.closed ? 'text-gray-400 dark:text-gray-500'
+              : r.wait == null ? 'text-gray-400 dark:text-gray-500'
+              : r.wait <= 15 ? 'text-emerald-600 dark:text-emerald-400'
+              : r.wait <= 30 ? 'text-lime-600 dark:text-lime-400'
+              : r.wait <= 60 ? 'text-amber-600 dark:text-amber-400'
+              : 'text-red-600 dark:text-red-400'
+          const waitDisplay =
+            r.closed ? (es ? 'Cerrado' : 'Closed')
+              : r.wait == null ? '—'
+              : r.wait === 0 ? (es ? '<1 min' : '<1 min')
+              : `${r.wait} min`
+          return (
+            <li key={r.key}>
+              <button
+                type="button"
+                onClick={() => onPickLane(r.key)}
+                className={`w-full flex items-center justify-between gap-3 px-4 py-3 text-left transition-colors ${
+                  isActive ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-lg flex-shrink-0">{r.iconEmoji}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {es ? r.labelEs : r.labelEn}
+                    </p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                      {r.closed
+                        ? (es ? 'Carril cerrado ahora' : 'Lane closed now')
+                        : r.lanesOpen != null && r.lanesOpen > 0
+                          ? (es
+                              ? `${r.lanesOpen} ${r.lanesOpen === 1 ? 'carril abierto' : 'carriles abiertos'}`
+                              : `${r.lanesOpen} ${r.lanesOpen === 1 ? 'lane open' : 'lanes open'}`)
+                          : (es ? 'Sin datos de carriles' : 'No lane count')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {isFastest && !r.closed && (
+                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">
+                      {es ? 'Más rápido' : 'Fastest'}
+                    </span>
+                  )}
+                  <span className={`text-sm font-black tabular-nums ${waitColor}`}>
+                    {waitDisplay}
+                  </span>
+                </div>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
 }
 

@@ -31,6 +31,8 @@ import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
 import { GuestSignupBanner } from '@/components/GuestSignupBanner'
+import { GuestStickyStrip } from '@/components/GuestStickyStrip'
+import { PwaFirstLaunchWelcome } from '@/components/PwaFirstLaunchWelcome'
 import { armNudge } from '@/lib/useNudge'
 import { trackEvent } from '@/lib/trackEvent'
 import type { PortWaitTime } from '@/types'
@@ -272,6 +274,16 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* First-launch welcome overlay — renders itself only once per
+          install for guests. Kept at the top of the tree so it's
+          visually above everything else. Diego 2026-04-15: walkthrough
+          of mobile PWA cold launch showed no signup CTA visible above
+          the fold — this overlay forces a deliberate choice. */}
+      <PwaFirstLaunchWelcome />
+      {/* Sticky guest strip — persists after overlay dismissal so guests
+          always have an obvious entry to signup. Sits at the literal top
+          of the page, above the max-w container. */}
+      <GuestStickyStrip />
       <div className="max-w-lg mx-auto px-4 pb-10">
         <div className="pt-8 pb-2 flex items-start justify-between">
           <div className="min-w-0 flex items-center gap-3">

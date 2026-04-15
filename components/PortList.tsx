@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { getPortMeta } from '@/lib/portMeta'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
+import { useFavorites } from '@/lib/useFavorites'
 import { useHomeRegion, MEGA_REGION_LABELS } from '@/lib/useHomeRegion'
 
 const REFRESH_INTERVAL = 5 * 60 * 1000
@@ -43,6 +44,7 @@ export function PortList() {
   const { t, lang } = useLang()
   const { tier } = useTier()
   const { homeRegion } = useHomeRegion()
+  const { favorites, signedIn: hasAccount } = useFavorites()
   const isBusiness = tier === 'business'
   // Scope the visible list to the user's home mega region unless they
   // are business tier (fleets cross multiple regions and need the full
@@ -494,6 +496,39 @@ export function PortList() {
               </Link>
             </div>
           )}
+
+          {/* Favoritos — sticky section at the top of the home list for
+              signed-in users with saved bridges. Replaces the need for a
+              dedicated bottom-nav tab and keeps the starred bridges one
+              tap away. Matches BorderCross's "Favorites" IA pillar without
+              displacing any existing nav. */}
+          {hasAccount && favorites.size > 0 && (() => {
+            const favPorts = ports.filter(p => favorites.has(p.portId))
+            if (favPorts.length === 0) return null
+            return (
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <h2 className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    {lang === 'es' ? 'Tus favoritos' : 'Your favorites'}
+                  </h2>
+                  <Link
+                    href="/favorites"
+                    className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 underline underline-offset-2"
+                  >
+                    {lang === 'es' ? 'Ver todos →' : 'See all →'}
+                  </Link>
+                </div>
+                <div className="space-y-3">
+                  {favPorts.map(port => (
+                    <PortCard key={`fav-${port.portId}`} port={port} signal={signals[port.portId]} />
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
 
           <div className="space-y-5">
             {Object.entries(grouped).map(([region, regionPorts]) => (

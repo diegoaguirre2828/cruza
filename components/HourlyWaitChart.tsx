@@ -94,9 +94,25 @@ export function HourlyWaitChart({ portId }: Props) {
           {es ? 'últimos 14 días' : 'last 14 days'}
         </span>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        {es ? 'Patrón típico de un día — verde es rápido, rojo es lento' : 'Typical day pattern — green is fast, red is slow'}
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+        {es ? 'Patrón típico de un día' : 'Typical day pattern'}
       </p>
+
+      {/* Inline severity legend — matches BorderCross at-a-glance style */}
+      <div className="flex items-center gap-3 mb-4 text-[10px] font-semibold text-gray-500 dark:text-gray-400">
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+          {es ? 'Rápido · ≤30m' : 'Fast · ≤30m'}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+          {es ? 'Moderado · 30-60m' : 'Medium · 30-60m'}
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-600" />
+          {es ? 'Lento · 60m+' : 'Slow · 60m+'}
+        </span>
+      </div>
 
       {loading ? (
         <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />

@@ -12,6 +12,8 @@ import { Bell, Star, LogOut, ArrowLeft, Plus, Trash2, Route, Settings, Lock, Nav
 import { PushToggle } from '@/components/PushToggle'
 import { PortSearch } from '@/components/PortSearch'
 import { DashboardInstallBanner } from '@/components/DashboardInstallBanner'
+import { PostWelcomeTour } from '@/components/PostWelcomeTour'
+import { PostUpgradeTour } from '@/components/PostUpgradeTour'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
 
@@ -197,6 +199,15 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* Post-signup walkthrough for free users — fires once when
+          arriving from /welcome?welcomed=1. 4-card tour covering
+          saved bridge, alerts, circles, guardian loop. */}
+      <PostWelcomeTour />
+      {/* Post-upgrade walkthrough for Pro users — fires once when
+          returning from a successful Stripe checkout (?upgraded=pro).
+          Full feature surface: alerts, cameras, best-time, history,
+          route optimizer, weekly digest. */}
+      <PostUpgradeTour />
       <div className="max-w-lg mx-auto px-4 pb-10">
 
         {/* Header */}

@@ -48,6 +48,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   '/insurance',
   '/for-fleets',
   '/features',
+  '/favorites',
 ]
 
 function isProtectedPath(path: string): boolean {

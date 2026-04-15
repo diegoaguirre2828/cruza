@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Share2, Check } from 'lucide-react'
+import { Share2, Check, Star } from 'lucide-react'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
 import { useLang } from '@/lib/LangContext'
 import { getPortMeta } from '@/lib/portMeta'
 import { trackShare } from '@/lib/trackShare'
 import { getMyRecentReportAgeMin } from '@/lib/myReports'
+import { useFavorites } from '@/lib/useFavorites'
 import type { PortWaitTime } from '@/types'
 
 export interface PortSignal {
@@ -26,6 +28,9 @@ interface Props {
 
 export function PortCard({ port, signal }: Props) {
   const { t, lang } = useLang()
+  const router = useRouter()
+  const { isFavorite, toggleFavorite, signedIn } = useFavorites()
+  const starred = isFavorite(port.portId)
   const meta = getPortMeta(port.portId)
   // Runtime override (set in /admin Ports tab) wins over static portMeta
   const effectiveLocalName = port.localNameOverride || meta.localName
@@ -63,6 +68,16 @@ export function PortCard({ port, signal }: Props) {
       ? Math.round(primaryWait * port.vehicleLanesOpen * 0.7)
       : Math.round(primaryWait * 3)
     : null
+
+  async function handleStar(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!signedIn) {
+      router.push(`/signup?next=${encodeURIComponent(`/port/${port.portId}`)}`)
+      return
+    }
+    await toggleFavorite(port.portId, port.portName)
+  }
 
   async function handleShare(e: React.MouseEvent) {
     e.preventDefault()
@@ -200,6 +215,18 @@ export function PortCard({ port, signal }: Props) {
                 )}
               </div>
             )}
+            <button
+              onClick={handleStar}
+              className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
+                starred
+                  ? 'text-yellow-500 hover:text-yellow-600'
+                  : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              title={lang === 'es' ? (starred ? 'Quitar de favoritos' : 'Guardar en favoritos') : (starred ? 'Remove from favorites' : 'Save to favorites')}
+              aria-pressed={starred}
+            >
+              <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
+            </button>
             <button
               onClick={handleShare}
               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
