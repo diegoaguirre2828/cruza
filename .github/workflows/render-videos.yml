@@ -1,0 +1,100 @@
+name: Render Cruzar videos
+
+# Renders the daily organic wait-time video (and optionally the ad
+# library) on GitHub's free runners. Uploads to Vercel Blob and
+# notifies /api/video/latest so Make.com can pull the freshest URL.
+#
+# Schedule aligned to pre-peak FB posting windows per memory
+# project_cruzar_fb_peak_hours.md:
+#   - 5:10 AM CT (runs 20 min before the 5:30 AM commute pre-peak)
+#   - 10:10 AM CT (runs 20 min before the 10:30 AM midday pre-peak)
+#   - 2:10 PM CT (runs 20 min before the 2:30 PM school pre-peak)
+#   - 4:10 PM CT (runs 20 min before the 4:30 PM return pre-peak)
+#
+# GitHub Actions uses UTC. CT = UTC-5 (CDT, most of the year).
+# So 5:10 AM CT = 10:10 UTC, 10:10 AM CT = 15:10 UTC, etc.
+# Adjust by +1 hour when CST is active (winter).
+
+on:
+  schedule:
+    # Fires at the START of each pre-peak window — a random 0-25 min
+    # sleep inside the job lands the actual render anywhere in the
+    # window, so FB never sees posts land at the same minute twice.
+    # Times are UTC. CT = UTC-5 (CDT, most of the year; adjust +1 in winter).
+    #   10:00 UTC = 5:00 AM CT  — morning commute pre-peak (5:00-5:30)
+    #   15:00 UTC = 10:00 AM CT — midday errand pre-peak (10:00-10:30)
+    #   19:00 UTC = 2:00 PM CT  — school pickup pre-peak (2:00-2:30)
+    #   21:00 UTC = 4:00 PM CT  — evening return pre-peak (4:00-4:30)
+    - cron: '0 10,15,19,21 * * *'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Composition to render'
+        type: choice
+        options: [WaitTimes, HookFbGroup, AlertDemo, SocialProof153, ads, all, organic]
+        default: 'WaitTimes'
+      aspects:
+        description: 'Aspect ratios (space-separated)'
+        default: '9x16'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: video-generator/package-lock.json
+
+      - name: Install video-generator dependencies
+        working-directory: video-generator
+        run: |
+          npm ci
+          npm install @vercel/blob --no-save
+
+      - name: Random pre-render jitter (0-25 min)
+        # Only jitter on scheduled runs, not manual workflow_dispatch.
+        # Keeps manual test runs instant while making scheduled runs
+        # unpredictable. Bash $RANDOM is 0-32767; mod 1500 → 0-1499 seconds.
+        if: github.event_name == 'schedule'
+        run: |
+          JITTER=$((RANDOM % 1500))
+          echo "Sleeping $JITTER seconds ($(($JITTER / 60))m $(($JITTER % 60))s) for anti-pattern jitter"
+          sleep $JITTER
+
+      - name: Install Chrome for Puppeteer/Remotion
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgbm1 \
+            libasound2t64 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libxkbcommon0 libpango-1.0-0 libcairo2
+          npx --yes @remotion/cli@4.0.0 browser ensure
+
+      - name: Render video(s)
+        working-directory: video-generator
+        env:
+          UPLOAD_BLOB: '1'
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          CRUZAR_API_URL: https://cruzar.app
+          CRUZAR_API_KEY: ${{ secrets.CRON_SECRET }}
+        run: |
+          TARGET="${{ github.event.inputs.target || 'WaitTimes' }}"
+          ASPECTS="${{ github.event.inputs.aspects || '9x16' }}"
+          echo "Rendering $TARGET at aspects: $ASPECTS"
+          node render.mjs $TARGET $ASPECTS
+
+      - name: Upload artifacts (fallback if Blob upload fails)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cruzar-videos-${{ github.run_id }}
+          path: video-generator/output/*.mp4
+          retention-days: 3
+          if-no-files-found: ignore

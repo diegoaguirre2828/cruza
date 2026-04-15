@@ -12,6 +12,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { PWASetup } from "@/components/PWASetup";
 import { ClaimProInPwa } from "@/components/ClaimProInPwa";
 import { PwaGrantCelebration } from "@/components/PwaGrantCelebration";
+import { MetaPixel } from "@/components/MetaPixel";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -106,6 +107,7 @@ export default function RootLayout({
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
+        <MetaPixel />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
           <Script
             async
