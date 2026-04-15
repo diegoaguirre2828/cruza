@@ -38,6 +38,10 @@ export function GoogleButton({
   const [error, setError] = useState<string | null>(null)
   const [stalled, setStalled] = useState(false)
   const [inAppBrowser, setInAppBrowser] = useState<string | null>(null)
+  // Diagnostic — captured on each attempt so users can read the
+  // actual redirect URL Supabase generated when the flow stalls.
+  // No devtools needed to debug OAuth failures from a phone.
+  const [debugUrl, setDebugUrl] = useState<string | null>(null)
 
   // Run detection on mount so guest users see the warning BEFORE
   // they tap the button and hit a broken OAuth flow.
@@ -48,6 +52,7 @@ export function GoogleButton({
   async function handleGoogle() {
     setError(null)
     setStalled(false)
+    setDebugUrl(null)
     setLoading(true)
     try {
       const supabase = createClient()
@@ -77,6 +82,9 @@ export function GoogleButton({
         setLoading(false)
         return
       }
+
+      // Capture the URL so we can display it on stall for diagnosis.
+      setDebugUrl(data.url)
 
       // Manual navigation. window.location.assign() is the most
       // reliable cross-origin navigation in PWA standalone mode
@@ -130,11 +138,25 @@ export function GoogleButton({
         </p>
       )}
       {stalled && !error && (
-        <p className="mt-2 text-xs text-amber-600 text-center">
-          {isStandalone()
-            ? 'Google no abre en el modo app · cierra la app y abre cruzar.app en el navegador, o usa email abajo.'
-            : 'Didn\u2019t redirect? Tap the button again, or use email below.'}
-        </p>
+        <>
+          <p className="mt-2 text-xs text-amber-600 text-center">
+            {isStandalone()
+              ? 'Google no abre en el modo app · cierra la app y abre cruzar.app en el navegador, o usa email abajo.'
+              : 'Didn\u2019t redirect? Tap the button again, or use email below.'}
+          </p>
+          {debugUrl && (
+            <details className="mt-2">
+              <summary className="text-[10px] text-gray-500 cursor-pointer text-center">
+                Debug info (tap to expand)
+              </summary>
+              <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-[9px] break-all font-mono text-gray-700 dark:text-gray-300">
+                <p className="font-bold mb-1">Supabase redirect URL:</p>
+                <p>{debugUrl}</p>
+                <p className="font-bold mt-2">Try opening this URL directly in a new tab to see what Supabase returns.</p>
+              </div>
+            </details>
+          )}
+        </>
       )}
     </div>
   )

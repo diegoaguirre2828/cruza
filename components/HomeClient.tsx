@@ -30,6 +30,7 @@ import { HomeForecast } from '@/components/HomeForecast'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
+import { GuestSignupBanner } from '@/components/GuestSignupBanner'
 import { armNudge } from '@/lib/useNudge'
 import { trackEvent } from '@/lib/trackEvent'
 import type { PortWaitTime } from '@/types'
@@ -198,6 +199,23 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       setDisplayName(profileData?.profile?.display_name || null)
       const firstSaved = savedData?.saved?.[0]?.port_id || null
       setFavoritePortId(firstSaved)
+
+      // Nudge arming (feature discovery for buried features):
+      //   1. Saved a bridge → invite your circle (parallel to the
+      //      existing set-alert nudge; different action, same trigger)
+      //   2. 3+ reports → see the leaderboard (guardian motivation)
+      //   3. Pro/Business who never visited /datos → insights unlocked
+      if (firstSaved) armNudge('saved_bridge_invite_circle')
+      const reportsCount: number = profileData?.profile?.reports_count ?? 0
+      if (reportsCount >= 3) armNudge('reports_see_leaderboard')
+      const userTier: string = profileData?.profile?.tier ?? 'free'
+      if (userTier === 'pro' || userTier === 'business') {
+        try {
+          if (!localStorage.getItem('cruzar_datos_visited')) {
+            armNudge('pro_insights_unlocked')
+          }
+        } catch { /* ignore */ }
+      }
     })
   }, [user])
 
@@ -386,6 +404,14 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
           />
         )}
 
+        {/* Guest signup banner — persistent prominent nudge right under
+            the hero so guests see it above the fold. Sells what's
+            BEYOND the basic number (alerts/cameras/history/community)
+            instead of gating the basic info. Diego's 2026-04-14:
+            "they need more incentive to log in other than us hoping
+            that want to click something." */}
+        {!isBusiness && !authLoading && tier === 'guest' && <GuestSignupBanner />}
+
         {/* Nudge: just-saved-a-bridge → set an alert. Appears only for
             signed-in non-business users with at least one saved bridge
             but no active alert. Dismissable, sticks. */}
@@ -402,6 +428,61 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             href="/dashboard"
             lang={lang}
             tone="blue"
+          />
+        )}
+
+        {/* Nudge: saved a bridge → invite your circle. Surfaces the
+            Life360-style circles feature Diego noticed was buried
+            (2026-04-14 feature-discipline pass). */}
+        {!isBusiness && tier !== 'guest' && (
+          <ContextualNudge
+            nudgeKey="saved_bridge_invite_circle"
+            emoji="👥"
+            titleEs="Invita a tu gente a tu círculo"
+            titleEn="Invite your people to your circle"
+            subEs="Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática"
+            subEn="When you cross, mom/spouse/kids get an automatic alert"
+            ctaEs="Invitar"
+            ctaEn="Invite"
+            href="/dashboard?tab=circle"
+            lang={lang}
+            tone="green"
+          />
+        )}
+
+        {/* Nudge: 3+ reports → leaderboard. Surfaces /leaderboard after
+            the user has enough reports to actually show up on it. */}
+        {!isBusiness && tier !== 'guest' && (
+          <ContextualNudge
+            nudgeKey="reports_see_leaderboard"
+            emoji="🏆"
+            titleEs="Ya eres Guardián — mira tu rango"
+            titleEn="You're a Guardian — see your rank"
+            subEs="Los mejores reportantes de tu región suben en la tabla cada semana"
+            subEn="The top reporters in your region climb the leaderboard every week"
+            ctaEs="Ver tabla"
+            ctaEn="See board"
+            href="/leaderboard"
+            lang={lang}
+            tone="amber"
+          />
+        )}
+
+        {/* Nudge: Pro/Business who never visited /datos → insights unlocked.
+            Prevents the "I pay for Pro but don't know what I get" trap. */}
+        {!isBusiness && (tier === 'pro') && (
+          <ContextualNudge
+            nudgeKey="pro_insights_unlocked"
+            emoji="📊"
+            titleEs="Ya tienes insights desbloqueados"
+            titleEn="Your insights are unlocked"
+            subEs="Patrones por hora, mejor día, predicción con clima — todo en /datos"
+            subEn="Hourly patterns, best day, weather-aware predictions — all in /datos"
+            ctaEs="Abrir"
+            ctaEn="Open"
+            href="/datos"
+            lang={lang}
+            tone="purple"
           />
         )}
 
