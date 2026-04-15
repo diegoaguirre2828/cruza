@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Camera, Lock } from 'lucide-react'
 import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
-import { getBridgeCamera } from '@/lib/bridgeCameras'
+import { getBridgeCameras, type CameraFeed } from '@/lib/bridgeCameras'
 
 // HLS video player sub-component. Dynamically imports hls.js ONLY when
 // a video element mounts with an hls-kind feed, so guest/free/non-hls
@@ -19,14 +19,11 @@ function HlsVideo({ src, title }: { src: string; title: string }) {
     const video = videoRef.current
     if (!video) return
 
-    // Safari / iOS can play HLS natively — just set src.
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
       return
     }
 
-    // Everyone else needs hls.js. Dynamic import so the library is only
-    // fetched for users who actually land on a port with an hls feed.
     let hls: { destroy: () => void } | null = null
     let cancelled = false
     import('hls.js').then((mod) => {
@@ -59,28 +56,70 @@ function HlsVideo({ src, title }: { src: string; title: string }) {
   )
 }
 
+// Renders a single feed inside the camera card. Used for both Pro
+// state (full clarity) and — indirectly — for the blurred teaser
+// when the feed happens to be kind:'image'.
+function FeedPlayer({ feed, portName }: { feed: CameraFeed; portName: string }) {
+  if (feed.kind === 'iframe') {
+    return (
+      <iframe
+        src={feed.src}
+        className="w-full h-full"
+        allow="autoplay; fullscreen"
+        loading="lazy"
+        title={`${portName} live camera`}
+      />
+    )
+  }
+  if (feed.kind === 'youtube') {
+    return (
+      <iframe
+        src={`https://www.youtube.com/embed/${feed.src}?autoplay=1&mute=1&rel=0`}
+        className="w-full h-full"
+        allow="autoplay; encrypted-media"
+        loading="lazy"
+        title={`${portName} live camera`}
+      />
+    )
+  }
+  if (feed.kind === 'image') {
+    return (
+      <img
+        src={feed.src}
+        alt={`${portName} live camera`}
+        className="w-full h-full object-cover"
+      />
+    )
+  }
+  if (feed.kind === 'hls') {
+    return <HlsVideo src={feed.src} title={`${portName} live camera`} />
+  }
+  return null
+}
+
 interface Props {
   portId: string
   portName: string
 }
 
 // Port detail camera section. Shows one of three states:
-//   1. No feed registered for this port → "próximamente" card, no Pro gate
-//   2. Feed + user is Pro/Business      → live embed
-//   3. Feed + user is guest/free        → blurred teaser + Pro unlock CTA
+//   1. No feeds registered for this port → "próximamente" card
+//   2. Feeds + user is Pro/Business      → live embed with tab picker if multi
+//   3. Feeds + user is guest/free        → blurred teaser + Pro unlock CTA
 //
 // Free users NEVER see a broken/blurred state for ports with no feed —
-// that would lie about what Pro unlocks. The "próximamente" card is the
-// same for everyone.
+// that would lie about what Pro unlocks. The "próximamente" card is
+// the same for everyone.
 export function BridgeCameras({ portId, portName }: Props) {
   const { tier } = useTier()
   const { lang } = useLang()
   const es = lang === 'es'
-  const feed = getBridgeCamera(portId)
+  const feeds = getBridgeCameras(portId)
   const isPro = tier === 'pro' || tier === 'business'
+  const [activeIdx, setActiveIdx] = useState(0)
 
-  // State 1 — no feed registered
-  if (!feed) {
+  // State 1 — no feeds registered
+  if (feeds.length === 0) {
     return (
       <div className="bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-900 dark:to-black rounded-2xl border border-gray-700 p-5 shadow-sm overflow-hidden relative">
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -110,7 +149,11 @@ export function BridgeCameras({ portId, portName }: Props) {
     )
   }
 
-  // State 2 — feed + Pro
+  const safeIdx = Math.min(activeIdx, feeds.length - 1)
+  const activeFeed = feeds[safeIdx]
+  const hasTabs = feeds.length > 1
+
+  // State 2 — feeds + Pro
   if (isPro) {
     return (
       <div className="bg-gray-900 dark:bg-black rounded-2xl border border-gray-700 p-4 shadow-sm">
@@ -127,52 +170,49 @@ export function BridgeCameras({ portId, portName }: Props) {
             {es ? 'EN VIVO' : 'LIVE'}
           </span>
         </div>
+
+        {hasTabs && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {feeds.map((f, i) => {
+              const active = i === safeIdx
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActiveIdx(i)}
+                  className={`text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border transition-colors ${
+                    active
+                      ? 'bg-white text-gray-900 border-white'
+                      : 'bg-white/5 text-gray-300 border-white/15 hover:bg-white/10'
+                  }`}
+                >
+                  {f.label || `Cam ${i + 1}`}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         <div className="aspect-video bg-black rounded-xl overflow-hidden border border-gray-800">
-          {feed.kind === 'iframe' && (
-            <iframe
-              src={feed.src}
-              className="w-full h-full"
-              allow="autoplay; fullscreen"
-              loading="lazy"
-              title={`${portName} live camera`}
-            />
-          )}
-          {feed.kind === 'youtube' && (
-            <iframe
-              src={`https://www.youtube.com/embed/${feed.src}?autoplay=1&mute=1&rel=0`}
-              className="w-full h-full"
-              allow="autoplay; encrypted-media"
-              loading="lazy"
-              title={`${portName} live camera`}
-            />
-          )}
-          {feed.kind === 'image' && (
-            <img
-              src={feed.src}
-              alt={`${portName} live camera`}
-              className="w-full h-full object-cover"
-            />
-          )}
-          {feed.kind === 'hls' && (
-            <HlsVideo src={feed.src} title={`${portName} live camera`} />
-          )}
+          <FeedPlayer feed={activeFeed} portName={portName} />
         </div>
-        {feed.note && (
-          <p className="text-[10px] text-gray-400 mt-1.5 leading-snug">{feed.note}</p>
+
+        {activeFeed.note && (
+          <p className="text-[10px] text-gray-400 mt-1.5 leading-snug">{activeFeed.note}</p>
         )}
         <p className="text-[10px] text-gray-500 mt-1">
           {es ? 'Fuente: ' : 'Source: '}
-          {feed.creditUrl ? (
-            <a href={feed.creditUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">
-              {feed.credit}
+          {activeFeed.creditUrl ? (
+            <a href={activeFeed.creditUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-300">
+              {activeFeed.credit}
             </a>
-          ) : feed.credit}
+          ) : activeFeed.credit}
         </p>
       </div>
     )
   }
 
-  // State 3 — feed exists but user is free/guest
+  // State 3 — feeds exist but user is free/guest
   return (
     <div className="bg-gray-900 dark:bg-black rounded-2xl border border-gray-700 p-4 shadow-sm relative overflow-hidden">
       <div className="flex items-center gap-2 mb-2">
@@ -184,11 +224,25 @@ export function BridgeCameras({ portId, portName }: Props) {
           Pro
         </span>
       </div>
+
+      {hasTabs && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {feeds.map((f, i) => (
+            <span
+              key={i}
+              className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border bg-white/5 text-gray-400 border-white/10"
+            >
+              {f.label || `Cam ${i + 1}`}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="aspect-video bg-black rounded-xl overflow-hidden border border-gray-800 relative">
-        {/* Blurred teaser — same feed, blurred + darkened */}
-        {feed.kind === 'image' ? (
+        {/* Blurred teaser — first feed only, only if it's an image */}
+        {activeFeed.kind === 'image' ? (
           <img
-            src={feed.src}
+            src={activeFeed.src}
             alt=""
             className="w-full h-full object-cover blur-xl scale-110 opacity-60"
             aria-hidden="true"
@@ -200,7 +254,9 @@ export function BridgeCameras({ portId, portName }: Props) {
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-4 bg-black/60 backdrop-blur-sm">
           <Lock className="w-8 h-8 text-amber-400" />
           <p className="text-sm font-black text-white">
-            {es ? 'Desbloquear cámara en vivo' : 'Unlock live camera'}
+            {es
+              ? `Desbloquea ${feeds.length > 1 ? `${feeds.length} cámaras` : 'la cámara'} en vivo`
+              : `Unlock ${feeds.length > 1 ? `${feeds.length} live cameras` : 'live camera'}`}
           </p>
           <p className="text-[11px] text-gray-300 leading-snug max-w-[260px]">
             {es
