@@ -56,3 +56,19 @@ WHERE p.id = r.id
   AND r.rank <= 1000
   AND p.promo_first_1000_until IS NULL
   AND p.tier = 'free';
+
+-- public_assets: key-value store for things the app needs to serve
+-- publicly but that aren't user-scoped data. First use is the video
+-- render manifest from /api/video/latest — the GitHub Actions workflow
+-- writes the latest video URLs here, and Make.com + /admin/ads-preview
+-- read from the same row.
+CREATE TABLE IF NOT EXISTS public_assets (
+  name text PRIMARY KEY,
+  value jsonb NOT NULL,
+  updated_at timestamptz NOT NULL DEFAULT NOW()
+);
+ALTER TABLE public_assets ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS public_assets_select ON public_assets;
+CREATE POLICY public_assets_select ON public_assets FOR SELECT USING (true);
+-- Writes are service-role only — no public write policy. /api/video/latest
+-- POST route uses the service client which bypasses RLS.
