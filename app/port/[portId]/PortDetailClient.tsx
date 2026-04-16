@@ -134,10 +134,24 @@ export function PortDetailClient({ port, portId }: Props) {
           const clears      = recent.filter(r => r.report_type === 'clear').length
 
           // Priority order: accident > inspection > delay surge > clearing
-          if (accidents >= 1) {
+          // Require 2+ reports from DIFFERENT users for serious signals
+          // (accident, inspection) to prevent single-user false alarms.
+          const uniqueAccidentReporters = new Set(
+            recent.filter(r => r.report_type === 'accident').map((r: any) => r.user_id || r.username || 'anon')
+          ).size
+          const uniqueInspectionReporters = new Set(
+            recent.filter(r => r.report_type === 'inspection').map((r: any) => r.user_id || r.username || 'anon')
+          ).size
+
+          if (accidents >= 2 && uniqueAccidentReporters >= 2) {
             setCommunitySignal({ type: 'accident', count: accidents })
-          } else if (inspections >= 1) {
+          } else if (accidents === 1) {
+            // Show unverified single report with softer language
+            setCommunitySignal({ type: 'accident', count: 1 })
+          } else if (inspections >= 2 && uniqueInspectionReporters >= 2) {
             setCommunitySignal({ type: 'inspection', count: inspections })
+          } else if (inspections === 1) {
+            setCommunitySignal({ type: 'inspection', count: 1 })
           } else if (delays >= 3 && delays > clears * 2) {
             setCommunitySignal({ type: 'worse', count: delays })
           } else if (clears >= 3 && clears > delays * 2) {
@@ -427,18 +441,26 @@ export function PortDetailClient({ port, portId }: Props) {
       {communitySignal && (() => {
         const cfg = {
           accident: {
-            bg: 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700',
-            text: 'text-red-800 dark:text-red-300',
-            icon: '🚨',
-            en: `Accident reported at this crossing in the last 30 min — expect longer delays.`,
-            es: `Se reportó un accidente en este cruce en los últimos 30 min — espera más retraso.`,
+            bg: communitySignal.count >= 2 ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+            text: communitySignal.count >= 2 ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300',
+            icon: communitySignal.count >= 2 ? '🚨' : '⚠️',
+            en: communitySignal.count >= 2
+              ? `${communitySignal.count} people reporting accident at this crossing — expect longer delays.`
+              : `1 person reported an accident (unverified). Wait for others to confirm.`,
+            es: communitySignal.count >= 2
+              ? `${communitySignal.count} personas reportan accidente en este cruce — espera más retraso.`
+              : `1 persona reportó un accidente (sin verificar). Espera confirmación de otros.`,
           },
           inspection: {
-            bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-            text: 'text-blue-800 dark:text-blue-300',
-            icon: '🔍',
-            en: `Enhanced inspections reported — all lanes may be slower than usual.`,
-            es: `Se reportaron inspecciones reforzadas — todos los carriles pueden estar más lentos.`,
+            bg: communitySignal.count >= 2 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',
+            text: communitySignal.count >= 2 ? 'text-blue-800 dark:text-blue-300' : 'text-amber-800 dark:text-amber-300',
+            icon: communitySignal.count >= 2 ? '🔍' : '⚠️',
+            en: communitySignal.count >= 2
+              ? `Enhanced inspections reported — all lanes may be slower than usual.`
+              : `1 person reported enhanced inspections (unverified).`,
+            es: communitySignal.count >= 2
+              ? `Se reportaron inspecciones reforzadas — todos los carriles pueden estar más lentos.`
+              : `1 persona reportó inspecciones reforzadas (sin verificar).`,
           },
           worse: {
             bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800',

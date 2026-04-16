@@ -262,8 +262,14 @@ export async function GET(req: NextRequest) {
   )
 }
 
-// Rate limit: 10 reports/hour for guests, 30 for authenticated users
+// Anti-spam: multiple layers to prevent point farming and data pollution.
+//
+// Layer 1: Per-user hourly cap (8 authenticated, 3 guest)
+// Layer 2: Per-port cooldown (1 report per port per 10 min per user)
+// Layer 3: Burst detection (max 3 reports in 5 minutes)
 const reportRateLimit = new Map<string, { count: number; resetAt: number }>()
+const portCooldown = new Map<string, number>() // key: "user:port" → timestamp
+const burstTracker = new Map<string, number[]>() // key: userId → array of timestamps
 
 function checkReportRateLimit(key: string, max: number): boolean {
   const now = Date.now()
@@ -274,6 +280,24 @@ function checkReportRateLimit(key: string, max: number): boolean {
   }
   if (entry.count >= max) return false
   entry.count++
+  return true
+}
+
+function checkPortCooldown(userKey: string, portId: string): boolean {
+  const key = `${userKey}:${portId}`
+  const last = portCooldown.get(key)
+  if (last && Date.now() - last < 10 * 60 * 1000) return false // 10 min cooldown
+  portCooldown.set(key, Date.now())
+  return true
+}
+
+function checkBurst(userKey: string): boolean {
+  const now = Date.now()
+  const fiveMinAgo = now - 5 * 60 * 1000
+  const stamps = (burstTracker.get(userKey) || []).filter(t => t > fiveMinAgo)
+  if (stamps.length >= 3) return false // max 3 in 5 min
+  stamps.push(now)
+  burstTracker.set(userKey, stamps)
   return true
 }
 
@@ -324,6 +348,22 @@ export async function POST(req: NextRequest) {
   const type = reportType || condition || 'other'
   if (!portId) return NextResponse.json({ error: 'portId required' }, { status: 400 })
 
+  // Sanitize description — strip HTML tags and limit length
+  const rawDesc = (description || note) as string | undefined
+  const sanitizedDesc = rawDesc
+    ? rawDesc.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, 500)
+    : null
+
+  // Contradiction check: reject "clear/fast" with wait > 60 min
+  if ((type === 'clear' || type === 'fast') && waitMinutes != null && waitMinutes > 60) {
+    return NextResponse.json({ error: 'Invalid report: "moving fast" with 60+ min wait' }, { status: 400 })
+  }
+
+  // Reject reports with all tags selected (spam signal)
+  if (Array.isArray(extraTags) && extraTags.length > 5) {
+    return NextResponse.json({ error: 'Too many tags selected' }, { status: 400 })
+  }
+
   const validTypes = [
     'delay', 'accident', 'inspection', 'clear', 'other',
     'fast', 'normal', 'slow',
@@ -350,12 +390,24 @@ export async function POST(req: NextRequest) {
 
   const user = await getUser()
 
-  // Rate limit by user ID (authenticated) or IP (guest)
+  // Anti-spam: 3 layers
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'
   const rateLimitKey = user ? `user:${user.id}` : `ip:${ip}`
-  const rateLimitMax = user ? 30 : 10
+  const rateLimitMax = user ? 8 : 3
+
+  // Layer 1: Hourly cap
   if (!checkReportRateLimit(rateLimitKey, rateLimitMax)) {
-    return NextResponse.json({ error: 'Too many reports. Try again later.' }, { status: 429 })
+    return NextResponse.json({ error: 'Too many reports this hour. Try again later.' }, { status: 429 })
+  }
+
+  // Layer 2: Per-port cooldown (10 min between reports on same port)
+  if (!checkPortCooldown(rateLimitKey, portId)) {
+    return NextResponse.json({ error: 'You already reported this bridge recently. Wait 10 minutes.' }, { status: 429 })
+  }
+
+  // Layer 3: Burst detection (max 3 reports in 5 minutes)
+  if (!checkBurst(rateLimitKey)) {
+    return NextResponse.json({ error: 'Slow down — max 3 reports in 5 minutes.' }, { status: 429 })
   }
 
   const db = getServiceClient()
@@ -539,7 +591,7 @@ export async function POST(req: NextRequest) {
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
-    description: (description || note)?.slice(0, 500) || null,
+    description: sanitizedDesc || null,
     severity: severity || 'medium',
     user_id: user?.id || null,
     wait_minutes: waitMinutes || null,
@@ -589,7 +641,7 @@ export async function POST(req: NextRequest) {
       return db.from('crossing_reports').insert({
         port_id: portId,
         report_type: mappedType,
-        description: (description || note)?.slice(0, 500) || null,
+        description: sanitizedDesc || null,
         severity: severity || 'medium',
         user_id: user?.id || null,
         wait_minutes: waitMinutes || null,

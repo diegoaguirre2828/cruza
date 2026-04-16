@@ -366,9 +366,13 @@ async function main() {
         await runPostingCycle()
       }
 
-      // Comment bot: run every 4 hours (not tied to posting windows)
+      // Comment bot: DISABLED — was splitting messages into fragments
+      // (4 separate comments instead of 1). Needs a rewrite to type
+      // the full message in one go before re-enabling.
+      // To re-enable: set COMMENT_BOT_ENABLED=true on Railway
+      const commentBotEnabled = process.env.COMMENT_BOT_ENABLED === 'true'
       const hoursSinceComment = (Date.now() - lastCommentRun) / (60 * 60 * 1000)
-      if (hoursSinceComment >= 4) {
+      if (commentBotEnabled && hoursSinceComment >= 4) {
         lastCommentRun = Date.now()
         console.log('[SCHEDULE] Running comment bot...')
         try {
