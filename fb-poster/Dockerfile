@@ -20,7 +20,4 @@ RUN npx playwright install chromium
 COPY tsconfig.json ./
 COPY src/ ./src/
 
-# Persist cookies and debug screenshots across restarts
-VOLUME ["/app/cookies.json", "/app/commented-posts.json", "/app/scraped-posts.json"]
-
 CMD ["node", "--import", "tsx", "src/index.ts"]
