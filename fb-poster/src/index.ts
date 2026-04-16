@@ -323,13 +323,51 @@ async function main() {
     await runPostingCycle()
 
     // After first run, check every 30 minutes if we're in a posting window.
+    // Also runs the comment bot and group scraper on their own schedules.
+    let lastCommentRun = 0
+    let lastScrapeRun = 0
     setInterval(async () => {
       const now = new Date()
       const utcHour = now.getUTCHours()
-      // UTC 10 = 5am CT, UTC 21 = 4pm CT (CDT)
-      const inWindow = utcHour === 10 || utcHour === 21
-      if (inWindow) {
+
+      // Poster: UTC 10 = 5am CT, UTC 21 = 4pm CT (CDT)
+      const inPostWindow = utcHour === 10 || utcHour === 21
+      if (inPostWindow) {
         await runPostingCycle()
+      }
+
+      // Comment bot: run every 4 hours (not tied to posting windows)
+      const hoursSinceComment = (Date.now() - lastCommentRun) / (60 * 60 * 1000)
+      if (hoursSinceComment >= 4) {
+        lastCommentRun = Date.now()
+        console.log('[SCHEDULE] Running comment bot...')
+        try {
+          const { execSync } = await import('child_process')
+          execSync('node --import tsx src/comment-bot.ts', {
+            cwd: process.cwd(),
+            timeout: 10 * 60 * 1000,
+            stdio: 'inherit',
+          })
+        } catch (e) {
+          console.error('[COMMENT-BOT] Error:', e instanceof Error ? e.message : e)
+        }
+      }
+
+      // Group scraper: run every 2 hours
+      const hoursSinceScrape = (Date.now() - lastScrapeRun) / (60 * 60 * 1000)
+      if (hoursSinceScrape >= 2) {
+        lastScrapeRun = Date.now()
+        console.log('[SCHEDULE] Running group scraper...')
+        try {
+          const { execSync } = await import('child_process')
+          execSync('node --import tsx src/group-scraper.ts', {
+            cwd: process.cwd(),
+            timeout: 10 * 60 * 1000,
+            stdio: 'inherit',
+          })
+        } catch (e) {
+          console.error('[SCRAPER] Error:', e instanceof Error ? e.message : e)
+        }
       }
     }, 30 * 60 * 1000)
   }, initialJitter)

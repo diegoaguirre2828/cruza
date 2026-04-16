@@ -8,6 +8,7 @@
     "run-once": "RUN_ONCE=1 node --import tsx src/index.ts",
     "capture-session": "node --import tsx src/capture-session.ts",
     "comment-bot": "node --import tsx src/comment-bot.ts",
+    "scrape-groups": "node --import tsx src/group-scraper.ts",
     "tiktok-upload": "node --import tsx src/tiktok-upload.ts",
     "tiktok-capture-session": "node --import tsx src/tiktok-capture-session.ts",
     "build": "tsc --noEmit"
