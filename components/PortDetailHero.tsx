@@ -215,18 +215,32 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
               </p>
             </div>
           ) : (
-            <div className="mt-1 flex items-baseline gap-2">
-              {(() => {
-                const split = splitWaitLabel(currentWait)
-                return (
-                  <>
-                    <span className="text-6xl font-black leading-none tabular-nums drop-shadow">
-                      {split.value}
-                    </span>
-                    <span className="text-xl font-bold text-blue-100">{split.unit}</span>
-                  </>
-                )
-              })()}
+            <div className="mt-1 flex items-baseline justify-between">
+              <div className="flex items-baseline gap-2">
+                {(() => {
+                  const split = splitWaitLabel(currentWait)
+                  return (
+                    <>
+                      <span className="text-6xl font-black leading-none tabular-nums drop-shadow">
+                        {split.value}
+                      </span>
+                      <span className="text-xl font-bold text-blue-100">{split.unit}</span>
+                    </>
+                  )
+                })()}
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-blue-200/70">
+                  {port.source === 'community' ? (es ? 'Reporte' : 'Report')
+                    : port.source === 'traffic' ? 'Traffic API'
+                    : 'CBP'}
+                </p>
+                {lastUpdatedMin != null && lastUpdatedMin > 0 && (
+                  <p className="text-[9px] text-blue-200/50">
+                    {lastUpdatedMin} min {es ? 'hace' : 'ago'}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -311,13 +325,19 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
           </CompactCard>
         )}
 
-        {/* Today's pattern (mini chart) */}
+        {/* Today's pattern (mini chart) — clickable, links to deep stats */}
         {forecast && forecast.todayPattern.some((h) => h.avgWait != null) && (
-          <div className="flex-shrink-0 w-32 md:w-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">
-              {es ? 'Este' : 'This'} {es ? dayNameEs(forecast.dayOfWeek) : dayNameEn(forecast.dayOfWeek)}
-            </p>
-            <div className="mt-1.5 h-10 flex items-end gap-[1px]">
+          <Link
+            href={`/port/${encodeURIComponent(portId)}/advanced`}
+            className="flex-shrink-0 w-44 md:w-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-3 active:scale-[0.97] transition-transform"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-500">
+                {es ? 'Este' : 'This'} {es ? dayNameEs(forecast.dayOfWeek) : dayNameEn(forecast.dayOfWeek)}
+              </p>
+              <span className="text-[8px] font-bold text-indigo-500">→</span>
+            </div>
+            <div className="h-10 flex items-end gap-[1px]">
               {forecast.todayPattern.map((h) => {
                 const max = Math.max(...forecast.todayPattern.map((hh) => hh.avgWait ?? 0), 1)
                 const height = Math.max(6, (((h.avgWait ?? 0) as number) / max) * 100)
@@ -335,7 +355,12 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
                 )
               })}
             </div>
-          </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[7px] text-gray-400">6AM</span>
+              <span className="text-[7px] text-gray-400">12PM</span>
+              <span className="text-[7px] text-gray-400">6PM</span>
+            </div>
+          </Link>
         )}
 
         {/* Forward forecast cards — label + cards */}

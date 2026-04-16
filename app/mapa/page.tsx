@@ -189,11 +189,23 @@ export default function MapaPage() {
           ))
         )}
 
-        <div className="mt-6 text-center text-[11px] text-gray-400 dark:text-gray-500">
-          {es
-            ? 'Pa\' guardar un puente, poner una alerta, o reportar — usa el inicio (tu zona).'
-            : "To save a bridge, set an alert, or report — use home (your zone)."}
-        </div>
+        {/* Signup CTA for guests */}
+        <Link
+          href="/signup?next=/mapa"
+          className="mt-6 block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
+        >
+          <p className="text-sm font-black text-white">
+            {es ? '¿Quieres alerta cuando baje la fila?' : 'Want an alert when the line drops?'}
+          </p>
+          <p className="text-[11px] text-blue-100 mt-1">
+            {es
+              ? 'Crea cuenta gratis · te avisamos cuando tu puente baje del tiempo que tú elijas'
+              : 'Create a free account · we\'ll notify you when your bridge drops below your threshold'}
+          </p>
+          <span className="inline-block mt-2 text-xs font-black text-white bg-white/20 rounded-full px-4 py-1.5">
+            {es ? 'Crear cuenta gratis →' : 'Create free account →'}
+          </span>
+        </Link>
       </div>
     </main>
   )

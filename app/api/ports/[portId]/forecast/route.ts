@@ -59,8 +59,12 @@ export async function GET(
 
   const db = getServiceClient()
   const now = new Date()
-  const currentDow = now.getDay() // 0=Sunday..6=Saturday
-  const currentHourUtc = now.getUTCHours()
+  // wait_time_readings stores hour_of_day in Central Time (America/Chicago),
+  // so we must compute the current hour in CT — NOT UTC. Using UTC caused
+  // the forecast to show hours 5-6h ahead of reality.
+  const nowCT = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }))
+  const currentDow = nowCT.getDay() // 0=Sunday..6=Saturday
+  const currentHourCT = nowCT.getHours()
 
   // Pull last 30 days of readings for this port so we can do all the
   // rollups in one query. ~30*96 = 2880 rows max, well within limits.
@@ -118,7 +122,7 @@ export async function GET(
   // otherwise fall back to the overall hourly average.
   const forecast: ForecastResponse['forecast'] = []
   for (let offset = 0; offset <= 4; offset++) {
-    const hour = (currentHourUtc + offset) % 24
+    const hour = (currentHourCT + offset) % 24
     const dow = todayPattern[hour]
     const all = hourlyAvgAll[hour]
     let avgWait: number | null = null
