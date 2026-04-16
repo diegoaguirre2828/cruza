@@ -120,52 +120,49 @@ async function postToGroup(
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * (0.3 + Math.random() * 0.5)))
     await sleep(randBetween(MIN_DELAY_BEFORE_TYPE, MAX_DELAY_BEFORE_TYPE))
 
-    // Find and click the "Write something..." / "Escribe algo..." post box
-    // FB groups have multiple possible selectors depending on the UI version.
-    const postBoxSelectors = [
-      '[role="button"][aria-label*="Write"]',
-      '[role="button"][aria-label*="Escrib"]',
-      '[role="button"][aria-label*="write"]',
-      'div[data-testid="post_message"]',
-      '[aria-label*="Create a public post"]',
-      '[aria-label*="Crea una publicaci"]',
-      'div[role="textbox"]',
-    ]
-
-    let postBox = null
-    for (const sel of postBoxSelectors) {
-      postBox = await page.$(sel)
-      if (postBox) break
-    }
-
-    if (!postBox) {
-      // If we can't find the post box, try clicking "What's on your mind?" area
-      const createPostArea = await page.$('div[class*="sjgh65i0"]') || await page.$('span:text-matches("Escri|Write|mind")')
-      if (createPostArea) {
-        await createPostArea.click()
-        await sleep(3000)
-        postBox = await page.$('div[role="textbox"]')
+    // Dismiss any overlays / popups / cookie banners that block clicks
+    try {
+      const closeButtons = await page.$$('[aria-label="Close"], [aria-label="Cerrar"], [aria-label="Not now"], [aria-label="Ahora no"]')
+      for (const btn of closeButtons) {
+        await btn.click({ force: true }).catch(() => {})
+        await sleep(500)
       }
-    }
+    } catch { /* no overlays */ }
 
-    if (!postBox) {
+    // Find and click the "Write something..." / "Escribe algo..." post box
+    // Desktop FB group composer: the post prompt area that opens the modal.
+    const postBoxLocator = page.locator([
+      '[role="button"][aria-label*="Write something"]',
+      '[role="button"][aria-label*="Escribe algo"]',
+      '[role="button"][aria-label*="Create a public post"]',
+      '[role="button"][aria-label*="Crea una publicaci"]',
+      'div[role="textbox"][aria-label*="Write something"]',
+      'div[role="textbox"][aria-label*="Escribe algo"]',
+      'div[role="textbox"][contenteditable="true"]',
+      // Generic fallback: any span containing the prompt text
+      'span:text-matches("Write something|Escribe algo|mind|¿Qué")',
+    ].join(', ')).first()
+
+    if (!(await postBoxLocator.count())) {
       console.log(`[SKIP] Could not find post box in ${group.name}`)
+      // Take a screenshot for debugging
+      try { await page.screenshot({ path: `debug-${group.region}-${Date.now()}.png` }) } catch {}
       return { ok: false, reason: 'no_post_box' }
     }
 
-    // Click the post box to open the composer
-    await postBox.click()
-    await sleep(randBetween(2000, 4000))
+    await postBoxLocator.click({ force: true })
+    await sleep(randBetween(3000, 5000))
 
-    // Find the actual text input (might be a new modal or inline editor)
+    // Find the actual text input (modal composer or inline editor)
     const textBox = page.locator('div[role="textbox"][contenteditable="true"]').first()
     if (!(await textBox.count())) {
       console.log(`[SKIP] Could not find text editor in ${group.name}`)
+      try { await page.screenshot({ path: `debug-editor-${group.region}-${Date.now()}.png` }) } catch {}
       return { ok: false, reason: 'no_textbox' }
     }
 
-    // Type the caption with realistic human-like delays
-    await textBox.click()
+    // Type the caption
+    await textBox.click({ force: true })
     await sleep(500)
     const chunks = caption.match(/.{1,30}/gs) || [caption]
     for (const chunk of chunks) {
@@ -175,30 +172,40 @@ async function postToGroup(
 
     await sleep(randBetween(2000, 5000))
 
-    // Click the "Post" / "Publicar" button
-    const postBtnSelectors = [
-      '[aria-label="Post"]',
-      '[aria-label="Publicar"]',
-      'div[aria-label="Post"][role="button"]',
-      'div[aria-label="Publicar"][role="button"]',
-    ]
-    let postBtn = null
-    for (const sel of postBtnSelectors) {
-      postBtn = await page.$(sel)
-      if (postBtn) break
+    // Submit the post. Try the button first, fall back to Ctrl+Enter.
+    // Facebook's desktop composer uses Ctrl+Enter to submit — more
+    // reliable than finding the button across different FB UI versions.
+    const postBtnLocator = page.locator([
+      '[aria-label="Post"][role="button"]',
+      '[aria-label="Publicar"][role="button"]',
+      'div[aria-label="Post"]',
+      'div[aria-label="Publicar"]',
+      'span:text-matches("^Post$|^Publicar$")',
+      // Facebook sometimes nests the button text inside forms
+      'form [type="submit"]',
+    ].join(', ')).first()
+
+    // Take a screenshot right before submitting to verify text was typed
+    try { await page.screenshot({ path: `pre-post-${group.region}-${Date.now()}.png` }) } catch {}
+
+    if (await postBtnLocator.count()) {
+      await postBtnLocator.click({ force: true })
+    } else {
+      // Fallback: Ctrl+Enter submits the composer on desktop FB
+      console.log(`[INFO] No Post button found, trying Ctrl+Enter in ${group.name}`)
+      await textBox.press('Control+Enter')
     }
 
-    if (!postBtn) {
-      // Fallback: look for a button-like element with "Post" or "Publicar" text
-      postBtn = await page.$('span:text-matches("^Post$|^Publicar$")')
+    // Wait for submission and verify — check if the composer closed
+    await sleep(randBetween(4000, 7000))
+    const composerStillOpen = await page.$('div[role="textbox"][contenteditable="true"]')
+    if (composerStillOpen) {
+      const remainingText = await composerStillOpen.textContent().catch(() => '')
+      if (remainingText && remainingText.length > 10) {
+        console.log(`[WARN] Composer still has text after submit in ${group.name} — post may not have sent`)
+        try { await page.screenshot({ path: `post-failed-${group.region}-${Date.now()}.png` }) } catch {}
+      }
     }
-
-    if (!postBtn) {
-      console.log(`[SKIP] Could not find Post button in ${group.name}`)
-      return { ok: false, reason: 'no_post_btn' }
-    }
-
-    await postBtn.click()
     await sleep(randBetween(3000, 6000))
 
     // Verify no challenge appeared after posting
@@ -243,9 +250,12 @@ async function runPostingCycle(): Promise<void> {
     ],
   })
 
+  // Desktop UA + viewport. The mobile UA triggers FB's mbasic DOM
+  // which has MContainer overlays that block Playwright clicks.
+  // Desktop FB has a standard composer with reliable selectors.
   const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.6099.280 Mobile Safari/537.36',
-    viewport: { width: 412, height: 915 },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 },
     locale: 'es-MX',
     timezoneId: 'America/Chicago',
   })
