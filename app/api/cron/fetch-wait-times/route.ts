@@ -69,6 +69,13 @@ export async function GET(req: NextRequest) {
     const { error } = await supabase.from('wait_time_readings').insert(rows)
     if (error) throw error
 
+    // Piggyback: run report quality manager + health check on the same
+    // 15-min cron cycle. Fire-and-forget so they don't block the response.
+    const base = 'https://www.cruzar.app'
+    const s = secret || process.env.CRON_SECRET
+    fetch(`${base}/api/cron/report-quality?secret=${s}`).catch(() => {})
+    fetch(`${base}/api/cron/health-check?secret=${s}`).catch(() => {})
+
     return NextResponse.json({
       saved: rows.length,
       weatherClusters: weatherMap.size,
