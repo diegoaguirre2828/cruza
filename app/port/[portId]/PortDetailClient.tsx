@@ -23,6 +23,7 @@ import { CommunityBridgePhotos } from '@/components/CommunityBridgePhotos'
 import { PortFAQ } from '@/components/PortFAQ'
 import { cityForPortId } from '@/lib/cityMeta'
 import { PortDetailHero } from '@/components/PortDetailHero'
+import { SharePrompt } from '@/components/SharePrompt'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
 import { useAuth } from '@/lib/useAuth'
@@ -407,6 +408,9 @@ export function PortDetailClient({ port, portId }: Props) {
         preferredLane={null}
         exchangeRate={null}
       />
+
+      {/* Viral share prompt — appears after 10s on the page */}
+      <SharePrompt port={port} />
 
       {/* Live bridge camera — Pro-gated when a feed is registered for this
           port. Sits below the wait number so it's the first thing after

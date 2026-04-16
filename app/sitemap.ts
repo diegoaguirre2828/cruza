@@ -34,5 +34,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...cityPages, ...portPages]
+  // Daily border report pages — last 30 days. These target date-specific
+  // long-tail queries like "hidalgo bridge wait time april 16" and
+  // "brownsville border crossing [date]". High priority because they
+  // capture daily search intent that refreshes constantly.
+  const dailyReportPages: MetadataRoute.Sitemap = []
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(now)
+    d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split('T')[0]
+    dailyReportPages.push({
+      url: `${base}/data/${dateStr}`,
+      lastModified: i === 0 ? now : new Date(dateStr + 'T23:59:59Z'),
+      changeFrequency: i === 0 ? 'hourly' as const : 'daily' as const,
+      priority: i === 0 ? 0.9 : 0.8,
+    })
+  }
+
+  return [...staticPages, ...cityPages, ...portPages, ...dailyReportPages]
 }

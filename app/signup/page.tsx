@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/auth'
@@ -81,6 +81,18 @@ export default function SignupPage() {
   // Track page view on mount
   useState(() => { trackFunnel('signup_page_view') })
 
+  // Capture ?ref= query param from URL (set by /r/[code] redirect)
+  // and store it in localStorage for post-signup completion
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref && ref.length >= 4) {
+      try {
+        localStorage.setItem('cruzar_referral_code', ref)
+      } catch { /* ignore */ }
+    }
+  }, [])
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -100,7 +112,7 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    // Capture referral if present in localStorage
+    // Capture referral if present in localStorage (old system — user ID based)
     const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
     if (ref) {
       try {
@@ -109,6 +121,18 @@ export default function SignupPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
         })
+      } catch { /* non-critical */ }
+    }
+    // Complete referral via new short-code system (/r/[code] links)
+    const refCode = typeof window !== 'undefined' ? localStorage.getItem('cruzar_referral_code') : null
+    if (refCode) {
+      try {
+        await fetch('/api/referral/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referral_code: refCode }),
+        })
+        localStorage.removeItem('cruzar_referral_code')
       } catch { /* non-critical */ }
     }
     trackFunnel('signup_complete', { method: mode })
@@ -230,6 +254,17 @@ export default function SignupPage() {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
+                  }).catch(() => {})
+                }
+                // Complete referral via new short-code system
+                const refCode = typeof window !== 'undefined' ? localStorage.getItem('cruzar_referral_code') : null
+                if (refCode && isNew) {
+                  fetch('/api/referral/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ referral_code: refCode }),
+                  }).then(() => {
+                    try { localStorage.removeItem('cruzar_referral_code') } catch {}
                   }).catch(() => {})
                 }
                 const nextParam = typeof window !== 'undefined'

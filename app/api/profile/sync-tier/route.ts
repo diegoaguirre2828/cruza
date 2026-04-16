@@ -44,19 +44,22 @@ export async function POST() {
 
   const db = getServiceClient()
 
-  // Current DB state + PWA grant check
+  // Current DB state + PWA grant + referral grant check
   const { data: profile } = await db
     .from('profiles')
-    .select('tier, pro_via_pwa_until')
+    .select('tier, pro_via_pwa_until, pro_via_referral_until')
     .eq('id', user.id)
     .single()
   const dbTier = profile?.tier || 'free'
 
-  // If the user has an active PWA-grant Pro, they keep Pro even if they
-  // have no Stripe subscription. The sync logic below will NOT downgrade
-  // them for the duration of the grant.
+  // If the user has an active PWA-grant or referral-grant Pro, they keep
+  // Pro even if they have no Stripe subscription. The sync logic below
+  // will NOT downgrade them for the duration of the grant.
   const pwaGrantActive =
     profile?.pro_via_pwa_until && new Date(profile.pro_via_pwa_until).getTime() > Date.now()
+  const referralGrantActive =
+    profile?.pro_via_referral_until && new Date(profile.pro_via_referral_until).getTime() > Date.now()
+  const anyGrantActive = pwaGrantActive || referralGrantActive
 
   const { data: existingSub } = await db
     .from('subscriptions')
@@ -78,17 +81,18 @@ export async function POST() {
   }
 
   if (!customerId) {
-    // No Stripe customer — but if the user has an active PWA grant, they
-    // stay on Pro for the duration of the grant. Otherwise, downgrade.
-    if (pwaGrantActive) {
+    // No Stripe customer — but if the user has an active grant (PWA or
+    // referral), they stay on Pro for the duration. Otherwise, downgrade.
+    if (anyGrantActive) {
       if (dbTier === 'free' || dbTier === 'guest') {
         await db.from('profiles').update({ tier: 'pro' }).eq('id', user.id)
       }
       return NextResponse.json({
         ok: true,
         tier: 'pro',
-        source: 'pwa-grant',
+        source: pwaGrantActive ? 'pwa-grant' : 'referral-grant',
         pro_via_pwa_until: profile?.pro_via_pwa_until,
+        pro_via_referral_until: profile?.pro_via_referral_until,
         changed: dbTier !== 'pro',
       })
     }
@@ -139,10 +143,10 @@ export async function POST() {
     periodEnd = (activeSub as unknown as { current_period_end?: number }).current_period_end || null
   }
 
-  // If PWA grant is still active and Stripe says free, don't downgrade —
-  // keep them on Pro until the grant expires.
+  // If any grant (PWA or referral) is still active and Stripe says free,
+  // don't downgrade — keep them on Pro until the grant expires.
   const finalTier =
-    trueTier === 'free' && pwaGrantActive ? 'pro' : trueTier
+    trueTier === 'free' && anyGrantActive ? 'pro' : trueTier
 
   const changed = finalTier !== dbTier
 

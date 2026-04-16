@@ -32,7 +32,7 @@ export function useTier(): { tier: Tier; loading: boolean } {
     const supabase = createClient()
     supabase
       .from('profiles')
-      .select('tier, pro_via_pwa_until, promo_first_1000_until')
+      .select('tier, pro_via_pwa_until, promo_first_1000_until, pro_via_referral_until')
       .eq('id', user.id)
       .single()
       .then(async ({ data }) => {
@@ -47,11 +47,16 @@ export function useTier(): { tier: Tier; loading: boolean } {
         const promoUntil = data?.promo_first_1000_until ? new Date(data.promo_first_1000_until).getTime() : 0
         const promoActive = promoUntil > now
 
+        // Referral-granted Pro — 30 days of Pro for inviting 3 friends.
+        // Same pattern as promo: live check so no downgrade cron needed.
+        const referralUntil = data?.pro_via_referral_until ? new Date(data.pro_via_referral_until).getTime() : 0
+        const referralActive = referralUntil > now
+
         // If the PWA-granted Pro has expired but the DB still says Pro, the
         // row is stale. Call sync-tier — it's the idempotent source of truth
         // that reconciles with Stripe and keeps the user on Pro if they
         // actually have a paid sub, else downgrades to free.
-        if (dbTier === 'pro' && pwaExpired && !promoActive) {
+        if (dbTier === 'pro' && pwaExpired && !promoActive && !referralActive) {
           try {
             const res = await fetch('/api/profile/sync-tier', { method: 'POST' })
             if (res.ok) {
@@ -65,12 +70,13 @@ export function useTier(): { tier: Tier; loading: boolean } {
           } catch { /* fall through to DB tier */ }
         }
 
-        // If the user is still within the first-1000 launch window,
-        // upgrade their effective tier to Pro even when the DB row
-        // says 'free'. Business tier always wins over promo.
+        // If the user is still within the first-1000 launch window or
+        // referral grant window, upgrade their effective tier to Pro
+        // even when the DB row says 'free'. Business tier always wins.
+        const anyPromoActive = promoActive || referralActive
         const effective: Tier = dbTier === 'business'
           ? 'business'
-          : (promoActive && dbTier !== 'pro')
+          : (anyPromoActive && dbTier !== 'pro')
             ? 'pro'
             : dbTier
 
