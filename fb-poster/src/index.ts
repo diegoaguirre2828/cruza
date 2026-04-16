@@ -158,8 +158,8 @@ async function postToGroup(
     await sleep(randBetween(2000, 4000))
 
     // Find the actual text input (might be a new modal or inline editor)
-    const textBox = await page.$('div[role="textbox"][contenteditable="true"]')
-    if (!textBox) {
+    const textBox = page.locator('div[role="textbox"][contenteditable="true"]').first()
+    if (!(await textBox.count())) {
       console.log(`[SKIP] Could not find text editor in ${group.name}`)
       return { ok: false, reason: 'no_textbox' }
     }
@@ -167,10 +167,6 @@ async function postToGroup(
     // Type the caption with realistic human-like delays
     await textBox.click()
     await sleep(500)
-    // Type character by character is too slow. Paste is more realistic for
-    // someone posting pre-written content (which is what a real user with
-    // a copy-paste habit looks like). Fill is fastest but doesn't trigger
-    // all events. Using keyboard with a medium delay between chunks.
     const chunks = caption.match(/.{1,30}/gs) || [caption]
     for (const chunk of chunks) {
       await textBox.pressSequentially(chunk, { delay: randBetween(15, 45) })
