@@ -197,9 +197,8 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
       )}
 
       {/* Big wait number for selected lane */}
-      <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-3xl p-5 shadow-xl text-white mb-3 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-36 h-36 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative">
+      <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-2xl px-4 py-3 shadow-xl text-white mb-3">
+        <div>
           <p className="text-[10px] font-black uppercase tracking-widest text-blue-100">
             {es ? LANE_CONFIG[activeTab].labelEs : LANE_CONFIG[activeTab].labelEn} · {es ? 'ahora' : 'now'}
           </p>

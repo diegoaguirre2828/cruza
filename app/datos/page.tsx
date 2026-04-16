@@ -245,7 +245,7 @@ function HourlyBarChart({ data }: { data: Array<{ hour: number; avgWait: number 
         // and users see the 24-hour spec even when data is sparse.
         const h = Math.max(12, (value / max) * 100)
         const color = value <= 0
-          ? 'bg-gray-200 dark:bg-gray-700'
+          ? 'bg-gray-300 dark:bg-gray-500'
           : value <= 20
             ? 'bg-green-500'
             : value <= 45
