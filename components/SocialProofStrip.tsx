@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { Users, MessageSquare, Gift } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { useAuth } from '@/lib/useAuth'
+import { useTier } from '@/lib/useTier'
+import { detectInstallState } from '@/lib/detectClient'
 
 // Social proof strip — real numbers only. Sits above the hero on the
 // home page so guests see live community evidence before scrolling.
@@ -32,8 +34,16 @@ interface StatsResponse {
 export function SocialProofStrip() {
   const { lang } = useLang()
   const { user } = useAuth()
+  const { tier } = useTier()
   const es = lang === 'es'
   const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsInstalled(detectInstallState() !== 'web')
+    }
+  }, [])
 
   useEffect(() => {
     fetch('/api/stats/community')
@@ -47,10 +57,10 @@ export function SocialProofStrip() {
   const progressPct = Math.min(100, Math.round(((1000 - stats.promoRemaining) / 1000) * 100))
   const firstNames = stats.topReporters.slice(0, 3).map((r) => r.display_name.split(' ')[0])
 
-  // Hide promo row for users who already have paid access — it's
-  // confusing to see "3 meses gratis" when you're already paying.
-  // Guests and free-tier users both see it.
-  const showPromo = !user || stats.promoRemaining > 0
+  // Hide promo for: already-Pro users (paid or promo), PWA-installed
+  // users (they already committed), or when spots are gone.
+  const alreadyPro = tier === 'pro' || tier === 'business'
+  const showPromo = !alreadyPro && !isInstalled && stats.promoRemaining > 0
 
   return (
     <div className="mt-3 mb-2 space-y-2">
