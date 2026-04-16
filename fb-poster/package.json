@@ -1,0 +1,23 @@
+{
+  "name": "cruzar-fb-poster",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --loader tsx src/index.ts",
+    "run-once": "RUN_ONCE=1 node --loader tsx src/index.ts",
+    "capture-session": "node --loader tsx src/capture-session.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.1",
+    "playwright": "^1.47.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.0.0"
+  }
+}

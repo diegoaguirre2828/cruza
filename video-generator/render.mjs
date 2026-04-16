@@ -178,6 +178,7 @@ async function maybeUpload(results) {
   for (const r of results) {
     const data = await readFile(r.outputPath);
     const blob = await put(`videos/${r.outputName}`, data, {
+      access: 'private',
       token: blobToken,
       contentType: 'video/mp4',
     });
