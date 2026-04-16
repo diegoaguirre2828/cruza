@@ -11,6 +11,7 @@ import { getPortMeta } from '@/lib/portMeta'
 import { trackShare } from '@/lib/trackShare'
 import { getMyRecentReportAgeMin } from '@/lib/myReports'
 import { useFavorites } from '@/lib/useFavorites'
+import { hasCamera } from '@/lib/bridgeCameras'
 import type { PortWaitTime } from '@/types'
 
 export interface PortSignal {
@@ -369,22 +370,40 @@ export function PortCard({ port, signal }: Props) {
               {lang === 'es' ? 'Reportar' : 'Report'}
             </span>
           </div>
+        ) : hasCamera(port.portId) ? (
+          // Bridge has a camera but no live data or history — show camera CTA
+          <div
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}` }}
+            className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                {lang === 'es' ? '📷 Datos limitados · cámara disponible' : '📷 Limited data · camera available'}
+              </p>
+              <p className="text-[11px] text-blue-700 dark:text-blue-300">
+                {lang === 'es'
+                  ? 'CBP no reporta ahorita · ve la webcam para checar la fila'
+                  : 'CBP not reporting right now · check the webcam to see the line'}
+              </p>
+            </div>
+            <span className="text-xs font-bold text-white bg-blue-600 rounded-lg px-3 py-1.5 whitespace-nowrap">
+              {lang === 'es' ? 'Ver' : 'View'}
+            </span>
+          </div>
         ) : (
-          // Last resort: no live data AND no historical pattern yet.
-          // Be honest about why — CBP sensors aren't reporting and we
-          // don't have enough history for this hour to estimate.
+          // True last resort: no data, no history, no camera.
           <div
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
             className="mt-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {lang === 'es' ? 'CBP no reporta datos ahorita' : 'CBP not reporting data right now'}
+                {lang === 'es' ? 'Datos limitados' : 'Limited data'}
               </p>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">
                 {lang === 'es'
-                  ? 'El sensor puede estar fuera de línea o el puente cerrado · reporta si estás ahí'
-                  : 'Sensor may be offline or bridge may be closed · report if you\'re there'}
+                  ? 'CBP no reporta ahorita · reporta si estás ahí'
+                  : 'CBP not reporting right now · report if you\'re there'}
               </p>
             </div>
             <span className="text-xs font-bold text-white bg-gray-700 dark:bg-gray-600 rounded-lg px-3 py-1.5 whitespace-nowrap">
