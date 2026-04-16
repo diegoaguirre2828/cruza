@@ -25,13 +25,8 @@ const COOKIES_PATH = process.env.FB_COOKIES_PATH || './cookies.json'
 async function main() {
   console.log('Opening Chrome...')
   console.log('')
-  console.log('STEPS:')
-  console.log('  1. Log in to Facebook (any account that manages the Cruzar Page)')
-  console.log('  2. Click your profile picture (top right)')
-  console.log('  3. Click "See all profiles"')
-  console.log('  4. Click the CRUZAR page to switch to it')
-  console.log('  5. You should now see "Using Facebook as Cruzar" at the top')
-  console.log('  6. Come back here and press Enter')
+  console.log('Log in as NATIVIDAD RIVERA (the disposable alt).')
+  console.log('Once you see the News Feed, come back here and press Enter.')
   console.log('')
 
   const browser = await chromium.launch({
