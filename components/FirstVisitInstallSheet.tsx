@@ -20,6 +20,12 @@ import { trackEvent } from '@/lib/trackEvent'
 // /mas install card.
 
 const SEEN_KEY = 'cruzar_first_visit_install_seen_v1'
+// Cooldown before the sheet re-appears after a dismiss. Previously
+// permanent — most users (especially iOS) tap "later" on first visit
+// meaning to install soon, then never see the prompt again and never
+// install. 14-day cooldown lets us re-surface once a repeat user is
+// engaged enough to see real value.
+const DISMISS_COOLDOWN_DAYS = 14
 const HIDDEN_PATHS = [
   '/login',
   '/signup',
@@ -54,9 +60,15 @@ export function FirstVisitInstallSheet() {
       (navigator as Navigator & { standalone?: boolean }).standalone === true
     if (isStandalone) return
 
-    // Seen before on this device — never show again.
+    // Cooldown gate — respect the user's "not right now" for 14 days,
+    // then re-surface on a repeat visit.
     try {
-      if (localStorage.getItem(SEEN_KEY)) return
+      const dismissedAt = localStorage.getItem(SEEN_KEY)
+      if (dismissedAt) {
+        const ageMs = Date.now() - parseInt(dismissedAt, 10)
+        const cooldownMs = DISMISS_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+        if (Number.isFinite(ageMs) && ageMs < cooldownMs) return
+      }
     } catch { /* ignore */ }
 
     // Small delay so first paint lands first — the user briefly sees
@@ -95,23 +107,43 @@ export function FirstVisitInstallSheet() {
         <div className="absolute -bottom-20 -left-10 w-56 h-56 bg-purple-400/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative p-6">
-          <p className="text-3xl leading-none mb-2">📲</p>
-          <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-            {es
-              ? 'Agrega Cruzar a tu pantalla de inicio'
-              : 'Add Cruzar to your home screen'}
-          </h2>
-          <p className="text-sm text-blue-100 mt-2 leading-snug">
-            {es
-              ? 'Un toque para revisar los puentes · Alertas que sí te llegan al teléfono · Funciona incluso sin señal'
-              : 'One tap to check bridges · Alerts that actually reach your phone · Works even with no signal'}
-          </p>
-
-          <div className="mt-4 bg-amber-400/20 border border-amber-300/40 rounded-2xl px-3 py-2">
-            <p className="text-[11px] font-bold text-amber-100 text-center">
-              🎁 {es ? 'Bono: 3 meses de Pro GRATIS al agregarlo' : 'Bonus: 3 months Pro FREE when you add it'}
-            </p>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/25 border border-amber-300/50 mb-3">
+            <span className="text-sm">🎁</span>
+            <span className="text-[11px] font-black text-amber-100 uppercase tracking-wide">
+              {es ? '3 meses Pro gratis' : '3 months Pro free'}
+            </span>
           </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white leading-[1.05]">
+            {es
+              ? 'Agrega Cruzar a tu pantalla de inicio y desbloquea todo Pro — gratis por 90 días.'
+              : 'Add Cruzar to your home screen and unlock all of Pro — free for 90 days.'}
+          </h2>
+          <ul className="mt-3 space-y-1.5 text-sm text-blue-100">
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">🔔</span>
+              <span className="leading-snug">
+                {es
+                  ? 'Te avisamos cuando tu puente está rápido — antes de salir'
+                  : 'Get notified when your bridge is moving fast — before you leave'}
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">🎥</span>
+              <span className="leading-snug">
+                {es
+                  ? 'Cámaras en vivo de cada puente (solo Pro)'
+                  : 'Live video cameras of every bridge (Pro-only)'}
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5">📊</span>
+              <span className="leading-snug">
+                {es
+                  ? 'Mejor hora para cruzar hoy, basado en datos reales'
+                  : "Today's best time to cross, based on real patterns"}
+              </span>
+            </li>
+          </ul>
 
           {expanded ? (
             <div className="mt-4 bg-white dark:bg-gray-900 rounded-2xl p-4">
