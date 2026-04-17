@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
+import * as Sentry from '@sentry/nextjs'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,10 +49,24 @@ export async function GET(req: NextRequest) {
       const target = next.startsWith('/') ? next : '/welcome'
       return NextResponse.redirect(`${origin}${target}`)
     }
+    // Log to Sentry with tag so we can filter OAuth-exchange failures
+    // specifically from other auth-path errors. Separately logged to
+    // console for Vercel function logs (the two are both useful —
+    // Sentry groups by fingerprint, Vercel by timestamp).
     console.error('auth/callback: exchange error', error)
+    Sentry.captureException(error, {
+      tags: { auth_path: 'oauth_exchange_failed' },
+      extra: { code_present: true, next },
+    })
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
   }
 
-  // No code present — user landed here by mistake
+  // No code present — user landed here by mistake. Also log as a
+  // lower-severity Sentry event so we notice if this starts happening
+  // often (would indicate a broken outbound link pointing at /auth/callback).
+  Sentry.captureMessage('auth/callback reached without ?code param', {
+    level: 'info',
+    tags: { auth_path: 'oauth_missing_code' },
+  })
   return NextResponse.redirect(`${origin}/login?error=missing_code`)
 }
