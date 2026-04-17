@@ -6,6 +6,30 @@
 
 ---
 
+## 0. Sensei audit mode (inherited)
+
+Standing capability across every project Diego owns. Canonical rules live in the user-level memory folder under `~/.claude/projects/C--Users-dnawa/memory/` — see the files `feedback_sensei_audit_method.md` and `feedback_prevent_stale_memory_audits.md`. Locked 2026-04-16.
+
+**Triggers (any session, any phrasing):** "everything wrong", "audit [the project]", "sensei [project]", "sensei mode", "full audit", "what's broken", "gimme the list" — fire the full Sensei pattern immediately, no clarifying questions.
+
+**Pipeline:** memory pass (handoffs + backlogs, treat all claims as hypotheses) then parallel live-state scan (build, endpoint health, env drift, schema drift, bilingual coverage, security/RLS) then structured **CRITICAL / HIGH / MEDIUM / LOW** report with file:line evidence PLUS a `verified-live-at` evidence cell on every row, then autonomous-safe vs. Diego-input split with ONE pick for the autonomous bundle, then on greenlight ("all in one session", "go", "ship"), execute end-to-end: edits, run the build, commit (named files, never `-A`), push, deploy to prod via the `vercel deploy --prod` command, curl live endpoints to verify landing, self-correct against live state, and append a **Reconciliation log** section to the audit memory noting SUPERSEDED items + their commit SHA.
+
+**Cruzar-specific audit surfaces:**
+- Build: run `npm run build` — must produce 106 of 106 pages clean
+- Live verify: curl `https://cruzar.app/api/ports` (at least 50 ports), plus `/privacy` and `/pricing`
+- Railway fb-poster: curl `https://cruzar-production.up.railway.app/` — check `lastPosted` non-empty after 5am/4pm CT cycles
+- Schema source: the file `supabase-schema-v12.sql` plus migrations `v27` through `v32` in `supabase/migrations/`
+- Coord sync: the files `lib/portMeta.ts` and `components/WaitingMode.tsx` must match exactly on every port's coordinates
+- Bilingual coverage: every user-facing string in `app/` pages and `components/` must route through `LangContext`
+- Cron auth: every route under `/api/cron/` must accept both `?secret=` query and `Authorization: Bearer` header
+- RLS: user-scoped client for auth-gated routes, service-role only for cron, admin, and public-read
+
+**Hard rules during execution:** never touch the user's browser, never force-push, never skip hooks, no strategic calls on Cruzar (execute-only), bilingual is standard, handle infra end-to-end, notice-and-fix never recommend.
+
+**Reference execution:** 2026-04-16 evening — see the memory file `project_cruzar_everything_wrong_audit_20260416.md`. 31 findings total, 2 self-corrected as stale memory, 5-item autonomous bundle shipped live in commit `9ec1082`.
+
+---
+
 ## ⚠️ CRITICAL: Next.js Version Warning
 
 This is **Next.js 16.2.1** — it has breaking changes from older versions.

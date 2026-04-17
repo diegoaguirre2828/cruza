@@ -200,10 +200,27 @@ async function postToGroup(
       return { ok: false, reason: 'no_textbox' }
     }
 
-    // Type the caption
+    // Type the caption. Chunk on whitespace boundaries — the previous
+    // fixed /.{1,30}/ regex could split mid-word, and Facebook's
+    // composer occasionally drops characters when a chunk lands in
+    // the middle of a word during its own keystroke debouncing.
+    // Word-safe chunking preserves the human-paced cadence (short
+    // typed bursts + sub-second pauses) while guaranteeing no chunk
+    // ever cuts through a word.
     await textBox.click({ force: true })
     await sleep(500)
-    const chunks = caption.match(/.{1,30}/gs) || [caption]
+    const words = caption.split(/(\s+)/)
+    const chunks: string[] = []
+    let current = ''
+    for (const w of words) {
+      if (current.length + w.length > 30 && current.length > 0) {
+        chunks.push(current)
+        current = w
+      } else {
+        current += w
+      }
+    }
+    if (current.length > 0) chunks.push(current)
     for (const chunk of chunks) {
       await textBox.pressSequentially(chunk, { delay: randBetween(15, 45) })
       await sleep(randBetween(100, 400))
