@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLang } from '@/lib/LangContext'
+import { trackShare } from '@/lib/trackShare'
 import type { PortWaitTime } from '@/types'
 
 // Timed share prompt — appears after a user has been on a port detail
@@ -54,6 +55,7 @@ export function SharePrompt({ port }: Props) {
 
     if (navigator.share) {
       try {
+        trackShare('native', 'share_prompt')
         await navigator.share({ title: 'Cruzar', text, url })
         handleDismiss()
         return
@@ -61,6 +63,7 @@ export function SharePrompt({ port }: Props) {
     }
 
     // WhatsApp fallback
+    trackShare('whatsapp', 'share_prompt')
     const waUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`
     window.open(waUrl, '_blank')
     handleDismiss()

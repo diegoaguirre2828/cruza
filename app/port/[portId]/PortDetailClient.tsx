@@ -26,6 +26,7 @@ import { PortDetailHero } from '@/components/PortDetailHero'
 import { SharePrompt } from '@/components/SharePrompt'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
+import { trackShare } from '@/lib/trackShare'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
 import Link from 'next/link'
@@ -206,9 +207,11 @@ export function PortDetailClient({ port, portId }: Props) {
 
     if (navigator.share) {
       try {
+        trackShare('native', 'port_detail')
         await navigator.share({ title: port.portName, text, url })
       } catch { /* cancelled */ }
     } else {
+      trackShare('copy', 'port_detail')
       await navigator.clipboard.writeText(url)
       setShareCopied(true)
       setTimeout(() => setShareCopied(false), 2500)

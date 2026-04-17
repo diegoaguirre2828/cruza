@@ -138,18 +138,49 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
   ],
 
   // ─── Arizona — Nogales Mariposa ─────────────────────────────────
-  // Pass-4 upgrade 2026-04-17: Heroica Nogales publishes CORS-open
-  // live HLS streams at cruce.heroicanogales.gob.mx (5 angles).
-  // Adding the "general" stream as the primary live MX feed; the
-  // El Imparcial snapshot stays as a lightweight fallback tab.
+  // Pass-4 upgrade 2026-04-17: Heroica Nogales publishes 5 CORS-open
+  // live HLS angles (general + mariposa3-6). All confirmed live
+  // (#EXT-X-MEDIA-SEQUENCE advancing, 5s segments).
   '260402': [
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/mariposa/general/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita Mariposa — en vivo (vista general)',
-      label: 'MX · Vivo',
+      note: 'Garita Mariposa — vista general en vivo',
+      label: 'MX · General',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/mariposa/mariposa3/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Garita Mariposa — ángulo 3 en vivo',
+      label: 'MX · 3',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/mariposa/mariposa4/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Garita Mariposa — ángulo 4 en vivo',
+      label: 'MX · 4',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/mariposa/mariposa5/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Garita Mariposa — ángulo 5 en vivo',
+      label: 'MX · 5',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/mariposa/mariposa6/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Garita Mariposa — ángulo 6 en vivo',
+      label: 'MX · 6',
     },
     {
       kind: 'image',
@@ -158,14 +189,6 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
       creditUrl: 'https://www.az511.gov/cctv',
       note: 'SR-189 at Loma Mariposa — en la salida del POE',
       label: 'US · AZ511',
-    },
-    {
-      kind: 'image',
-      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mariposa.jpg',
-      credit: 'El Imparcial / Heroica Nogales',
-      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita Mariposa — snapshot',
-      label: 'MX · Snapshot',
     },
   ],
 
