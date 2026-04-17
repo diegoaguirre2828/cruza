@@ -16,9 +16,10 @@ const PUBLIC_API_PREFIXES = [
   '/api/predict',
   '/api/predictions',
   '/api/widget',
-  '/api/ingest',       // has its own admin/secret gate
-  '/api/cron',          // has its own CRON_SECRET gate
-  '/api/stripe/webhook', // has its own signature check
+  '/api/ingest',              // has its own admin/secret gate
+  '/api/cron',                 // has its own CRON_SECRET gate
+  '/api/stripe/webhook',       // has its own signature check
+  '/api/admin/migrate',        // has its own CRON_SECRET gate + bootstraps exec_sql
 ]
 
 // Routes that HARD-redirect to /signup when the visitor isn't
