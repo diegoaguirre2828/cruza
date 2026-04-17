@@ -340,12 +340,21 @@ export default function SignupPage() {
                     try { localStorage.removeItem('cruzar_referral_code') } catch {}
                   }).catch(() => {})
                 }
+                // Route NEW signups through /welcome (install carrot)
+                // regardless of `next=` — same fix as the email/password
+                // path. Existing-user sign-ins can go straight to next.
                 const nextParam = typeof window !== 'undefined'
                   ? new URLSearchParams(window.location.search).get('next')
                   : null
-                const destination = nextParam && nextParam.startsWith('/')
+                const safeNext = nextParam && nextParam.startsWith('/') && nextParam !== '/welcome'
                   ? nextParam
-                  : isNew ? '/welcome' : '/dashboard'
+                  : null
+                let destination: string
+                if (isNew) {
+                  destination = safeNext ? `/welcome?next=${encodeURIComponent(safeNext)}` : '/welcome'
+                } else {
+                  destination = safeNext || '/dashboard'
+                }
                 router.push(destination)
               }}
             />
