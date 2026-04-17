@@ -197,11 +197,26 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
       )}
 
       {/* Big wait number for selected lane */}
-      <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-2xl px-4 py-3 shadow-xl text-white mb-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-100">
-            {es ? LANE_CONFIG[activeTab].labelEs : LANE_CONFIG[activeTab].labelEn} · {es ? 'ahora' : 'now'}
-          </p>
+      <div className="bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-2xl px-4 py-3 shadow-xl text-white mb-3 relative overflow-hidden">
+        {/* Ambient glow — fills the dead space with depth without adding
+            another hard UI element. Pure CSS, no render cost. */}
+        <div className="absolute -top-10 -right-10 w-44 h-44 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-8 w-36 h-36 bg-pink-300/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            {/* LIVE pulse dot — the animation Diego asked for. Uses the
+                same ping+static pattern as HeroLiveDelta on home. Signals
+                that the number is live, not a stale cached value. */}
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+            </span>
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-100">
+              {es ? LANE_CONFIG[activeTab].labelEs : LANE_CONFIG[activeTab].labelEn} · {es ? 'ahora' : 'now'}
+            </p>
+          </div>
+
           {currentWait == null ? (
             <div className="mt-2">
               <p className="text-2xl font-black leading-tight">
@@ -214,33 +229,111 @@ export function PortDetailHero({ port, portId, preferredLane, exchangeRate }: Pr
               </p>
             </div>
           ) : (
-            <div className="mt-1 flex items-baseline justify-between">
-              <div className="flex items-baseline gap-2">
-                {(() => {
-                  const split = splitWaitLabel(currentWait)
-                  return (
-                    <>
-                      <span className="text-6xl font-black leading-none tabular-nums drop-shadow">
-                        {split.value}
-                      </span>
-                      <span className="text-xl font-bold text-blue-100">{split.unit}</span>
-                    </>
-                  )
-                })()}
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold text-blue-200/70">
-                  {port.source === 'community' ? (es ? 'Reporte' : 'Report')
-                    : port.source === 'traffic' ? 'Traffic API'
-                    : 'CBP'}
-                </p>
-                {lastUpdatedMin != null && lastUpdatedMin > 0 && (
-                  <p className="text-[9px] text-blue-200/50">
-                    {lastUpdatedMin} min {es ? 'hace' : 'ago'}
+            <>
+              <div className="mt-1 flex items-baseline justify-between gap-3">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  {(() => {
+                    const split = splitWaitLabel(currentWait)
+                    return (
+                      <>
+                        <span className="text-6xl font-black leading-none tabular-nums drop-shadow">
+                          {split.value}
+                        </span>
+                        <span className="text-xl font-bold text-blue-100">{split.unit}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[10px] font-bold text-blue-200/70">
+                    {port.source === 'community' ? (es ? 'Reporte' : 'Report')
+                      : port.source === 'traffic' ? 'Traffic API'
+                      : 'CBP'}
                   </p>
-                )}
+                  {lastUpdatedMin != null && lastUpdatedMin > 0 && (
+                    <p className="text-[9px] text-blue-200/50">
+                      {lastUpdatedMin} min {es ? 'hace' : 'ago'}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+
+              {/* Info strip — fills the former dead space with real signal.
+                  Three chips, hidden when their data is null so we never
+                  show empty placeholders. Each chip is actionable:
+                    - lanes open count (operational density)
+                    - trend arrow vs +1H forecast ("is this getting worse?")
+                    - best-hour nudge ("cross later if you can")
+                  Renders in order of certainty: open-lanes first (CBP), then
+                  trend (forecast model), then best-hour suggestion. */}
+              {(() => {
+                // Lane count from CBP — most reliable signal.
+                const lanesField = activeTab === 'all' || activeTab === 'standard' || activeTab === 'ready'
+                  ? port.vehicleLanesOpen
+                  : activeTab === 'sentri'
+                    ? port.sentriLanesOpen
+                    : activeTab === 'pedestrian'
+                      ? port.pedestrianLanesOpen
+                      : activeTab === 'commercial'
+                        ? port.commercialLanesOpen
+                        : null
+                // Trend vs +1H forecast. forecast[0] is NOW, forecast[1] is +1H.
+                const nextHour = forecast?.forecast?.[1]?.avgWait ?? null
+                const delta = nextHour != null ? Math.round(nextHour - currentWait) : null
+                const trendArrow = delta == null ? null
+                  : delta >= 10 ? '↑'
+                  : delta <= -10 ? '↓'
+                  : '→'
+                const trendTone = delta == null ? null
+                  : delta >= 10 ? 'text-red-100'
+                  : delta <= -10 ? 'text-emerald-100'
+                  : 'text-blue-100'
+                // Best-hour suggestion (only if meaningfully better than now)
+                const bestHour = forecast?.bestHour
+                const bestBetter = bestHour != null && bestHour.avgWait < currentWait - 15
+
+                const chips: React.ReactNode[] = []
+                if (typeof lanesField === 'number' && lanesField > 0) {
+                  chips.push(
+                    <span key="lanes" className="inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white">
+                      <span aria-hidden="true">🚦</span>
+                      {es
+                        ? `${lanesField} ${lanesField === 1 ? 'carril abierto' : 'carriles abiertos'}`
+                        : `${lanesField} ${lanesField === 1 ? 'lane open' : 'lanes open'}`}
+                    </span>
+                  )
+                }
+                if (trendArrow && delta != null) {
+                  chips.push(
+                    <span key="trend" className={`inline-flex items-center gap-1 bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-[10px] font-bold ${trendTone}`}>
+                      <span aria-hidden="true">{trendArrow}</span>
+                      {delta === 0
+                        ? (es ? 'estable en 1h' : 'steady in 1h')
+                        : (es
+                          ? `${delta > 0 ? '+' : ''}${delta} min en 1h`
+                          : `${delta > 0 ? '+' : ''}${delta} min in 1h`)}
+                    </span>
+                  )
+                }
+                if (bestBetter && bestHour) {
+                  chips.push(
+                    <span key="best" className="inline-flex items-center gap-1 bg-emerald-400/25 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-[10px] font-bold text-emerald-50">
+                      <span aria-hidden="true">🕒</span>
+                      {es
+                        ? `mejor a las ${formatHour(bestHour.hour)} (~${bestHour.avgWait}m)`
+                        : `best at ${formatHour(bestHour.hour)} (~${bestHour.avgWait}m)`}
+                    </span>
+                  )
+                }
+
+                if (chips.length === 0) return null
+                return (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {chips}
+                  </div>
+                )
+              })()}
+            </>
           )}
         </div>
       </div>
