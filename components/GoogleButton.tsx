@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/auth'
+import { useLang } from '@/lib/LangContext'
 
 // Detects Facebook / Instagram / TikTok in-app browsers, which are
 // notorious for breaking OAuth flows — they block cross-origin
@@ -31,9 +32,15 @@ function isStandalone(): boolean {
 }
 
 export function GoogleButton({
-  label = 'Continue with Google',
+  label,
   next = '/welcome',
 }: { label?: string; next?: string }) {
+  const { lang } = useLang()
+  const es = lang === 'es'
+  // If no label provided, use bilingual default. Callers can still
+  // override with an explicit label when they need custom copy (e.g.
+  // "Sign in with Google" vs "Sign up with Google").
+  const effectiveLabel = label ?? (es ? 'Continuar con Google' : 'Continue with Google')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [stalled, setStalled] = useState(false)
@@ -78,7 +85,7 @@ export function GoogleButton({
       })
 
       if (oauthError || !data?.url) {
-        setError(oauthError?.message || 'Could not start Google sign-in')
+        setError(oauthError?.message || (es ? 'No se pudo iniciar con Google' : 'Could not start Google sign-in'))
         setLoading(false)
         return
       }
@@ -101,7 +108,7 @@ export function GoogleButton({
         setStalled(true)
       }, 4000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : (es ? 'Error desconocido' : 'Unknown error'))
       setLoading(false)
     }
   }
@@ -130,29 +137,37 @@ export function GoogleButton({
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        {loading ? 'Redirecting…' : label}
+        {loading ? (es ? 'Redirigiendo…' : 'Redirecting…') : effectiveLabel}
       </button>
       {error && (
         <p className="mt-2 text-xs text-red-600 text-center">
-          Google sign-in failed: {error}
+          {es ? 'Error con Google' : 'Google sign-in failed'}: {error}
         </p>
       )}
       {stalled && !error && (
         <>
           <p className="mt-2 text-xs text-amber-600 text-center">
             {isStandalone()
-              ? 'Google no abre en el modo app · cierra la app y abre cruzar.app en el navegador, o usa email abajo.'
-              : 'Didn\u2019t redirect? Tap the button again, or use email below.'}
+              ? (es
+                ? 'Google no abre en el modo app · cierra la app y abre cruzar.app en el navegador, o usa email abajo.'
+                : "Google doesn't open in app mode — close the app, open cruzar.app in your browser, or use email below.")
+              : (es
+                ? '¿No redirigió? Toca el botón otra vez o usa email abajo.'
+                : "Didn't redirect? Tap the button again, or use email below.")}
           </p>
           {debugUrl && (
             <details className="mt-2">
               <summary className="text-[10px] text-gray-500 cursor-pointer text-center">
-                Debug info (tap to expand)
+                {es ? 'Info de depuración (toca pa\' ver)' : 'Debug info (tap to expand)'}
               </summary>
               <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-800 rounded text-[9px] break-all font-mono text-gray-700 dark:text-gray-300">
-                <p className="font-bold mb-1">Supabase redirect URL:</p>
+                <p className="font-bold mb-1">{es ? 'URL de Supabase:' : 'Supabase redirect URL:'}</p>
                 <p>{debugUrl}</p>
-                <p className="font-bold mt-2">Try opening this URL directly in a new tab to see what Supabase returns.</p>
+                <p className="font-bold mt-2">
+                  {es
+                    ? 'Abre esa URL en una pestaña nueva pa\' ver qué contesta Supabase.'
+                    : 'Try opening this URL directly in a new tab to see what Supabase returns.'}
+                </p>
               </div>
             </details>
           )}
