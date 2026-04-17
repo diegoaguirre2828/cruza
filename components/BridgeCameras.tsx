@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Camera, Lock } from 'lucide-react'
-import { useTier } from '@/lib/useTier'
+import { Camera } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { getBridgeCameras, type CameraFeed } from '@/lib/bridgeCameras'
 
@@ -161,20 +160,18 @@ interface Props {
   portName: string
 }
 
-// Port detail camera section. Shows one of three states:
+// Port detail camera section. Two states:
 //   1. No feeds registered for this port → "próximamente" card
-//   2. Feeds + user is Pro/Business      → live embed with tab picker if multi
-//   3. Feeds + user is guest/free        → blurred teaser + Pro unlock CTA
+//   2. Feeds exist                        → live embed with tab picker if multi
 //
-// Free users NEVER see a broken/blurred state for ports with no feed —
-// that would lie about what Pro unlocks. The "próximamente" card is
-// the same for everyone.
+// Cameras are FREE 2026-04-17 — the /camaras hub was already public,
+// keeping them Pro-only on port detail was inconsistent and blunted
+// acquisition. Pro's value prop lives elsewhere (alerts, predictions,
+// historical patterns, route optimizer).
 export function BridgeCameras({ portId, portName }: Props) {
-  const { tier } = useTier()
   const { lang } = useLang()
   const es = lang === 'es'
   const feeds = getBridgeCameras(portId)
-  const isPro = tier === 'pro' || tier === 'business'
   const [activeIdx, setActiveIdx] = useState(0)
 
   // State 1 — no feeds registered
@@ -188,9 +185,6 @@ export function BridgeCameras({ portId, portName }: Props) {
             <h2 className="text-sm font-bold text-white">
               {es ? 'Cámara en vivo' : 'Live camera'}
             </h2>
-            <span className="ml-auto text-[9px] font-black uppercase tracking-wider bg-gradient-to-br from-amber-400 to-orange-500 text-white px-2 py-0.5 rounded-full">
-              Pro
-            </span>
           </div>
           <div className="aspect-video bg-black/50 rounded-xl border border-gray-700 flex flex-col items-center justify-center gap-2 text-center p-4">
             <Camera className="w-8 h-8 text-gray-600" />
@@ -199,9 +193,15 @@ export function BridgeCameras({ portId, portName }: Props) {
             </p>
             <p className="text-[10px] text-gray-500 leading-snug max-w-[240px]">
               {es
-                ? `Estamos trabajando en agregar la cámara en vivo de ${portName}. Las cámaras de otros cruces se desbloquean con Pro.`
-                : `We're working on adding the live camera for ${portName}. Cameras for other crossings unlock with Pro.`}
+                ? `Todavía no tenemos cámara pública de ${portName}. Si conoces alguna, escríbenos.`
+                : `No public camera for ${portName} yet. Send us a tip if you know of one.`}
             </p>
+            <Link
+              href="/camaras"
+              className="mt-1 text-[10px] font-bold text-blue-400 hover:text-blue-300"
+            >
+              {es ? 'Ver otras cámaras →' : 'See other cameras →'}
+            </Link>
           </div>
         </div>
       </div>
@@ -213,10 +213,9 @@ export function BridgeCameras({ portId, portName }: Props) {
   const hasTabs = feeds.length > 1
   const isLiveVideo = activeFeed.kind === 'youtube' || activeFeed.kind === 'hls'
 
-  // State 2 — feeds + Pro
-  if (isPro) {
-    return (
-      <div className="bg-gray-900 dark:bg-black rounded-2xl border border-gray-700 p-4 shadow-sm">
+  // State 2 — feeds exist, free for all viewers
+  return (
+    <div className="bg-gray-900 dark:bg-black rounded-2xl border border-gray-700 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2">
           <Camera className={`w-4 h-4 ${isLiveVideo ? 'text-green-400' : 'text-blue-400'}`} />
           <h2 className="text-sm font-bold text-white">
@@ -279,70 +278,4 @@ export function BridgeCameras({ portId, portName }: Props) {
         </p>
       </div>
     )
-  }
-
-  // State 3 — feeds exist but user is free/guest
-  return (
-    <div className="bg-gray-900 dark:bg-black rounded-2xl border border-gray-700 p-4 shadow-sm relative overflow-hidden">
-      <div className="flex items-center gap-2 mb-2">
-        <Camera className="w-4 h-4 text-blue-400" />
-        <h2 className="text-sm font-bold text-white">
-          {es ? 'Cámara en vivo' : 'Live camera'}
-        </h2>
-        <span className="ml-auto text-[9px] font-black uppercase tracking-wider bg-gradient-to-br from-amber-400 to-orange-500 text-white px-2 py-0.5 rounded-full">
-          Pro
-        </span>
-      </div>
-
-      {hasTabs && (
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {feeds.map((f, i) => (
-            <span
-              key={i}
-              className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-full border bg-white/5 text-gray-400 border-white/10"
-            >
-              {f.label || `Cam ${i + 1}`}
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div className="aspect-video bg-black rounded-xl overflow-hidden border border-gray-800 relative">
-        {/* Blurred teaser — first feed only, only if it's an image */}
-        {activeFeed.kind === 'image' ? (
-          <img
-            src={activeFeed.src}
-            alt=""
-            className="w-full h-full object-cover blur-xl scale-110 opacity-60"
-            aria-hidden="true"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-gray-800 via-gray-900 to-black" />
-        )}
-        {/* Lock overlay */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center p-4 bg-black/60 backdrop-blur-sm">
-          <Lock className="w-8 h-8 text-amber-400" />
-          <p className="text-sm font-black text-white">
-            {es
-              ? `Desbloquea ${feeds.length > 1 ? `${feeds.length} cámaras` : 'la cámara'} en vivo`
-              : `Unlock ${feeds.length > 1 ? `${feeds.length} live cameras` : 'live camera'}`}
-          </p>
-          <p className="text-[11px] text-gray-300 leading-snug max-w-[260px]">
-            {es
-              ? 'Ve los carriles en tiempo real antes de salir. Incluido con Pro.'
-              : 'See the lanes in real time before you leave. Included with Pro.'}
-          </p>
-          <Link
-            href="/pricing"
-            className="mt-1 inline-flex items-center gap-1 bg-gradient-to-br from-amber-400 to-orange-500 text-white font-black text-xs px-4 py-2 rounded-full shadow-lg active:scale-95 transition-transform"
-          >
-            {es ? 'Ver Pro · $2.99/mes' : 'See Pro · $2.99/mo'}
-          </Link>
-          <p className="text-[10px] text-amber-300 font-semibold">
-            {es ? 'o gratis 3 meses al instalar la app' : 'or free 3 months when you install the app'}
-          </p>
-        </div>
-      </div>
-    </div>
-  )
 }
