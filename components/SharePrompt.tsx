@@ -47,7 +47,10 @@ export function SharePrompt({ port }: Props) {
       ? `${name} está en ${wait} min ahorita. Yo uso cruzar.app pa' checar los puentes antes de salir — tiene todos los puentes en vivo, gratis.`
       : `${name} is at ${wait} min right now. I use cruzar.app to check bridge times before leaving — all crossings live, free.`
 
-    const url = 'https://cruzar.app'
+    // Share-snapshot URL bakes the wait into the path so the OG preview
+    // that WhatsApp/FB renders always shows a real number.
+    const hasSnapshot = typeof wait === 'number' && Number.isFinite(wait) && wait >= 0 && wait <= 240
+    const url = hasSnapshot ? `https://cruzar.app/w/${port.portId}/${wait}` : 'https://cruzar.app'
 
     if (navigator.share) {
       try {

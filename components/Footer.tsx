@@ -25,6 +25,9 @@ export function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-4 flex-wrap justify-center">
+          <Link href="/camaras" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+            {es ? 'Cámaras' : 'Cameras'}
+          </Link>
           <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
             {es ? 'Términos' : 'Terms'}
           </Link>

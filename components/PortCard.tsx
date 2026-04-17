@@ -96,7 +96,13 @@ export function PortCard({ port, signal }: Props) {
       ? `🌉 ${port.portName} — espera ahorita:\n${parts.join(' · ')}`
       : `🌉 ${port.portName} wait times right now:\n${parts.join(' · ')}`
 
-    const url = 'https://cruzar.app'
+    // Use the share-snapshot URL when we have a live vehicle number so
+    // the OG preview shows that real number — viral share primitive.
+    const v = port.vehicle
+    const hasSnapshot = typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 240
+    const url = hasSnapshot
+      ? `https://cruzar.app/w/${port.portId}/${v}`
+      : 'https://cruzar.app'
 
     let shared = false
     if (navigator.share) {

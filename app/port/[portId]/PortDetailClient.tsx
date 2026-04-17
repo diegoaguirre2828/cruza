@@ -184,12 +184,25 @@ export function PortDetailClient({ port, portId }: Props) {
   }, [portId])
 
   async function handleShare() {
-    const url = user
-      ? `https://cruzar.app/port/${portId}?ref=${user.id}`
-      : `https://cruzar.app/port/${portId}`
-    const text = es
-      ? `Tiempos de espera en vivo en ${port.portName} — cruzar.app`
-      : `Live wait times at ${port.portName} — cruzar.app`
+    // Use the share-snapshot URL when we have a live number: the wait time is
+    // baked into the URL path, so the OG preview rendered by WhatsApp / FB /
+    // Twitter always shows a real number. Each distinct wait value produces a
+    // distinct URL, which sidesteps the aggressive OG-image caching the
+    // homepage ran into with its previous "live" evergreen image.
+    const v = port.vehicle
+    const hasSnapshot = typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 240
+    const url = hasSnapshot
+      ? `https://cruzar.app/w/${portId}/${v}${user ? `?ref=${user.id}` : ''}`
+      : user
+        ? `https://cruzar.app/port/${portId}?ref=${user.id}`
+        : `https://cruzar.app/port/${portId}`
+    const text = hasSnapshot
+      ? es
+        ? `${port.portName} está en ${v} min ahorita — cruzar.app`
+        : `${port.portName} is ${v} min right now — cruzar.app`
+      : es
+        ? `Tiempos de espera en vivo en ${port.portName} — cruzar.app`
+        : `Live wait times at ${port.portName} — cruzar.app`
 
     if (navigator.share) {
       try {
