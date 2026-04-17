@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Camera } from 'lucide-react'
+import { Camera, Lock } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
+import { useAuth } from '@/lib/useAuth'
+import { useTier } from '@/lib/useTier'
 import { usePorts } from '@/lib/usePorts'
 import { getPortMeta } from '@/lib/portMeta'
 import { MEGA_REGION_LABELS } from '@/lib/useHomeRegion'
@@ -15,9 +17,13 @@ const REGION_ORDER: MegaRegion[] = ['rgv', 'laredo', 'coahuila-tx', 'el-paso', '
 
 export default function CamarasPage() {
   const { lang } = useLang()
+  const { user } = useAuth()
+  const { tier } = useTier()
   const es = lang === 'es'
   const { ports, loading } = usePorts()
   const [filter, setFilter] = useState<MegaRegion | 'all'>('all')
+  const isPaid = tier === 'pro' || tier === 'business'
+  const showLockCta = !isPaid
 
   // One tile per PORT (not per feed). A port with 5 angles (e.g., Mariposa)
   // used to render 5 tiles on the grid — cluttered + repetitive. The port
@@ -106,6 +112,39 @@ export default function CamarasPage() {
               : 'See the actual lines + the wait in minutes. All on one page. No Facebook scroll, no guessing.'}
           </p>
         </div>
+
+        {/* Primary in-content CTA for guests + free users. The floating
+            install sheet can get dismissed; this lives inline so anyone
+            scrolling sees the value + path concretely. */}
+        {showLockCta && (
+          <Link
+            href={user ? '/welcome' : '/signup?next=%2Fcamaras'}
+            className="group relative block mb-5 rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-orange-500/10 to-pink-500/15 overflow-hidden"
+          >
+            <div className="absolute -top-12 -right-10 w-40 h-40 bg-amber-400/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                <Lock className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-black text-amber-100 uppercase tracking-wide">
+                  🎁 {es ? '3 meses Pro gratis' : '3 months Pro free'}
+                </p>
+                <p className="text-sm sm:text-base font-bold text-white leading-tight mt-0.5">
+                  {es
+                    ? 'Desbloquea video en vivo de cada puente'
+                    : 'Unlock live video of every bridge'}
+                </p>
+                <p className="text-[11px] text-white/60 leading-snug mt-0.5">
+                  {es
+                    ? 'Agrega Cruzar a tu pantalla de inicio — auto-activa Pro por 90 días'
+                    : 'Add Cruzar to your home screen — auto-activates Pro for 90 days'}
+                </p>
+              </div>
+              <span className="flex-shrink-0 text-white text-lg font-black group-hover:translate-x-0.5 transition-transform">→</span>
+            </div>
+          </Link>
+        )}
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 py-2 mb-4">
           <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={tiles.length}>

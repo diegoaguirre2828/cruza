@@ -136,10 +136,21 @@ export default function SignupPage() {
       } catch { /* non-critical */ }
     }
     trackFunnel('signup_complete', { method: mode })
+    // Always route new signups through /welcome (install carrot + alert
+    // setup). Pass through any `next` param so /welcome forwards the user
+    // to their intended destination AFTER completing the install step.
+    // Previously, signups with `?next=/port/X` skipped /welcome entirely
+    // — they never saw the 3-month Pro install offer. That was a direct
+    // cause of the "signups but 0 PWA installs" pattern Diego flagged.
     const nextParam = typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search).get('next')
       : null
-    const destination = nextParam && nextParam.startsWith('/') ? nextParam : '/welcome'
+    const safeNext = nextParam && nextParam.startsWith('/') && nextParam !== '/welcome'
+      ? nextParam
+      : null
+    const destination = safeNext
+      ? `/welcome?next=${encodeURIComponent(safeNext)}`
+      : '/welcome'
     router.push(destination)
   }
 
