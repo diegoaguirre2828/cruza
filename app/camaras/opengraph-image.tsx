@@ -7,60 +7,23 @@ export const alt = 'Cruzar — cámaras en vivo de los puentes fronterizos'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-// Featured ports shown in the OG preview — chosen for highest search
-// volume in the FB groups where this link gets shared. Keep the set
-// small (6 max) so each tile stays legible at 1200×630 thumbnail size.
-const FEATURED_PORT_IDS = [
-  '230501', // Hidalgo
-  '230502', // Pharr
-  '230401', // Laredo I
-  '240201', // BOTA El Paso
-  '250401', // San Ysidro
-  '535504', // Gateway Brownsville
+// Featured ports surfaced in the preview. Chosen for highest search
+// volume in the FB groups where this link gets shared. Kept evergreen
+// (no runtime fetch) so the image always renders fast and never
+// ships stale numbers — the v1 attempt at pulling live /api/ports
+// at edge-render time returned 0-byte PNGs under load.
+const FEATURED: Array<{ portId: string; viewLabel: string }> = [
+  { portId: '230501', viewLabel: 'McAllen · Hidalgo' },
+  { portId: '230502', viewLabel: 'Reynosa · Pharr' },
+  { portId: '230401', viewLabel: 'Laredo · Gateway' },
+  { portId: '240201', viewLabel: 'Juárez · BOTA' },
+  { portId: '250401', viewLabel: 'Tijuana · San Ysidro' },
+  { portId: '535504', viewLabel: 'Matamoros · Gateway' },
 ]
 
-interface ApiPort {
-  portId: string
-  vehicle: number | null
-  isClosed: boolean
-}
-
-async function fetchLiveWaits(): Promise<Map<string, number | null>> {
-  const map = new Map<string, number | null>()
-  try {
-    const res = await fetch('https://cruzar.app/api/ports', {
-      next: { revalidate: 300 },
-    })
-    if (!res.ok) return map
-    const data = await res.json()
-    const ports: ApiPort[] = data.ports || []
-    for (const p of ports) {
-      map.set(p.portId, p.isClosed ? null : p.vehicle)
-    }
-  } catch {
-    /* fall back to empty map — tiles render with "—" */
-  }
-  return map
-}
-
-function tone(mins: number | null): { bg: string; border: string; fg: string; label: string } {
-  if (mins === null) return { bg: '#1f2937', border: '#374151', fg: '#9ca3af', label: '—' }
-  if (mins <= 20) return { bg: '#14532d', border: '#22c55e', fg: '#4ade80', label: `${mins} min` }
-  if (mins <= 45) return { bg: '#78350f', border: '#f59e0b', fg: '#fbbf24', label: `${mins} min` }
-  return { bg: '#7f1d1d', border: '#ef4444', fg: '#f87171', label: `${mins} min` }
-}
-
 export default async function CamarasOG() {
-  const waits = await fetchLiveWaits()
   const total = Object.values(BRIDGE_CAMERAS).reduce((n, feeds) => n + (feeds?.length || 0), 0)
   const portCount = Object.keys(BRIDGE_CAMERAS).length
-
-  const tiles = FEATURED_PORT_IDS.map((portId) => {
-    const meta = PORT_META[portId]
-    const name = meta?.localName || meta?.city || portId
-    const mins = waits.get(portId) ?? null
-    return { name, mins, tone: tone(mins) }
-  })
 
   return new ImageResponse(
     (
@@ -126,11 +89,11 @@ export default async function CamarasOG() {
         </div>
 
         {/* Headline — the pitch */}
-        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 22 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 28 }}>
           <div
             style={{
               color: '#ffffff',
-              fontSize: 60,
+              fontSize: 64,
               fontWeight: 900,
               letterSpacing: -2.5,
               lineHeight: 1.03,
@@ -142,7 +105,7 @@ export default async function CamarasOG() {
           <div
             style={{
               color: '#4ade80',
-              fontSize: 60,
+              fontSize: 64,
               fontWeight: 900,
               letterSpacing: -2.5,
               lineHeight: 1.03,
@@ -153,109 +116,109 @@ export default async function CamarasOG() {
           </div>
         </div>
 
-        {/* Live data grid — 3 columns × 2 rows of port tiles */}
+        {/* Port tile grid — 3×2 of featured ports */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: 12,
-            marginTop: 24,
+            marginTop: 28,
             flex: 1,
           }}
         >
-          {tiles.map((t) => (
-            <div
-              key={t.name}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 16,
-                padding: '14px 16px',
-                gap: 8,
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {FEATURED.map((t) => {
+            const meta = PORT_META[t.portId]
+            const localName = meta?.localName || meta?.city || t.portId
+            return (
+              <div
+                key={t.portId}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  background: 'linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 16,
+                  padding: '14px 16px',
+                  justifyContent: 'space-between',
+                  gap: 6,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 8,
+                      background: '#ef4444',
+                      display: 'flex',
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: '#fca5a5',
+                      fontSize: 13,
+                      fontWeight: 900,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                      display: 'flex',
+                    }}
+                  >
+                    Cámara en vivo
+                  </span>
+                </div>
                 <div
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 8,
-                    background: '#ef4444',
-                    display: 'flex',
-                  }}
-                />
-                <span
-                  style={{
-                    color: '#94a3b8',
-                    fontSize: 13,
-                    fontWeight: 800,
-                    letterSpacing: 1.2,
-                    textTransform: 'uppercase',
+                    color: '#ffffff',
+                    fontSize: 26,
+                    fontWeight: 900,
+                    letterSpacing: -0.8,
+                    lineHeight: 1.05,
                     display: 'flex',
                   }}
                 >
-                  📹 En vivo
-                </span>
+                  {localName}
+                </div>
+                <div
+                  style={{
+                    color: '#94a3b8',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    letterSpacing: 0.2,
+                    display: 'flex',
+                  }}
+                >
+                  {t.viewLabel}
+                </div>
               </div>
-              <div
-                style={{
-                  color: '#ffffff',
-                  fontSize: 24,
-                  fontWeight: 800,
-                  letterSpacing: -0.5,
-                  lineHeight: 1.1,
-                  display: 'flex',
-                }}
-              >
-                {t.name}
-              </div>
-              <div
-                style={{
-                  background: t.tone.bg,
-                  border: `1.5px solid ${t.tone.border}`,
-                  color: t.tone.fg,
-                  fontSize: 22,
-                  fontWeight: 900,
-                  padding: '6px 14px',
-                  borderRadius: 100,
-                  alignSelf: 'flex-start',
-                  display: 'flex',
-                }}
-              >
-                {t.tone.label}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        {/* Footer — social proof / coverage stats */}
+        {/* Footer — social proof / coverage stats + CTA */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop: 20,
+            marginTop: 18,
             paddingTop: 18,
             borderTop: '1px solid rgba(255,255,255,0.12)',
           }}
         >
-          <div style={{ display: 'flex', gap: 24 }}>
-            <span style={{ color: '#e2e8f0', fontSize: 20, fontWeight: 800, display: 'flex' }}>
+          <div style={{ display: 'flex', gap: 22, alignItems: 'center' }}>
+            <span style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 900, display: 'flex' }}>
               {portCount} puentes
             </span>
-            <span style={{ color: '#64748b', fontSize: 20, display: 'flex' }}>·</span>
-            <span style={{ color: '#e2e8f0', fontSize: 20, fontWeight: 800, display: 'flex' }}>
+            <span style={{ color: '#475569', fontSize: 22, display: 'flex' }}>·</span>
+            <span style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 900, display: 'flex' }}>
               {total} cámaras
             </span>
-            <span style={{ color: '#64748b', fontSize: 20, display: 'flex' }}>·</span>
-            <span style={{ color: '#e2e8f0', fontSize: 20, fontWeight: 800, display: 'flex' }}>
+            <span style={{ color: '#475569', fontSize: 22, display: 'flex' }}>·</span>
+            <span style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 900, display: 'flex' }}>
               Gratis
             </span>
           </div>
-          <span style={{ color: '#4ade80', fontSize: 22, fontWeight: 900, letterSpacing: -0.5 }}>
+          <span style={{ color: '#4ade80', fontSize: 24, fontWeight: 900, letterSpacing: -0.5 }}>
             Abrir →
           </span>
         </div>
