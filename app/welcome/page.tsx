@@ -332,7 +332,14 @@ function WelcomeInner() {
 
           <div className="mt-5 text-center">
             <button
-              onClick={() => setStep(2)}
+              onClick={() => {
+                const msg = es
+                  ? '¿Seguro? Pierdes los 3 meses de Pro gratis. Esta oferta no regresa.'
+                  : "Sure? You'll lose the 3 months of free Pro. This offer doesn't come back."
+                if (typeof window !== 'undefined' && window.confirm(msg)) {
+                  setStep(2)
+                }
+              }}
               className="text-xs text-amber-200/80 hover:text-amber-100 underline underline-offset-2"
             >
               {es ? 'Lo haré después (saltarme los 3 meses)' : "I'll do it later (skip the 3 months)"}

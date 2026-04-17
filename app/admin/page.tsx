@@ -11,6 +11,15 @@ import { ViralLoopDetail } from '@/components/admin/ViralLoopDetail'
 import { DivergenceTile } from '@/components/admin/DivergenceTile'
 import { GrowthEventsTile } from '@/components/admin/GrowthEventsTile'
 import { FACEBOOK_GROUPS as SHARED_FB_GROUPS } from '@/lib/facebookGroups'
+import { getPortMeta } from '@/lib/portMeta'
+
+// Resolve a portId to a human label for admin views. Prefers
+// localName → city, falls back to the raw portId if neither is set.
+function portLabel(portId: string): string {
+  const meta = getPortMeta(portId)
+  const name = meta.localName || meta.city
+  return name ? `${name} (${portId})` : portId
+}
 
 const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 
@@ -2027,8 +2036,8 @@ export default function AdminPage() {
                         {userDetail.reports.map(r => (
                           <div key={r.id} className="text-xs bg-gray-50 rounded px-2 py-1.5 flex justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <span className="font-mono text-gray-500">{r.port_id}</span>
-                              <span className="ml-2 text-gray-700">{r.report_type}</span>
+                              <span className="text-gray-700 font-semibold">{portLabel(r.port_id)}</span>
+                              <span className="ml-2 text-gray-500">· {r.report_type}</span>
                               {r.wait_minutes != null && <span className="ml-2 text-gray-500">{r.wait_minutes} min</span>}
                             </div>
                             <span className="text-gray-400 whitespace-nowrap">{new Date(r.created_at).toLocaleDateString()}</span>
@@ -2048,7 +2057,7 @@ export default function AdminPage() {
                       <div className="space-y-1">
                         {userDetail.alerts.map(a => (
                           <div key={a.id} className="text-xs bg-gray-50 rounded px-2 py-1.5 flex justify-between">
-                            <span><span className="font-mono">{a.port_id}</span> · {a.lane_type} · ≤{a.threshold_minutes} min</span>
+                            <span><span className="font-semibold">{portLabel(a.port_id)}</span> · {a.lane_type} · ≤{a.threshold_minutes} min</span>
                             <span className={a.active ? 'text-green-600' : 'text-gray-400'}>{a.active ? 'active' : 'off'}</span>
                           </div>
                         ))}
@@ -2059,7 +2068,7 @@ export default function AdminPage() {
                   {userDetail.saved_ports.length > 0 && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Saved crossings</p>
-                      <p className="text-xs font-mono text-gray-600">{userDetail.saved_ports.join(', ')}</p>
+                      <p className="text-xs text-gray-700">{userDetail.saved_ports.map(portLabel).join(', ')}</p>
                     </div>
                   )}
                 </div>

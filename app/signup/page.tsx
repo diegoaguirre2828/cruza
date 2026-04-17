@@ -93,6 +93,14 @@ export default function SignupPage() {
     }
   }, [])
 
+  // FB / IG / WhatsApp / TikTok in-app browser check. Signup inside an
+  // IAB is a dead end: cookies don't survive the escape to Safari, so
+  // the user has to signup AGAIN after escaping to actually install and
+  // claim Pro. Block the signup form here and point them at the real
+  // browser first, so the signup they complete actually "sticks."
+  const isIab = typeof navigator !== 'undefined' &&
+    /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Musical_ly|Bytedance|TikTok|LINE|MicroMessenger|Messenger|WhatsApp|Twitter|X-App|Snapchat|GSA\/|Pinterest|RedditMobile/i.test(navigator.userAgent || '')
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -175,6 +183,60 @@ export default function SignupPage() {
     }
     setMagicSent(true)
     setLoading(false)
+  }
+
+  // FB / IG / TikTok / WhatsApp webview signup is a dead end: cookies
+  // don't survive the escape to Safari, and the 3-month Pro grant can
+  // only fire on an installed PWA. Block the form, show clear escape.
+  if (isIab) {
+    const href = typeof window !== 'undefined' ? window.location.href : 'https://cruzar.app/signup'
+    return (
+      <main className="min-h-screen bg-gradient-to-br from-amber-500 via-orange-600 to-pink-700 text-white flex items-center justify-center px-4 py-8">
+        <div className="w-full max-w-sm">
+          <div className="bg-white/15 backdrop-blur-sm border border-white/25 rounded-3xl p-6 text-center">
+            <p className="text-4xl leading-none mb-3">⚠️</p>
+            <h1 className="text-2xl font-black leading-tight">
+              {es
+                ? 'Abre cruzar.app en Safari primero'
+                : 'Open cruzar.app in Safari first'}
+            </h1>
+            <p className="text-sm text-amber-100 mt-3 leading-snug">
+              {es
+                ? 'Estás usando el navegador de Facebook / Instagram. No puede agregar apps a tu pantalla de inicio, y los 3 meses de Pro gratis solo se activan con la app instalada.'
+                : "You're in Facebook / Instagram's built-in browser. It can't add apps to your home screen, and the 3 months of free Pro only activates with the app installed."}
+            </p>
+            <div className="mt-5 bg-white/15 rounded-2xl p-4 text-left space-y-2 text-[13px]">
+              <p className="font-bold">{es ? 'iPhone:' : 'iPhone:'}</p>
+              <p className="text-amber-100 leading-snug">
+                {es
+                  ? 'Toca los 3 puntitos (⋯) arriba a la derecha → "Abrir en Safari"'
+                  : 'Tap the 3 dots (⋯) top-right → "Open in Safari"'}
+              </p>
+              <p className="font-bold mt-2">{es ? 'Android:' : 'Android:'}</p>
+              <p className="text-amber-100 leading-snug">
+                {es
+                  ? 'Toca los 3 puntitos (⋮) arriba → "Abrir en navegador" → Chrome'
+                  : 'Tap the 3 dots (⋮) top → "Open in browser" → Chrome'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                try { navigator.clipboard.writeText(href).catch(() => {}) } catch {}
+              }}
+              className="mt-5 w-full bg-white text-orange-700 font-black py-3 rounded-2xl"
+            >
+              {es ? 'Copiar link pa\' pegar en Safari' : 'Copy link to paste in Safari'}
+            </button>
+            <p className="mt-3 text-[11px] text-amber-100/80 leading-snug">
+              {es
+                ? 'Una vez en Safari, pega el link y registrate ahí pa\' que la app funcione bien.'
+                : 'Once in Safari, paste the link and sign up there so the app works properly.'}
+            </p>
+          </div>
+        </div>
+      </main>
+    )
   }
 
   return (
