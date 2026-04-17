@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/useAuth'
 import { useRouter } from 'next/navigation'
 import { Copy, Check, ExternalLink, RefreshCw } from 'lucide-react'
 import { HeroGenerator } from '@/components/admin/HeroGenerator'
+import { OpsGlance } from '@/components/admin/OpsGlance'
 import { DataExplorer } from '@/components/admin/DataExplorer'
 import { ViralLoopDetail } from '@/components/admin/ViralLoopDetail'
 import { DivergenceTile } from '@/components/admin/DivergenceTile'
@@ -507,6 +508,11 @@ export default function AdminPage() {
           <h1 className="text-xl font-bold text-gray-900">🔐 Admin Panel</h1>
           <p className="text-xs text-gray-400">cruzar.app</p>
         </div>
+
+        {/* Ops at a glance — live counters tile Diego asked for. Renders
+            at the top of /admin so a login sweep tells him what's healthy
+            or broken in one read. Auto-refresh 60s. */}
+        <OpsGlance />
 
         {/* Section picker — top-level groups that reduce the flat
             12-tab density to 4 manageable sections. Diego's
