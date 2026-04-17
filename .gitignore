@@ -47,3 +47,5 @@ fb-poster/cookies.json
 fb-poster/tiktok-cookies.json
 fb-poster/.env
 fb-poster/node_modules
+
+.env*.local

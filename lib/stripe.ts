@@ -23,7 +23,7 @@ export const PLANS = {
     priceId: STRIPE_PRO_PRICE_ID!,
     features: [
       'No ads',
-      'AI wait time predictions',
+      'Historical wait time patterns',
       'Custom alerts',
       'Full route optimizer',
       'Save unlimited crossings',

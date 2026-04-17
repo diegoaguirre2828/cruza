@@ -19,7 +19,7 @@ const CROSSINGS = [
   { portId: '535503', name: 'Los Tomates',         lat: 26.0416, lng: -97.7367 },
   { portId: '230401', name: 'Laredo I',            lat: 27.4994, lng: -99.5076 },
   { portId: '230402', name: 'Laredo II',           lat: 27.5628, lng: -99.5019 },
-  { portId: '230403', name: 'Colombia',            lat: 27.6505, lng: -99.5539 },
+  { portId: '230403', name: 'Colombia',            lat: 27.6506, lng: -99.5539 },
   { portId: '230404', name: 'Laredo IV',           lat: 27.5533, lng: -99.4786 },
   { portId: '230301', name: 'Eagle Pass I',        lat: 28.7091, lng: -100.4995 },
   { portId: '230302', name: 'Eagle Pass II',       lat: 28.7150, lng: -100.5010 },

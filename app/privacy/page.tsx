@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-4 space-y-1">
               <li>To provide live border wait times and personalized features</li>
               <li>To send you alerts when wait times drop at crossings you follow</li>
-              <li>To improve AI predictions using aggregated, anonymous crossing data</li>
+              <li>To improve historical wait time patterns using aggregated, anonymous crossing data</li>
               <li>To process subscription payments via Stripe (we never store card details)</li>
             </ul>
           </section>
