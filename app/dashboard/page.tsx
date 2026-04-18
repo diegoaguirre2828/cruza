@@ -18,6 +18,7 @@ import { FoundingMemberBadge } from '@/components/FoundingMemberBadge'
 import { trackEvent } from '@/lib/trackEvent'
 import { PostUpgradeTour } from '@/components/PostUpgradeTour'
 import { InstallGateModal, useInstallGate, needsInstallGate } from '@/components/InstallGateModal'
+import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
 
@@ -92,6 +93,20 @@ export default function DashboardPage() {
     if (user) loadData()
   }, [user, authLoading, router, loadData])
 
+  // iOS Safari non-installed redirect — send authenticated iOS Safari
+  // users to the dedicated /ios-install walkthrough. Same rationale as
+  // /welcome: the generic DashboardInstallBanner under-performs on iOS.
+  // Preserves current path via ?next= so they land back on /dashboard
+  // once installed. Android keeps the existing banner flow.
+  useEffect(() => {
+    if (authLoading || !user) return
+    if (typeof window === 'undefined') return
+    if (window.location.pathname === '/ios-install') return
+    if (!isIosSafari()) return
+    if (isPwaInstalled()) return
+    router.replace(`/ios-install?next=${encodeURIComponent('/dashboard')}`)
+  }, [user, authLoading, router])
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -154,7 +169,16 @@ export default function DashboardPage() {
     // work unreliably in desktop Chrome tabs). Intercept the flow with
     // the install walkthrough BEFORE writing the alert row, so users
     // don't create silent alerts that never fire.
+    //
+    // iOS Safari users get routed to the dedicated /ios-install page
+    // instead of the generic modal — the 3-tap Safari-specific flow
+    // converts much better than a cross-platform modal.
     if (needsInstallGate()) {
+      if (isIosSafari() && !isPwaInstalled()) {
+        const here = typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+        router.push(`/ios-install?next=${encodeURIComponent(here)}`)
+        return
+      }
       installGate.show('alerts')
       return
     }

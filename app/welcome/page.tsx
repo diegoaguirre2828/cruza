@@ -10,6 +10,7 @@ import { PushPermissionPrompt } from '@/components/PushPermissionPrompt'
 import { getPortMeta } from '@/lib/portMeta'
 import { haversineKm } from '@/lib/geo'
 import { createClient } from '@/lib/auth'
+import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 import type { PortWaitTime } from '@/types'
 
 // Forced activation flow. Every new signup lands here before the dashboard.
@@ -52,6 +53,28 @@ function WelcomeInner() {
   // followup because they've already "won" something.
   const [step, setStep] = useState<1 | 2>(1)
   const [alertedPortName, setAlertedPortName] = useState<string>('')
+
+  // iOS Safari non-installed redirect — send authenticated iOS Safari
+  // users straight to /ios-install, which is the dedicated 3-tap
+  // Safari-only walkthrough. Funnel data 2026-04-17: iOS is 2× Android
+  // in registered users but iOS users mostly fail the generic install
+  // carrot on step 1. A Safari-specific page converts far better.
+  //
+  // Preserves ?next= so after install the user still lands where they
+  // were headed. Android/desktop continue through the normal step-1
+  // install carrot.
+  useEffect(() => {
+    if (authLoading || !user) return
+    if (typeof window === 'undefined') return
+    if (window.location.pathname === '/ios-install') return
+    if (!isIosSafari()) return
+    if (isPwaInstalled()) return
+    const next = params?.get('next')
+    const dest = next
+      ? `/ios-install?next=${encodeURIComponent(next)}`
+      : '/ios-install'
+    router.replace(dest)
+  }, [user, authLoading, router, params])
 
   // Redirect guests to signup
   useEffect(() => {

@@ -10,6 +10,7 @@ import { useLang } from '@/lib/LangContext'
 import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
 import { getPortMeta } from '@/lib/portMeta'
 import { portIdFromSlug } from '@/lib/portSlug'
+import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 
 type Mode = 'password' | 'magic' | 'phone'
 
@@ -82,6 +83,15 @@ export default function SignupPage() {
 
   // Track page view on mount
   useState(() => { trackFunnel('signup_page_view') })
+
+  // iOS Safari persona flag — swap the hero subheadline to a
+  // persona-specific version for iPhone Safari users so they know
+  // they'll get the 3-tap walkthrough (the /ios-install page)
+  // after signup. Evaluated client-side to avoid SSR mismatch.
+  const [iosPersona, setIosPersona] = useState(false)
+  useEffect(() => {
+    setIosPersona(isIosSafari() && !isPwaInstalled())
+  }, [])
 
   // Contextual hero — if user came from a specific port page (via
   // ?next=/port/X or ?next=/cruzar/slug), pull that port's name so the
@@ -303,6 +313,19 @@ export default function SignupPage() {
             </span>
           </div>
         </div>
+
+        {/* iOS Safari persona note — iPhone users get the 3-tap
+            walkthrough on /ios-install after signup. Keeps the 3-month
+            Pro promise intact; just addresses their specific friction. */}
+        {iosPersona && (
+          <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl px-3.5 py-2.5">
+            <p className="text-[11px] text-amber-800 dark:text-amber-200 leading-snug">
+              {es
+                ? 'Los de iPhone — te enseñamos la instalación en 3 tactos. En Android ya la tienen. Los 3 meses de Pro son iguales.'
+                : "iPhone users — we'll walk you through the install in 3 taps. Android already has it. Same 3 months Pro free either way."}
+            </p>
+          </div>
+        )}
 
         {/* Google — dominant fast path */}
         <div className="mb-4" onClick={() => trackFunnel('signup_method_click', { method: 'google' })}>
