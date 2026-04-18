@@ -8,6 +8,8 @@ import { GoogleButton } from '@/components/GoogleButton'
 import { PhoneAuthForm } from '@/components/PhoneAuthForm'
 import { useLang } from '@/lib/LangContext'
 import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
+import { getPortMeta } from '@/lib/portMeta'
+import { portIdFromSlug } from '@/lib/portSlug'
 
 type Mode = 'password' | 'magic' | 'phone'
 
@@ -80,6 +82,27 @@ export default function SignupPage() {
 
   // Track page view on mount
   useState(() => { trackFunnel('signup_page_view') })
+
+  // Contextual hero — if user came from a specific port page (via
+  // ?next=/port/X or ?next=/cruzar/slug), pull that port's name so the
+  // headline names the bridge they were checking. Cold visitors see the
+  // generic copy; hot visitors get personalized intent reflected back.
+  const [contextPortName, setContextPortName] = useState<string | null>(null)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const next = new URLSearchParams(window.location.search).get('next')
+    if (!next) return
+    let pid: string | null = null
+    const portMatch = next.match(/^\/port\/(\d+)/)
+    const slugMatch = next.match(/^\/cruzar\/([a-z0-9-]+)/i)
+    if (portMatch) pid = portMatch[1]
+    else if (slugMatch) pid = portIdFromSlug(slugMatch[1])
+    if (pid) {
+      const meta = getPortMeta(pid)
+      const name = meta.localName || meta.city
+      if (name) setContextPortName(name)
+    }
+  }, [])
 
   // Capture ?ref= query param from URL (set by /r/[code] redirect)
   // and store it in localStorage for post-signup completion
@@ -255,9 +278,13 @@ export default function SignupPage() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 leading-[1.1]">
-            {es
-              ? 'Te avisamos cuando tu puente esté rápido — antes de salir.'
-              : 'Get pinged when your bridge clears — before you leave.'}
+            {contextPortName
+              ? (es
+                  ? `Te avisamos cuando ${contextPortName} esté rápido — antes de salir.`
+                  : `Get pinged when ${contextPortName} clears — before you leave.`)
+              : (es
+                  ? 'Te avisamos cuando tu puente esté rápido — antes de salir.'
+                  : 'Get pinged when your bridge clears — before you leave.')}
           </h1>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 leading-snug">
             {es
