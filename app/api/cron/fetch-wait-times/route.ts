@@ -76,6 +76,24 @@ export async function GET(req: NextRequest) {
     fetch(`${base}/api/cron/report-quality?secret=${s}`).catch(() => {})
     fetch(`${base}/api/cron/health-check?secret=${s}`).catch(() => {})
 
+    // FB-page social posting — replaces the Make.com scenario that
+    // was firing only 3×/week instead of the intended 4×/day. We're
+    // already running every 15 min, so detect the 4 posting windows
+    // (5:30 / 11:30 / 15:30 / 19:30 America/Chicago = roughly 10:30 /
+    // 16:30 / 20:30 / 00:30 UTC depending on DST) and fire the social
+    // post once per window. The /api/social/next-post endpoint has
+    // its own dedupe (180-min skip), so even if we fire the wrong
+    // 15-min slot it won't double-post.
+    const utcMinute = now.getUTCMinutes()
+    const utcHour = now.getUTCHours()
+    // Posting hours in UTC (approx CT, daylight-saving aware via env override)
+    const postHoursUtc = (process.env.SOCIAL_POST_HOURS_UTC || '10,16,20,0')
+      .split(',').map((h) => parseInt(h.trim(), 10)).filter((n) => Number.isFinite(n))
+    if (postHoursUtc.includes(utcHour) && utcMinute < 15) {
+      // Fire-and-forget — dedupe protects against duplicates
+      fetch(`${base}/api/social/next-post`).catch(() => {})
+    }
+
     return NextResponse.json({
       saved: rows.length,
       weatherClusters: weatherMap.size,
