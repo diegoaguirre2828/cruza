@@ -53,6 +53,33 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // ALL hooks must be declared BEFORE any conditional return — this
+  // page was throwing "Rendered more hooks than during the previous
+  // render" because useCallback below used to live AFTER the auth
+  // early-return blocks. Sentry: 4 events of that error in 24h.
+  const run = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const qs = new URLSearchParams({
+        region,
+        day: String(day),
+        hour: String(hour),
+      })
+      const res = await fetch(`/api/planner?${qs}`)
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}))
+        throw new Error(d.error || `HTTP ${res.status}`)
+      }
+      const data = (await res.json()) as PlannerResult
+      setResult(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLoading(false)
+    }
+  }, [region, day, hour])
+
   if (authLoading) {
     return <main className="min-h-screen bg-gray-50 dark:bg-gray-950" />
   }
@@ -80,29 +107,6 @@ export default function PlannerPage() {
       </main>
     )
   }
-
-  const run = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const qs = new URLSearchParams({
-        region,
-        day: String(day),
-        hour: String(hour),
-      })
-      const res = await fetch(`/api/planner?${qs}`)
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        throw new Error(d.error || `HTTP ${res.status}`)
-      }
-      const data = (await res.json()) as PlannerResult
-      setResult(data)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [region, day, hour])
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">

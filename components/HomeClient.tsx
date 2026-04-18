@@ -22,6 +22,7 @@ import { RegionalSnapshot } from '@/components/RegionalSnapshot'
 import { InstallPill } from '@/components/InstallPill'
 import { ContributionTodayPill } from '@/components/ContributionTodayPill'
 import { ServicesPill } from '@/components/ServicesPill'
+import { CirclesPill } from '@/components/CirclesPill'
 import { HolidayOverlay } from '@/components/HolidayOverlay'
 import { ReciprocityCard } from '@/components/ReciprocityCard'
 import { ContextualNudge } from '@/components/ContextualNudge'
@@ -335,6 +336,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             <WeatherHook variant="pill" />
             {tier !== 'guest' && <GuardianProgressCard variant="pill" />}
             <ServicesPill />
+            {tier !== 'guest' && <CirclesPill />}
             {tier !== 'guest' && <ContributionTodayPill />}
           </div>
         )}
