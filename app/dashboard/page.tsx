@@ -10,6 +10,7 @@ import { WaitBadge } from '@/components/WaitBadge'
 import { useLang } from '@/lib/LangContext'
 import { Bell, Star, LogOut, ArrowLeft, Plus, Trash2, Route, Settings, Lock, Navigation, Building2, User } from 'lucide-react'
 import { PushToggle } from '@/components/PushToggle'
+import { PushPermissionPrompt } from '@/components/PushPermissionPrompt'
 import { PortSearch } from '@/components/PortSearch'
 import { DashboardInstallBanner } from '@/components/DashboardInstallBanner'
 import { PostWelcomeTour } from '@/components/PostWelcomeTour'
@@ -256,6 +257,13 @@ export default function DashboardPage() {
 
         {/* Install nag — shown to non-standalone users until they install */}
         <DashboardInstallBanner />
+
+        {/* Push permission warm-up. Targets the 23/30 Pro-without-alerts
+            cohort: installed users who never granted push so their
+            "Pro alerts" can never actually fire on their phone. Renders
+            iff push is supported, NOT subscribed, and not dismissed in
+            the last 7 days. */}
+        <DashboardPushNudgeBlock />
 
         {/* Business portal shortcut — prominent for business users */}
         {isBusiness && (
@@ -697,6 +705,34 @@ interface Circle {
   owner_id: string
   is_owner: boolean
   members: CircleMember[]
+}
+
+function DashboardPushNudgeBlock() {
+  const { supported, subscribed } = usePushNotifications()
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    if (!supported || subscribed) { setShow(false); return }
+    try {
+      const dismissed = localStorage.getItem('cruzar_dash_push_dismissed_at')
+      if (dismissed) {
+        const ageDays = (Date.now() - parseInt(dismissed, 10)) / (1000 * 60 * 60 * 24)
+        if (ageDays < 7) { setShow(false); return }
+      }
+    } catch {}
+    setShow(true)
+  }, [supported, subscribed])
+  if (!show) return null
+  return (
+    <div className="mb-4">
+      <PushPermissionPrompt
+        onDone={(granted) => { if (granted) setShow(false) }}
+        onDismiss={() => {
+          try { localStorage.setItem('cruzar_dash_push_dismissed_at', String(Date.now())) } catch {}
+          setShow(false)
+        }}
+      />
+    </div>
+  )
 }
 
 function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
