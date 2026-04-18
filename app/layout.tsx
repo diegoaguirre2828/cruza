@@ -15,6 +15,7 @@ import { GlobalInstallPromptCapture } from "@/components/GlobalInstallPromptCapt
 import { ClaimProInPwa } from "@/components/ClaimProInPwa";
 import { PwaGrantCelebration } from "@/components/PwaGrantCelebration";
 import { SessionPingMount } from "@/components/SessionPingMount";
+import { TwaPromoBanner } from "@/components/TwaPromoBanner";
 import { MetaPixel } from "@/components/MetaPixel";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -111,6 +112,7 @@ export default function RootLayout({
             <ClaimProInPwa />
             <PwaGrantCelebration />
             <SessionPingMount />
+            <TwaPromoBanner />
           </SWRProvider>
           </LangProvider>
         </ThemeProvider>
