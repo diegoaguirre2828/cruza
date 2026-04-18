@@ -183,6 +183,113 @@ si cruzan por hidalgo, pharr o anzalduas, checa cruzar.app/camaras. te muestra l
 
 ---
 
+---
+
+# V2 — Alert-conversion focused (added 2026-04-18 after /camaras CTA reframe)
+
+**Why a v2:** /camaras is doing its job (217 visits, top page) but visitors look-and-leave because the page used to push "3 months Pro free / unlock live video" — Pro features they didn't ask for. After commit `ce54295` the CTA + sticky bar both lead with **"avísame cuando mi puente baje"** (ping me when my bridge clears). Posts that match the page's promise convert harder. These v2 variants mention the alert/ping value naturally, so the click expectation lines up with the landing experience.
+
+## V2 — Casual mention of the alert hook (drop in any group)
+
+### V13 — "I don't check anymore" framing
+
+```
+ya no ando checando el puente cada 10 min, cruzar.app/camaras me avisa cuando baja sola. cambio de vida pa los que cruzan diario
+```
+
+### V14 — Discovery + alert combined
+
+```
+encontré una pagina donde puedes ver todas las camaras de los puentes en vivo Y te puede avisar cuando baje el tuyo. cruzar.app/camaras pa los que andan cruzando todos los días
+```
+
+### V15 — Bridge-specific with alert promise
+
+```
+checa cruzar.app/cruzar/los-tomates pa ver la cámara, y si haces cuenta te avisa cuando baje. yo así me ahorré como hora y media la semana pasada
+```
+
+### V16 — Tired-of-waiting framing
+
+```
+me cansé de salir y agarrar el puente lleno. ahora cruzar.app/camaras me dice cuando bajan los minutos antes de que salga. nomás abro la notificación cuando llega
+```
+
+## V2 — Reply scripts (when someone vents)
+
+### V17 — Reply to "estuve dos horas en el puente"
+
+```
+nombre. yo desde que uso cruzar.app/camaras ya me avisa antes de salir. la cuenta es gratis y la notificación cuando baja vale la pena
+```
+
+### V18 — Reply to "¿alguien sabe cuánto está [bridge]?"
+
+```
+ahorita en cruzar.app/cruzar/[slug] anda en [X] min y la cámara se ve la fila no muy larga. ahí tambien le pones que te avise cuando baje pa la próxima
+```
+
+(Replace `[slug]` and `[X]` with real slug + wait you just looked up.)
+
+## V2 — Original posts (start a thread)
+
+### V19 — Mom/family framing (high engagement in RGV groups)
+
+```
+le activé las alertas a mi mamá pa el puente nuevo en cruzar.app/camaras y ya no me llama preguntando como esta. una cosita gratis que me ha salvado mil llamadas
+```
+
+### V20 — Truck/work commute framing
+
+```
+si trabajan en mexico y cruzan diario, cruzar.app/camaras te muestra los puentes en vivo y te avisa cuando baje el tuyo. ya no salgo a ciegas en la mañana
+```
+
+### V21 — Comparison framing
+
+```
+antes me asomaba al facebook a ver si alguien dijo cómo estaba el puente. ahora cruzar.app/camaras me lo enseña en vivo y me avisa cuando baja. mucho menos estresante
+```
+
+### V22 — Time-of-day specific (post in mornings before peak)
+
+```
+acabo de checar cruzar.app/cruzar/hidalgo, anda flojo a esta hora. si están pensando cruzar es buen momento. tambien puedes activar alertas pa la próxima
+```
+
+(Pick the bridge slug specific to the group's region — `hidalgo` for Reynosa groups, `los-tomates` for Matamoros, `juarez-lincoln` for Laredo, `bota` for Juárez/El Paso.)
+
+### V23 — Tip post with embedded conversion
+
+```
+tip pa cruzantes diarios: en cruzar.app/camaras puedes ver todas las cámaras Y poner tu puente favorito pa que te avise cuando baje. la cuenta gratis vale la pena nomás por eso
+```
+
+## V2 — High-empathy reply (when someone says "ya no aguanto")
+
+### V24
+
+```
+te entiendo, está pesado. yo desde que uso cruzar.app/camaras ya no salgo sin saber como esta. tiene cámaras en vivo y te avisa cuando baja. cambio total pa la rutina
+```
+
+---
+
+## V2 conversion notes (Sidera DNA loaded)
+
+What makes V2 different from V1:
+- **Promise alignment**: post mentions "te avisa cuando baje" → user lands on /camaras → sticky bar at 30s says exactly that → tap → signup. Click expectation matches landing experience = lower bounce
+- **Action verb in present tense**: "me avisa", "ya no salgo sin", "me dice" — Nati is currently using it, not recommending it as a future thing. Higher trust
+- **Specific outcome**: "ya no agarro el puente lleno", "ya no me llama mi mama", "me ahorré hora y media" — concrete results > vague benefits
+- **Light emotional anchor**: "cambio de vida", "cambio total", "ya no jodo a nadie" — small frame of relief, not big sales pitch
+
+## When to use V1 vs V2
+
+- **V1 (original camera-focus scripts):** when the user just needs a wait time answered. The link is the answer. Conversion is bonus.
+- **V2 (alert-focus scripts):** when posting an ORIGINAL post or replying to a vent/complaint. You're not just answering the question — you're inviting them to never have the question again. Higher conversion ceiling but reads slightly more "I have a thing to share." Use ~40% V1, 60% V2.
+
+---
+
 ## When to retire / replace these
 
 If conversion drops or a group flags Nati's posts → rotate to fresh variants. The 12 above are the starting batch. Add 5-10 more after first week based on which ones got the best engagement.
