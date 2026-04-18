@@ -96,6 +96,11 @@ export function PortDetailClient({ port, portId }: Props) {
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
+  // Whether the current user already has an active alert for THIS
+  // port. Drives the one-tap "Create alert" CTA near the hero: if
+  // they have one we show "Alert active · manage", otherwise we show
+  // the big create-alert button. Null = still loading.
+  const [hasAlertForPort, setHasAlertForPort] = useState<boolean | null>(null)
   type CommunitySignal = { type: 'accident' | 'inspection' | 'worse' | 'better'; count: number }
   const [communitySignal, setCommunitySignal] = useState<CommunitySignal | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
@@ -184,6 +189,28 @@ export function PortDetailClient({ port, portId }: Props) {
     }
   }, [portId])
 
+  // Check whether the authenticated user already has an alert for this
+  // port. Drives the one-tap "Create alert for this bridge" CTA — if
+  // an alert exists we show a subtle "active · manage" pill instead
+  // so we don't badger the user about a hook they already set.
+  useEffect(() => {
+    if (!user) { setHasAlertForPort(null); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/alerts', { credentials: 'include' })
+        if (!res.ok) { if (!cancelled) setHasAlertForPort(false); return }
+        const data = await res.json()
+        const alerts: Array<{ port_id: string }> = Array.isArray(data?.alerts) ? data.alerts : []
+        const hasOne = alerts.some(a => a.port_id === portId)
+        if (!cancelled) setHasAlertForPort(hasOne)
+      } catch {
+        if (!cancelled) setHasAlertForPort(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [user, portId, alertSaved])
+
   async function handleShare() {
     // Use the share-snapshot URL when we have a live number: the wait time is
     // baked into the URL path, so the OG preview rendered by WhatsApp / FB /
@@ -235,7 +262,15 @@ export function PortDetailClient({ port, portId }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ portId, laneType: 'vehicle', thresholdMinutes: alertThreshold }),
     })
-    if (res.ok) setAlertSaved(true)
+    if (res.ok) {
+      setAlertSaved(true)
+      // Fuse push permission with alert creation. Any listener (the
+      // dashboard push nudge, a future in-page prompt) can react to
+      // this event to surface the push prompt immediately.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('cruzar:alert-created', { detail: { portId } }))
+      }
+    }
     setAlertSaving(false)
   }
 
@@ -438,6 +473,37 @@ export function PortDetailClient({ port, portId }: Props) {
         preferredLane={null}
         exchangeRate={null}
       />
+
+      {/* One-tap alert CTA — fights the 89% one-and-done retention
+          problem. Users who land here came for a wait time number;
+          the single highest-leverage thing we can do is turn them
+          into someone with a reason to come back. If they already
+          have an alert for THIS port, we show a subtle "active"
+          pill with a manage link instead. Auth-only path — guests
+          hit the LockedFeatureWall above. */}
+      {user && hasAlertForPort === false && (
+        <Link
+          href={`/dashboard?tab=alerts&portId=${encodeURIComponent(portId)}`}
+          className="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-center font-black py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-all"
+        >
+          {es
+            ? `🔔 Avísame cuando baje este puente`
+            : `🔔 Alert me when this bridge clears`}
+        </Link>
+      )}
+      {user && hasAlertForPort === true && (
+        <Link
+          href="/dashboard?tab=alerts"
+          className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl px-4 py-3 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+        >
+          <p className="text-sm font-bold text-green-800 dark:text-green-300">
+            {es ? '✓ Alerta activa' : '✓ Alert active'}
+          </p>
+          <span className="text-xs font-semibold text-green-700 dark:text-green-400">
+            {es ? 'Administrar →' : 'Manage →'}
+          </span>
+        </Link>
+      )}
 
       {/* Viral share prompt — appears after 10s on the page */}
       <SharePrompt port={port} />

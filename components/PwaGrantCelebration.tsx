@@ -26,17 +26,38 @@ export function PwaGrantCelebration() {
   const es = lang === 'es'
   const [show, setShow] = useState(false)
   const [days, setDays] = useState<number | null>(null)
+  // alertCount === null means we haven't checked yet. Once checked,
+  // 0 → push the user straight into the alert-setup flow (retention
+  // lever #1: the single biggest predictor of a returning user is
+  // whether they have an active alert). >0 → keep the generic
+  // dashboard CTA since they already have the hook.
+  const [alertCount, setAlertCount] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const handler = (event: Event) => {
+    const handler = async (event: Event) => {
       const detail = (event as CustomEvent<{ days?: number }>).detail
       try {
         if (localStorage.getItem(CELEBRATION_SEEN_KEY)) return
       } catch { /* ignore */ }
       setDays(detail?.days ?? 90)
       setShow(true)
+      // Fetch alert count so the CTA can deep-link to the create-alert
+      // flow for users who haven't set one up yet. Non-blocking — if
+      // this fails we fall back to the generic /dashboard link.
+      try {
+        const res = await fetch('/api/alerts', { credentials: 'include' })
+        if (res.ok) {
+          const data = await res.json()
+          const count = Array.isArray(data?.alerts) ? data.alerts.length : 0
+          setAlertCount(count)
+        } else {
+          setAlertCount(0)
+        }
+      } catch {
+        setAlertCount(0)
+      }
     }
 
     window.addEventListener('cruzar:pwa-grant-claimed', handler)
@@ -103,11 +124,13 @@ export function PwaGrantCelebration() {
 
           <div className="mt-5 flex flex-col gap-2">
             <Link
-              href="/dashboard"
+              href={alertCount === 0 ? '/dashboard?tab=alerts&from=pwa' : '/dashboard'}
               onClick={dismiss}
               className="w-full bg-white text-orange-600 font-black py-3 rounded-2xl shadow-lg active:scale-[0.98] transition-transform"
             >
-              {es ? 'Empezar a usar Pro →' : 'Start using Pro →'}
+              {alertCount === 0
+                ? (es ? 'Crea tu primera alerta →' : 'Create your first alert →')
+                : (es ? 'Empezar a usar Pro →' : 'Start using Pro →')}
             </Link>
             <button
               type="button"

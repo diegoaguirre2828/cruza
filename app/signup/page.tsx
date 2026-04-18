@@ -309,159 +309,173 @@ export default function SignupPage() {
           <GoogleButton label={es ? 'Continuar con Google' : 'Continue with Google'} />
         </div>
 
-        {/* OR divider */}
-        <div className="flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-          <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">
-            {es ? 'o con correo' : 'or with email'}
-          </span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
-        </div>
+        {/* More options — collapsed by default. Funnel data 2026-04-17:
+            82% of /signup visitors never tap ANY method — decision paralysis
+            from too many options. Google gets the dominant slot; everything
+            else lives behind a subtle disclosure. */}
+        <details
+          className="group mt-2"
+          onToggle={(e) => {
+            if ((e.currentTarget as HTMLDetailsElement).open) {
+              trackFunnel('signup_more_options_opened')
+            }
+          }}
+        >
+          <summary className="list-none marker:hidden [&::-webkit-details-marker]:hidden cursor-pointer text-center text-xs text-gray-500 dark:text-gray-400 py-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors select-none">
+            <span className="group-open:hidden">
+              {es ? 'Más opciones (correo / teléfono) ▾' : 'More options (email / phone) ▾'}
+            </span>
+            <span className="hidden group-open:inline">
+              {es ? 'Menos opciones ▴' : 'Fewer options ▴'}
+            </span>
+          </summary>
 
-        {/* Mode toggle — ways to sign up. Phone tab is gated on
-            PHONE_AUTH_ENABLED until Twilio 10DLC registration clears. */}
-        <div className={`grid gap-1.5 mb-3 ${PHONE_AUTH_ENABLED ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          {PHONE_AUTH_ENABLED && (
-            <button
-              type="button"
-              onClick={() => { setMode('phone'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'phone' }) }}
-              className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
-                mode === 'phone'
-                  ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
-                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-base">📱</span>
-              <span>{es ? 'Por SMS' : 'Text me'}</span>
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => { setMode('password'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'password' }) }}
-            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
-              mode === 'password'
-                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
-            }`}
-          >
-            <span className="text-base">🔒</span>
-            <span>{es ? 'Con clave' : 'Password'}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('magic'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'magic' }) }}
-            className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
-              mode === 'magic'
-                ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
-            }`}
-          >
-            <span className="text-base">✉️</span>
-            <span>{es ? 'Por correo' : 'Email link'}</span>
-          </button>
-        </div>
-
-        {/* Form — visible by default, no hidden <details> wrapper */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
-          {mode === 'phone' ? (
-            <PhoneAuthForm
-              shouldCreateUser={true}
-              onComplete={(isNew) => {
-                const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
-                if (ref && isNew) {
-                  fetch('/api/referral/award', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
-                  }).catch(() => {})
-                }
-                // Complete referral via new short-code system
-                const refCode = typeof window !== 'undefined' ? localStorage.getItem('cruzar_referral_code') : null
-                if (refCode && isNew) {
-                  fetch('/api/referral/complete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ referral_code: refCode }),
-                  }).then(() => {
-                    try { localStorage.removeItem('cruzar_referral_code') } catch {}
-                  }).catch(() => {})
-                }
-                // Route NEW signups through /welcome (install carrot)
-                // regardless of `next=` — same fix as the email/password
-                // path. Existing-user sign-ins can go straight to next.
-                const nextParam = typeof window !== 'undefined'
-                  ? new URLSearchParams(window.location.search).get('next')
-                  : null
-                const safeNext = nextParam && nextParam.startsWith('/') && nextParam !== '/welcome'
-                  ? nextParam
-                  : null
-                let destination: string
-                if (isNew) {
-                  destination = safeNext ? `/welcome?next=${encodeURIComponent(safeNext)}` : '/welcome'
-                } else {
-                  destination = safeNext || '/dashboard'
-                }
-                router.push(destination)
-              }}
-            />
-          ) : magicSent ? (
-            <div className="text-center py-3">
-              <p className="text-2xl mb-2">📬</p>
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                {es ? 'Link enviado a' : 'Link sent to'}
-              </p>
-              <p className="text-sm text-blue-600 dark:text-blue-400 break-all">{email}</p>
-              <p className="text-xs text-gray-500 mt-2">
-                {es ? 'Ábrelo desde el mismo dispositivo.' : 'Open it from the same device.'}
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={mode === 'magic' ? handleMagicLink : handleSignup} className="space-y-3">
-              {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl px-3 py-2">
-                  {error}
-                </div>
+          <div className="mt-3">
+            {/* Mode toggle — ways to sign up. Phone tab is gated on
+                PHONE_AUTH_ENABLED until Twilio 10DLC registration clears. */}
+            <div className={`grid gap-1.5 mb-3 ${PHONE_AUTH_ENABLED ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {PHONE_AUTH_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('phone'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'phone' }) }}
+                  className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                    mode === 'phone'
+                      ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-base">📱</span>
+                  <span>{es ? 'Por SMS' : 'Text me'}</span>
+                </button>
               )}
-
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                autoFocus
-                autoComplete="email"
-                inputMode="email"
-                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={es ? 'tu correo' : 'your email'}
-              />
-
-              {mode === 'password' && (
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  autoComplete="new-password"
-                  className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={es ? 'contraseña (mín. 6 caracteres)' : 'password (min. 6 chars)'}
-                />
-              )}
-
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
+                type="button"
+                onClick={() => { setMode('password'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'password' }) }}
+                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                  mode === 'password'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                }`}
               >
-                {loading
-                  ? (es ? 'Enviando…' : 'Sending…')
-                  : mode === 'magic'
-                    ? (es ? '✉️ Enviarme link' : '✉️ Send me a link')
-                    : (es ? 'Crear cuenta →' : 'Create account →')}
+                <span className="text-base">🔒</span>
+                <span>{es ? 'Con clave' : 'Password'}</span>
               </button>
-            </form>
-          )}
-        </div>
+              <button
+                type="button"
+                onClick={() => { setMode('magic'); setMagicSent(false); setError(''); trackFunnel('signup_method_click', { method: 'magic' }) }}
+                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold rounded-xl border-2 transition-all ${
+                  mode === 'magic'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-700 dark:text-blue-300'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-base">✉️</span>
+                <span>{es ? 'Por correo' : 'Email link'}</span>
+              </button>
+            </div>
+
+            {/* Form — inside the disclosure, only rendered when expanded */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+              {mode === 'phone' ? (
+                <PhoneAuthForm
+                  shouldCreateUser={true}
+                  onComplete={(isNew) => {
+                    const ref = typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null
+                    if (ref && isNew) {
+                      fetch('/api/referral/award', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ referrerId: ref, eventType: 'signup' }),
+                      }).catch(() => {})
+                    }
+                    // Complete referral via new short-code system
+                    const refCode = typeof window !== 'undefined' ? localStorage.getItem('cruzar_referral_code') : null
+                    if (refCode && isNew) {
+                      fetch('/api/referral/complete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ referral_code: refCode }),
+                      }).then(() => {
+                        try { localStorage.removeItem('cruzar_referral_code') } catch {}
+                      }).catch(() => {})
+                    }
+                    // Route NEW signups through /welcome (install carrot)
+                    // regardless of `next=` — same fix as the email/password
+                    // path. Existing-user sign-ins can go straight to next.
+                    const nextParam = typeof window !== 'undefined'
+                      ? new URLSearchParams(window.location.search).get('next')
+                      : null
+                    const safeNext = nextParam && nextParam.startsWith('/') && nextParam !== '/welcome'
+                      ? nextParam
+                      : null
+                    let destination: string
+                    if (isNew) {
+                      destination = safeNext ? `/welcome?next=${encodeURIComponent(safeNext)}` : '/welcome'
+                    } else {
+                      destination = safeNext || '/dashboard'
+                    }
+                    router.push(destination)
+                  }}
+                />
+              ) : magicSent ? (
+                <div className="text-center py-3">
+                  <p className="text-2xl mb-2">📬</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                    {es ? 'Link enviado a' : 'Link sent to'}
+                  </p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 break-all">{email}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {es ? 'Ábrelo desde el mismo dispositivo.' : 'Open it from the same device.'}
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={mode === 'magic' ? handleMagicLink : handleSignup} className="space-y-3">
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl px-3 py-2">
+                      {error}
+                    </div>
+                  )}
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={es ? 'tu correo' : 'your email'}
+                  />
+
+                  {mode === 'password' && (
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                      minLength={6}
+                      autoComplete="new-password"
+                      className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder={es ? 'contraseña (mín. 6 caracteres)' : 'password (min. 6 chars)'}
+                    />
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-3.5 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {loading
+                      ? (es ? 'Enviando…' : 'Sending…')
+                      : mode === 'magic'
+                        ? (es ? '✉️ Enviarme link' : '✉️ Send me a link')
+                        : (es ? 'Crear cuenta →' : 'Create account →')}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </details>
 
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
           {es ? '¿Ya tienes cuenta?' : 'Already have an account?'}{' '}

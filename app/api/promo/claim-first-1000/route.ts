@@ -4,8 +4,8 @@ import { cookies } from 'next/headers'
 import { getServiceClient } from '@/lib/supabase'
 
 // POST /api/promo/claim-first-1000
-// Claims the "first 1000 signups get 3 months of Pro free" launch promo
-// for the authenticated user. Called from /signup or /welcome flow.
+// Claims the "first 1000 signups get Pro forever (founding member loyalty)"
+// launch promo for the authenticated user. Called from /signup or /welcome flow.
 //
 // Idempotent — if the user already has promo_first_1000_until set, no-op.
 // Cap-enforcing — if 1000 users already have the promo, refuses to grant.
@@ -16,7 +16,7 @@ import { getServiceClient } from '@/lib/supabase'
 //   { claimed: false, reason: 'already' | 'cap_reached' | 'unauth' } otherwise
 
 const CAP = 1000
-const DURATION_DAYS = 90
+const DURATION_DAYS = 36500
 
 export async function POST() {
   const cookieStore = await cookies()

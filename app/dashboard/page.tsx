@@ -14,6 +14,7 @@ import { PushPermissionPrompt } from '@/components/PushPermissionPrompt'
 import { PortSearch } from '@/components/PortSearch'
 import { DashboardInstallBanner } from '@/components/DashboardInstallBanner'
 import { PostWelcomeTour } from '@/components/PostWelcomeTour'
+import { FoundingMemberBadge } from '@/components/FoundingMemberBadge'
 import { PostUpgradeTour } from '@/components/PostUpgradeTour'
 import { InstallGateModal, useInstallGate, needsInstallGate } from '@/components/InstallGateModal'
 import { usePushNotifications } from '@/lib/usePushNotifications'
@@ -166,9 +167,17 @@ export default function DashboardPage() {
       if (data.error === 'free_limit') { setAlertLimitHit(true); return }
     }
     setAlertLimitHit(false)
-    // If the user just set up their first alert and hasn't enabled push
-    // yet, trigger the permission prompt in the same gesture. Otherwise
-    // the alert is a silent promise that delivers to nothing.
+    // Fuse push permission with alert creation: dispatch a window event
+    // so the PushPermissionPrompt surfaces immediately, bypassing the
+    // 7-day cooldown and any other gate. Without this pairing the alert
+    // is a silent promise that delivers to nothing (the #1 retention bug
+    // for the 23/30 Pro-without-push cohort).
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cruzar:alert-created', { detail: { portId: newAlertPortId } }))
+    }
+    // Also kick the native browser push subscribe flow in the same
+    // gesture — the warm-up sheet handles users who prefer the custom
+    // prompt, but many taps "Allow" directly on the OS prompt.
     if (pushSupported && !pushSubscribed) {
       try { await pushSubscribe() } catch { /* non-blocking */ }
     }
@@ -236,7 +245,10 @@ export default function DashboardPage() {
             <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-1 transition-colors">
               <ArrowLeft className="w-3 h-3" /> {t.allCrossings}
             </Link>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t.dashboardTitle}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t.dashboardTitle}</h1>
+              <FoundingMemberBadge />
+            </div>
             <p className="text-xs text-gray-400 dark:text-gray-500">{user?.email}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -720,6 +732,18 @@ function DashboardPushNudgeBlock() {
       }
     } catch {}
     setShow(true)
+  }, [supported, subscribed])
+  // Force-open on fresh alert creation. The cooldown shouldn't block the
+  // single most important moment: the user just committed to an alert
+  // and has intent to be notified. See addAlert() for the dispatch.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onAlertCreated = () => {
+      if (!supported || subscribed) return
+      setShow(true)
+    }
+    window.addEventListener('cruzar:alert-created', onAlertCreated)
+    return () => window.removeEventListener('cruzar:alert-created', onAlertCreated)
   }, [supported, subscribed])
   if (!show) return null
   return (
