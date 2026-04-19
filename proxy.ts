@@ -49,6 +49,19 @@ function isProtectedPath(path: string): boolean {
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
 
+  // CPU-burn mitigation (2026-04-19): only call Supabase getUser() when the
+  // path actually needs the auth check. Public pages (/, /city/[slug],
+  // /mas, /signup, share URLs, etc.) never needed it — we were paying a
+  // 200-500ms Supabase round-trip per visit for no product reason. Now the
+  // guard check runs only on protected paths.
+  //
+  // For protected paths we still need the full ssr client so cookie refresh
+  // works end-to-end. For everything else we pass through with no Supabase
+  // calls at all.
+  if (!isProtectedPath(path)) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -90,7 +103,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Route guard: redirect unauthenticated users away from protected pages.
-  if (!user && isProtectedPath(path)) {
+  if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/signup'
     // Preserve any query string on the original path so returning users
