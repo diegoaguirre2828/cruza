@@ -15,10 +15,10 @@ Standing capability across every project Diego owns. Canonical rules live in the
 **Pipeline:** memory pass (handoffs + backlogs, treat all claims as hypotheses) then parallel live-state scan (build, endpoint health, env drift, schema drift, bilingual coverage, security/RLS) then structured **CRITICAL / HIGH / MEDIUM / LOW** report with file:line evidence PLUS a `verified-live-at` evidence cell on every row, then autonomous-safe vs. Diego-input split with ONE pick for the autonomous bundle, then on greenlight ("all in one session", "go", "ship"), execute end-to-end: edits, run the build, commit (named files, never `-A`), push, deploy to prod via the `vercel deploy --prod` command, curl live endpoints to verify landing, self-correct against live state, and append a **Reconciliation log** section to the audit memory noting SUPERSEDED items + their commit SHA.
 
 **Cruzar-specific audit surfaces:**
-- Build: run `npm run build` — must produce 158 of 158 pages clean
+- Build: run `npm run build` — must produce 159 of 159 pages clean
 - Live verify: curl `https://cruzar.app/api/ports` (at least 50 ports), plus `/privacy` and `/pricing`
-- Railway fb-poster: curl `https://cruzar-production.up.railway.app/` — check `lastPosted` non-empty after 5am/4pm CT cycles
-- Schema source: the file `supabase-schema-v12.sql` plus migrations `v27` through `v32` in `supabase/migrations/`
+- Railway fb-poster: **decommissioned 2026-04-17** — `lastPosted: null` is expected; don't flag. If resurrected, re-verify cycles at 5am/4pm CT.
+- Schema source: `supabase/migrations/` is authoritative (v27 → v40). Top-level `supabase-schema-v*.sql` files are per-version deltas, not full schema dumps. No canonical full-schema file is committed — rebuild from ordered migrations.
 - Coord sync: the files `lib/portMeta.ts` and `components/WaitingMode.tsx` must match exactly on every port's coordinates
 - Bilingual coverage: every user-facing string in `app/` pages and `components/` must route through `LangContext`
 - Cron auth: every route under `/api/cron/` must accept both `?secret=` query and `Authorization: Bearer` header
@@ -213,9 +213,9 @@ Alert:         "Bajó la espera en [puente] — [X] min ahorita"
 
 ## 8. Database Schema
 
-**Active schema file:** `supabase-schema-v12.sql` (this is the canonical production schema)
-There are v1-v12 files — only v12 matters. The others are historical.
-**IMPORTANT:** v12 must be run in Supabase SQL Editor if not done yet — adds `exchange_rate_reports` table and new columns to `rewards_businesses`.
+**Schema source of truth:** `supabase/migrations/` — ordered files `v27-*.sql` through `v40-*.sql` plus `20260416_referrals.sql`. Apply in filename order via Supabase SQL Editor for a fresh environment.
+
+The top-level `supabase-schema-v12.sql` … `supabase-schema-v26.sql` files are historical per-version deltas, NOT full schema dumps. There is no canonical single-file dump committed. Core tables (`profiles`, `crossing_reports`, `wait_time_readings`, `alert_preferences`, `push_subscriptions`, `drivers`, `shipments`, `saved_crossings`, `subscriptions`, `rewards_*`) were created in pre-v12 files that are no longer in the repo — prod was built incrementally. Re-creating prod from scratch currently requires a Supabase dump; not possible from git alone. If you add new tables, prefer an idempotent `CREATE TABLE IF NOT EXISTS` migration in `supabase/migrations/` with the next `v<n>-` prefix.
 
 ### Key Tables
 | Table | Purpose |
@@ -650,7 +650,8 @@ cruzar/
 │   │   └── WaitTimeVideo.tsx       # Main video composition
 │   ├── render.mjs                  # Run this to generate a video
 │   └── output/                     # Generated MP4s (gitignored)
-├── supabase-schema-v11.sql         # CANONICAL production schema
+├── supabase/migrations/            # AUTHORITATIVE schema (v27 → v40, ordered; apply in filename order)
+├── supabase-schema-v12.sql         # delta only (exchange_rate_reports + rewards_businesses alters). Historical.
 ├── CLAUDE.md                       # This file
 └── AGENTS.md                       # Next.js version warning (referenced by CLAUDE.md)
 ```
