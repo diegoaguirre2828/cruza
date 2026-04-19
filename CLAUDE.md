@@ -519,7 +519,7 @@ Expected response: `{"saved": 52, "at": "..."}`
 - Stripe payments — keys may be placeholders, payment flow untested
 - Email alerts to real users — needs custom Resend domain
 - SMS via Twilio — configured but untested
-- `driver_events` table — silently fails on insert, may not exist in production
+- ~~`driver_events` table~~ — 2026-04-18 probe confirmed table does not exist in any schema AND no code actually references it. Ghost claim from earlier memory. Resolved — no action needed.
 - Team collaboration — schema exists, no UI built
 - Rewards system — businesses seeded with `approved=false`, no admin UI to approve
 - AI predictions label — it's actually historical averages, rename to "historical patterns"
