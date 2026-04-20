@@ -21,20 +21,24 @@ Everything you need to land 12+ Play Store closed-test testers in 2-3 days.
 
 ## Step 2 — Post in your FB groups (Spanish)
 
-Drop this in each RGV border group + on the Cruzar FB page. Casual RGV voice, no emojis, straightforward ask.
+Drop this in each RGV border group + on the Cruzar FB page. Casual RGV voice, no emojis, founder-story intro for cold readers who've never heard of Cruzar.
 
 ```
-Pa los que usan Cruzar y tienen Android —
+Soy del valle y me canse de estar scrolleando Facebook pa ver como estaba el puente antes de salir. Hice un app que junta los tiempos de espera de todos los puentes de la frontera — Reynosa, Matamoros, McAllen, Progreso, Laredo, Eagle Pass, El Paso, Tijuana, todos. Se actualiza cada 15 min con datos oficiales de CBP. Se llama Cruzar.
 
-Google me pide 12 testers por 14 días pa poder sacar el app en el Play Store. Si me ayudas con eso, te regalo Pro de por vida. Cámaras en vivo, alertas push, patrones históricos, todo.
+Lo puedes ver sin cuenta aqui: https://cruzar.app
 
-Lo único que haces:
-1. Te metes al grupo: https://groups.google.com/g/cruzar-testers
-2. En unos días te llega el link pa instalar desde el Play Store
-3. Lo dejas instalado 14 días seguidos (si lo desinstalas se reinicia la cuenta)
-4. Al día 15 ya puedo sacarlo pal público
+Pa publicarlo en el Play Store, Google me pide 12 testers por 14 dias. Si me ayudas con eso, te regalo Pro de por vida — camaras en vivo de los puentes, alertas push cuando baja la espera, patrones historicos. Todo.
+
+Lo unico que haces:
+1. Te metes al grupo de testers: https://groups.google.com/g/cruzar-testers
+2. En unos dias te llega el link pa instalar desde el Play Store
+3. Lo dejas instalado 14 dias seguidos (si lo desinstalas se reinicia la cuenta)
+4. Al dia 15 ya puedo sacarlo pal publico
 
 Los primeros 12 que se metan se la llevan. Gracias banda.
+
+— Diego
 ```
 
 ## Step 3 — Personal ask to family/friends
