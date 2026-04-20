@@ -55,11 +55,11 @@ export function GlobalPushPromptOnAlertCreated() {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-50 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-4 md:bottom-4 md:right-4 md:left-auto md:max-w-sm"
+      className="fixed inset-x-0 bottom-0 z-50 pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-4 md:bottom-4 md:right-4 md:left-auto md:max-w-sm pointer-events-none"
       role="dialog"
       aria-live="polite"
     >
-      <div className="mx-3 md:mx-0 relative">
+      <div className="mx-3 md:mx-0 relative pointer-events-auto">
         <button
           onClick={dismiss}
           aria-label={lang === 'es' ? 'Cerrar' : 'Close'}
