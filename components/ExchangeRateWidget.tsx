@@ -148,15 +148,24 @@ export function ExchangeRateWidget() {
         </div>
       )}
 
-      {/* Community rates section */}
-      <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2.5">
+      {/* Community rates section — hidden entirely when there are no
+         community reports AND nobody is actively submitting one. The
+         "show rates (0)" pill was dead space with zero data behind it
+         (2026-04-19: 0 community reports in prod). When somebody does
+         submit a rate, the section reappears on next data refresh. */}
+      {(data.communityRates.length > 0 || showReportForm || submitted) && (
+        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-2.5">
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => setShowCommunity(v => !v)}
-            className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
-          >
-            {showCommunity ? t.hideRates : t.showRates}
-          </button>
+          {data.communityRates.length > 0 ? (
+            <button
+              onClick={() => setShowCommunity(v => !v)}
+              className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline"
+            >
+              {showCommunity ? t.hideRates : t.showRates}
+            </button>
+          ) : (
+            <span className="text-xs text-gray-400 dark:text-gray-500" />
+          )}
           {submitted ? (
             <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{t.thanks}</span>
           ) : (
@@ -207,28 +216,27 @@ export function ExchangeRateWidget() {
           </div>
         )}
 
-        {/* Community rates list */}
-        {showCommunity && (
+        {/* Community rates list — only rendered when expand-toggle has been
+           used AND rates exist. Empty-state removed per 2026-04-19 audit
+           (nobody was using the section anyway). */}
+        {showCommunity && data.communityRates.length > 0 && (
           <div className="mt-2 space-y-1.5">
-            {data.communityRates.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500">{t.noRates}</p>
-            ) : (
-              data.communityRates.map((r, i) => (
-                <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-1.5">
-                  <div>
-                    <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{r.house_name}</span>
-                    {r.city && <span className="text-[10px] text-gray-400 ml-1">{r.city}</span>}
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-green-600 dark:text-green-400">${Number(r.sell_rate).toFixed(2)}</span>
-                    <span className="block text-[10px] text-gray-400">{timeAgo(r.reported_at)}</span>
-                  </div>
+            {data.communityRates.map((r, i) => (
+              <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 rounded-lg px-3 py-1.5">
+                <div>
+                  <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{r.house_name}</span>
+                  {r.city && <span className="text-[10px] text-gray-400 ml-1">{r.city}</span>}
                 </div>
-              ))
-            )}
+                <div className="text-right">
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400">${Number(r.sell_rate).toFixed(2)}</span>
+                  <span className="block text-[10px] text-gray-400">{timeAgo(r.reported_at)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
