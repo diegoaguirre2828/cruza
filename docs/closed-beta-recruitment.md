@@ -21,25 +21,23 @@ Everything you need to land 12+ Play Store closed-test testers in 2-3 days.
 
 ## Step 2 — Post in your FB groups (Spanish)
 
-Drop this in each RGV border group + on the Cruzar FB page. Casual RGV voice, no emojis, founder-story intro for cold readers who've never heard of Cruzar.
+Drop this in each border group across TX, NM, AZ, CA — RGV, Laredo, El Paso, Nogales, Tijuana. Voice: neutral, no regional identity (wouldn't land cross-region), no pain-problem framing (not everyone feels it as pain), no Facebook-bashing (we're IN Facebook when they read this). Just what it is → ask → reward.
+
+**Link order matters for FB unfurl:** the Google Group URL is first, so Facebook's preview card shows the group. Only one URL in the post — no cruzar.app link competing for the preview slot.
 
 ```
-Soy del valle y me canse de estar scrolleando Facebook pa ver como estaba el puente antes de salir. Hice un app que junta los tiempos de espera de todos los puentes de la frontera — Reynosa, Matamoros, McAllen, Progreso, Laredo, Eagle Pass, El Paso, Tijuana, todos. Se actualiza cada 15 min con datos oficiales de CBP. Se llama Cruzar.
+Hice un app de tiempos de espera en los puentes. Todos los cruces de la frontera — Reynosa, Matamoros, McAllen, Progreso, Laredo, Eagle Pass, El Paso, Nogales, Tijuana. Se actualiza cada 15 min con datos oficiales de CBP.
 
-Lo puedes ver sin cuenta aqui: https://cruzar.app
+Pa publicarlo en el Play Store, Google me pide 12 testers por 14 dias. Si me ayudas te regalo Pro de por vida — camaras en vivo de los puentes, alertas push cuando baja la espera, patrones historicos.
 
-Pa publicarlo en el Play Store, Google me pide 12 testers por 14 dias. Si me ayudas con eso, te regalo Pro de por vida — camaras en vivo de los puentes, alertas push cuando baja la espera, patrones historicos. Todo.
+Metete al grupo: https://groups.google.com/g/cruzar-testers
 
-Lo unico que haces:
-1. Te metes al grupo de testers: https://groups.google.com/g/cruzar-testers
-2. En unos dias te llega el link pa instalar desde el Play Store
-3. Lo dejas instalado 14 dias seguidos (si lo desinstalas se reinicia la cuenta)
-4. Al dia 15 ya puedo sacarlo pal publico
+En unos dias te mando el link pa instalar desde el Play Store. Lo dejas instalado 14 dias seguidos (si lo desinstalas se reinicia la cuenta). Al dia 15 sale pal publico.
 
-Los primeros 12 que se metan se la llevan. Gracias banda.
-
-— Diego
+Primeros 12 que se metan se la llevan. Gracias.
 ```
+
+**If you want the app URL visible somewhere** without fighting the preview: include it in your comment on your own post after you paste, not in the post body.
 
 ## Step 3 — Personal ask to family/friends
 
