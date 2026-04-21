@@ -343,6 +343,10 @@ export async function POST(req: NextRequest) {
     vehicleOrigin,
     cargoSummary,
     boothNumber,
+    // Southbound unlock — CBP public API is northbound-only.
+    // Community reports fill the half of the market nobody else has.
+    // Default 'northbound' keeps existing clients compatible.
+    direction,
   } = body
 
   // Support both reportType and condition field names
@@ -618,6 +622,8 @@ export async function POST(req: NextRequest) {
     ? await fetchWeatherSnapshot(rawGpsLat, rawGpsLng)
     : null
 
+  const normalizedDirection = direction === 'southbound' ? 'southbound' : 'northbound'
+
   const { data: inserted, error } = await db.from('crossing_reports').insert({
     port_id: portId,
     report_type: mappedType,
@@ -626,6 +632,7 @@ export async function POST(req: NextRequest) {
     user_id: user?.id || null,
     wait_minutes: waitMinutes || null,
     username,
+    direction: normalizedDirection,
     // Legacy 'source' column still exists pre-migration; post-migration
     // the new sensor-network source enum uses different values. Write
     // both shapes so the insert works whether the migration has run
@@ -676,6 +683,7 @@ export async function POST(req: NextRequest) {
         user_id: user?.id || null,
         wait_minutes: waitMinutes || null,
         username,
+        direction: normalizedDirection,
         source: 'cruzar',
         source_meta: sourceMeta,
         location_confidence: locationConfidence,

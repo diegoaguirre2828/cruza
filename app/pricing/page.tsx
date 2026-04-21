@@ -51,16 +51,40 @@ export default function PricingPage() {
     {
       id: 'business',
       name: 'Business',
-      price: '$49.99',
+      price: '$19.99',
       period: '/month',
       color: 'border-gray-900 dark:border-gray-100',
       badge: t.forFreight,
       desc: es
-        ? 'Un camión retrasado 1 hora cuesta más que este plan. Prueba 14 días gratis — sin tarjeta de crédito.'
-        : 'One truck delayed 1 hour costs more than this plan. Try free for 14 days — no credit card required.',
+        ? 'Un solo camión demorado 15 minutos paga un mes entero. Prueba 14 días gratis — sin tarjeta.'
+        : 'A single truck delayed 15 minutes pays for a whole month. Try free for 14 days — no card required.',
       features: es
-        ? ['Todo lo de Pro', '🚛 Centro de control de flota — carriles comerciales en tiempo real', '⚠️ Lista de alertas de retrasos graves en todos los cruces', '👷 Seguimiento de conductores sin app — solo un link', '📦 Gestión de envíos con ciclo de estatus', '📥 Exportación CSV histórica (hasta 90 días)', '📧 Reporte semanal de inteligencia fronteriza', 'Soporte prioritario por email']
-        : ['Everything in Pro', '🚛 Fleet Command Center — real-time commercial lane data', '⚠️ Heavy delay alerts across all crossings', '👷 Driver tracking — no app needed, just a link', '📦 Shipment management with status lifecycle', '📥 Historical CSV exports (up to 90 days)', '📧 Weekly border intelligence email report', 'Priority support via email'],
+        ? [
+            'Todo lo de Pro',
+            '🔗 Link de seguimiento público — mándalo por WhatsApp, tu cliente ve el estatus en vivo',
+            '💸 Calculadora de $ perdido — total de la semana, por puente, por chofer',
+            '📧 Reporte semanal de pérdida por demora (lunes 8am)',
+            '🇲🇽 Reportes comunitarios SUR (nadie más lo tiene — CBP solo es norte)',
+            '🚛 Centro de control de flota — carriles comerciales en vivo',
+            '👷 Rastreo de chofer con GPS del teléfono (sin hardware)',
+            '📦 Gestión de envíos con timeline de replay',
+            '🔌 Integración con Samsara / Motive (OAuth)',
+            '📥 Exportación CSV histórica',
+            'Soporte prioritario por email',
+          ]
+        : [
+            'Everything in Pro',
+            '🔗 Public tracking link — share on WhatsApp, customer sees live status',
+            '💸 Delay-cost dashboard — $ lost this week, by bridge, by driver',
+            '📧 Weekly delay-loss report (Monday 8am)',
+            '🇲🇽 Community SOUTHBOUND reports (nobody else has this — CBP is northbound-only)',
+            '🚛 Fleet Command Center — live commercial lane data',
+            '👷 Phone-GPS driver tracking (no hardware needed)',
+            '📦 Shipment management with trip replay timeline',
+            '🔌 Samsara / Motive integration (OAuth)',
+            '📥 Historical CSV exports',
+            'Priority email support',
+          ],
       cta: es ? 'Empezar prueba gratis 14 días' : 'Start 14-Day Free Trial',
       tier: 'business',
     },
