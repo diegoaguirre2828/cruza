@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
+import { PageHeader } from '@/components/PageHeader'
 
 // Canonical feature index. Every meaningful surface in the app should
 // be listed here with a one-line pitch and a direct link. This is the
@@ -244,19 +244,16 @@ export default function FeaturesPage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto px-4 pb-24">
-        <div className="pt-6 pb-4">
-          <Link href="/" className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4">
-            <ArrowLeft className="w-4 h-4" /> {es ? 'Volver al mapa' : 'Back to map'}
-          </Link>
-          <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight">
-            {es ? 'Todo lo que hace Cruzar' : 'Everything Cruzar does'}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-snug">
-            {es
-              ? 'Una lista completa — porque nadie puede usar lo que no sabe que existe.'
-              : "Everything in one place — because no one can use what they don't know exists."}
-          </p>
-        </div>
+        <PageHeader
+          title={es ? 'Todo lo que hace Cruzar' : 'Everything Cruzar does'}
+          subtitle={es
+            ? 'Una lista completa — porque nadie puede usar lo que no sabe que existe.'
+            : "Everything in one place — because no one can use what they don't know exists."}
+          backHref="/"
+          backLabelEs="Volver al mapa"
+          backLabelEn="Back to map"
+        />
+        <div className="mb-3" />
 
         {SECTIONS.map((section) => (
           <div key={section.titleEn} className="mb-6">

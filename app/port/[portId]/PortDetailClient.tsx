@@ -26,9 +26,10 @@ import { PortDetailHero } from '@/components/PortDetailHero'
 import { trackEvent } from '@/lib/trackEvent'
 import { getAffiliate } from '@/lib/affiliates'
 import { AdBanner } from '@/components/AdBanner'
-import { SharePrompt } from '@/components/SharePrompt'
 import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
+import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
+import { armNudge } from '@/lib/useNudge'
 import { trackShare } from '@/lib/trackShare'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
@@ -61,6 +62,54 @@ function formatHour(hour: number): string {
   if (hour === 12) return '12pm'
   return `${hour - 12}pm`
 }
+
+// Priority-ordered contextual nudges for port detail. PriorityNudge
+// renders only the first ARMED one (pending/seen). Each is armed
+// by a different trigger elsewhere in the app:
+//   - alerts_for_this_bridge: armed on 2nd port-detail visit (see
+//     useEffect below)
+//   - try_route_optimizer: armed for Pro/Business on any port-detail
+//     view (the feature is paid-for; they need to find it)
+//   - saved_bridge_invite_circle: armed in HomeClient when a user
+//     saves their first bridge (reused from home)
+const PORT_DETAIL_NUDGES: NudgeSpec[] = [
+  {
+    nudgeKey: 'alerts_for_this_bridge',
+    emoji: '🔔',
+    titleEs: '¿Cruzas este puente seguido?',
+    titleEn: 'Cross this bridge often?',
+    subEs: 'Activa alertas y te avisamos cuando baje de 30 min — sin chequear',
+    subEn: "Turn on alerts and we'll ping you when it drops below 30 min — no checking",
+    ctaEs: 'Activar',
+    ctaEn: 'Turn on',
+    href: '/dashboard?tab=alerts',
+    tone: 'blue',
+  },
+  {
+    nudgeKey: 'try_route_optimizer',
+    emoji: '🗺️',
+    titleEs: 'Planifica tu cruce (Pro)',
+    titleEn: 'Plan your crossing (Pro)',
+    subEs: 'Decide cuándo salir y qué puente agarrar pa\' llegar más rápido',
+    subEn: 'Pick the best time to leave and which bridge to cross',
+    ctaEs: 'Abrir',
+    ctaEn: 'Open',
+    href: '/planner',
+    tone: 'purple',
+  },
+  {
+    nudgeKey: 'saved_bridge_invite_circle',
+    emoji: '👥',
+    titleEs: 'Invita a tu gente a tu círculo',
+    titleEn: 'Invite your people to your circle',
+    subEs: 'Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática',
+    subEn: 'When you cross, mom/spouse/kids get an automatic alert',
+    ctaEs: 'Invitar',
+    ctaEn: 'Invite',
+    href: '/dashboard?tab=circle',
+    tone: 'green',
+  },
+]
 
 export function PortDetailClient({ port, portId }: Props) {
   const { user, loading: authLoading } = useAuth()
@@ -95,7 +144,6 @@ export function PortDetailClient({ port, portId }: Props) {
   }, [])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [showAlertNudge, setShowAlertNudge] = useState(false)
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
@@ -191,6 +239,27 @@ export function PortDetailClient({ port, portId }: Props) {
       localStorage.setItem('cruzar_ref_ts', String(Date.now()))
     }
   }, [portId])
+
+  // Contextual discovery: arm nudges based on bridge-specific engagement.
+  // Logic:
+  //   - Track per-port visit count in localStorage
+  //   - On 2nd+ visit: arm `alerts_for_this_bridge` (only hits users
+  //     who keep coming back to the same port — they're the ones who
+  //     actually benefit from an alert)
+  //   - For Pro users, arm `try_route_optimizer` once they've viewed
+  //     any port detail (they already have the feature; just need to
+  //     find it)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const key = `cruzar_port_visits_${portId}`
+      const prev = parseInt(localStorage.getItem(key) || '0', 10) || 0
+      const next = prev + 1
+      localStorage.setItem(key, String(next))
+      if (next >= 2) armNudge('alerts_for_this_bridge')
+      if (tier === 'pro' || tier === 'business') armNudge('try_route_optimizer')
+    } catch { /* ignore */ }
+  }, [portId, tier])
 
   // Check whether the authenticated user already has an alert for this
   // port. Drives the one-tap "Create alert for this bridge" CTA — if
@@ -289,7 +358,6 @@ export function PortDetailClient({ port, portId }: Props) {
     if (saved) {
       await fetch(`/api/saved?portId=${encodeURIComponent(portId)}`, { method: 'DELETE' })
       setSaved(false)
-      setShowAlertNudge(false)
     } else {
       await fetch('/api/saved', {
         method: 'POST',
@@ -297,7 +365,11 @@ export function PortDetailClient({ port, portId }: Props) {
         body: JSON.stringify({ portId }),
       })
       setSaved(true)
-      if (!canAccess(tier, 'alerts')) setShowAlertNudge(true)
+      // Arm the circle-invite nudge the first time a user saves any
+      // bridge. PriorityNudge surfaces it on home or port detail
+      // whichever they hit next. Save-then-invite replaces the old
+      // post-save alert nudge (redundant with the big alert CTA).
+      armNudge('saved_bridge_invite_circle')
     }
     setSaving(false)
   }
@@ -413,58 +485,57 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       )}
 
-      {/* Just crossed button */}
-      <button
-        onClick={() => setShowJustCrossed(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-green-500 text-green-600 dark:text-green-400 text-sm font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors active:scale-95"
-      >
-        ✅ {es ? 'Acabo de cruzar — reportar' : 'Just crossed — report it'}
-      </button>
-      {/* Save button */}
-      {user && (
+      {/* Three primary actions collapsed into one row. Previously these
+          were three full-width stacked buttons that pushed the actual
+          wait-time hero below the fold. Now they sit as a compact
+          action cluster above the hero — same functionality, 2/3 the
+          vertical space, clear that they're peers of each other. */}
+      <div className="grid grid-cols-3 gap-2">
         <button
-          onClick={toggleSave}
-          disabled={saving}
-          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-            saved
-              ? 'bg-yellow-50 border-yellow-300 text-yellow-700'
-              : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+          onClick={() => setShowJustCrossed(true)}
+          className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border border-green-300 dark:border-green-700 bg-white dark:bg-gray-800 text-green-700 dark:text-green-400 text-[11px] font-bold active:scale-95 transition-all"
+        >
+          <span className="text-lg leading-none">✅</span>
+          <span className="leading-tight">{es ? 'Crucé' : 'Crossed'}</span>
+        </button>
+        {user ? (
+          <button
+            onClick={toggleSave}
+            disabled={saving}
+            className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border text-[11px] font-bold active:scale-95 transition-all ${
+              saved
+                ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            <span className="text-lg leading-none">{saved ? '⭐' : '☆'}</span>
+            <span className="leading-tight">{saved ? (es ? 'Guardado' : 'Saved') : (es ? 'Guardar' : 'Save')}</span>
+          </button>
+        ) : (
+          <Link
+            href="/signup"
+            className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[11px] font-bold active:scale-95 transition-all"
+          >
+            <span className="text-lg leading-none">☆</span>
+            <span className="leading-tight">{es ? 'Guardar' : 'Save'}</span>
+          </Link>
+        )}
+        <button
+          onClick={handleShare}
+          className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border text-[11px] font-bold active:scale-95 transition-all ${
+            shareCopied
+              ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
           }`}
         >
-          {saved ? '⭐ Saved to Dashboard' : '☆ Save to Dashboard'}
+          <span className="text-lg leading-none">
+            {shareCopied ? <Check className="w-[18px] h-[18px]" /> : <Share2 className="w-[18px] h-[18px]" />}
+          </span>
+          <span className="leading-tight">
+            {shareCopied ? (es ? 'Copiado' : 'Copied') : (es ? 'Compartir' : 'Share')}
+          </span>
         </button>
-      )}
-
-      {/* Share button — always visible, ref link if logged in */}
-      <button
-        onClick={handleShare}
-        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-          shareCopied
-            ? 'bg-green-50 border-green-300 text-green-700'
-            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-        }`}
-      >
-        {shareCopied
-          ? <><Check className="w-4 h-4" /> {es ? '¡Enlace copiado!' : 'Link copied!'}</>
-          : <><Share2 className="w-4 h-4" /> {es ? 'Compartir este puente' : 'Share this crossing'}{user ? ` · ${es ? '+10 pts si reportan' : '+10 pts if they report'}` : ''}</>
-        }
-      </button>
-
-      {/* Alert nudge after saving */}
-      {showAlertNudge && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-blue-800">{es ? '🔔 Avísame cuando baje' : '🔔 Get notified when it drops'}</p>
-            <p className="text-xs text-blue-600 mt-0.5">{es ? 'Activa Pro para recibir alertas cuando baje la espera.' : 'Upgrade to Pro to set a wait time alert for this crossing.'}</p>
-          </div>
-          <div className="flex items-center gap-2 ml-3 flex-shrink-0">
-            <Link href="/pricing" className="text-xs font-semibold text-white bg-blue-600 px-3 py-1.5 rounded-xl hover:bg-blue-700 transition-colors">
-              Pro →
-            </Link>
-            <button onClick={() => setShowAlertNudge(false)} className="text-blue-400 hover:text-blue-600 text-lg leading-none">×</button>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* Border Times-style hero — lane tabs + card rail with Best /
           Rush / Today / forward forecasts. Replaces the old stacked
@@ -514,8 +585,15 @@ export function PortDetailClient({ port, portId }: Props) {
         </Link>
       )}
 
-      {/* Viral share prompt — appears after 10s on the page */}
-      <SharePrompt port={port} />
+      {/* 10s SharePrompt popup removed 2026-04-21 — it was the clearest
+          example of ambient interruption, firing on every visit. Share
+          is already a primary action in the action row at the top. */}
+
+      {/* Port-specific contextual discovery. Priority-ordered: alerts
+          for this bridge (if visited 2+ times), route optimizer (Pro
+          users who haven't tried it), share with circle (signed-in
+          with saved bridge). One at a time, dismiss to advance. */}
+      <PriorityNudge lang={lang} nudges={PORT_DETAIL_NUDGES} />
 
       {/* Contextual affiliates — surface insurance + eSIM AT THE MOMENT
           OF NEED (someone staring at a bridge wait time is about to
