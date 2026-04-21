@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { useTheme } from '@/lib/ThemeContext'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 import { getTitle, getTitleColor } from '@/lib/titles'
 import { Settings, Moon, Sun, Building2, MessageCircle } from 'lucide-react'
 
@@ -18,11 +19,14 @@ export function NavBar() {
 
   useEffect(() => {
     if (user) {
-      fetch('/api/profile').then(r => r.json()).then(d => {
-        setTier(d.profile?.tier || 'free')
-        setReportsCount(d.profile?.reports_count || 0)
-        setSharesCount(d.profile?.share_count || 0)
-      })
+      fetchWithTimeout('/api/profile', {}, 5000)
+        .then(r => r.json())
+        .then(d => {
+          setTier(d.profile?.tier || 'free')
+          setReportsCount(d.profile?.reports_count || 0)
+          setSharesCount(d.profile?.share_count || 0)
+        })
+        .catch(() => { /* silent — profile chip just won't render */ })
     }
   }, [user])
 
@@ -34,7 +38,7 @@ export function NavBar() {
     <div className="flex items-center gap-2 mt-1 flex-wrap justify-end">
       <button
         onClick={toggleTheme}
-        className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors"
+        className="p-1.5 rounded-lg text-gray-500 bg-gray-100 hover:text-gray-800 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100 dark:hover:bg-gray-700 transition-all active:scale-90"
         aria-label="Toggle dark mode"
       >
         {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -42,7 +46,7 @@ export function NavBar() {
 
       <button
         onClick={toggle}
-        className="text-xs font-semibold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+        className="text-xs font-bold text-gray-600 bg-gray-100 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100 dark:hover:bg-gray-700 transition-all px-2.5 py-1.5 rounded-lg active:scale-90"
       >
         {lang === 'en' ? 'ES' : 'EN'}
       </button>
@@ -100,8 +104,9 @@ export function NavBar() {
           })()}
           <Link
             href="/account"
-            className="flex items-center p-1.5 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl transition-colors"
+            className="flex items-center p-2 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl transition-all active:scale-90"
             title="Settings"
+            aria-label="Settings"
           >
             <Settings className="w-3.5 h-3.5" />
           </Link>

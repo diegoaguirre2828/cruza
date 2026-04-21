@@ -66,7 +66,8 @@ export function CruzFab() {
         onClick={handleOpen}
         onMouseEnter={() => setExpanded(true)}
         aria-label={es ? 'Preguntarle a Cruz' : 'Ask Cruz'}
-        className={`fixed z-40 right-4 group flex items-center bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-700 text-white rounded-full shadow-2xl active:scale-95 transition-all duration-300 ease-out ${
+        disabled={open}
+        className={`fixed z-40 right-4 group flex items-center bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-700 text-white rounded-full shadow-2xl active:scale-90 transition-all duration-300 ease-out disabled:opacity-80 disabled:pointer-events-none ${
           expanded ? 'gap-2 pl-1.5 pr-4 py-1.5' : 'gap-0 p-1'
         }`}
         style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}

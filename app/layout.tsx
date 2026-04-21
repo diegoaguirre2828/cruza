@@ -7,17 +7,9 @@ import { Footer } from "@/components/Footer";
 import { BottomNav } from "@/components/BottomNav";
 import { SWRProvider } from "@/components/SWRProvider";
 import { CruzFab } from "@/components/CruzFab";
-import { ReactionsWelcomeToast } from "@/components/ReactionsWelcomeToast";
-import { FirstVisitInstallSheet } from "@/components/FirstVisitInstallSheet";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { PWASetup } from "@/components/PWASetup";
-import { GlobalInstallPromptCapture } from "@/components/GlobalInstallPromptCapture";
-import { ClaimProInPwa } from "@/components/ClaimProInPwa";
-import { PwaGrantCelebration } from "@/components/PwaGrantCelebration";
-import { SessionPingMount } from "@/components/SessionPingMount";
-import { TwaPromoBanner } from "@/components/TwaPromoBanner";
-import { GlobalPushPromptOnAlertCreated } from "@/components/GlobalPushPromptOnAlertCreated";
-import { MetaPixel } from "@/components/MetaPixel";
+import { ChunkErrorReload } from "@/components/ChunkErrorReload";
+import { LazyGlobalOverlays } from "@/components/LazyGlobalOverlays";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
@@ -105,22 +97,15 @@ export default function RootLayout({
             <Footer />
             <BottomNav />
             <CruzFab />
-            <ReactionsWelcomeToast />
-            <FirstVisitInstallSheet />
             <OfflineBanner />
-            <PWASetup />
-            <GlobalInstallPromptCapture />
-            <ClaimProInPwa />
-            <PwaGrantCelebration />
-            <SessionPingMount />
-            <TwaPromoBanner />
-            <GlobalPushPromptOnAlertCreated />
+            <ChunkErrorReload />
+            {/* All non-critical overlays mount idle, after first paint */}
+            <LazyGlobalOverlays />
           </SWRProvider>
           </LangProvider>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />
-        <MetaPixel />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
           <Script
             async

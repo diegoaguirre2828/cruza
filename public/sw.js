@@ -14,8 +14,8 @@
 //   - Page navigations      → network-first, fall back to cached shell
 //   - Static assets         → cache-first, network fallback
 
-const CACHE = 'cruzar-v5'
-const API_CACHE = 'cruzar-api-v5'
+const CACHE = 'cruzar-v7'
+const API_CACHE = 'cruzar-api-v7'
 const SHELL = ['/']
 
 // API routes that are safe to serve stale-while-revalidate. These are
@@ -96,30 +96,57 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Page navigations (documents) → cache-first with background refresh.
-  // PREVIOUS strategy was network-first, which hung 20-30s on spotty
-  // border cell service because fetch() doesn't error fast when the
-  // network is unreachable. Cache-first makes PWA launches INSTANT
-  // when there's any cached version, and backgrounds the refresh so
-  // next launch has the latest HTML. Trade-off: one-launch lag for
-  // fresh deploys, acceptable because SWR on the /api/* layer still
-  // pulls fresh data into the rendered shell within 1-2 seconds.
+  // Page navigations (documents) → network-first with 3s timeout,
+  // cache fallback. Cache-first (the previous strategy) was making
+  // "Something broke" fire frequently because a cached HTML shell
+  // from an older deploy references Next.js chunk hashes that no
+  // longer exist — new deploy deletes those chunks, browser 404s
+  // on <script src="/_next/static/chunks/page-abc123.js">, React
+  // throws ChunkLoadError, root error.tsx catches it.
+  //
+  // Network-first with a tight timeout keeps PWA launches fast on
+  // spotty border cell (we hand back the cached shell after 3s)
+  // while guaranteeing users on any connection get the current
+  // HTML + current chunk hashes.
   if (request.destination === 'document') {
     e.respondWith(
       (async () => {
-        const cached = await caches.match(request) || await caches.match('/')
+        const cache = await caches.open(CACHE)
+        let networkSettled = false
         const networkPromise = fetch(request)
           .then(res => {
+            networkSettled = true
             if (res && res.ok) {
-              const clone = res.clone()
-              caches.open(CACHE).then(c => c.put(request, clone)).catch(() => {})
+              cache.put(request, res.clone()).catch(() => {})
             }
             return res
           })
-          .catch(() => null)
+          .catch(() => {
+            networkSettled = true
+            return null
+          })
+
+        // 1.5s — tight enough that spotty border cell doesn't stall PWA
+        // launches, slack enough for a decent handshake on working LTE.
+        // Was 3s; users still saw "the app is slow" on cold launches.
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 1500))
+        await Promise.race([networkPromise, timeoutPromise])
+
+        if (networkSettled) {
+          const res = await networkPromise
+          if (res) return res
+        }
+
+        // Network slow or unreachable — fall back to cached shell
+        // so the user sees the app instead of a browser error. The
+        // cached shell may reference stale chunks; ChunkErrorReload
+        // on the client will catch + recover if that happens.
+        const cached = await cache.match(request) || await cache.match('/')
         if (cached) return cached
-        const networkRes = await networkPromise
-        return networkRes || new Response('Offline', { status: 503 })
+
+        // Still nothing — wait out the network fully as a last resort.
+        const res = await networkPromise
+        return res || new Response('Offline', { status: 503 })
       })()
     )
     return

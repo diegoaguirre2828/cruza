@@ -3,6 +3,38 @@
 /* Class-based dark mode for Tailwind v4 */
 @variant dark (&:where(.dark, .dark *));
 
+/* Cross-document view transitions for same-origin nav. Users reported
+   the app feeling "jumpy" between taps/widgets/routes — this gives
+   Chromium browsers a smooth crossfade on every Link traversal. Safari
+   and Firefox degrade to the current hard cut. Scoped to the document
+   so modals/sheets don't get double-animated. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* Universal press feedback for tappable elements — prevents the flat
+   "did my tap register?" confusion. Opt-in via class so we don't hit
+   inputs. */
+.cruzar-tap {
+  transition: transform 120ms ease-out;
+}
+.cruzar-tap:active {
+  transform: scale(0.97);
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from './useAuth'
+import { fetchWithTimeout } from './fetchWithTimeout'
 
 // Favorites hook — wraps /api/saved with a local in-memory Set so any
 // number of PortCards can read "is this starred?" synchronously after
@@ -27,7 +28,7 @@ export function useFavorites() {
       return
     }
     try {
-      const res = await fetch('/api/saved', { cache: 'no-store' })
+      const res = await fetchWithTimeout('/api/saved', { cache: 'no-store' }, 5000)
       if (!res.ok) {
         setFavorites(new Set())
         return

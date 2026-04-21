@@ -2,9 +2,10 @@
 
 import useSWR from 'swr'
 import type { PortWaitTime } from '@/types'
+import { fetchWithTimeout } from './fetchWithTimeout'
 
 const fetcher = (url: string) =>
-  fetch(url, { cache: 'no-store' })
+  fetchWithTimeout(url, { cache: 'no-store' }, 7000)
     .then((r) => r.json())
     .then((d) => (d.ports || []) as PortWaitTime[])
 

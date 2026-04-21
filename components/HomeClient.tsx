@@ -10,7 +10,6 @@ import { WaitingMode } from '@/components/WaitingMode'
 import { BusinessCommandWidget } from '@/components/BusinessCommandWidget'
 import { ExchangeRatePill } from '@/components/ExchangeRatePill'
 import { RegionPicker } from '@/components/RegionPicker'
-import { FbPagePill } from '@/components/FbPagePill'
 import { OnboardingTour } from '@/components/OnboardingTour'
 import { InAppBrowserBanner } from '@/components/InAppBrowserBanner'
 import { HeroLiveDelta } from '@/components/HeroLiveDelta'
@@ -26,10 +25,10 @@ import { ServicesPill } from '@/components/ServicesPill'
 import { CirclesPill } from '@/components/CirclesPill'
 import { HolidayOverlay } from '@/components/HolidayOverlay'
 import { ReciprocityCard } from '@/components/ReciprocityCard'
-import { ContextualNudge } from '@/components/ContextualNudge'
 import { HeroTriad } from '@/components/HeroTriad'
 import { UserCrossingInsights } from '@/components/UserCrossingInsights'
 import { HomeForecast } from '@/components/HomeForecast'
+import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
@@ -40,8 +39,7 @@ import { PwaFirstLaunchWelcome } from '@/components/PwaFirstLaunchWelcome'
 import { SocialProofStrip } from '@/components/SocialProofStrip'
 import { armNudge } from '@/lib/useNudge'
 import { trackEvent } from '@/lib/trackEvent'
-import { affiliatesForRegion } from '@/lib/affiliates'
-import { useHomeRegion } from '@/lib/useHomeRegion'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 import type { PortWaitTime } from '@/types'
 import type { RecentReport } from '@/lib/recentReports'
 
@@ -65,7 +63,7 @@ function ProNoAlertBanner({ lang, tier, user }: { lang: string; tier: string; us
         if (ageDays < 7) { setDismissed(true); return }
       }
     } catch { /* ignore */ }
-    fetch('/api/alerts', { cache: 'no-store' })
+    fetchWithTimeout('/api/alerts', { cache: 'no-store' }, 5000)
       .then((r) => r.ok ? r.json() : { alerts: [] })
       .then((data) => {
         const n = Array.isArray(data?.alerts) ? data.alerts.length : 0
@@ -122,35 +120,71 @@ function ProNoAlertBanner({ lang, tier, user }: { lang: string; tier: string; us
   )
 }
 
-function ShareAppButton({ lang }: { lang: string }) {
-  // Framed as "tell your people" instead of "share the app" — the sender
-  // is taking care of their community, not doing marketing. The psychological
-  // framing is hero, not promoter.
-  const text = lang === 'es'
-    ? 'Le estoy avisando a mi gente que cruza — Cruzar muestra los tiempos de todos los puentes en vivo, sin tener que andar buscando en grupos 🌉'
-    : "I'm letting my people who cross know — Cruzar shows every bridge's wait time live, without scrolling through groups 🌉"
-  const url = 'https://cruzar.app'
-
-  async function handleShare() {
-    if (navigator.share) {
-      try { await navigator.share({ title: 'Cruzar', text, url }) } catch { /* cancelled */ }
-    } else {
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n' + url)}`
-      window.open(waUrl, '_blank')
-    }
-  }
-
-  return (
-    <button
-      onClick={handleShare}
-      className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-green-500 text-green-600 dark:text-green-400 text-sm font-bold hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors active:scale-95"
-    >
-      <span>🤝</span>
-      {lang === 'es' ? 'Avisarle a mi gente' : 'Tell my people'}
-    </button>
-  )
-}
-
+// Priority-ordered list of home nudges. PriorityNudge below picks the
+// first ARMED one (pending or seen) and shows just that nudge. Keeps
+// the activation surface focused — one at a time, dismiss to advance.
+const HOME_NUDGES: NudgeSpec[] = [
+  {
+    nudgeKey: 'saved_bridge_set_alert',
+    emoji: '🔔',
+    titleEs: "Activa alertas pa' tu puente guardado",
+    titleEn: 'Turn on alerts for your saved bridge',
+    subEs: 'Te avisamos cuando baje de 30 min sin tener que andar chequeando',
+    subEn: "We'll ping you when it drops below 30 min — no checking needed",
+    ctaEs: 'Activar',
+    ctaEn: 'Turn on',
+    href: '/dashboard',
+    tone: 'blue',
+  },
+  {
+    nudgeKey: 'pro_insights_unlocked',
+    emoji: '📊',
+    titleEs: 'Ya tienes insights desbloqueados',
+    titleEn: 'Your insights are unlocked',
+    subEs: 'Patrones por hora, mejor día, predicción con clima — todo en /datos',
+    subEn: 'Hourly patterns, best day, weather-aware predictions — all in /datos',
+    ctaEs: 'Abrir',
+    ctaEn: 'Open',
+    href: '/datos',
+    tone: 'purple',
+  },
+  {
+    nudgeKey: 'reports_see_leaderboard',
+    emoji: '🏆',
+    titleEs: 'Ya eres Guardián — mira tu rango',
+    titleEn: "You're a Guardian — see your rank",
+    subEs: 'Los mejores reportantes de tu región suben en la tabla cada semana',
+    subEn: 'The top reporters in your region climb the leaderboard every week',
+    ctaEs: 'Ver tabla',
+    ctaEn: 'See board',
+    href: '/leaderboard',
+    tone: 'amber',
+  },
+  {
+    nudgeKey: 'saved_bridge_invite_circle',
+    emoji: '👥',
+    titleEs: 'Invita a tu gente a tu círculo',
+    titleEn: 'Invite your people to your circle',
+    subEs: 'Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática',
+    subEn: 'When you cross, mom/spouse/kids get an automatic alert',
+    ctaEs: 'Invitar',
+    ctaEn: 'Invite',
+    href: '/dashboard?tab=circle',
+    tone: 'green',
+  },
+  {
+    nudgeKey: 'home_discover_features',
+    emoji: '✨',
+    titleEs: '¿Sabías todo lo que hace Cruzar?',
+    titleEn: 'Know what Cruzar can do?',
+    subEs: 'Alertas, insights, optimizador de ruta, cámaras en vivo — todo en una lista',
+    subEn: 'Alerts, insights, route optimizer, live cameras — everything in one list',
+    ctaEs: 'Ver',
+    ctaEn: 'See',
+    href: '/features',
+    tone: 'purple',
+  },
+]
 
 interface SavedPort {
   port_id: string
@@ -169,9 +203,9 @@ function SavedCrossings({ initialPorts }: { initialPorts: PortWaitTime[] | null 
     setStatus('loading')
     const portsPromise = initialPorts
       ? Promise.resolve({ ports: initialPorts })
-      : fetch('/api/ports').then(r => r.json())
+      : fetchWithTimeout('/api/ports', {}, 7000).then(r => r.json())
     Promise.all([
-      fetch('/api/saved').then(r => r.json()),
+      fetchWithTimeout('/api/saved', {}, 5000).then(r => r.json()),
       portsPromise,
     ]).then(([savedData, portsData]) => {
       const ports: SavedPort[] = (savedData.saved || []).map((s: { port_id: string }) => {
@@ -283,8 +317,8 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
     // Parallel fetch — both are small and the home page waits for
     // neither (HeroTriad handles missing favorite gracefully).
     Promise.all([
-      fetch('/api/profile').then((r) => r.ok ? r.json() : null).catch(() => null),
-      fetch('/api/saved').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetchWithTimeout('/api/profile', {}, 5000).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetchWithTimeout('/api/saved', {}, 5000).then((r) => r.ok ? r.json() : null).catch(() => null),
     ]).then(([profileData, savedData]) => {
       setDisplayName(profileData?.profile?.display_name || null)
       const firstSaved = savedData?.saved?.[0]?.port_id || null
@@ -434,23 +468,21 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             ambient content). */}
         {!isBusiness && tier !== 'guest' && <ReciprocityCard />}
 
-        {/* Contextual discovery nudge — only fires after the user has
-            hit the home page 3+ times. Points them at /features so
-            they can find the things they've been missing. Dismissable;
-            never re-fires once dismissed. */}
+        {/* Feature-discovery + activation nudges. Previously rendered as
+            5 stacked ContextualNudge components that all fired
+            independently — two or three could be pending at once and
+            push the port list off screen. PriorityNudge picks ONE in
+            priority order and shows just that one; the next armed
+            nudge takes the slot once the current is dismissed or
+            taken. Same UX, one slot. */}
         {!isBusiness && (
-          <ContextualNudge
-            nudgeKey="home_discover_features"
-            emoji="✨"
-            titleEs="¿Sabías todo lo que hace Cruzar?"
-            titleEn="Know what Cruzar can do?"
-            subEs="Alertas, insights, optimizador de ruta, cámaras en vivo — todo en una lista"
-            subEn="Alerts, insights, route optimizer, live cameras — everything in one list"
-            ctaEs="Ver"
-            ctaEn="See"
-            href="/features"
+          <PriorityNudge
             lang={lang}
-            tone="purple"
+            nudges={HOME_NUDGES.filter(n => {
+              if (n.nudgeKey === 'pro_insights_unlocked') return tier === 'pro'
+              if (n.nudgeKey === 'home_discover_features') return true
+              return tier !== 'guest'
+            })}
           />
         )}
 
@@ -527,80 +559,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             scrolling. Data from /api/stats/community, 60s edge-cached. */}
         {!isBusiness && <SocialProofStrip />}
 
-        {/* Nudge: just-saved-a-bridge → set an alert. Appears only for
-            signed-in non-business users with at least one saved bridge
-            but no active alert. Dismissable, sticks. */}
-        {!isBusiness && tier !== 'guest' && (
-          <ContextualNudge
-            nudgeKey="saved_bridge_set_alert"
-            emoji="🔔"
-            titleEs="Activa alertas pa' tu puente guardado"
-            titleEn="Turn on alerts for your saved bridge"
-            subEs="Te avisamos cuando baje de 30 min sin tener que andar chequeando"
-            subEn="We'll ping you when it drops below 30 min — no checking needed"
-            ctaEs="Activar"
-            ctaEn="Turn on"
-            href="/dashboard"
-            lang={lang}
-            tone="blue"
-          />
-        )}
-
-        {/* Nudge: saved a bridge → invite your circle. Surfaces the
-            Life360-style circles feature Diego noticed was buried
-            (2026-04-14 feature-discipline pass). */}
-        {!isBusiness && tier !== 'guest' && (
-          <ContextualNudge
-            nudgeKey="saved_bridge_invite_circle"
-            emoji="👥"
-            titleEs="Invita a tu gente a tu círculo"
-            titleEn="Invite your people to your circle"
-            subEs="Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática"
-            subEn="When you cross, mom/spouse/kids get an automatic alert"
-            ctaEs="Invitar"
-            ctaEn="Invite"
-            href="/dashboard?tab=circle"
-            lang={lang}
-            tone="green"
-          />
-        )}
-
-        {/* Nudge: 3+ reports → leaderboard. Surfaces /leaderboard after
-            the user has enough reports to actually show up on it. */}
-        {!isBusiness && tier !== 'guest' && (
-          <ContextualNudge
-            nudgeKey="reports_see_leaderboard"
-            emoji="🏆"
-            titleEs="Ya eres Guardián — mira tu rango"
-            titleEn="You're a Guardian — see your rank"
-            subEs="Los mejores reportantes de tu región suben en la tabla cada semana"
-            subEn="The top reporters in your region climb the leaderboard every week"
-            ctaEs="Ver tabla"
-            ctaEn="See board"
-            href="/leaderboard"
-            lang={lang}
-            tone="amber"
-          />
-        )}
-
-        {/* Nudge: Pro/Business who never visited /datos → insights unlocked.
-            Prevents the "I pay for Pro but don't know what I get" trap. */}
-        {!isBusiness && (tier === 'pro') && (
-          <ContextualNudge
-            nudgeKey="pro_insights_unlocked"
-            emoji="📊"
-            titleEs="Ya tienes insights desbloqueados"
-            titleEn="Your insights are unlocked"
-            subEs="Patrones por hora, mejor día, predicción con clima — todo en /datos"
-            subEn="Hourly patterns, best day, weather-aware predictions — all in /datos"
-            ctaEs="Abrir"
-            ctaEn="Open"
-            href="/datos"
-            lang={lang}
-            tone="purple"
-          />
-        )}
-
         {/* NearMeRail removed 2026-04-14 per Diego's directive.
             Rationale: the main list is now scoped to the user's home
             region anyway, so a "near me" rail is redundant. Users who
@@ -627,12 +585,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             red counts + the fastest crossing in each region. Users
             can tap a region to jump straight to its fastest bridge. */}
         {!isBusiness && <RegionalSnapshot ports={initialPorts} />}
-
-        {/* Contextual affiliate grid — 2×2 of border services filtered
-            by the user's home region. Insurance + eSIM + credit cards
-            surface for everyone; region-specific offers (Baja Bound,
-            Tijuana dental) slot in when the user's home region matches. */}
-        {!isBusiness && <HomeAffiliateGrid lang={lang} />}
 
         {/* AdSense — Pro/Business users skip automatically via AdBanner. */}
         {!isBusiness && (
@@ -666,54 +618,11 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
           </Link>
         )}
 
-        {/* Exchange rate lives as a pill in the header now, on tap it opens
-            the full widget in a bottom sheet — no big card below the list. */}
-
-        {/* FB page follow — moved out of the top header row because Diego
-            didn't want the Follow FB pill as the first thing users see.
-            Lives here as a small, non-prominent action below the main list. */}
-        {!isBusiness && (
-          <div className="mt-4 flex justify-center">
-            <FbPagePill />
-          </div>
-        )}
-
-        {/* Services in Mexico banner — moved below the list */}
-        {!isBusiness && (
-          <Link href="/services" className="block mt-3">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-base font-bold text-white">
-                    {lang === 'es' ? '🇲🇽 Servicios en México' : '🇲🇽 Services in Mexico'}
-                  </p>
-                  <p className="text-xs text-emerald-100 mt-0.5">
-                    {lang === 'es'
-                      ? 'Dental, farmacias, taxis y más cerca del puente'
-                      : 'Dental, pharmacy, taxis & more near the bridge'}
-                  </p>
-                </div>
-                <span className="text-white text-sm font-semibold flex-shrink-0 ml-3">
-                  {lang === 'es' ? 'Ver →' : 'See →'}
-                </span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { emoji: '🦷', en: 'Dental', es: 'Dental' },
-                  { emoji: '💊', en: 'Pharmacy', es: 'Farmacia' },
-                  { emoji: '🚕', en: 'Taxis', es: 'Taxis' },
-                  { emoji: '🔧', en: 'Auto', es: 'Mecánico' },
-                ].map(c => (
-                  <span key={c.en} className="bg-white/20 text-white text-xs font-medium px-2.5 py-1 rounded-full">
-                    {c.emoji} {lang === 'es' ? c.es : c.en}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </Link>
-        )}
-
-        <ShareAppButton lang={lang} />
+        {/* Home got noisy — 5 stacked banners (FB follow + Services-in-Mexico +
+            ShareApp + SENTRI + affiliate grid) were competing for attention
+            below the port list. They all live at /mas or /servicios now
+            (reachable via BottomNav). Only the conversion-critical
+            Signup CTA and Pro upsell stay here. */}
 
         {/* Pro upsell — shown to free users only */}
         {tier === 'free' && (
@@ -741,29 +650,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             <HomeReportsFeed initialReports={initialReports} />
           </div>
         )}
-
-        {/* SENTRI banner — bottom, hidden for business accounts */}
-        {!isBusiness && (
-          <a href="https://ttp.cbp.dhs.gov/" target="_blank" rel="noopener noreferrer" className="block mt-4">
-            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-bold text-white">
-                    ⚡ {lang === 'es' ? 'Obtén SENTRI — Cruza Más Rápido' : 'Get SENTRI — Skip the Line'}
-                  </p>
-                  <p className="text-xs text-amber-100 mt-0.5">
-                    {lang === 'es'
-                      ? 'Ahorra 30–90 min en promedio · Cuota única de $122.25'
-                      : 'Save 30–90 min on average · One-time $122.25 fee'}
-                  </p>
-                </div>
-                <span className="text-white text-sm font-semibold flex-shrink-0 ml-3">
-                  {lang === 'es' ? 'Ver →' : 'Apply →'}
-                </span>
-              </div>
-            </div>
-          </a>
-        )}
       </div>
 
       {/* Overlays render AFTER the hero in DOM so they can't push the
@@ -777,73 +663,3 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
   )
 }
 
-// Home-page affiliate grid — 2×2 of top services for border crossers,
-// filtered by the user's home region. Lives below the RegionalSnapshot
-// so the data is always first, the services are context. Each card
-// opens in a new tab; tap telemetry fires affiliate_clicked with
-// source='home'.
-function HomeAffiliateGrid({ lang }: { lang: string }) {
-  const { homeRegion } = useHomeRegion()
-  const es = lang === 'es'
-  const offers = affiliatesForRegion(homeRegion ?? 'all').slice(0, 4)
-  if (offers.length === 0) return null
-  const seeAllHref = homeRegion
-    ? `/servicios?region=${encodeURIComponent(homeRegion)}`
-    : '/servicios'
-  return (
-    <section className="mt-6" aria-label={es ? 'Servicios pa\' los que cruzan' : 'Services for border crossers'}>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-          {es ? 'Servicios pa\' los que cruzan' : 'Services for border crossers'}
-        </h2>
-        <Link
-          href={seeAllHref}
-          onClick={() =>
-            trackEvent('affiliate_clicked', {
-              id: 'see_all',
-              category: 'other',
-              source: 'home_grid_see_all',
-              region: homeRegion ?? 'all',
-            })
-          }
-          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
-        >
-          {es ? 'Ver todos →' : 'See all →'}
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        {offers.map((o) => (
-          <a
-            key={o.id}
-            href={o.url}
-            target="_blank"
-            rel="sponsored noopener"
-            onClick={() =>
-              trackEvent('affiliate_clicked', {
-                id: o.id,
-                category: o.category,
-                source: 'home_grid',
-                region: homeRegion ?? 'all',
-              })
-            }
-            className="flex flex-col gap-1 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/60 p-3 shadow-sm active:scale-[0.99] transition-colors"
-          >
-            <span className="text-xl" aria-hidden>{o.icon}</span>
-            <p className="text-[12px] font-bold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-              {es ? o.headline.es : o.headline.en}
-            </p>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-snug line-clamp-2">
-              {es ? o.sub.es : o.sub.en}
-            </p>
-            <span className="mt-0.5 text-[11px] font-bold text-blue-600 dark:text-blue-400">
-              {es ? o.cta.es : o.cta.en} →
-            </span>
-          </a>
-        ))}
-      </div>
-      <p className="mt-1.5 text-[10px] text-gray-400 dark:text-gray-500">
-        {es ? 'Patrocinado · abren en otra pestaña' : 'Sponsored · open in new tab'}
-      </p>
-    </section>
-  )
-}
