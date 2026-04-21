@@ -518,12 +518,20 @@ export default function AdminPage() {
             <h1 className="text-xl font-bold text-gray-900">🔐 Admin Panel</h1>
             <p className="text-xs text-gray-400">cruzar.app</p>
           </div>
-          <a
-            href="/admin/buzz"
-            className="flex-shrink-0 inline-flex items-center gap-1.5 bg-gradient-to-br from-orange-500 to-pink-600 text-white text-xs font-black px-3 py-2 rounded-lg shadow-sm hover:scale-105 transition-transform"
-          >
-            📣 Buzz queue →
-          </a>
+          <div className="flex-shrink-0 flex items-center gap-2">
+            <a
+              href="/admin/translate"
+              className="inline-flex items-center gap-1.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-black px-3 py-2 rounded-lg shadow-sm hover:scale-105 transition-transform"
+            >
+              🌐 Translate →
+            </a>
+            <a
+              href="/admin/buzz"
+              className="inline-flex items-center gap-1.5 bg-gradient-to-br from-orange-500 to-pink-600 text-white text-xs font-black px-3 py-2 rounded-lg shadow-sm hover:scale-105 transition-transform"
+            >
+              📣 Buzz queue →
+            </a>
+          </div>
         </div>
 
         {/* Ops at a glance — live counters tile Diego asked for. Renders
