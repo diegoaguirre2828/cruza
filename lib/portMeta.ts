@@ -17,6 +17,13 @@ export interface PortMeta {
   lat: number
   lng: number
   localName?: string
+  // Per-bridge CBP sensor trust. When 'high' (= CBP sensor here is known
+  // to chronically under-report, e.g. Brownsville B&M), the /api/ports
+  // blend refuses to publish a CBP-only "fast" number unless another
+  // signal (camera, HERE, community) confirms. Added 2026-04-21 after
+  // Diego flagged B&M showing 10 min while the live cam showed a stopped
+  // queue. Set conservatively — default is 'normal'.
+  cbpLag?: 'high' | 'normal'
 }
 
 export type MegaRegion =
@@ -68,10 +75,10 @@ export const PORT_META: Record<string, PortMeta> = {
   //   Gateway = "Puente Nuevo" (the newer centro crossing)
   //   Veterans International = "Los Tomates" (east, Bagdad road)
   //   Free Trade = "Los Indios" (west, commercial focus)
-  '535501': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.9007, lng: -97.4935, localName: 'Puente Viejo / B&M' },
+  '535501': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.9007, lng: -97.4935, localName: 'Puente Viejo / B&M', cbpLag: 'high' },
   '535502': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.8726, lng: -97.4866, localName: 'Los Tomates' },
   '535503': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 26.0416, lng: -97.7367, localName: 'Los Indios / Free Trade' },
-  '535504': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.9044, lng: -97.5040, localName: 'Puente Nuevo / Gateway' },
+  '535504': { city: 'Brownsville', region: RGV_BROWNSVILLE, megaRegion: 'rgv', lat: 25.9044, lng: -97.5040, localName: 'Puente Nuevo / Gateway', cbpLag: 'high' },
 
   // ── Nuevo Laredo ↔ Laredo ────────────────────────────────
   '230401': { city: 'Laredo', region: R_LAREDO, megaRegion: 'laredo', lat: 27.4994, lng: -99.5076, localName: 'Bridge I (Gateway to the Americas)' },

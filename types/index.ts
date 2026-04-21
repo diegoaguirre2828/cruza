@@ -47,10 +47,17 @@ export interface PortWaitTime {
   commercialClosed: boolean
   recordedAt: string | null
   // Provenance — added so the UI can show users where the headline number comes from
-  source?: 'cbp' | 'community' | 'consensus' | 'traffic'
+  source?: 'cbp' | 'community' | 'consensus' | 'traffic' | 'camera'
   cbpVehicle?: number | null
   communityVehicle?: number | null
   trafficVehicle?: number | null
+  // Camera-vision estimate (Claude Haiku looking at the live feed).
+  // `cameraConfidence` is the model's own confidence; the blend only
+  // promotes a camera reading to authoritative when confidence is
+  // 'high' or 'medium'.
+  cameraVehicle?: number | null
+  cameraConfidence?: 'high' | 'medium' | 'low' | null
+  cameraAgeMin?: number | null
   reportCount?: number
   lastReportMinAgo?: number | null
   cbpStaleMin?: number | null
