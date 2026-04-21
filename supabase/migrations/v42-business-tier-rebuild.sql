@@ -80,8 +80,10 @@ ALTER TABLE drivers
   ADD COLUMN IF NOT EXISTS shift_started_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS assigned_port_id TEXT;
 
+-- Drivers table uses `owner_id` (fleet owner) not `user_id` — drivers
+-- themselves don't have accounts; tokens auth them. Indexing on owner.
 CREATE INDEX IF NOT EXISTS idx_drivers_on_shift
-  ON drivers(user_id, on_shift, location_updated_at DESC);
+  ON drivers(owner_id, on_shift, location_updated_at DESC);
 
 -- ─────────────────────────────────────────────────────────────────
 -- 5. shipment_events — timeline for trip replay
