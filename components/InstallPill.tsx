@@ -61,17 +61,17 @@ export function InstallPill() {
   return (
     <Link
       href="/mas"
-      className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full pl-2 pr-1.5 py-1.5 shadow-sm active:scale-[0.97] transition-transform"
+      className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full pl-2 pr-1.5 py-1.5 shadow-sm active:scale-[0.97] transition-transform max-w-full"
     >
       <span className="text-base leading-none">📲</span>
       <span className="text-[11px] font-black whitespace-nowrap">
-        {es ? 'Agregar a inicio · 3 meses Pro' : 'Add to Home Screen · 3mo Pro'}
+        {es ? 'Instalar · 3 meses Pro' : 'Install · 3mo Pro'}
       </span>
       <button
         type="button"
         onClick={handleDismiss}
         aria-label={es ? 'Cerrar' : 'Dismiss'}
-        className="ml-0.5 flex items-center justify-center w-4 h-4 rounded-full text-white/70 hover:text-white hover:bg-white/10 text-[13px] leading-none"
+        className="ml-0.5 flex items-center justify-center w-5 h-5 rounded-full text-white/70 hover:text-white hover:bg-white/10 text-[13px] leading-none"
       >
         ×
       </button>

@@ -16,7 +16,7 @@ export function ServicesPill() {
   return (
     <Link
       href="/services"
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700/40 text-[11px] font-bold text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors"
+      className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700/40 text-[11px] font-bold text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors max-w-full"
     >
       <span>🌮</span>
       <span>{es ? 'Servicios' : 'Services'}</span>

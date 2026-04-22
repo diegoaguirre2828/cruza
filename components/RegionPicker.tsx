@@ -25,7 +25,7 @@ export function RegionPicker() {
 
   if (loading) {
     return (
-      <div className="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full px-2.5 py-1 text-[11px] font-semibold text-gray-400">
+      <div className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full pl-2 pr-3 py-1.5 text-[11px] font-semibold text-gray-400">
         <MapPin className="w-3 h-3" />
         <span>…</span>
       </div>
@@ -40,7 +40,7 @@ export function RegionPicker() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full px-2.5 py-1 text-[11px] font-bold text-blue-700 dark:text-blue-300 active:scale-95 transition-transform"
+        className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full pl-2 pr-3 py-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 active:scale-95 transition-transform max-w-full"
       >
         <MapPin className="w-3 h-3" />
         <span>{currentLabel}</span>

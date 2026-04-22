@@ -493,45 +493,45 @@ export function PortDetailClient({ port, portId }: Props) {
       <div className="grid grid-cols-3 gap-2">
         <button
           onClick={() => setShowJustCrossed(true)}
-          className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border border-green-300 dark:border-green-700 bg-white dark:bg-gray-800 text-green-700 dark:text-green-400 text-[11px] font-bold active:scale-95 transition-all"
+          className="flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-[11px] font-black shadow-sm active:scale-95 active:bg-green-100 dark:active:bg-green-900/40 transition-all"
         >
           <span className="text-lg leading-none">✅</span>
-          <span className="leading-tight">{es ? 'Crucé' : 'Crossed'}</span>
+          <span className="leading-tight text-center truncate max-w-full">{es ? 'Crucé' : 'Crossed'}</span>
         </button>
         {user ? (
           <button
             onClick={toggleSave}
             disabled={saving}
-            className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border text-[11px] font-bold active:scale-95 transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 text-[11px] font-black shadow-sm active:scale-95 transition-all ${
               saved
-                ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 active:bg-yellow-100 dark:active:bg-yellow-900/40'
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700'
             }`}
           >
             <span className="text-lg leading-none">{saved ? '⭐' : '☆'}</span>
-            <span className="leading-tight">{saved ? (es ? 'Guardado' : 'Saved') : (es ? 'Guardar' : 'Save')}</span>
+            <span className="leading-tight text-center truncate max-w-full">{saved ? (es ? 'Guardado' : 'Saved') : (es ? 'Guardar' : 'Save')}</span>
           </button>
         ) : (
           <Link
             href="/signup"
-            className="flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-[11px] font-bold active:scale-95 transition-all"
+            className="flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-[11px] font-black shadow-sm active:scale-95 active:bg-gray-50 dark:active:bg-gray-700 transition-all"
           >
             <span className="text-lg leading-none">☆</span>
-            <span className="leading-tight">{es ? 'Guardar' : 'Save'}</span>
+            <span className="leading-tight text-center truncate max-w-full">{es ? 'Guardar' : 'Save'}</span>
           </Link>
         )}
         <button
           onClick={handleShare}
-          className={`flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 rounded-xl border text-[11px] font-bold active:scale-95 transition-all ${
+          className={`flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 text-[11px] font-black shadow-sm active:scale-95 transition-all ${
             shareCopied
               ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700'
           }`}
         >
           <span className="text-lg leading-none">
             {shareCopied ? <Check className="w-[18px] h-[18px]" /> : <Share2 className="w-[18px] h-[18px]" />}
           </span>
-          <span className="leading-tight">
+          <span className="leading-tight text-center truncate max-w-full">
             {shareCopied ? (es ? 'Copiado' : 'Copied') : (es ? 'Compartir' : 'Share')}
           </span>
         </button>
@@ -588,35 +588,6 @@ export function PortDetailClient({ port, portId }: Props) {
       {/* 10s SharePrompt popup removed 2026-04-21 — it was the clearest
           example of ambient interruption, firing on every visit. Share
           is already a primary action in the action row at the top. */}
-
-      {/* Port-specific contextual discovery. Priority-ordered: alerts
-          for this bridge (if visited 2+ times), route optimizer (Pro
-          users who haven't tried it), share with circle (signed-in
-          with saved bridge). One at a time, dismiss to advance. */}
-      <PriorityNudge lang={lang} nudges={PORT_DETAIL_NUDGES} />
-
-      {/* Contextual affiliates — surface insurance + eSIM AT THE MOMENT
-          OF NEED (someone staring at a bridge wait time is about to
-          cross). Shown to all users, guest or auth, because affiliates
-          are revenue and hiding them behind the Pro gate makes no sense.
-          Sits between the hero and the camera block so it's unmissable
-          without pushing the cameras below the fold. */}
-      <PortDetailAffiliateCard portId={portId} es={es} />
-
-      <div className="mb-4">
-        <AdBanner slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PORT} />
-      </div>
-
-      {/* Live bridge camera — Pro-gated when a feed is registered for this
-          port. Sits below the wait number so it's the first thing after
-          the data, matching how Fronter uses cameras as the hero upsell. */}
-      <BridgeCameras portId={portId} portName={port.portName} />
-
-      {/* Community photo rail — user-submitted bridge photos. Below
-          the official DOT cameras so there's no confusion about which
-          is which. See project_cruzar_photo_metadata_moat_20260414.md
-          for the full spec. */}
-      <CommunityBridgePhotos portId={portId} portName={port.portName} />
 
       {/* Community vs CBP signal */}
       {communitySignal && (() => {
@@ -716,6 +687,120 @@ export function PortDetailClient({ port, portId }: Props) {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════
+          LIVE COMMUNITY LAYER — promoted 2026-04-21 per Diego feedback.
+          Users stop scrolling after "what people are seeing now" — the
+          bridge chat and report form must be reachable without
+          hunting past 6 sections of charts. Cameras + photos +
+          affiliates + detailed stats now sit below.
+          ═══════════════════════════════════════════════════════════════ */}
+
+      {/* Charla del puente — the reports feed reframed as a live
+          community chat. Same data as before, conversational framing.
+          Non-gated on purpose — community features benefit from scale. */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">💬</span>
+            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
+              {es ? 'Charla del puente' : 'Bridge chat'}
+            </h2>
+          </div>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-green-600 dark:text-green-400">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            {es ? 'EN VIVO' : 'LIVE'}
+          </span>
+        </div>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 -mt-1 leading-snug">
+          {es
+            ? 'Lo que la gente está reportando ahorita · de más reciente a más antiguo'
+            : 'What people are reporting right now · newest first'}
+        </p>
+        <ReportsFeed portId={portId} refresh={reportRefresh} />
+      </div>
+
+      {/* Submit report — moved up next to the chat so reporting is a
+          one-scroll action from reading what others see. */}
+      <div
+        id="report"
+        className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-5 shadow-sm scroll-mt-20 transition-all ${
+          reportPulse
+            ? 'border-blue-500 ring-4 ring-blue-500/30 shadow-xl'
+            : 'border-blue-500 dark:border-blue-600'
+        }`}
+      >
+        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
+          📣 {es ? '¿Cruzaste? Reporta aquí' : 'Did you cross? Report here'}
+        </h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          {es ? 'Ayuda a otros viajeros con tu reporte · Gana puntos' : 'Help fellow travelers with your report · Earn points'}
+        </p>
+        <ReportForm portId={portId} onSubmitted={() => setReportRefresh(r => r + 1)} port={port} />
+      </div>
+
+      {/* Proactive circle ping — only visible to logged-in users with circles */}
+      <PingCircleButton portId={portId} waitMinutes={port?.vehicle ?? null} />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          SECONDARY LAYER — cameras, community photos, affiliates, ad.
+          Still visible, no longer blocking the chat.
+          ═══════════════════════════════════════════════════════════════ */}
+
+      {/* Live bridge camera — Pro-gated when a feed is registered for this
+          port. Sits below the wait number so it's the first thing after
+          the data, matching how Fronter uses cameras as the hero upsell. */}
+      <BridgeCameras portId={portId} portName={port.portName} />
+
+      {/* Community photo rail — user-submitted bridge photos. Below
+          the official DOT cameras so there's no confusion about which
+          is which. See project_cruzar_photo_metadata_moat_20260414.md
+          for the full spec. */}
+      <CommunityBridgePhotos portId={portId} portName={port.portName} />
+
+      {/* Contextual affiliates — surface insurance + eSIM AT THE MOMENT
+          OF NEED (someone staring at a bridge wait time is about to
+          cross). Shown to all users, guest or auth, because affiliates
+          are revenue and hiding them behind the Pro gate makes no sense. */}
+      <PortDetailAffiliateCard portId={portId} es={es} />
+
+      <div className="mb-4">
+        <AdBanner slot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_PORT} />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          DEEP DATA LAYER — collapsed by default. Diego 2026-04-21:
+          "historical patterns and live 24hours feel like filler for the
+          typical user." Hidden behind a single disclosure so the typical
+          user isn't scrolling past 4 charts, but the data nerd / Pro
+          user can still reach it.
+          ═══════════════════════════════════════════════════════════════ */}
+      <details className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <summary className="list-none cursor-pointer select-none px-5 py-4 flex items-center justify-between gap-3 active:bg-gray-50 dark:active:bg-gray-700/40 transition-colors">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-lg leading-none">📊</span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
+                {es ? 'Patrones y datos' : 'Patterns & data'}
+              </p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
+                {es
+                  ? 'Últimas 24 h · patrón histórico · mejores horarios · alerta detallada'
+                  : 'Last 24 h · historical pattern · best times · detailed alert'}
+              </p>
+            </div>
+          </div>
+          <span className="flex-shrink-0 text-xs font-bold text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 group-open:hidden">
+            {es ? 'Ver ▾' : 'Show ▾'}
+          </span>
+          <span className="flex-shrink-0 text-xs font-bold text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hidden group-open:inline-flex items-center">
+            {es ? 'Ocultar ▴' : 'Hide ▴'}
+          </span>
+        </summary>
+        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-gray-100 dark:border-gray-700">
 
       {/* Quick Alert card */}
       {user && canAccess(tier, 'alerts') ? (
@@ -993,56 +1078,16 @@ export function PortDetailClient({ port, portId }: Props) {
           </div>
         </div>
       )}
-
-      {/* Charla del puente — the reports feed reframed as a live
-          community chat. Same data as before, conversational framing.
-          Non-gated on purpose — community features benefit from scale. */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-base">💬</span>
-            <h2 className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              {es ? 'Charla del puente' : 'Bridge chat'}
-            </h2>
-          </div>
-          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-green-600 dark:text-green-400">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-            </span>
-            {es ? 'EN VIVO' : 'LIVE'}
-          </span>
         </div>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-3 -mt-1 leading-snug">
-          {es
-            ? 'Lo que la gente está reportando ahorita · de más reciente a más antiguo'
-            : 'What people are reporting right now · newest first'}
-        </p>
-        <ReportsFeed portId={portId} refresh={reportRefresh} />
-      </div>
+      </details>
 
-      {/* Proactive circle ping — only visible to logged-in users with circles */}
-      <PingCircleButton portId={portId} waitMinutes={port?.vehicle ?? null} />
+      {/* Port-specific contextual discovery. Priority-ordered: alerts
+          for this bridge (if visited 2+ times), route optimizer (Pro
+          users who haven't tried it), share with circle (signed-in
+          with saved bridge). One at a time, dismiss to advance. Moved
+          to tail 2026-04-21 — was pushing core content down. */}
+      <PriorityNudge lang={lang} nudges={PORT_DETAIL_NUDGES} />
 
-      {/* Submit report */}
-      <div
-        id="report"
-        className={`bg-white dark:bg-gray-800 rounded-2xl border-2 p-5 shadow-sm scroll-mt-20 transition-all ${
-          reportPulse
-            ? 'border-blue-500 ring-4 ring-blue-500/30 shadow-xl'
-            : 'border-blue-500 dark:border-blue-600'
-        }`}
-      >
-        <h2 className="text-base font-bold text-gray-900 dark:text-gray-100 mb-1">
-          📣 {es ? '¿Cruzaste? Reporta aquí' : 'Did you cross? Report here'}
-        </h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-          {es ? 'Ayuda a otros viajeros con tu reporte · Gana puntos' : 'Help fellow travelers with your report · Earn points'}
-        </p>
-        <ReportForm portId={portId} onSubmitted={() => setReportRefresh(r => r + 1)} port={port} />
-      </div>
-
-      {/* Guest alert CTA — make this crossing the hook */}
       {/* Bilingual FAQ with FAQPage JSON-LD. City-scoped if the port
           belongs to a known rollup city, otherwise shared-only. */}
       <PortFAQ citySlug={cityForPortId(portId) ?? undefined} />
