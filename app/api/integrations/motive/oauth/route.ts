@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { randomBytes } from 'crypto'
 import { getServiceClient } from '@/lib/supabase'
+
+const STATE_COOKIE = 'cruzar_motive_oauth_state'
 
 // Motive (formerly KeepTruckin) OAuth 2.0 Connect flow.
 //
@@ -50,6 +53,15 @@ export async function GET(req: NextRequest) {
   }
 
   if (code) {
+    const incomingState = req.nextUrl.searchParams.get('state') || ''
+    const [stateUserId, stateNonce] = incomingState.split(':')
+    const cookieNonce = req.cookies.get(STATE_COOKIE)?.value
+    if (!cookieNonce || !stateNonce || stateNonce !== cookieNonce || stateUserId !== user.id) {
+      const res = NextResponse.redirect(new URL('/business?motive_error=state_mismatch', req.url))
+      res.cookies.delete(STATE_COOKIE)
+      return res
+    }
+
     const tokenRes = await fetch(MOTIVE_TOKEN, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -87,13 +99,25 @@ export async function GET(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' })
 
-    return NextResponse.redirect(new URL('/business?motive=connected', req.url))
+    const res = NextResponse.redirect(new URL('/business?motive=connected', req.url))
+    res.cookies.delete(STATE_COOKIE)
+    return res
   }
 
+  const nonce = randomBytes(16).toString('hex')
+  const state = `${user.id}:${nonce}`
   const authUrl = new URL(MOTIVE_AUTH)
   authUrl.searchParams.set('client_id', clientId)
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('redirect_uri', redirectUri)
-  authUrl.searchParams.set('state', user.id)
-  return NextResponse.redirect(authUrl.toString())
+  authUrl.searchParams.set('state', state)
+  const res = NextResponse.redirect(authUrl.toString())
+  res.cookies.set(STATE_COOKIE, nonce, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600,
+    path: '/',
+  })
+  return res
 }

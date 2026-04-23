@@ -180,8 +180,11 @@ export async function GET(req: NextRequest) {
     try {
       const base = process.env.NEXT_PUBLIC_APP_URL || 'https://www.cruzar.app'
       const r = await fetch(
-        `${base}/api/cron/install-reminder?secret=${encodeURIComponent(process.env.CRON_SECRET || '')}`,
-        { cache: 'no-store' }
+        `${base}/api/cron/install-reminder`,
+        {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${process.env.CRON_SECRET || ''}` },
+        }
       )
       reminderResult = await r.json().catch(() => ({ ok: r.ok }))
     } catch (e) {

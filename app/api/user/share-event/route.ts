@@ -47,6 +47,19 @@ export async function POST(req: NextRequest) {
 
   const db = getServiceClient()
 
+  // Rate-limit: count this user's share_events in the last 24h BEFORE the
+  // new insert. Reward is gated to max 3 eligible shares per 24h so a
+  // scripted Copy-button loop can't farm 150 days of Pro in seconds.
+  // If share_events query errors or table is missing, fail closed (no
+  // reward) — audit 2026-04-23 H6.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { count: recentShares, error: countErr } = await db
+    .from('share_events')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', since)
+  const overDailyCap = countErr !== null || (recentShares ?? 0) >= 3
+
   // Insert a row into share_events so the admin viral-loop view can
   // show per-share timestamps + channel breakdowns. Best-effort; if
   // the table doesn't exist yet (migration not run), we still bump
@@ -65,17 +78,12 @@ export async function POST(req: NextRequest) {
 
   // Share-to-unlock: every 3rd share bumps pro_via_pwa_until +30 days,
   // capped at the first 15 shares (so a max of +150 days of Pro bonus
-  // per user). 2026-04-20 audit lever 3 — turns the static share
-  // buttons into a rewarded growth loop.
-  //
-  // Cheat vector acknowledged: user can self-share via Copy button.
-  // Mitigation is cheap — each bump is only 30 days of Pro that most
-  // users already have via the 90-day PWA grant anyway. Real cost to
-  // Cruzar is zero. Keep the logic simple + trust-based for now.
+  // per user). Rate-limit above caps at 3 eligible shares per 24h so
+  // the total 150 days can't be farmed faster than ~50 calendar days.
   let proExtended = false
   let newProUntil: string | null = profile?.pro_via_pwa_until ?? null
 
-  if (next > 0 && next % 3 === 0 && next <= 15) {
+  if (next > 0 && next % 3 === 0 && next <= 15 && !overDailyCap) {
     const baseline = profile?.pro_via_pwa_until
       ? new Date(Math.max(Date.now(), new Date(profile.pro_via_pwa_until).getTime()))
       : new Date()

@@ -132,11 +132,17 @@ function describeSecret(v: string | undefined): Record<string, unknown> {
   const hasLeadingSpace = v.length !== v.trimStart().length
   const hasTrailingSpace = v.length !== v.trimEnd().length
   const hasNewline = /[\r\n]/.test(v)
+  const mode =
+    v.startsWith('sk_live_') || v.startsWith('pk_live_') ? 'live'
+    : v.startsWith('sk_test_') || v.startsWith('pk_test_') ? 'test'
+    : v.startsWith('whsec_') ? 'webhook'
+    : 'unknown'
+  // Audit 2026-04-23 H3: prefix+suffix fields removed to shrink
+  // entropy leaked via any admin-surface XSS / screenshot.
   return {
     set: true,
     length: v.length,
-    prefix: v.slice(0, 8),
-    suffix: v.slice(-4),
+    mode,
     hasLeadingSpace,
     hasTrailingSpace,
     hasNewline,

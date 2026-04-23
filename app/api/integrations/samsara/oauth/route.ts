@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { randomBytes } from 'crypto'
 import { getServiceClient } from '@/lib/supabase'
+
+const STATE_COOKIE = 'cruzar_samsara_oauth_state'
 
 // Samsara OAuth 2.0 Connect flow.
 //
@@ -59,6 +62,16 @@ export async function GET(req: NextRequest) {
 
   // Step 2 — callback exchange
   if (code) {
+    // Validate state nonce to block CSRF account-binding
+    const incomingState = req.nextUrl.searchParams.get('state') || ''
+    const [stateUserId, stateNonce] = incomingState.split(':')
+    const cookieNonce = req.cookies.get(STATE_COOKIE)?.value
+    if (!cookieNonce || !stateNonce || stateNonce !== cookieNonce || stateUserId !== user.id) {
+      const res = NextResponse.redirect(new URL('/business?samsara_error=state_mismatch', req.url))
+      res.cookies.delete(STATE_COOKIE)
+      return res
+    }
+
     const tokenRes = await fetch(SAMSARA_TOKEN, {
       method: 'POST',
       headers: {
@@ -99,15 +112,26 @@ export async function GET(req: NextRequest) {
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' })
 
-    return NextResponse.redirect(new URL('/business?samsara=connected', req.url))
+    const res = NextResponse.redirect(new URL('/business?samsara=connected', req.url))
+    res.cookies.delete(STATE_COOKIE)
+    return res
   }
 
-  // Step 1 — redirect to consent
-  const state = user.id
+  // Step 1 — redirect to consent with a fresh nonce bound to the session
+  const nonce = randomBytes(16).toString('hex')
+  const state = `${user.id}:${nonce}`
   const authUrl = new URL(SAMSARA_AUTH)
   authUrl.searchParams.set('client_id', clientId)
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('state', state)
-  return NextResponse.redirect(authUrl.toString())
+  const res = NextResponse.redirect(authUrl.toString())
+  res.cookies.set(STATE_COOKIE, nonce, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 600,
+    path: '/',
+  })
+  return res
 }
