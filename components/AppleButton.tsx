@@ -1,21 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
-import { isIOSAppClient } from '@/lib/platform'
-import { nativeAppleSignIn } from '@/lib/nativeAppleAuth'
 
 // Apple Sign-In button. Apple guideline 4.8 mandates Sign in with Apple
 // any time the app offers another third-party identity provider (we do
 // — Google).
 //
-// Dual-mode:
-//   - Capacitor iOS build: native SIWA sheet via
-//     @capacitor-community/apple-sign-in → Supabase signInWithIdToken.
-//     Better UX, required for clean Apple review.
-//   - Web: Supabase OAuth redirect flow.
+// Uses the Supabase OAuth redirect flow on both web and inside the
+// Capacitor iOS WebView. The native @capacitor-community/apple-sign-in
+// plugin is pinned to Capacitor 7 and doesn't yet support Capacitor 8,
+// so we route everything through the web redirect — Apple accepts this
+// for 4.8 as long as the button is visible and works.
 //
 // Supabase dependency: Authentication → Providers → Apple must be
 // enabled with Services ID + Key ID + Team ID + private key.
@@ -25,7 +22,6 @@ export function AppleButton({
   next = '/welcome',
 }: { label?: string; next?: string }) {
   const { lang } = useLang()
-  const router = useRouter()
   const es = lang === 'es'
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
@@ -34,19 +30,6 @@ export function AppleButton({
   async function handleApple() {
     setError(null)
     setLoading(true)
-
-    if (isIOSAppClient()) {
-      const result = await nativeAppleSignIn()
-      setLoading(false)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      if (result.userId) {
-        router.push(next)
-      }
-      return
-    }
 
     try {
       const supabase = createClient()
