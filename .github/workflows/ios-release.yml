@@ -1,0 +1,162 @@
+name: iOS — archive + TestFlight
+
+# Archive the Capacitor iOS build on a macOS runner and upload to
+# TestFlight. Triggered manually (workflow_dispatch) or by pushing a
+# tag matching `ios-v*`.
+#
+# Prerequisites (one-time, by Diego):
+#   - Bundle ID `app.cruzar.ios` registered in developer.apple.com
+#     with capabilities: Sign in with Apple, Push Notifications,
+#     In-App Purchase
+#   - App record created in App Store Connect (any version, can be
+#     empty draft — Xcode will populate on first upload)
+#   - App Store Connect API key generated, role: App Manager
+#   - GitHub repo secrets set:
+#       ASC_API_KEY_ID         — e.g. 8WHXXXXXXX
+#       ASC_API_ISSUER_ID      — UUID from App Store Connect
+#       ASC_API_KEY_P8_BASE64  — base64 of the downloaded .p8 file
+#       APPLE_TEAM_ID          — 10-char Team ID
+#
+# This workflow uses xcodebuild's -allowProvisioningUpdates flag with
+# ASC API key auth. Certs and provisioning profiles are created on
+# demand on the runner — no manual .p12 management required.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number (optional — defaults to github.run_number)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'ios-v*'
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 45
+    env:
+      APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install JS deps
+        run: npm ci --ignore-scripts
+
+      - name: Capacitor sync (copies webDir + native deps into ios/App)
+        run: npx cap sync ios
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_15.4.app
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install CocoaPods deps
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      - name: Write App Store Connect API key
+        env:
+          ASC_API_KEY_P8_BASE64: ${{ secrets.ASC_API_KEY_P8_BASE64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+          echo "$ASC_API_KEY_P8_BASE64" | base64 --decode > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "Wrote ASC API key to $KEY_PATH"
+
+      - name: Set marketing + build version
+        working-directory: ios/App
+        run: |
+          agvtool new-version -all "$BUILD_NUMBER"
+          # Marketing version stays 1.0.0 until we cut 1.1.0; agvtool
+          # above only touches CURRENT_PROJECT_VERSION (the CFBundleVersion
+          # build number) which must be unique per TestFlight upload.
+
+      - name: Archive
+        run: |
+          KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -archivePath "$RUNNER_TEMP/Cruzar.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            archive
+
+      - name: Write export options plist
+        run: |
+          cat > "$RUNNER_TEMP/export-options.plist" << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>destination</key>
+            <string>export</string>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Export IPA
+        run: |
+          KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/Cruzar.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export-options.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+            -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER_ID"
+
+      - name: Upload to TestFlight
+        run: |
+          KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
+          IPA="$(find "$RUNNER_TEMP/export" -name '*.ipa' -print -quit)"
+          if [ -z "$IPA" ]; then
+            echo "::error::No .ipa produced by exportArchive"
+            exit 1
+          fi
+          echo "Uploading $IPA"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA" \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_API_KEY_ISSUER_ID"
+
+      - name: Upload archive artifact (for debugging failed uploads)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcarchive-${{ env.BUILD_NUMBER }}
+          path: ${{ runner.temp }}/Cruzar.xcarchive
+          retention-days: 3

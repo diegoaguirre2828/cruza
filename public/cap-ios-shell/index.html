@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Cruzar</title>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cruzar" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      background: #0f172a; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+      font-size: 16px;
+      overscroll-behavior-y: none;
+    }
+    .safe-top { padding-top: env(safe-area-inset-top); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    header {
+      padding: 16px 20px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+    header .tag { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    main { padding: 8px 12px 24px; }
+    .loader, .err, .empty {
+      padding: 32px 20px; text-align: center; color: rgba(255,255,255,0.6); font-size: 14px;
+    }
+    .err { color: #fca5a5; }
+    .retry {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 13px;
+      cursor: pointer; -webkit-appearance: none;
+    }
+    .port {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; margin: 6px 0;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-left-width: 4px;
+      border-radius: 16px;
+    }
+    .port.low    { border-left-color: #22c55e; }
+    .port.med    { border-left-color: #f59e0b; }
+    .port.high   { border-left-color: #ef4444; }
+    .port.none   { border-left-color: #6b7280; }
+    .port .name { flex: 1; min-width: 0; }
+    .port .name .title { font-weight: 600; font-size: 14px; line-height: 1.2; }
+    .port .name .sub   { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .wait {
+      text-align: right; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: flex-end;
+    }
+    .wait .num  { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+    .wait .unit { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; }
+    .open-full {
+      display: block; margin: 20px 12px 0;
+      padding: 14px 18px; text-align: center;
+      background: #2563eb; color: #fff; border-radius: 14px;
+      font-size: 15px; font-weight: 600; text-decoration: none;
+    }
+    .lang-toggle {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff; padding: 6px 12px; border-radius: 999px;
+      font-size: 12px; cursor: pointer; -webkit-appearance: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="safe-top"></div>
+  <header>
+    <div>
+      <h1>Cruzar</h1>
+      <div class="tag" id="subtitle">Tiempos de espera en vivo</div>
+    </div>
+    <button class="lang-toggle" id="lang-toggle" aria-label="Toggle language">EN</button>
+  </header>
+  <main>
+    <div id="status" class="loader">Cargando puentes…</div>
+    <div id="list"></div>
+    <a class="open-full" id="open-full" href="https://cruzar.app/">Abrir la app completa</a>
+  </main>
+  <div class="safe-bottom"></div>
+
+  <script>
+    // Minimal bundled shell for the Capacitor iOS build. Shown only
+    // when the remote server.url is unreachable (offline, app-store-
+    // review-machine blocked, etc). Uses cruzar.app/api/ports as a
+    // read-only JSON source and renders the same list the main app
+    // shows above the fold.
+    //
+    // Deliberately zero dependencies. No React, no Tailwind, no SWR.
+    // The point is "this binary still renders live content if the
+    // network to cruzar.app works but the main site is down" — so we
+    // can't rely on the main site serving this file's JS.
+
+    const I18N = {
+      es: {
+        subtitle: 'Tiempos de espera en vivo',
+        loading:  'Cargando puentes…',
+        errorTitle: 'No pudimos cargar los tiempos.',
+        retry:    'Reintentar',
+        empty:    'Sin datos por ahora.',
+        min:      'min',
+        open:     'Abrir la app completa',
+        sub:      'Carril general',
+        toggle:   'EN',
+      },
+      en: {
+        subtitle: 'Live border wait times',
+        loading:  'Loading crossings…',
+        errorTitle: "Couldn't load wait times.",
+        retry:    'Retry',
+        empty:    'No data right now.',
+        min:      'min',
+        open:     'Open the full app',
+        sub:      'General lanes',
+        toggle:   'ES',
+      },
+    };
+
+    function getLang() {
+      try {
+        const stored = localStorage.getItem('cruzar-shell-lang');
+        if (stored === 'en' || stored === 'es') return stored;
+      } catch {}
+      const nav = (navigator.language || 'es').toLowerCase();
+      return nav.startsWith('en') ? 'en' : 'es';
+    }
+    function setLang(l) {
+      try { localStorage.setItem('cruzar-shell-lang', l); } catch {}
+      render();
+    }
+
+    function levelClass(wait) {
+      if (wait == null || wait < 0) return 'none';
+      if (wait <= 20) return 'low';
+      if (wait <= 45) return 'med';
+      return 'high';
+    }
+
+    async function fetchPorts() {
+      const res = await fetch('https://cruzar.app/api/ports', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    }
+
+    function render() {
+      const lang = getLang();
+      const t = I18N[lang];
+      document.documentElement.lang = lang;
+      document.getElementById('subtitle').textContent = t.subtitle;
+      document.getElementById('open-full').textContent = t.open;
+      document.getElementById('lang-toggle').textContent = t.toggle;
+    }
+
+    async function load() {
+      const lang = getLang();
+      const t = I18N[lang];
+      const status = document.getElementById('status');
+      const list = document.getElementById('list');
+      status.className = 'loader';
+      status.textContent = t.loading;
+      list.innerHTML = '';
+
+      try {
+        const data = await fetchPorts();
+        const ports = Array.isArray(data?.ports) ? data.ports
+                     : Array.isArray(data) ? data
+                     : [];
+        if (!ports.length) {
+          status.className = 'empty';
+          status.textContent = t.empty;
+          return;
+        }
+        status.remove();
+        const frag = document.createDocumentFragment();
+        ports.slice(0, 40).forEach(p => {
+          const wait = typeof p.vehicleWait === 'number' ? p.vehicleWait
+                     : typeof p.wait === 'number' ? p.wait
+                     : null;
+          const el = document.createElement('div');
+          el.className = 'port ' + levelClass(wait);
+          const name = (p.portName || p.name || '—');
+          const sub  = (p.cityName || p.city || t.sub);
+          el.innerHTML = [
+            '<div class="name">',
+            '  <div class="title"></div>',
+            '  <div class="sub"></div>',
+            '</div>',
+            '<div class="wait">',
+            '  <div class="num">' + (wait == null || wait < 0 ? '—' : wait) + '</div>',
+            '  <div class="unit">' + t.min + '</div>',
+            '</div>',
+          ].join('');
+          el.querySelector('.title').textContent = name;
+          el.querySelector('.sub').textContent = sub;
+          frag.appendChild(el);
+        });
+        list.appendChild(frag);
+      } catch (err) {
+        status.className = 'err';
+        status.innerHTML = '';
+        const msg = document.createElement('p');
+        msg.textContent = t.errorTitle;
+        status.appendChild(msg);
+        const btn = document.createElement('button');
+        btn.className = 'retry';
+        btn.type = 'button';
+        btn.textContent = t.retry;
+        btn.addEventListener('click', load);
+        status.appendChild(btn);
+      }
+    }
+
+    document.getElementById('lang-toggle').addEventListener('click', () => {
+      setLang(getLang() === 'es' ? 'en' : 'es');
+      load();
+    });
+
+    render();
+    load();
+    // Refresh the bundled shell's live list every 2 minutes if it's
+    // the visible surface (i.e. remote fallback).
+    setInterval(load, 120000);
+  </script>
+</body>
+</html>

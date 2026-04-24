@@ -1,31 +1,31 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
+import { isIOSAppClient } from '@/lib/platform'
+import { nativeAppleSignIn } from '@/lib/nativeAppleAuth'
 
 // Apple Sign-In button. Apple guideline 4.8 mandates Sign in with Apple
 // any time the app offers another third-party identity provider (we do
-// — Google). This button is rendered ONLY in iOS-app contexts (gated
-// by isIOSAppClient at the call site) so web users keep the existing
-// Google + email flow.
+// — Google).
 //
-// Backend dependency: Supabase project → Authentication → Providers →
-// Apple must be enabled with Services ID + Key ID + Team ID + private
-// key. Until that's configured (Apple Developer ID verification clears
-// first), tapping this button surfaces a "provider not enabled" error.
-// That's acceptable because the button is only rendered inside the
-// Capacitor iOS WebView, which doesn't reach end-users until TestFlight
-// — by which time Supabase will be configured.
+// Dual-mode:
+//   - Capacitor iOS build: native SIWA sheet via
+//     @capacitor-community/apple-sign-in → Supabase signInWithIdToken.
+//     Better UX, required for clean Apple review.
+//   - Web: Supabase OAuth redirect flow.
 //
-// Mirrors GoogleButton's skipBrowserRedirect + manual navigation pattern
-// for PWA / WebView reliability.
+// Supabase dependency: Authentication → Providers → Apple must be
+// enabled with Services ID + Key ID + Team ID + private key.
 
 export function AppleButton({
   label,
   next = '/welcome',
 }: { label?: string; next?: string }) {
   const { lang } = useLang()
+  const router = useRouter()
   const es = lang === 'es'
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
@@ -34,6 +34,20 @@ export function AppleButton({
   async function handleApple() {
     setError(null)
     setLoading(true)
+
+    if (isIOSAppClient()) {
+      const result = await nativeAppleSignIn()
+      setLoading(false)
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      if (result.userId) {
+        router.push(next)
+      }
+      return
+    }
+
     try {
       const supabase = createClient()
       const origin = typeof window !== 'undefined'

@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
+    "@capacitor-community/apple-sign-in": "^7.1.0",
+    "@revenuecat/purchases-capacitor": "^13.0.1",
     "@sentry/nextjs": "^10.48.0",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/ssr": "^0.9.0",
@@ -22,6 +24,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
+    "sharp": "^0.34.5",
     "stripe": "^21.0.1",
     "swr": "^2.4.1",
     "web-push": "^3.6.7",
