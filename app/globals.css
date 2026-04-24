@@ -55,7 +55,107 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+  /* Native-app system font stack — matches whatever OS you're on
+     (San Francisco on iOS/macOS, Roboto on Android, Segoe on Windows).
+     Makes Cruzar visually blend in with native chrome instead of
+     reading as "a website with web font." */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
+               Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* Subpixel rendering on macOS / iOS — sharper, native feel */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+
+  /* Kill the blue tap-highlight overlay on iOS Safari taps. Replaced
+     by our own .cruzar-tap scale press feedback above. */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Stop iOS bounce-scroll on the body. Inner scroll containers can
+     still bounce (and pull-to-refresh still works in TWA / Capacitor),
+     but the page itself doesn't drift past its bounds — that's the
+     #1 visual giveaway of a website wrapped in a webview. */
+  overscroll-behavior-y: none;
+
+  /* Honor iPhone notch + home indicator on standalone PWA / Capacitor.
+     Combined with viewport-fit=cover in the meta tag (already set). */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Disable text selection + iOS long-press callout on app chrome
+   (nav, buttons, headers). Inputs / textareas / paragraphs override
+   this below so prose stays selectable. */
+button,
+nav,
+header,
+[role="button"],
+[role="tab"],
+[role="navigation"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Restore selection on real text content surfaces */
+input,
+textarea,
+[contenteditable="true"],
+p,
+.prose,
+.user-content,
+.report-text {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Prevent iOS auto-zoom on focused inputs by guaranteeing 16px+ font.
+   Auto-zoom is the most jarring "this is a website" tell. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Kill the 300ms double-tap-zoom delay on iOS Safari for tappable
+   elements. Single-taps are instant; double-tap is treated as two
+   single taps instead of zoom. Native apps don't have this delay. */
+button,
+a,
+[role="button"],
+[role="tab"],
+.cruzar-tap {
+  touch-action: manipulation;
+}
+
+/* Subtle scrollbar styling — webkit only. Native apps either hide
+   scrollbars or use a thin overlay. We use thin, semi-transparent. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* Standalone PWA / Capacitor mode: hide any browser-style chrome
+   leak (e.g. text decoration that survives in WebView). */
+@media all and (display-mode: standalone) {
+  body {
+    /* Status bar already black-translucent (configured in layout
+       metadata.appleWebApp). Nothing else to do here for now. */
+  }
 }
 
 /* ─── Cruzar signature animations ─────────────────────────────────
