@@ -112,6 +112,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // H4 fix (audit 2026-04-23): defense-in-depth IP allowlist on /admin.
+  // Even if an admin session cookie leaks, the attacker also needs to
+  // come from an allowed IP. Set ADMIN_IP_ALLOWLIST=ip1,ip2,... in
+  // Vercel env to enforce. UNSET = no allowlist (no behavior change).
+  if (path.startsWith('/admin')) {
+    const allowlist = (process.env.ADMIN_IP_ALLOWLIST || '')
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter(Boolean)
+    if (allowlist.length > 0) {
+      const ip = (request.headers.get('x-forwarded-for') || '')
+        .split(',')[0]
+        .trim()
+      if (!ip || !allowlist.includes(ip)) {
+        return new NextResponse('Admin access denied for this network.', {
+          status: 403,
+          headers: { 'Content-Type': 'text/plain' },
+        })
+      }
+    }
+  }
+
   return supabaseResponse
 }
 

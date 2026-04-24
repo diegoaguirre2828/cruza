@@ -3,19 +3,73 @@ import { getServiceClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+// H9 fix (audit 2026-04-23): per-token rate limit + token age check.
+//
+// Rate limit: 60 req/hour per token. In-memory Map; per-instance only
+// (Vercel serverless instances each have their own counter — H7 is the
+// follow-up to make this shared). Even per-instance is enough to stop
+// a single bad actor flooding dispatcher view from one origin.
+//
+// Token age: a token is valid for 180 days from the LATER of created_at
+// or last_checkin_at. Active drivers (checking in regularly) extend
+// their own validity. Stale tokens stop authenticating, so a token
+// leaked years ago can't update a driver that's no longer using the
+// system.
+const RATE_BUCKET = new Map<string, { count: number; resetAt: number }>()
+const RATE_WINDOW_MS = 60 * 60 * 1000  // 1 hour
+const RATE_LIMIT = 60                   // 60 req/hour per token
+const TOKEN_MAX_AGE_DAYS = 180
+
+function rateLimited(token: string): boolean {
+  const now = Date.now()
+  const bucket = RATE_BUCKET.get(token)
+  if (!bucket || bucket.resetAt < now) {
+    RATE_BUCKET.set(token, { count: 1, resetAt: now + RATE_WINDOW_MS })
+    return false
+  }
+  bucket.count++
+  return bucket.count > RATE_LIMIT
+}
+
+function tokenExpired(driver: { last_checkin_at?: string | null; created_at?: string | null }): boolean {
+  const now = Date.now()
+  const cutoff = now - TOKEN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+  const lastTouch = Math.max(
+    driver.last_checkin_at ? new Date(driver.last_checkin_at).getTime() : 0,
+    driver.created_at ? new Date(driver.created_at).getTime() : 0,
+  )
+  // If both timestamps are missing/zero, treat as legacy (don't expire).
+  if (lastTouch === 0) return false
+  return lastTouch < cutoff
+}
+
 // GET — load driver info by token (no auth required)
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token')
   if (!token) return NextResponse.json({ error: 'Missing token' }, { status: 400 })
 
+  if (rateLimited(token)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a few minutes.' },
+      { status: 429 }
+    )
+  }
+
   const db = getServiceClient()
   const { data: driver, error } = await db
     .from('drivers')
-    .select('id, name, carrier, current_status, current_port_id, last_checkin_at, owner_id, dispatcher_phone')
+    .select('id, name, carrier, current_status, current_port_id, last_checkin_at, owner_id, dispatcher_phone, created_at')
     .eq('checkin_token', token)
     .single()
 
   if (error || !driver) return NextResponse.json({ error: 'Invalid link' }, { status: 404 })
+
+  if (tokenExpired(driver)) {
+    return NextResponse.json(
+      { error: 'This check-in link has expired. Please ask your dispatcher for a new one.' },
+      { status: 410 }
+    )
+  }
 
   // Get owner business name
   const { data: owner } = await db
@@ -42,6 +96,13 @@ export async function POST(req: NextRequest) {
   const { token, status, portId } = await req.json()
   if (!token || !status) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
+  if (rateLimited(token)) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait a few minutes.' },
+      { status: 429 }
+    )
+  }
+
   const VALID_STATUSES = ['available', 'en_route', 'in_line', 'at_bridge', 'cleared', 'delivered']
   if (!VALID_STATUSES.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
 
@@ -49,11 +110,18 @@ export async function POST(req: NextRequest) {
 
   const { data: driver, error } = await db
     .from('drivers')
-    .select('id, name, owner_id')
+    .select('id, name, owner_id, last_checkin_at, created_at')
     .eq('checkin_token', token)
     .single()
 
   if (error || !driver) return NextResponse.json({ error: 'Invalid link' }, { status: 404 })
+
+  if (tokenExpired(driver)) {
+    return NextResponse.json(
+      { error: 'This check-in link has expired. Please ask your dispatcher for a new one.' },
+      { status: 410 }
+    )
+  }
 
   await db.from('drivers').update({
     current_status: status,
