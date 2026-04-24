@@ -193,7 +193,9 @@ export default function AccountPage() {
                 {(profile.badges as string[]).map((b) => BADGES[b] && (
                   <div key={b} className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-full px-2.5 py-1">
                     <span>{BADGES[b].emoji}</span>
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{BADGES[b].label}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-200">
+                      {lang === 'es' ? BADGES[b].labelEs : BADGES[b].labelEn}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -147,8 +147,12 @@ export default function LeaderboardPage() {
               <div key={key} className="flex items-center gap-2">
                 <span className="text-base">{badge.emoji}</span>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{badge.label}</p>
-                  <p className="text-[10px] text-gray-400 leading-tight">{badge.description}</p>
+                  <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">
+                    {es ? badge.labelEs : badge.labelEn}
+                  </p>
+                  <p className="text-[10px] text-gray-400 leading-tight">
+                    {es ? badge.descriptionEs : badge.descriptionEn}
+                  </p>
                 </div>
               </div>
             ))}
@@ -192,7 +196,7 @@ export default function LeaderboardPage() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{handleFor(leader)}</span>
                           {leader.badges?.slice(0, 3).map(b => (
-                            <span key={b} title={BADGES[b]?.label}>{BADGES[b]?.emoji}</span>
+                            <span key={b} title={BADGES[b] ? (es ? BADGES[b].labelEs : BADGES[b].labelEn) : undefined}>{BADGES[b]?.emoji}</span>
                           ))}
                         </div>
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1">
