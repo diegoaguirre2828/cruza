@@ -72,42 +72,42 @@ const EXCHANGE_TEMPLATES_ES = [
 const STATIC_TOPICS: Record<string, { es: string[]; en: string[] }> = {
   documents: {
     es: [
-      `pa cruzar en carro necesitas pasaporte (o visa), licencia, y papeles del carro. si llevas menores sin uno de los papás necesitas carta notariada. ${APP_URL}/chat si tienen más dudas`,
-      `los básicos: pasaporte o visa vigente, licencia, tarjeta de circulación. si el carro no está a tu nombre lleva carta del dueño. para más info: ${APP_URL}/chat`,
-      `documentos para cruzar a EE.UU.: pasaporte o visa, licencia, y placas del carro. menores solos o con un solo papá: carta notariada obligatoria. ${APP_URL}/chat pa más dudas`,
+      `pa cruzar en carro necesitas pasaporte (o visa), licencia, y papeles del carro. si llevas menores sin uno de los papás necesitas carta notariada. ${APP_URL}/guide si tienen más dudas`,
+      `los básicos: pasaporte o visa vigente, licencia, tarjeta de circulación. si el carro no está a tu nombre lleva carta del dueño. para más info: ${APP_URL}/guide`,
+      `documentos para cruzar a EE.UU.: pasaporte o visa, licencia, y placas del carro. menores solos o con un solo papá: carta notariada obligatoria. ${APP_URL}/guide pa más dudas`,
     ],
     en: [
-      `to cross into the US by car you need a passport or valid visa, driver's license, and vehicle registration. minors without both parents need a notarized letter. ${APP_URL}/chat for more questions`,
+      `to cross into the US by car you need a passport or valid visa, driver's license, and vehicle registration. minors without both parents need a notarized letter. ${APP_URL}/guide for more questions`,
     ],
   },
   sentri: {
     es: [
-      `sentri vale la pena si cruzas seguido. aplicas en goes.dhs.gov, haces una entrevista, y si te aprueban tienes carril exclusivo en todos los puentes. cuesta $122 y dura 5 años. el proceso tarda 2-3 meses. ${APP_URL}/chat pa más info`,
-      `si cruzas diario o varias veces a la semana sentri es de los mejores $122 que puedes gastar. aplica en goes.dhs.gov y agenda tu entrevista. ${APP_URL}/chat si tienes dudas del proceso`,
-      `sentri te puede ahorrar 1-2 horas en días de mucha espera. aplicas en línea, haces entrevista, y listo. $122 por 5 años. ${APP_URL}/chat para el proceso completo`,
+      `sentri vale la pena si cruzas seguido. aplicas en goes.dhs.gov, haces una entrevista, y si te aprueban tienes carril exclusivo en todos los puentes. cuesta $122 y dura 5 años. el proceso tarda 2-3 meses. ${APP_URL}/guide pa más info`,
+      `si cruzas diario o varias veces a la semana sentri es de los mejores $122 que puedes gastar. aplica en goes.dhs.gov y agenda tu entrevista. ${APP_URL}/guide si tienes dudas del proceso`,
+      `sentri te puede ahorrar 1-2 horas en días de mucha espera. aplicas en línea, haces entrevista, y listo. $122 por 5 años. ${APP_URL}/guide para el proceso completo`,
     ],
     en: [
-      `sentri is worth it if you cross often. apply at goes.dhs.gov, do a quick interview, and you get dedicated lanes at all crossings. $122.25 for 5 years, process takes 2-3 months. ${APP_URL}/chat for more`,
+      `sentri is worth it if you cross often. apply at goes.dhs.gov, do a quick interview, and you get dedicated lanes at all crossings. $122.25 for 5 years, process takes 2-3 months. ${APP_URL}/guide for more`,
     ],
   },
   insurance: {
     es: [
-      `el seguro americano no cubre en México, es obligatorio por ley llevar seguro mexicano. lo puedes sacar en línea antes de cruzar, desde $10-20 USD por día. qualitas y axa son las más usadas. ${APP_URL}/chat pa más info`,
-      `sí necesitas seguro mexicano si entras en carro a México. el tuyo americano no aplica allá. lo sacas en línea antes de cruzar o en las casetas junto al puente. ${APP_URL}/chat si tienes dudas`,
-      `seguro mexicano obligatorio. sin él si hay accidente pueden detenerte. lo sacas en línea en minutos, desde $10 USD/día. qualitas, axa, mapfre son opciones. ${APP_URL}/chat`,
+      `el seguro americano no cubre en México, es obligatorio por ley llevar seguro mexicano. lo puedes sacar en línea antes de cruzar, desde $10-20 USD por día. qualitas y axa son las más usadas. ${APP_URL}/guide pa más info`,
+      `sí necesitas seguro mexicano si entras en carro a México. el tuyo americano no aplica allá. lo sacas en línea antes de cruzar o en las casetas junto al puente. ${APP_URL}/guide si tienes dudas`,
+      `seguro mexicano obligatorio. sin él si hay accidente pueden detenerte. lo sacas en línea en minutos, desde $10 USD/día. qualitas, axa, mapfre son opciones. ${APP_URL}/guide`,
     ],
     en: [
-      `your US insurance doesn't cover you in Mexico, you're required by law to have mexican coverage. buy it online before crossing for around $10/day. qualitas and axa are common options. ${APP_URL}/chat`,
+      `your US insurance doesn't cover you in Mexico, you're required by law to have mexican coverage. buy it online before crossing for around $10/day. qualitas and axa are common options. ${APP_URL}/guide`,
     ],
   },
   fmm: {
     es: [
-      `la fmm la necesitas si vas más de 25km de la frontera o te quedas más de 72 horas. si solo vas a la zona fronteriza por el día no necesitas nada. se saca en el puente o en inm.gob.mx, cuesta ~$700 MXN. ${APP_URL}/chat pa más dudas`,
-      `si vas más allá de 25km o por más de 3 días necesitas fmm. la tramitas en la caseta del inm en el puente. ${APP_URL}/chat si tienes más preguntas`,
-      `fmm de turista: solo la necesitas si vas lejos de la frontera o por más de 72 horas. en el puente te dan el formulario. ${APP_URL}/chat`,
+      `la fmm la necesitas si vas más de 25km de la frontera o te quedas más de 72 horas. si solo vas a la zona fronteriza por el día no necesitas nada. se saca en el puente o en inm.gob.mx, cuesta ~$700 MXN. ${APP_URL}/guide pa más dudas`,
+      `si vas más allá de 25km o por más de 3 días necesitas fmm. la tramitas en la caseta del inm en el puente. ${APP_URL}/guide si tienes más preguntas`,
+      `fmm de turista: solo la necesitas si vas lejos de la frontera o por más de 72 horas. en el puente te dan el formulario. ${APP_URL}/guide`,
     ],
     en: [
-      `you need an fmm (tourist permit) if you're going more than 25km from the border or staying more than 72 hours. get it at the bridge or at inm.gob.mx. ${APP_URL}/chat for more`,
+      `you need an fmm (tourist permit) if you're going more than 25km from the border or staying more than 72 hours. get it at the bridge or at inm.gob.mx. ${APP_URL}/guide for more`,
     ],
   },
   best_time: {
@@ -122,27 +122,27 @@ const STATIC_TOPICS: Record<string, { es: string[]; en: string[] }> = {
   },
   secondary: {
     es: [
-      `si te mandan a secundaria no te desesperes, es rutinario. te piden que pases a inspección, revisan documentos y a veces el carro, y te hacen preguntas sobre tu viaje. mantén la calma y responde honestamente. la mayoría pasa en 15-30 min. ${APP_URL}/chat pa más info`,
-      `secundaria es una revisión más a fondo, no significa que hiciste algo mal. ten tus documentos a la mano, sé honesto, y no te pongas nervioso. normalmente 20-45 minutos. ${APP_URL}/chat`,
+      `si te mandan a secundaria no te desesperes, es rutinario. te piden que pases a inspección, revisan documentos y a veces el carro, y te hacen preguntas sobre tu viaje. mantén la calma y responde honestamente. la mayoría pasa en 15-30 min. ${APP_URL}/guide pa más info`,
+      `secundaria es una revisión más a fondo, no significa que hiciste algo mal. ten tus documentos a la mano, sé honesto, y no te pongas nervioso. normalmente 20-45 minutos. ${APP_URL}/guide`,
     ],
     en: [
-      `secondary is routine — it doesn't mean you did anything wrong. stay calm, be honest, have your documents ready. usually 20-45 minutes. ${APP_URL}/chat for more`,
+      `secondary is routine — it doesn't mean you did anything wrong. stay calm, be honest, have your documents ready. usually 20-45 minutes. ${APP_URL}/guide for more`,
     ],
   },
   items: {
     es: [
-      `puedes traer hasta $800 USD sin pagar impuesto (por persona). alcohol: 1 litro. cigarros: 200. frutas, verduras y carnes frescas de México generalmente no pasan. más de $10,000 en efectivo hay que declararlo, no es ilegal pero sí obligatorio. ${APP_URL}/chat pa más dudas`,
-      `la regla básica: $800 USD por persona sin impuesto. efectivo de $10k o más hay que declararlo. carnes y frutas frescas de México generalmente no. medicamentos con receta están bien. ${APP_URL}/chat`,
-      `sin pagar: hasta $800 en compras, 1 litro de alcohol, 1 cartón de cigarros. todo lo que llevas decláralo si te preguntan, mentir es el error más caro. ${APP_URL}/chat`,
+      `puedes traer hasta $800 USD sin pagar impuesto (por persona). alcohol: 1 litro. cigarros: 200. frutas, verduras y carnes frescas de México generalmente no pasan. más de $10,000 en efectivo hay que declararlo, no es ilegal pero sí obligatorio. ${APP_URL}/guide pa más dudas`,
+      `la regla básica: $800 USD por persona sin impuesto. efectivo de $10k o más hay que declararlo. carnes y frutas frescas de México generalmente no. medicamentos con receta están bien. ${APP_URL}/guide`,
+      `sin pagar: hasta $800 en compras, 1 litro de alcohol, 1 cartón de cigarros. todo lo que llevas decláralo si te preguntan, mentir es el error más caro. ${APP_URL}/guide`,
     ],
     en: [
-      `you can bring up to $800 per person duty-free. 1 liter of alcohol, 1 carton of cigarettes. fresh fruits, meats, and vegetables from mexico are generally not allowed. over $10k cash must be declared. ${APP_URL}/chat`,
+      `you can bring up to $800 per person duty-free. 1 liter of alcohol, 1 carton of cigarettes. fresh fruits, meats, and vegetables from mexico are generally not allowed. over $10k cash must be declared. ${APP_URL}/guide`,
     ],
   },
   legal: {
     es: [
       `checa ${APP_URL}/negocios, hay abogados de inmigración de la zona ahí`,
-      `en ${APP_URL}/negocios encuentras abogados de la frontera. también puedes preguntar en el chat: ${APP_URL}/chat`,
+      `en ${APP_URL}/negocios encuentras abogados de la frontera. tambien checa ${APP_URL}/guide`,
       `${APP_URL}/negocios tiene un directorio de negocios locales, ahí hay abogados de inmigración`,
     ],
     en: [

@@ -10,9 +10,7 @@ import { useLang } from '@/lib/LangContext'
 // home for the map, analytics, or community leaderboard.
 
 // Only hidden on tight flows where the user needs to commit to a
-// step — login, signup, welcome, driver check-in, admin — and on
-// /chat, where the fixed input at the bottom of the screen was
-// getting covered by the nav bar.
+// step — login, signup, welcome, driver check-in, admin.
 const HIDDEN_PATHS = [
   '/login',
   '/signup',
@@ -21,7 +19,6 @@ const HIDDEN_PATHS = [
   '/driver',
   '/checkin',
   '/admin',
-  '/chat',
   '/ios-install',
 ]
 

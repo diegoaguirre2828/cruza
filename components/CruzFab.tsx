@@ -24,8 +24,8 @@ import { trackEvent } from '@/lib/trackEvent'
 // the FAB feel like an AI helper (not just a chat link) turns it
 // into an always-visible index of what the app can do.
 
-// Hide on entry flows + on /chat itself (where it'd be redundant).
-const HIDDEN_PATHS = ['/login', '/signup', '/welcome', '/chat', '/driver', '/checkin', '/admin', '/business', '/promoter']
+// Hide on entry flows.
+const HIDDEN_PATHS = ['/login', '/signup', '/welcome', '/driver', '/checkin', '/admin', '/business', '/promoter']
 
 export function CruzFab() {
   const { lang } = useLang()
@@ -65,7 +65,7 @@ export function CruzFab() {
         type="button"
         onClick={handleOpen}
         onMouseEnter={() => setExpanded(true)}
-        aria-label={es ? 'Preguntarle a Cruz' : 'Ask Cruz'}
+        aria-label={es ? 'Explorar Cruzar' : 'Explore Cruzar'}
         disabled={open}
         className={`fixed z-40 right-4 group flex items-center bg-gradient-to-br from-indigo-600 via-purple-700 to-pink-700 text-white rounded-full shadow-2xl active:scale-90 transition-all duration-300 ease-out disabled:opacity-80 disabled:pointer-events-none ${
           expanded ? 'gap-2 pl-1.5 pr-4 py-1.5' : 'gap-0 p-1'
@@ -95,7 +95,7 @@ export function CruzFab() {
             expanded ? 'max-w-[220px] opacity-100' : 'max-w-0 opacity-0'
           }`}
         >
-          {es ? '¿Dudas? Pregúntale a Cruz' : 'Got questions? Ask Cruz'}
+          {es ? '¿Qué hace Cruzar?' : 'What does Cruzar do?'}
         </span>
       </button>
 

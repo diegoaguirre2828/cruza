@@ -132,15 +132,6 @@ const SECTIONS: Section[] = [
         lineEn: 'Top reporters in your region — rank up with every report',
         badge: 'free',
       },
-      {
-        href: '/chat',
-        emoji: '💬',
-        titleEs: 'Pregúntale a Cruz',
-        titleEn: 'Ask Cruz',
-        lineEs: 'AI que sabe de aduana, SENTRI, FMM, documentos, y más',
-        lineEn: 'AI that knows customs, SENTRI, FMM, documents, and more',
-        badge: 'free',
-      },
     ],
   },
   {
@@ -297,12 +288,6 @@ export default function FeaturesPage() {
           </div>
         ))}
 
-        <div className="mt-8 text-center text-[11px] text-gray-400 dark:text-gray-500">
-          {es ? '¿Falta algo?' : 'Missing something?'}{' '}
-          <Link href="/chat" className="underline underline-offset-2">
-            {es ? 'Pregúntale a Cruz' : 'Ask Cruz'}
-          </Link>
-        </div>
       </div>
     </main>
   )

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { X, MessageCircle, Compass, Bell, MapPin, Zap, Camera, Trophy, Sparkles } from 'lucide-react'
+import { X, Compass, Bell, MapPin, Zap, Camera, Trophy, Sparkles } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { trackEvent } from '@/lib/trackEvent'
 
@@ -209,22 +209,6 @@ export function CruzHelperSheet({ open, onClose }: Props) {
           })}
         </div>
 
-        {/* Ask Cruz anything — separator + prominent bottom CTA */}
-        <div className="border-t border-gray-100 dark:border-gray-800 p-3">
-          <Link
-            href="/chat"
-            onClick={() => handleActionClick('ask_cruz')}
-            className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-black text-sm rounded-2xl py-3.5 shadow-lg active:scale-[0.98] transition-transform"
-          >
-            <MessageCircle className="w-4 h-4" />
-            {es ? 'Pregúntale lo que sea a Cruz →' : 'Ask Cruz anything →'}
-          </Link>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-2">
-            {es
-              ? 'Cruz es un asistente de IA · respuestas en segundos'
-              : 'Cruz is an AI assistant · answers in seconds'}
-          </p>
-        </div>
       </div>
     </div>
   )

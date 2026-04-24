@@ -48,7 +48,6 @@ const EXPLORE_ITEMS: MenuItem[] = [
   { href: '/negocios', emoji: '🏪', labelEs: 'Negocios locales', labelEn: 'Local businesses', subEs: 'Dental, farmacias, cambios', subEn: 'Dental, pharmacy, exchange' },
   { href: '/services', emoji: '🇲🇽', labelEs: 'Servicios en México', labelEn: 'Services in Mexico', subEs: 'Cerca de los puentes', subEn: 'Near the crossings' },
   { href: '/guide', emoji: '📖', labelEs: 'Guía del cruzante', labelEn: 'Crosser\'s guide', subEs: 'Documentos, FMM, SENTRI', subEn: 'Documents, FMM, SENTRI' },
-  { href: '/chat', emoji: '💬', labelEs: 'Pregúntale a Cruz', labelEn: 'Ask Cruz', subEs: 'AI sobre aduana y frontera', subEn: 'AI on customs & border' },
 ]
 
 const INFO_ITEMS: MenuItem[] = [

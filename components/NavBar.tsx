@@ -52,9 +52,9 @@ export function NavBar() {
       </button>
 
       <Link
-        href="/chat"
+        href="/guide"
         className="hidden md:flex items-center gap-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 px-2.5 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        title={lang === 'es' ? 'Asistente Fronterizo' : 'Border Assistant'}
+        title={lang === 'es' ? 'Guía del cruzante' : 'Crosser\'s guide'}
       >
         <MessageCircle className="w-3.5 h-3.5" />
         {lang === 'es' ? 'Ayuda' : 'Help'}

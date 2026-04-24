@@ -48,7 +48,6 @@ const HIDDEN_PATHS = [
   '/driver',
   '/checkin',
   '/admin',
-  '/chat',
   '/business',
   '/for-fleets', // dispatcher lead page, different audience
 ]

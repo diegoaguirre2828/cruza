@@ -27,7 +27,6 @@ const PROTECTED_ROUTE_PREFIXES = [
   '/admin',
   '/port',
   '/planner',
-  '/chat',
   '/rewards',
   '/leaderboard',
   '/negocios',
