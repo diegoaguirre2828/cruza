@@ -31,10 +31,10 @@
   },
   "devDependencies": {
     "@capacitor/app": "^8.1.0",
-    "@capacitor/cli": "^8.3.1",
-    "@capacitor/core": "^8.3.1",
+    "@capacitor/cli": "8.0.0",
+    "@capacitor/core": "8.0.0",
     "@capacitor/geolocation": "^8.2.0",
-    "@capacitor/ios": "^8.3.1",
+    "@capacitor/ios": "8.0.0",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.0.3",
     "@tailwindcss/postcss": "^4",
