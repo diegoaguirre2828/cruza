@@ -176,15 +176,6 @@ const SECTIONS: Section[] = [
     subtitleEn: 'What you need on the Mexican side',
     features: [
       {
-        href: '/services',
-        emoji: '🇲🇽',
-        titleEs: 'Servicios en México',
-        titleEn: 'Services in Mexico',
-        lineEs: 'Dental, farmacias, taxis, y más — todo cerca del puente',
-        lineEn: 'Dental, pharmacy, taxis, and more — near the bridge',
-        badge: 'free',
-      },
-      {
         href: '/negocios',
         emoji: '🏪',
         titleEs: 'Negocios locales',

@@ -46,7 +46,6 @@ const EXPLORE_ITEMS: MenuItem[] = [
   { href: '/planner', emoji: '🗺️', labelEs: 'Planifica tu cruce', labelEn: 'Plan your crossing', subEs: 'Cuándo salir y qué puente agarrar', subEn: 'When to leave and which bridge to pick' },
   { href: '/for-fleets', emoji: '🚛', labelEs: 'Para flotas / Trucking', labelEn: 'For fleets / Trucking', subEs: 'Panel de flota + alertas + ROI', subEn: 'Fleet dashboard + alerts + ROI' },
   { href: '/negocios', emoji: '🏪', labelEs: 'Negocios locales', labelEn: 'Local businesses', subEs: 'Dental, farmacias, cambios', subEn: 'Dental, pharmacy, exchange' },
-  { href: '/services', emoji: '🇲🇽', labelEs: 'Servicios en México', labelEn: 'Services in Mexico', subEs: 'Cerca de los puentes', subEn: 'Near the crossings' },
   { href: '/guide', emoji: '📖', labelEs: 'Guía del cruzante', labelEn: 'Crosser\'s guide', subEs: 'Documentos, FMM, SENTRI', subEn: 'Documents, FMM, SENTRI' },
 ]
 

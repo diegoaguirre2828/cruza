@@ -34,15 +34,6 @@ const GUIDES = [
     badgeColor: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
   },
   {
-    href: '/services',
-    emoji: '🇲🇽',
-    title: { en: 'Cross for Services', es: 'Servicios en México' },
-    desc: { en: 'Auto repair, dental, medical, pharmacy, beauty — quality services at a fraction of US prices.', es: 'Talleres, dental, médico, farmacia, estética — servicios de calidad a precios accesibles.' },
-    color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-    badge: null,
-    badgeColor: '',
-  },
-  {
     href: '/predict',
     emoji: '🔮',
     title: { en: 'Smart Crossing Planner', es: 'Planificador Inteligente' },
