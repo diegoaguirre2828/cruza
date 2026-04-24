@@ -64,9 +64,9 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Install CocoaPods deps
+      - name: Resolve Swift package dependencies
         working-directory: ios/App
-        run: pod install --repo-update
+        run: xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App
 
       - name: Write App Store Connect API key
         env:
@@ -90,7 +90,7 @@ jobs:
         run: |
           KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_API_KEY_KEY_ID}.p8"
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
