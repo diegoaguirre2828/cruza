@@ -42,6 +42,7 @@ import { trackEvent } from '@/lib/trackEvent'
 import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 import type { PortWaitTime } from '@/types'
 import type { RecentReport } from '@/lib/recentReports'
+import { slugForPort } from '@/lib/portSlug'
 
 function ProNoAlertBanner({ lang, tier, user }: { lang: string; tier: string; user: { id: string } | null }) {
   // Prominent one-time soft nag for Pro/Business users who haven't set
@@ -260,7 +261,7 @@ function SavedCrossings({ initialPorts }: { initialPorts: PortWaitTime[] | null 
         {saved.map(s => (
           <Link
             key={s.port_id}
-            href={`/port/${encodeURIComponent(s.port_id)}`}
+            href={`/cruzar/${slugForPort(s.port_id)}`}
             onClick={() => trackEvent('home_action_taken', { action: 'saved_bridge_tap', port_id: s.port_id })}
             className="flex-shrink-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-3 py-2.5 flex flex-col items-center min-w-[80px] shadow-sm active:scale-95 transition-transform"
           >

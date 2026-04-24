@@ -21,6 +21,7 @@ import { InstallGateModal, useInstallGate, needsInstallGate } from '@/components
 import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
+import { slugForPort } from '@/lib/portSlug'
 
 interface SavedCrossing {
   id: string
@@ -469,7 +470,7 @@ export default function DashboardPage() {
             ) : (
               savedPorts.map(({ saved: s, port }) => (
                 <div key={s.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-                  <Link href={`/port/${encodeURIComponent(s.port_id)}`} className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <Link href={`/cruzar/${slugForPort(s.port_id)}`} className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{port?.portName ?? s.port_id}</p>
@@ -712,7 +713,7 @@ export default function DashboardPage() {
             {routeResult && (
               <div className="space-y-3">
                 {routeResult.best && (
-                  <Link href={`/port/${encodeURIComponent(routeResult.best.portId)}`}>
+                  <Link href={`/cruzar/${slugForPort(routeResult.best.portId)}`}>
                     <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-4 hover:shadow-md transition-shadow cursor-pointer">
                       <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-1">{t.bestOption}</p>
                       <p className="font-bold text-gray-900 dark:text-gray-100">{routeResult.best.portName}</p>
@@ -726,7 +727,7 @@ export default function DashboardPage() {
                   </Link>
                 )}
                 {routeResult.alternatives?.map((alt, i) => (
-                  <Link key={i} href={`/port/${encodeURIComponent(alt.portId)}`}>
+                  <Link key={i} href={`/cruzar/${slugForPort(alt.portId)}`}>
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer">
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">{t.alternativeN(i + 2)}</p>
                       <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{alt.portName}</p>

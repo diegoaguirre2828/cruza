@@ -8,6 +8,7 @@ import { REGIONS, type RegionKey } from '@/lib/regionMatchers'
 import { formatWaitLabel } from '@/lib/formatWait'
 import { LockedFeatureWall } from '@/components/LockedFeatureWall'
 import { ArrowLeft } from 'lucide-react'
+import { slugForPort } from '@/lib/portSlug'
 
 // Public trip planner page. Lets users pick a day + hour + region
 // and get back "here's the fastest bridge at that time, here's the
@@ -279,7 +280,7 @@ export default function PlannerPage() {
                   {result.bridges.slice(1).map((b, i) => (
                     <Link
                       key={b.portId}
-                      href={`/port/${encodeURIComponent(b.portId)}`}
+                      href={`/cruzar/${slugForPort(b.portId)}`}
                       className="flex items-center gap-3 px-4 py-3 active:bg-gray-50 dark:active:bg-gray-700/30 transition-colors"
                     >
                       <span className="w-5 text-center text-xs font-black text-gray-400">#{i + 2}</span>

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
 import { PORT_META } from '@/lib/portMeta'
+import { slugForPort } from '@/lib/portSlug'
 import {
   TrendingUp,
   TrendingDown,
@@ -250,7 +251,7 @@ export function DailyReportClient({
           return (
             <Link
               key={port.port_id}
-              href={`/port/${port.port_id}`}
+              href={`/cruzar/${slugForPort(port.port_id)}`}
               className={`block rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] transition-colors border-l-4 ${borderLeftColor(port.avg_wait)} p-4`}
             >
               <div className="flex items-start justify-between gap-3">

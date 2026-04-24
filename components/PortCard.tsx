@@ -75,7 +75,7 @@ export function PortCard({ port, signal }: Props) {
     e.preventDefault()
     e.stopPropagation()
     if (!signedIn) {
-      router.push(`/signup?next=${encodeURIComponent(`/port/${port.portId}`)}`)
+      router.push(`/signup?next=${encodeURIComponent(`/cruzar/${slugForPort(port.portId)}`)}`)
       return
     }
     await toggleFavorite(port.portId, port.portName)
@@ -128,7 +128,7 @@ export function PortCard({ port, signal }: Props) {
   }
 
   return (
-    <Link href={`/port/${encodeURIComponent(port.portId)}`}>
+    <Link href={`/cruzar/${slugForPort(port.portId)}`}>
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
         <div className="flex items-start justify-between mb-3">
           <div>
@@ -373,7 +373,7 @@ export function PortCard({ port, signal }: Props) {
           // prediction, not live. Diego's rule: never show "no data" —
           // either live, historical, "no wait times," or "closed."
           <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/cruzar/${slugForPort(port.portId)}?report=1` }}
             className="mt-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
           >
             <div className="flex-1 min-w-0">
@@ -395,7 +395,7 @@ export function PortCard({ port, signal }: Props) {
         ) : hasCamera(port.portId) ? (
           // Bridge has a camera but no live data or history — show camera CTA
           <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}` }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/cruzar/${slugForPort(port.portId)}` }}
             className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
           >
             <div className="flex-1 min-w-0">
@@ -415,7 +415,7 @@ export function PortCard({ port, signal }: Props) {
         ) : (
           // True last resort: no data, no history, no camera.
           <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/port/${port.portId}?report=1` }}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/cruzar/${slugForPort(port.portId)}?report=1` }}
             className="mt-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             <div className="flex-1 min-w-0">

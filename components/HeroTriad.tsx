@@ -9,6 +9,7 @@ import { haversineKm } from '@/lib/geo'
 import { splitWaitLabel } from '@/lib/formatWait'
 import { trackEvent } from '@/lib/trackEvent'
 import type { PortWaitTime } from '@/types'
+import { slugForPort } from '@/lib/portSlug'
 
 // Hero "your bridge" triad — renders 1-3 distinct bridges for
 // signed-in users with composable badges. Diego's 2026-04-14 spec:
@@ -151,7 +152,7 @@ function TriadCard({ slot, isPrimary, es }: { slot: TriadSlot; isPrimary: boolea
   if (isPrimary) {
     return (
       <Link
-        href={`/port/${encodeURIComponent(slot.port.portId)}`}
+        href={`/cruzar/${slugForPort(slot.port.portId)}`}
         onClick={() => trackEvent('home_action_taken', { action: 'triad_tap', port_id: slot.port.portId, position: 'primary', badges: badges.join(',') })}
         className="block bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-3xl p-4 shadow-xl text-white relative overflow-hidden active:scale-[0.98] transition-transform"
       >
@@ -181,7 +182,7 @@ function TriadCard({ slot, isPrimary, es }: { slot: TriadSlot; isPrimary: boolea
   // Secondary/tertiary — compact row
   return (
     <Link
-      href={`/port/${encodeURIComponent(slot.port.portId)}`}
+      href={`/cruzar/${slugForPort(slot.port.portId)}`}
       onClick={() => trackEvent('home_action_taken', { action: 'triad_tap', port_id: slot.port.portId, position: 'secondary', badges: badges.join(',') })}
       className="flex items-center justify-between gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-3 py-2.5 active:scale-[0.98] transition-transform"
     >

@@ -4,6 +4,7 @@ import { getPortMeta, PORT_META } from '@/lib/portMeta'
 import { hasCamera } from '@/lib/bridgeCameras'
 import { ShareSnapshotLive } from '@/components/ShareSnapshotLive'
 import type { Metadata } from 'next'
+import { slugForPort } from '@/lib/portSlug'
 
 interface RouteParams {
   params: Promise<{ portId: string; mins: string }>
@@ -120,7 +121,7 @@ export default async function ShareSnapshotPage({ params }: RouteParams) {
         <ShareSnapshotLive portId={portId} sharedMins={minsNum} />
 
         <Link
-          href={`/port/${portId}`}
+          href={`/cruzar/${slugForPort(portId)}`}
           className="mt-4 block w-full text-center py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-black text-base transition-colors"
         >
           Ver ahora en vivo →
@@ -128,7 +129,7 @@ export default async function ShareSnapshotPage({ params }: RouteParams) {
 
         {hasCam && (
           <Link
-            href={`/port/${portId}`}
+            href={`/cruzar/${slugForPort(portId)}`}
             className="mt-3 flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-white/15 bg-white/[0.02] hover:bg-white/[0.05] text-white/80 hover:text-white text-sm font-bold transition-colors"
           >
             📹 Ver cámara en vivo del puente

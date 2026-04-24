@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/useAuth'
 import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
 import { ArrowLeft, Clock, Info, Lock, Bell, Zap } from 'lucide-react'
+import { slugForPort } from '@/lib/portSlug'
 
 interface PortOption {
   portId: string
@@ -175,7 +176,7 @@ export default function PredictPage() {
               </div>
             </div>
             <Link
-              href={`/port/${encodeURIComponent(bestLiveCrossing.portId)}`}
+              href={`/cruzar/${slugForPort(bestLiveCrossing.portId)}`}
               className="mt-3 block text-center text-xs font-semibold bg-white/20 hover:bg-white/30 text-white rounded-xl py-2 transition-colors"
             >
               {es ? 'Ver detalles →' : 'View details →'}

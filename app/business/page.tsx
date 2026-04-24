@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { PortSearch } from '@/components/PortSearch'
 import type { PortWaitTime } from '@/types'
+import { slugForPort } from '@/lib/portSlug'
 
 interface Driver {
   id: string
@@ -812,7 +813,7 @@ function BusinessPortalPage() {
                       : 0
                     const trend = trends[p.portId]?.commercial
                     return (
-                      <Link key={p.portId} href={`/port/${encodeURIComponent(p.portId)}`}>
+                      <Link key={p.portId} href={`/cruzar/${slugForPort(p.portId)}`}>
                         <div className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-green-700 dark:text-green-400 w-5">#{i + 1}</span>
@@ -866,7 +867,7 @@ function BusinessPortalPage() {
                         return (
                           <tr
                             key={port.portId}
-                            onClick={() => router.push(`/port/${encodeURIComponent(port.portId)}`)}
+                            onClick={() => router.push(`/cruzar/${slugForPort(port.portId)}`)}
                             className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                           >
                             <td className="px-4 py-3">
@@ -1389,7 +1390,7 @@ function BusinessPortalPage() {
                           <p className="text-xs text-gray-400">{port.crossingName} · {getPortMeta(port.portId).region}</p>
                         </div>
                       </div>
-                      <Link href={`/port/${encodeURIComponent(port.portId)}`} className="text-xs text-blue-500 hover:underline">
+                      <Link href={`/cruzar/${slugForPort(port.portId)}`} className="text-xs text-blue-500 hover:underline">
                         Full report →
                       </Link>
                     </div>

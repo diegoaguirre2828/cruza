@@ -6,6 +6,7 @@ import { useLang } from '@/lib/LangContext'
 import { getPortMeta } from '@/lib/portMeta'
 import { useHomeRegion } from '@/lib/useHomeRegion'
 import { useTier } from '@/lib/useTier'
+import { slugForPort } from '@/lib/portSlug'
 
 interface Report {
   id: string
@@ -150,7 +151,7 @@ export function LiveActivityTicker({ initialReports }: TickerProps = {}) {
 
   return (
     <Link
-      href={`/port/${encodeURIComponent(r.port_id)}`}
+      href={`/cruzar/${slugForPort(r.port_id)}`}
       className="mt-3 block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3 active:scale-[0.99] transition-transform"
     >
       <div className="flex items-center gap-2 mb-1.5">

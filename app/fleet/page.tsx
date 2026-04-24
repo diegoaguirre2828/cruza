@@ -8,6 +8,7 @@ import { getWaitLevel, waitLevelDot, waitLevelColor } from '@/lib/cbp'
 import { getPortMeta, ALL_REGIONS } from '@/lib/portMeta'
 import { ArrowLeft, RefreshCw, TrendingUp, TrendingDown, Minus, Download, Users, AlertTriangle, CheckCircle } from 'lucide-react'
 import type { PortWaitTime } from '@/types'
+import { slugForPort } from '@/lib/portSlug'
 
 export default function FleetPage() {
   const { user, loading: authLoading } = useAuth()
@@ -240,7 +241,7 @@ export default function FleetPage() {
                       <tr
                         key={port.portId}
                         className={`border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${i % 2 === 0 ? '' : 'bg-gray-50/30 dark:bg-gray-750'}`}
-                        onClick={() => router.push(`/port/${encodeURIComponent(port.portId)}`)}
+                        onClick={() => router.push(`/cruzar/${slugForPort(port.portId)}`)}
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -287,7 +288,7 @@ export default function FleetPage() {
               .map(port => {
                 const wait = port.commercial ?? port.vehicle
                 return (
-                  <Link key={port.portId} href={`/port/${encodeURIComponent(port.portId)}`}>
+                  <Link key={port.portId} href={`/cruzar/${slugForPort(port.portId)}`}>
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{port.portName}</p>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Clock, TrendingDown, TrendingUp } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { getPortMeta } from '@/lib/portMeta'
+import { slugForPort } from '@/lib/portSlug'
 
 // Tier 2 personalization — a compact forecast card on home for the
 // user's saved bridge. Reuses /api/ports/[portId]/forecast (same
@@ -87,7 +88,7 @@ export function HomeForecast({ favoritePortId }: Props) {
 
   return (
     <Link
-      href={`/port/${encodeURIComponent(favoritePortId)}`}
+      href={`/cruzar/${slugForPort(favoritePortId)}`}
       className="mt-3 block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 active:scale-[0.98] transition-transform"
     >
       <div className="flex items-center justify-between mb-1">

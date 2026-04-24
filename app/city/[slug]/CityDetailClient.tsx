@@ -9,6 +9,7 @@ import { getPortMeta } from '@/lib/portMeta'
 import { getBridgeCameras } from '@/lib/bridgeCameras'
 import { PortFAQ } from '@/components/PortFAQ'
 import { BottomNav } from '@/components/BottomNav'
+import { slugForPort } from '@/lib/portSlug'
 
 type LivePort = {
   portId: string
@@ -133,7 +134,7 @@ export function CityDetailClient({ city }: { city: CityMeta }) {
                 return (
                   <Link
                     key={port.portId}
-                    href={`/port/${port.portId}`}
+                    href={`/cruzar/${slugForPort(port.portId)}`}
                     className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700 ${colors.bg} transition-colors active:scale-[0.99]`}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">

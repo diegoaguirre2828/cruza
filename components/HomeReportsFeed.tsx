@@ -7,6 +7,7 @@ import { useLang } from '@/lib/LangContext'
 import { useHomeRegion } from '@/lib/useHomeRegion'
 import { useTier } from '@/lib/useTier'
 import { getPortMeta } from '@/lib/portMeta'
+import { slugForPort } from '@/lib/portSlug'
 
 interface Report {
   id: string
@@ -175,7 +176,7 @@ export function HomeReportsFeed({ initialReports }: Props = {}) {
           ? 'cruzar-rise'
           : i < 3 ? `cruzar-rise cruzar-rise-delay-${i + 1}` : 'cruzar-rise'
         return (
-          <Link key={r.id} href={`/port/${encodeURIComponent(r.port_id)}`}>
+          <Link key={r.id} href={`/cruzar/${slugForPort(r.port_id)}`}>
             <div className={`${delayClass} bg-white dark:bg-gray-800 rounded-xl border p-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${expired ? 'opacity-50' : ''} ${isFresh ? 'border-green-400 dark:border-green-600 ring-2 ring-green-200 dark:ring-green-900/50' : 'border-gray-200 dark:border-gray-700'}`}>
               <span className="text-2xl flex-shrink-0 leading-none">{TYPE_EMOJI[r.report_type] ?? '💬'}</span>
               <div className="flex-1 min-w-0">
