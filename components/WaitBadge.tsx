@@ -32,7 +32,7 @@ export function WaitBadge({ minutes, label, lanesOpen, isClosed }: Props) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-sm text-gray-500 font-semibold">{label}</span>
-      <span className={`text-base font-bold px-3 py-1.5 rounded-full border ${colors}`}>
+      <span className={`text-base font-bold px-3 py-1.5 rounded-full border whitespace-nowrap ${colors}`}>
         {display}
       </span>
       {lanesLabel && (
