@@ -407,7 +407,11 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
           of the page, above the max-w container. */}
       <GuestStickyStrip />
       <div className="max-w-lg mx-auto px-4 pb-10">
-        <div className="pt-8 pb-2 flex items-start justify-between">
+        {/* Sticky app-shell header — fixed at top of viewport while the
+            content scrolls underneath. Native-app pattern; replaces the
+            "header scrolls away" web pattern. Backdrop-blur softens the
+            hand-off when content slides past. */}
+        <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gray-50/85 dark:bg-gray-950/85 backdrop-blur-md flex items-start justify-between">
           <div className="min-w-0 flex items-center gap-3">
             {/* Real app logo — dark navy square with a white arch bridge.
                 Paired with the lowercase "cruzar" wordmark in the design
@@ -415,12 +419,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             <img
               src="/logo-icon.svg"
               alt=""
-              width={48}
-              height={48}
+              width={40}
+              height={40}
               className="rounded-xl flex-shrink-0"
             />
             <div className="min-w-0">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
                 cruzar
               </h1>
               {user && displayName ? (
