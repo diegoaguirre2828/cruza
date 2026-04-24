@@ -410,45 +410,50 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
         {/* Sticky app-shell header — fixed at top of viewport while the
             content scrolls underneath. Native-app pattern; replaces the
             "header scrolls away" web pattern. Backdrop-blur softens the
-            hand-off when content slides past. */}
-        <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gray-50/85 dark:bg-gray-950/85 backdrop-blur-md flex items-start justify-between">
-          <div className="min-w-0 flex items-center gap-3">
-            {/* Real app logo — dark navy square with a white arch bridge.
-                Paired with the lowercase "cruzar" wordmark in the design
-                Diego locked on 2026-04-13. Source SVG in public/logo-icon.svg. */}
-            <img
-              src="/logo-icon.svg"
-              alt=""
-              width={40}
-              height={40}
-              className="rounded-xl flex-shrink-0"
-            />
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
-                cruzar
-              </h1>
-              {user && displayName ? (
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">
-                  {salutation}, <span className="font-bold text-gray-700 dark:text-gray-200">{displayName}</span>
-                </p>
-              ) : (
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">{t.subtitle}</p>
-              )}
+            hand-off when content slides past. RegionPicker is pulled
+            into this sticky strip because it's the most-tapped filter —
+            users want it always-on-screen. */}
+        <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gray-50/85 dark:bg-gray-950/85 backdrop-blur-md">
+          <div className="flex items-start justify-between">
+            <div className="min-w-0 flex items-center gap-3">
+              {/* Real app logo — dark navy square with a white arch bridge.
+                  Paired with the lowercase "cruzar" wordmark in the design
+                  Diego locked on 2026-04-13. Source SVG in public/logo-icon.svg. */}
+              <img
+                src="/logo-icon.svg"
+                alt=""
+                width={40}
+                height={40}
+                className="rounded-xl flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
+                  cruzar
+                </h1>
+                {user && displayName ? (
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">
+                    {salutation}, <span className="font-bold text-gray-700 dark:text-gray-200">{displayName}</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">{t.subtitle}</p>
+                )}
+              </div>
             </div>
+            <NavBar />
           </div>
-          <NavBar />
+          {/* Region filter — always-visible second row inside the sticky
+              header. Most-tapped control on the home page. */}
+          {!isBusiness && (
+            <div className="mt-2 flex justify-center">
+              <RegionPicker />
+            </div>
+          )}
         </div>
 
-        {/* Pill row — compact replacements for what used to be full-size
-            cards. Install + exchange rate + weather + guardián +
-            "contribution today" all live here as single-line pills.
-            Wraps to a second line on narrow screens. Each is tappable.
-            Install pill hides itself when the app is already running as
-            a standalone PWA. ContributionTodayPill only renders for
-            signed-in users with at least one report today. */}
+        {/* Pill row — secondary discovery + status pills. Scroll with
+            content (RegionPicker moved up to the sticky header). */}
         {!isBusiness && (
-          <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
-            <RegionPicker />
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
             <InstallPill />
             <ExchangeRatePill />
             <WeatherHook variant="pill" />
