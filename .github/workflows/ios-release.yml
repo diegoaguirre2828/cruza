@@ -78,6 +78,12 @@ jobs:
           chmod 600 "$KEY_PATH"
           echo "Wrote ASC API key to $KEY_PATH"
 
+      - name: Import Apple Development signing cert into keychain
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_CERT_P12_PASSWORD }}
+
       - name: Set marketing + build version
         working-directory: ios/App
         run: |
