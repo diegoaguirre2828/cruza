@@ -291,7 +291,7 @@ export default function AccountPage() {
           </button>
         </form>
 
-        {/* Auto-crossing detection (opt-in, defaults OFF) */}
+        {/* Auto-crossing detection (default ON; this toggle is the opt-OUT) */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-4">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="flex items-start gap-2">
@@ -302,8 +302,8 @@ export default function AccountPage() {
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {lang === 'es'
-                    ? 'Toca "Estoy en la fila" en el puente y la app detecta cuándo cruzas. Datos anónimos — sin tu identidad ni ruta GPS.'
-                    : 'Tap "I\'m in line now" at the bridge and the app detects when you cross. Anonymous — no identity, no GPS trace stored.'}
+                    ? 'Cuando estás cerca de un puente, aparece "Estoy en la fila". Tocar el botón empieza el rastreo. Datos anónimos — sin tu identidad ni ruta GPS. Apaga este toggle para esconder la función por completo.'
+                    : 'When you\'re near a bridge, "I\'m in line now" appears. Tapping it starts tracking. Anonymous — no identity, no GPS trace stored. Turn this off to hide the feature entirely.'}
                 </p>
               </div>
             </div>

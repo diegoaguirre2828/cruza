@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { getServiceClient } from '@/lib/supabase'
+import { LangToggle } from '@/components/LangToggle'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 300
@@ -22,13 +23,16 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-2xl mx-auto px-4 pb-16">
-        <div className="pt-6 pb-4 flex items-center gap-3">
-          <Link href="/intelligence" className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Cruzar Intelligence · {brief.published_at ? new Date(brief.published_at).toISOString().slice(0, 16).replace('T', ' ') : ''} UTC
-          </p>
+        <div className="pt-6 pb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/intelligence" className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Cruzar Intelligence · {brief.published_at ? new Date(brief.published_at).toISOString().slice(0, 16).replace('T', ' ') : ''} UTC
+            </p>
+          </div>
+          <LangToggle />
         </div>
         <article
           className="prose prose-sm dark:prose-invert max-w-none bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm"

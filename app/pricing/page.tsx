@@ -92,6 +92,88 @@ export default function PricingPage() {
       cta: es ? 'Empezar prueba gratis 14 días' : 'Start 14-Day Free Trial',
       tier: 'business',
     },
+    {
+      id: 'operator',
+      name: 'Operator',
+      price: '$99',
+      period: '/month',
+      color: 'border-amber-500',
+      badge: es ? 'Para 3PL pequeños' : 'For small 3PLs',
+      desc: es
+        ? 'IA revisa tu pedimento, factura, USMCA en menos de 60 segundos. 2 horas de prep → 3 minutos. Hasta 34% más rápido en el puente.'
+        : 'AI checks your pedimento, invoice, USMCA in under 60 seconds. 2hr prep → 3min. Up to 34% faster at the border.',
+      features: es
+        ? [
+            'Validaciones ilimitadas — pedimento, factura, USMCA, lista de empaque, BL',
+            'IA marca errores que disparan inspección secundaria',
+            'Sugerencias específicas de corrección por campo',
+            'Historial completo de validaciones',
+            'Alertas diarias de inteligencia fronteriza incluidas',
+          ]
+        : [
+            'Unlimited validations — pedimento, invoice, USMCA, packing list, BOL',
+            'AI flags issues that trigger secondary inspection',
+            'Field-by-field fix suggestions',
+            'Full validation history',
+            'Daily border intelligence alerts included',
+          ],
+      cta: es ? 'Empezar prueba gratis' : 'Start free trial',
+      tier: 'operator',
+    },
+    {
+      id: 'express_cert',
+      name: 'Express Cert',
+      price: '$499',
+      period: es ? ' una sola vez' : ' one-time',
+      color: 'border-emerald-500',
+      badge: es ? 'Pago único' : 'One-time',
+      desc: es
+        ? 'Acelera tu certificación C-TPAT (US) u OEA (México). Te ahorra $50k+/año en demoras una vez aprobado.'
+        : 'AI-assisted C-TPAT (US) or OEA (Mexico) certification. Saves $50k+/yr in delays once approved.',
+      features: es
+        ? [
+            'Cuestionario de 20 preguntas — 30 minutos',
+            'IA arma tu solicitud completa lista para enviar',
+            'Carriles verdes permanentes una vez aprobado',
+            'PDF imprimible para firmar y entregar',
+          ]
+        : [
+            '20-question intake — 30 minutes',
+            'AI builds the complete submission-ready application',
+            'Permanent green-lane status once approved',
+            'Printable PDF — sign and submit',
+          ],
+      cta: es ? 'Empezar' : 'Get started',
+      tier: 'express_cert',
+    },
+    {
+      id: 'intelligence',
+      name: 'Intelligence',
+      price: '$499',
+      period: '/month',
+      color: 'border-purple-500',
+      badge: es ? 'Para VPs y aseguradoras' : 'For VPs & underwriters',
+      desc: es
+        ? 'El brief diario de inteligencia fronteriza US-MX. Eventos de cártel, bloqueos, caídas de VUCEM, aranceles — sintetizados con 6 horas de anticipación.'
+        : 'Daily US-MX border intelligence brief. Cartel events, blockades, VUCEM outages, tariffs — synthesized 6 hours ahead.',
+      features: es
+        ? [
+            'Brief diario por correo — 7am CT',
+            'Alertas en tiempo real de eventos de impacto',
+            'Etiquetas por corredor (Laredo, Pharr, Otay Mesa, Cd. Juárez)',
+            'Síntesis bilingüe — fuentes en español que nadie más procesa',
+            'Acceso al dataset completo',
+          ]
+        : [
+            'Daily brief by email — 7am CT',
+            'Real-time impact-event alerts',
+            'Corridor tagging (Laredo, Pharr, Otay Mesa, Cd. Juárez)',
+            'Bilingual synthesis — Spanish sources nobody else processes',
+            'Full dataset access',
+          ],
+      cta: es ? 'Empezar prueba gratis' : 'Start free trial',
+      tier: 'intelligence',
+    },
   ]
 
   async function handleUpgrade(planTier: string) {

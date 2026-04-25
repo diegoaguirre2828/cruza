@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { ArrowLeft, ShieldCheck, FileText } from 'lucide-react'
+import { LangToggle } from '@/components/LangToggle'
 
 interface Application {
   id: string
@@ -105,14 +106,17 @@ export default function ExpressCertPage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-2xl mx-auto px-4 pb-16">
-        <div className="pt-6 pb-4 flex items-center gap-3">
-          <Link href="/dashboard" className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5" />
-            {lang === 'es' ? 'Express Cert' : 'Express Cert'}
-          </h1>
+        <div className="pt-6 pb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5" />
+              Express Cert
+            </h1>
+          </div>
+          <LangToggle />
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-4">

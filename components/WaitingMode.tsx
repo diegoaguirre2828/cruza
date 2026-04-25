@@ -43,22 +43,29 @@ export function WaitingMode({ onNearCrossing }: Props) {
   const [condition, setCondition] = useState('')
   const [permState, setPermState] = useState<PermState>('unknown')
   const [permPromptDismissed, setPermPromptDismissed] = useState(false)
-  const [optedIn, setOptedIn] = useState(false)
+  // Auto-crossing detection is now ON by default — the button tap
+  // itself is the per-crossing consent. The /account toggle stays as
+  // an opt-OUT for users who don't want the feature visible at all.
+  const [enabled, setEnabled] = useState(true)
   const [confirming, setConfirming] = useState(false)
   const [confirmLane, setConfirmLane] = useState<'general' | 'sentri' | 'commercial' | 'pedestrian'>('general')
   const [confirmReason, setConfirmReason] = useState<'docs' | 'inspection' | 'construction' | 'protest' | 'other' | null>(null)
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null)
 
   const { inLine, elapsedMin, crossed, startInLine, cancelInLine, dismissCrossed } =
-    useCrossingDetector(optedIn)
+    useCrossingDetector(enabled)
 
-  // Pull the opt-in flag once auth resolves. Anonymous users stay opted out.
+  // Honor an explicit opt-OUT if the user disabled the feature in
+  // /account. New / unset profiles default to enabled.
   useEffect(() => {
-    if (!user) { setOptedIn(false); return }
+    if (!user) return
     fetch('/api/profile')
       .then((r) => r.json())
-      .then((d) => setOptedIn(!!d?.profile?.auto_geofence_opt_in))
-      .catch(() => setOptedIn(false))
+      .then((d) => {
+        const optedOut = d?.profile?.auto_geofence_opt_in === false
+        setEnabled(!optedOut)
+      })
+      .catch(() => { /* fall through to enabled */ })
   }, [user])
 
   const check = useCallback((pos: GeolocationPosition) => {
@@ -465,7 +472,7 @@ export function WaitingMode({ onNearCrossing }: Props) {
           </button>
         ))}
       </div>
-      {optedIn && (
+      {enabled && (
         <button
           onClick={startTracking}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold active:scale-95 transition-transform"

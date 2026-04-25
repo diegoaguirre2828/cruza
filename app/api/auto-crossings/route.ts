@@ -86,9 +86,11 @@ export async function POST(req: NextRequest) {
 
   const db = getServiceClient()
 
-  // For authed contributors: respect the opt-in flag + award points.
-  // The opt-in check is also enforced client-side, but this is the
-  // load-bearing copy.
+  // Auto-crossing detection is on by default. The user's tap on
+  // "I'm in line now" is the per-crossing consent; we only refuse
+  // submissions from profiles that have explicitly opted OUT in
+  // /account (auto_geofence_opt_in === false). Award points to
+  // authed users who land here.
   let pointsEarned = 0
   if (user) {
     const { data: profile } = await db
@@ -96,16 +98,16 @@ export async function POST(req: NextRequest) {
       .select('points, auto_geofence_opt_in')
       .eq('id', user.id)
       .maybeSingle()
-    if (!profile?.auto_geofence_opt_in) {
+    if (profile?.auto_geofence_opt_in === false) {
       return NextResponse.json(
-        { error: 'Auto-crossing detection is off for this profile' },
+        { error: 'Auto-crossing detection disabled for this profile.' },
         { status: 403 },
       )
     }
     pointsEarned = POINTS.auto_geofence_crossing
     await db
       .from('profiles')
-      .update({ points: (profile.points || 0) + pointsEarned })
+      .update({ points: (profile?.points || 0) + pointsEarned })
       .eq('id', user.id)
   }
 
