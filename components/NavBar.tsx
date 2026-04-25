@@ -38,7 +38,7 @@ export function NavBar() {
     <div className="flex items-center gap-2 mt-1 flex-wrap justify-end">
       <button
         onClick={toggleTheme}
-        className="p-1.5 rounded-lg text-gray-500 bg-gray-100 hover:text-gray-800 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100 dark:hover:bg-gray-700 transition-all active:scale-90"
+        className="cruzar-press-sm p-2 rounded-lg text-gray-500 bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100"
         aria-label="Toggle dark mode"
       >
         {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
@@ -46,7 +46,7 @@ export function NavBar() {
 
       <button
         onClick={toggle}
-        className="text-xs font-bold text-gray-600 bg-gray-100 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100 dark:hover:bg-gray-700 transition-all px-2.5 py-1.5 rounded-lg active:scale-90"
+        className="cruzar-press-sm text-xs font-bold text-gray-600 bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:bg-gray-800 dark:hover:text-gray-100 px-2.5 py-1.5 rounded-lg"
       >
         {lang === 'en' ? 'ES' : 'EN'}
       </button>
@@ -104,7 +104,7 @@ export function NavBar() {
           })()}
           <Link
             href="/account"
-            className="flex items-center p-2 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl transition-all active:scale-90"
+            className="cruzar-press-sm flex items-center p-2 text-white bg-gray-900 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-xl"
             title="Settings"
             aria-label="Settings"
           >
@@ -114,7 +114,7 @@ export function NavBar() {
       ) : (
         <Link
           href="/signup"
-          className="text-xs font-medium text-white bg-gray-900 px-3 py-1.5 rounded-xl hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+          className="cruzar-press-sm text-xs font-medium text-white bg-gray-900 px-3 py-1.5 rounded-xl hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
         >
           {lang === 'es' ? 'Entrar' : 'Sign in'}
         </Link>

@@ -240,10 +240,10 @@ export function PortCard({ port, signal }: Props) {
             )}
             <button
               onClick={handleStar}
-              className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
+              className={`cruzar-press-sm p-2 rounded-lg flex-shrink-0 bg-white dark:bg-gray-700 ${
                 starred
-                  ? 'text-yellow-500 hover:text-yellow-600'
-                  : 'text-gray-400 hover:text-yellow-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'text-yellow-500'
+                  : 'text-gray-400 hover:text-yellow-500'
               }`}
               title={lang === 'es' ? (starred ? 'Quitar de favoritos' : 'Guardar en favoritos') : (starred ? 'Remove from favorites' : 'Save to favorites')}
               aria-pressed={starred}
@@ -252,7 +252,7 @@ export function PortCard({ port, signal }: Props) {
             </button>
             <button
               onClick={handleShare}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+              className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
               title="Share wait times"
             >
               {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
