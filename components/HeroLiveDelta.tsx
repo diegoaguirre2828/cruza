@@ -299,7 +299,7 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
               /port/[id] if anywhere, not the home moment) */}
       <a
         href={clickHref}
-        className="block bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-3xl p-4 shadow-xl text-white relative overflow-hidden active:scale-[0.98] transition-transform"
+        className="cruzar-press block bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 rounded-3xl p-4 text-white relative overflow-hidden"
       >
         {/* background glow — softer now that the card is smaller */}
         <div className="absolute -top-12 -right-12 w-36 h-36 bg-white/10 rounded-full blur-3xl" />

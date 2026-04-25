@@ -606,7 +606,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
             already seen the value. */}
         {tier === 'guest' && (
           <Link href="/signup" className="block mt-4">
-            <div className="cruzar-shimmer cruzar-rise bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 shadow-sm flex items-center justify-between gap-3 active:scale-[0.98] transition-transform">
+            <div className="cruzar-press cruzar-shimmer cruzar-rise bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-bold text-white">
                   {lang === 'es'

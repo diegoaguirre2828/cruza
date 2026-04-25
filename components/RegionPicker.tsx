@@ -40,7 +40,7 @@ export function RegionPicker() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full pl-2 pr-3 py-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 active:scale-95 transition-transform max-w-full"
+        className="cruzar-press inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-full pl-2 pr-3 py-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 max-w-full"
       >
         <MapPin className="w-3 h-3" />
         <span>{currentLabel}</span>

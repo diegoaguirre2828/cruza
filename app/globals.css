@@ -39,33 +39,40 @@
    .cruzar-press alias for non-pill use sites. */
 .cruzar-pill, .cruzar-press {
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 -1px 0 rgba(15, 23, 42, 0.04) inset,
-    0 1px 2px rgba(15, 23, 42, 0.10),
-    0 5px 10px -2px rgba(15, 23, 42, 0.18),
-    0 14px 28px -8px rgba(15, 23, 42, 0.22);
-  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.06) inset,
+    0 1px 2px rgba(15, 23, 42, 0.12),
+    0 8px 16px -3px rgba(15, 23, 42, 0.22),
+    0 24px 48px -12px rgba(15, 23, 42, 0.28);
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
 }
+/* Dark mode cannot rely on dark shadows on a near-black background.
+   Lift comes from a bright top-edge highlight (the "metal catching
+   light" effect), a hairline rim outline that separates the surface
+   from the bg, and a long brand-blue ambient haze that suggests
+   space below the element. */
 .dark .cruzar-pill, .dark .cruzar-press {
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.35) inset,
-    0 1px 2px rgba(0, 0, 0, 0.55),
-    0 6px 12px -2px rgba(0, 0, 0, 0.55),
-    0 16px 32px -8px rgba(0, 0, 0, 0.50);
+    0 1px 1px rgba(255, 255, 255, 0.22) inset,
+    0 -1px 1px rgba(0, 0, 0, 0.55) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 6px 12px rgba(0, 0, 0, 0.7),
+    0 24px 48px -10px rgba(59, 130, 246, 0.28);
 }
 .cruzar-pill:active, .cruzar-press:active {
   transform: translateY(2px) scale(0.985);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.4) inset,
-    0 1px 1px rgba(15, 23, 42, 0.10),
-    0 2px 3px rgba(15, 23, 42, 0.08);
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.05) inset,
+    0 1px 2px rgba(15, 23, 42, 0.12),
+    0 3px 5px rgba(15, 23, 42, 0.10);
 }
 .dark .cruzar-pill:active, .dark .cruzar-press:active {
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 1px 2px rgba(0, 0, 0, 0.60),
-    0 2px 4px rgba(0, 0, 0, 0.40);
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.55) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 :root {
