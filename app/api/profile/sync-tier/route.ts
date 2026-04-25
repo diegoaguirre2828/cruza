@@ -69,12 +69,25 @@ export async function POST() {
 
   const stripe = getStripe()
 
-  // Resolve Stripe customer: prefer stored ID, fall back to email lookup
+  // Resolve Stripe customer.
+  //
+  // SECURITY (2026-04-25 audit): the bare `customers.list({ email })`
+  // fallback is a Pro-jacking vector — if a paying customer V happens
+  // to share an email with a non-paying user U (collision, prior
+  // accounts, post-signup email change), U's sync-tier call would
+  // grab V's customer_id and inherit V's Pro subscription.
+  //
+  // Fix: only trust an email-matched customer when their metadata
+  // contains `userId === user.id` (the metadata is set by our webhook
+  // on subscription create). Otherwise pretend we found nothing —
+  // the user can re-checkout and the webhook will tag the new
+  // customer correctly.
   let customerId: string | null = existingSub?.stripe_customer_id || null
   if (!customerId && user.email) {
     try {
-      const list = await stripe.customers.list({ email: user.email, limit: 3 })
-      customerId = list.data[0]?.id || null
+      const list = await stripe.customers.list({ email: user.email, limit: 5 })
+      const verified = list.data.find((c) => c.metadata?.userId === user.id)
+      customerId = verified?.id || null
     } catch (err) {
       console.error('sync-tier: customer lookup failed', err)
     }

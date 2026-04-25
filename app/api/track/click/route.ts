@@ -64,6 +64,34 @@ export async function POST(req: NextRequest) {
   }
 
   if ('url' in body && body.url) {
+    // SECURITY (2026-04-25 audit): allow-list URLs by origin so an
+    // anonymous attacker can't fill link_clicks with arbitrary
+    // payloads. Future admin UIs that render this column as a clickable
+    // link become a one-line stored-XSS footgun otherwise. Allow:
+    // cruzar.app + known partner / SENTRI / official-gov domains.
+    const ORIGIN_ALLOWLIST = [
+      'cruzar.app',
+      'www.cruzar.app',
+      'ttp.cbp.dhs.gov',          // SENTRI / Trusted Traveler Programs
+      'www.cbp.gov', 'cbp.gov',
+      'help.cbp.gov',
+      'bwt.cbp.gov',
+      'baja-bound.com', 'www.baja-bound.com',
+      'mexpro.com', 'www.mexpro.com',
+      'oscarpadilla.com', 'www.oscarpadilla.com',
+    ]
+    let host: string
+    try {
+      host = new URL(body.url).host
+    } catch {
+      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 })
+    }
+    if (!ORIGIN_ALLOWLIST.includes(host)) {
+      // Silently accept — return ok so the client never sees the reject
+      // (avoids signalling the allow-list to a probe). Don't write the
+      // row.
+      return NextResponse.json({ ok: true })
+    }
     const url = body.url.slice(0, 500)
     const context = body.context?.slice(0, 50) || null
     const { error } = await db.from('link_clicks').insert({

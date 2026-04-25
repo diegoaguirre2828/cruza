@@ -31,6 +31,22 @@ function rateLimited(token: string): boolean {
   return bucket.count > RATE_LIMIT
 }
 
+// Escape user-supplied strings before they land in an HTML email body.
+// SECURITY (2026-04-25 audit): broker emails interpolate reference_id /
+// driver.name / broker_name unescaped. A paying business-tier user
+// could embed phishing HTML (e.g. fake "wire instructions" link) into
+// any of those fields, which Cruzar would then send from its own
+// from-address — turning our inbox reputation into a BEC pivot.
+function escapeHtml(s: string | null | undefined): string {
+  if (!s) return ''
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function tokenExpired(driver: { last_checkin_at?: string | null; created_at?: string | null }): boolean {
   const now = Date.now()
   const cutoff = now - TOKEN_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
@@ -165,16 +181,16 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             from: process.env.RESEND_FROM_EMAIL || 'Cruzar Alerts <onboarding@resend.dev>',
             to: [shipment.broker_email],
-            subject: `✅ Shipment ${shipment.reference_id} cleared at ${portName}`,
+            subject: `✅ Shipment ${escapeHtml(shipment.reference_id)} cleared at ${escapeHtml(portName)}`,
             html: `
               <div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto;padding:24px">
                 <h2 style="color:#16a34a;margin-bottom:8px">✅ Shipment Cleared</h2>
-                <p style="color:#374151">Hello ${shipment.broker_name || 'there'},</p>
-                <p style="color:#374151">Shipment <strong>${shipment.reference_id}</strong> has cleared customs.</p>
+                <p style="color:#374151">Hello ${escapeHtml(shipment.broker_name) || 'there'},</p>
+                <p style="color:#374151">Shipment <strong>${escapeHtml(shipment.reference_id)}</strong> has cleared customs.</p>
                 <table style="width:100%;border-collapse:collapse;margin:16px 0">
-                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px;width:140px">Port of Entry</td><td style="padding:10px 16px;font-weight:600;color:#111827;font-size:14px">${portName}</td></tr>
-                  <tr><td style="padding:10px 16px;color:#6b7280;font-size:14px">Driver</td><td style="padding:10px 16px;color:#111827;font-size:14px">${driver.name}</td></tr>
-                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px">Cleared at</td><td style="padding:10px 16px;color:#111827;font-size:14px">${time}</td></tr>
+                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px;width:140px">Port of Entry</td><td style="padding:10px 16px;font-weight:600;color:#111827;font-size:14px">${escapeHtml(portName)}</td></tr>
+                  <tr><td style="padding:10px 16px;color:#6b7280;font-size:14px">Driver</td><td style="padding:10px 16px;color:#111827;font-size:14px">${escapeHtml(driver.name)}</td></tr>
+                  <tr style="background:#f9fafb"><td style="padding:10px 16px;color:#6b7280;font-size:14px">Cleared at</td><td style="padding:10px 16px;color:#111827;font-size:14px">${escapeHtml(time)}</td></tr>
                 </table>
                 <p style="color:#9ca3af;font-size:12px;margin-top:24px;border-top:1px solid #e5e7eb;padding-top:16px">
                   Sent via Cruzar Border Intelligence · <a href="https://cruzar.app" style="color:#3b82f6">cruzar.app</a>

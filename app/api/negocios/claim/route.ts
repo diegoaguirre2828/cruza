@@ -36,10 +36,18 @@ export async function POST(req: NextRequest) {
   if (!biz) return NextResponse.json({ error: 'Business not found' }, { status: 404 })
   if (biz.claimed) return NextResponse.json({ error: 'Already claimed' }, { status: 409 })
 
-  // Mark as claim_pending — admin must approve, not auto-claim
+  // Mark as claim_pending — admin must approve, not auto-claim.
+  //
+  // SECURITY (2026-04-25 audit): originally this route wrote the
+  // submitted whatsapp directly to the live `whatsapp` column, which
+  // meant ANY unauth POST {business_id, whatsapp} would overwrite the
+  // contact number every customer sees. Trivial brand-poisoning + call
+  // hijack. Fix: store submitted contacts on the parallel
+  // `submitted_by_*` columns ONLY; admin approval is what promotes
+  // them to the live `whatsapp` / `email` columns.
   const updates: Record<string, unknown> = { claim_pending: true }
   if (email?.trim()) updates.submitted_by_email = email.trim()
-  if (whatsapp?.trim()) updates.whatsapp = whatsapp.trim()
+  if (whatsapp?.trim()) updates.submitted_by_whatsapp = whatsapp.trim()
 
   const { error } = await db
     .from('rewards_businesses')

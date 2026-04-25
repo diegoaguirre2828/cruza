@@ -18,6 +18,13 @@ export const dynamic = 'force-dynamic'
 // install date for analytics.
 
 const PWA_PRO_DAYS = 90
+// SECURITY (2026-04-25 audit): require the install record to be at
+// least this old before granting Pro. This forces an attacker to do
+// the work twice with a 24h gap between calls instead of getting Pro
+// for 90 days from a single POST. Combined with the per-account
+// alerts cap, it neutralises the financial-DoS path through
+// Twilio/Resend.
+const REQUIRED_INSTALL_AGE_MS = 24 * 60 * 60 * 1000  // 24h
 
 export async function POST() {
   const cookieStore = await cookies()
@@ -39,6 +46,37 @@ export async function POST() {
     .single()
 
   const now = new Date()
+  const currentTier = profile?.tier || 'free'
+
+  // Two-phase install verification. First call records pwa_installed_at
+  // but does NOT yet grant Pro. Subsequent call ≥24h later promotes the
+  // recorded install into the actual grant. An attacker still gets Pro
+  // eventually if they wait, but the wait + per-account alerts cap means
+  // the attack stops being profitable for SMS/email-spam financial DoS.
+  const installedAt = profile?.pwa_installed_at ? new Date(profile.pwa_installed_at) : null
+  if (!installedAt) {
+    // First time we hear about this install — record it and exit.
+    await db.from('profiles').update({ pwa_installed_at: now.toISOString() }).eq('id', user.id)
+    return NextResponse.json({
+      ok: true,
+      granted: false,
+      tier: currentTier,
+      pending: true,
+      next_grant_at: new Date(now.getTime() + REQUIRED_INSTALL_AGE_MS).toISOString(),
+      message: 'Install recorded. Pro will activate after 24 hours of confirmed use.',
+    })
+  }
+  if (now.getTime() - installedAt.getTime() < REQUIRED_INSTALL_AGE_MS) {
+    return NextResponse.json({
+      ok: true,
+      granted: false,
+      tier: currentTier,
+      pending: true,
+      next_grant_at: new Date(installedAt.getTime() + REQUIRED_INSTALL_AGE_MS).toISOString(),
+      message: 'Install verification in progress. Try again in a few hours.',
+    })
+  }
+
   const grantExpiresAt = new Date(now.getTime() + PWA_PRO_DAYS * 24 * 60 * 60 * 1000)
 
   // Existing grant — don't shorten, only extend
@@ -50,12 +88,10 @@ export async function POST() {
   // If they're already a paid Pro/Business user, don't downgrade their tier
   // — just record the install date. The PWA grant is only meaningful for
   // users who'd otherwise be on free tier.
-  const currentTier = profile?.tier || 'free'
   const willUpgradeTier = currentTier === 'free' || currentTier === 'guest'
 
   const updates: Record<string, unknown> = {
     pro_via_pwa_until: newExpiry.toISOString(),
-    pwa_installed_at: profile?.pwa_installed_at || now.toISOString(),
   }
   if (willUpgradeTier) updates.tier = 'pro'
 
@@ -71,6 +107,5 @@ export async function POST() {
     tier: willUpgradeTier ? 'pro' : currentTier,
     pro_via_pwa_until: newExpiry.toISOString(),
     days: PWA_PRO_DAYS,
-    is_new_install: !profile?.pwa_installed_at,
   })
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase, getServiceClient } from '@/lib/supabase'
+import { keyFromRequest, checkRateLimit } from '@/lib/ratelimit'
 
 // GET /api/ads?portId=xxx&region=xxx — fetch ads for a crossing
 export async function GET(req: NextRequest) {
@@ -32,10 +33,27 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ ads: filtered })
 }
 
-// POST /api/ads/event — track impression or click
+// POST /api/ads/event — track impression or click.
+//
+// SECURITY (2026-04-25 audit): once advertisers exist, an unauth POST
+// loop is click-fraud (drains advertiser budget, inflates CTR, poisons
+// the targeting model). The proper fix is a rotating HMAC token issued
+// on GET; until that lands we apply a per-IP rate limit so a single
+// origin can't burst a bunch of fake clicks. Tight cap: 30/hr, burst 5.
 export async function POST(req: NextRequest) {
+  const rl = checkRateLimit(keyFromRequest(req), 30, 5)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: true },
+      { status: 200, headers: { 'X-RateLimit-Skipped': '1' } },
+    )
+  }
+
   const { adId, eventType, portId } = await req.json()
   if (!adId || !eventType) return NextResponse.json({ ok: true })
+  if (eventType !== 'click' && eventType !== 'impression') {
+    return NextResponse.json({ ok: true })
+  }
 
   const supabase = getServiceClient()
   await supabase.from('ad_events').insert({ ad_id: adId, event_type: eventType, port_id: portId })

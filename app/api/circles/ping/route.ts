@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { getServiceClient } from '@/lib/supabase'
 import { getPortMeta } from '@/lib/portMeta'
+import { checkRateLimit } from '@/lib/ratelimit'
 import webpush from 'web-push'
 
 export const dynamic = 'force-dynamic'
@@ -34,12 +35,36 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  // SECURITY (2026-04-25 audit): cap pings per user. Without this an
+  // authed user with 12-member circles could fan-out a phishing payload
+  // through the `note` field as a high-urgency push. 6 pings/hour with
+  // a burst of 2 is enough for legitimate "heads up" use and tight
+  // enough that abusers hit the wall before any victim taps.
+  const rl = checkRateLimit(`circle-ping:${user.id}`, 6, 2)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many pings. Wait a bit and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    )
+  }
+
   let body: { port_id?: string; wait_minutes?: number; note?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const portId = (body.port_id || '').trim()
   const wait = typeof body.wait_minutes === 'number' && Number.isFinite(body.wait_minutes) ? body.wait_minutes : null
-  const note = typeof body.note === 'string' ? body.note.trim().slice(0, 200) : null
+  // Strip URLs + bidi-control codepoints from note before it lands in
+  // a push body. URLs would let an attacker exfiltrate or phish via
+  // the notification surface; RTL overrides flip the rendered text
+  // direction. 200-char cap keeps push body under platform limits.
+  const noteRaw = typeof body.note === 'string' ? body.note.trim().slice(0, 200) : null
+  const note = noteRaw
+    ? noteRaw
+        .replace(/https?:\/\/\S+/gi, '')
+        .replace(/[‪-‮⁦-⁩]/g, '')
+        .trim()
+        .slice(0, 200) || null
+    : null
   if (!portId) return NextResponse.json({ error: 'Missing port_id' }, { status: 400 })
 
   const db = getServiceClient()

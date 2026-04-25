@@ -62,11 +62,27 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Award 3 points to authenticated users for reporting a rate
+  // Award 3 points to authenticated users for reporting a rate.
+  //
+  // SECURITY (2026-04-25 audit): per-user dedupe so the same user can't
+  // farm 240 points/day by hitting the endpoint hourly (the IP rate
+  // limit doesn't bind across IPs and was the only previous gate).
+  // We allow ONE point award per user per 60 minutes regardless of
+  // submission count.
   if (userId) {
-    const { data: profile } = await db.from('profiles').select('points').eq('id', userId).single()
-    if (profile) {
-      await db.from('profiles').update({ points: (profile.points || 0) + 3 }).eq('id', userId)
+    const cutoffIso = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const { count: recent } = await db
+      .from('exchange_rate_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .gte('reported_at', cutoffIso)
+    // recent counts THIS submission too, so >1 means at least one prior
+    // report happened in the last hour and we already awarded those points.
+    if ((recent || 0) <= 1) {
+      const { data: profile } = await db.from('profiles').select('points').eq('id', userId).single()
+      if (profile) {
+        await db.from('profiles').update({ points: (profile.points || 0) + 3 }).eq('id', userId)
+      }
     }
   }
 

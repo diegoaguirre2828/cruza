@@ -10,21 +10,19 @@ import { GuardianProgressCard } from '@/components/GuardianProgressCard'
 import { LockedFeatureWall } from '@/components/LockedFeatureWall'
 
 interface Leader {
-  id: string
+  // SECURITY 2026-04-25: server returns id_suffix (4-char hex pseudonym)
+  // not the full auth UUID. Renders the same disambiguator without
+  // exposing user_ids to public scraping.
+  id_suffix: string
   display_name: string | null
   points: number
   reports_count: number
   badges: string[]
 }
 
-// Fallback display name when a user hasn't set one. We don't have
-// their email here (not in the leaderboard API select), so derive
-// a stable short handle from the user ID so every row still reads
-// like a distinct guardian instead of a pile of "@" symbols.
 function handleFor(leader: Leader): string {
   if (leader.display_name && leader.display_name.trim()) return `@${leader.display_name.trim()}`
-  const suffix = leader.id.replace(/-/g, '').slice(0, 4)
-  return `Guardián-${suffix}`
+  return `Guardián-${leader.id_suffix}`
 }
 
 // Guardián tiers — same ladder as the home-page GuardianProgressCard,
@@ -184,7 +182,7 @@ export default function LeaderboardPage() {
                 .map((leader, i) => {
                   const tier = tierFor(leader.reports_count || 0)
                   return (
-                    <div key={leader.id} className={`flex items-center gap-3 p-4 ${i < 3 ? 'bg-gradient-to-r from-amber-50/60 to-transparent dark:from-amber-900/10' : ''}`}>
+                    <div key={`${leader.id_suffix}-${i}`} className={`flex items-center gap-3 p-4 ${i < 3 ? 'bg-gradient-to-r from-amber-50/60 to-transparent dark:from-amber-900/10' : ''}`}>
                       <div className="w-8 text-center flex-shrink-0">
                         {i < 3 ? (
                           <span className="text-xl">{RANK_ICONS[i]}</span>

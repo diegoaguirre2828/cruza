@@ -757,7 +757,6 @@ export default function DashboardPage() {
 interface CircleMember {
   user_id: string
   role: string
-  email: string
   display_name: string | null
   joined_at: string
 }
@@ -968,10 +967,10 @@ function CircleTab({ es, userId }: { es: boolean; userId: string | null }) {
                 {c.members.map((m) => (
                   <div key={m.user_id} className="flex items-center gap-2 text-xs">
                     <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-500">
-                      {(m.display_name || m.email || '?').slice(0, 1).toUpperCase()}
+                      {(m.display_name || '?').slice(0, 1).toUpperCase()}
                     </div>
                     <span className="flex-1 truncate text-gray-700 dark:text-gray-300">
-                      {m.display_name || m.email}
+                      {m.display_name || (es ? 'Miembro' : 'Member')}
                       {m.user_id === userId && <span className="ml-1 text-gray-400">({es ? 'tú' : 'you'})</span>}
                     </span>
                     {m.role === 'owner' && <span className="text-[10px] text-blue-600 font-bold">★</span>}

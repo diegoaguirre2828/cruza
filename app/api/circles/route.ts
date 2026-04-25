@@ -45,30 +45,33 @@ export async function GET() {
     .select('circle_id, user_id, role, joined_at')
     .in('circle_id', circleIds)
 
-  // Resolve member user info (email, display_name) via auth admin
+  // Resolve member display_name only.
+  //
+  // SECURITY (2026-04-25 audit): previously also returned each member's
+  // auth `email` to every other member of the circle, turning a single
+  // accepted invite into an email-harvest of every other person in
+  // every circle the inviter belonged to. display_name is sufficient
+  // for the UI; the auth admin lookup is dropped entirely.
   const memberUserIds = [...new Set((allMembers || []).map((m) => m.user_id))]
-  const userInfo = new Map<string, { email: string; display_name: string | null }>()
-  await Promise.all(
-    memberUserIds.map(async (uid) => {
-      const { data: authUser } = await db.auth.admin.getUserById(uid)
-      if (authUser?.user) {
-        const email = authUser.user.email || ''
-        const { data: profile } = await db.from('profiles').select('display_name').eq('id', uid).maybeSingle()
-        userInfo.set(uid, { email, display_name: profile?.display_name || null })
-      }
-    })
-  )
+  const userInfo = new Map<string, { display_name: string | null }>()
+  if (memberUserIds.length > 0) {
+    const { data: profiles } = await db
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', memberUserIds)
+    for (const p of profiles || []) {
+      userInfo.set(p.id, { display_name: p.display_name || null })
+    }
+  }
 
   // Group members by circle
-  const membersByCircle = new Map<string, Array<{ user_id: string; role: string; email: string; display_name: string | null; joined_at: string }>>()
+  const membersByCircle = new Map<string, Array<{ user_id: string; role: string; display_name: string | null; joined_at: string }>>()
   for (const m of allMembers || []) {
-    const info = userInfo.get(m.user_id)
-    if (!info) continue
+    const info = userInfo.get(m.user_id) || { display_name: null }
     const arr = membersByCircle.get(m.circle_id) || []
     arr.push({
       user_id: m.user_id,
       role: m.role || 'member',
-      email: info.email,
       display_name: info.display_name,
       joined_at: m.joined_at,
     })

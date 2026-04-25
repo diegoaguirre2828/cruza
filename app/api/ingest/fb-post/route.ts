@@ -313,13 +313,22 @@ export async function POST(req: NextRequest) {
   let parsed = await parseWithClaude(text, groupName, image)
   if (!parsed) parsed = parseWithRegex(text)
 
-  const observations = (parsed?.observations ?? []).filter((o): o is Observation =>
+  const observationsAll = (parsed?.observations ?? []).filter((o): o is Observation =>
     !!o &&
     !!o.port_id &&
     o.wait_minutes != null &&
     o.wait_minutes >= 0 &&
     o.wait_minutes <= 360,
   )
+
+  // SECURITY (2026-04-25 audit): cap inserts per request. If
+  // INGEST_SECRET ever leaks (or shares hygiene with the previously
+  // weak CRON_SECRET), an attacker who flips the LLM into emitting
+  // 100 fake observations per call can poison the wait-time pool
+  // fast. 5 obs/request is more than the LLM ever returns from a
+  // legitimate FB post and forces an attacker to make many requests
+  // (which the IP-allow-list / future Make.com IP gate will catch).
+  const observations = observationsAll.slice(0, 5)
 
   if (observations.length === 0) {
     return NextResponse.json({ skipped: 'no_wait_info', parsed })

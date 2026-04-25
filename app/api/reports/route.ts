@@ -353,10 +353,23 @@ export async function POST(req: NextRequest) {
   const type = reportType || condition || 'other'
   if (!portId) return NextResponse.json({ error: 'portId required' }, { status: 400 })
 
-  // Sanitize description — strip HTML tags and limit length
+  // Sanitize description — strip HTML tags, drop bidi-control codepoints,
+  // limit length.
+  //
+  // SECURITY (2026-04-25 audit): the previous regex was defeated by
+  // Unicode bidi-override chars (U+202A–U+202E + U+2066–U+2069), which
+  // can flip rendered text direction in push notification bodies and
+  // email digests. Strip them explicitly along with any remaining
+  // non-printable ASCII control chars.
   const rawDesc = (description || note) as string | undefined
   const sanitizedDesc = rawDesc
-    ? rawDesc.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, 500)
+    ? rawDesc
+        .replace(/<[^>]*>/g, '')
+        .replace(/[<>]/g, '')
+        .replace(/[‪-‮⁦-⁩]/g, '')
+        .replace(/[ -]/g, '')
+        .trim()
+        .slice(0, 500)
     : null
 
   // Contradiction check: reject "clear/fast" with wait > 60 min
