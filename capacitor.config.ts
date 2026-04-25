@@ -41,6 +41,15 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    SplashScreen: {
+      launchShowDuration: 0,
+      backgroundColor: '#0f172a',
+      androidScaleType: 'CENTER_CROP',
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#0f172a',
+    },
   },
 }
 

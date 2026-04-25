@@ -7,6 +7,7 @@ import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
 import { Check, ArrowLeft } from 'lucide-react'
 import { isIOSAppClient } from '@/lib/platform'
+import { IOSSubscribeButton } from '@/components/IOSSubscribeButton'
 
 export default function PricingPage() {
   const { user } = useAuth()
@@ -206,15 +207,11 @@ export default function PricingPage() {
                   >
                     {plan.cta}
                   </Link>
+                ) : isIOSApp && plan.id === 'pro' ? (
+                  <IOSSubscribeButton ctaOverride={plan.cta} />
                 ) : isIOSApp ? (
-                  // iOS app: anti-steering compliant single-line pointer
-                  // for Pro and Business. We will re-add StoreKit IAP
-                  // for Pro once the Capacitor plugin ecosystem ships
-                  // builds compatible with capacitor-swift-pm 8.x.
                   <div className="w-full text-center py-2.5 rounded-xl text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 leading-snug px-3">
-                    {es
-                      ? (plan.id === 'business' ? 'Solo para flotas' : 'Disponible en cruzar.app')
-                      : (plan.id === 'business' ? 'Fleet accounts only' : 'Available at cruzar.app')}
+                    {es ? 'Solo para flotas' : 'Fleet accounts only'}
                   </div>
                 ) : (
                   <button

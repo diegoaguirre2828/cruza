@@ -10,6 +10,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/geolocation": "8.2.0",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/push-notifications": "8.0.3",
+    "@capacitor/splash-screen": "8.0.1",
+    "@capacitor/status-bar": "8.0.2",
+    "@revenuecat/purchases-capacitor": "13.0.1",
     "@sentry/nextjs": "^10.48.0",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/ssr": "^0.9.0",
@@ -29,9 +36,9 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@capacitor/cli": "7.6.2",
-    "@capacitor/core": "7.6.2",
-    "@capacitor/ios": "7.6.2",
+    "@capacitor/cli": "8.3.1",
+    "@capacitor/core": "8.3.1",
+    "@capacitor/ios": "8.3.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
