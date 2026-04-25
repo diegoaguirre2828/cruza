@@ -8,31 +8,30 @@ export const maxDuration = 30
 
 // Native Graph API publisher for the Cruzar FB Page.
 //
-// Replaces the Make.com loop that Diego ran from build → 2026-04-25.
-// That loop posted the next-post caption as plain text via Make's FB
-// module, which surfaced as "Published by Make" (algo discount) and
-// had no image attachment (no media boost). Result: 0 reactions, 0
-// shares, 78% follower-only reach across the last 28 days.
-//
-// This route:
-//  1. Calls /api/social/next-post — same dedupe + caption logic as Make
-//     was using (MIN_GAP_MINUTES=180, caption_hash collision skip).
-//  2. POSTs the caption + a fresh /api/social-image PNG to Graph API
-//     /{page-id}/photos. FB sees a photo post → media-boost eligible,
-//     publisher is the Page itself → no third-party tag.
-//  3. Updates the social_posts row that next-post just inserted with
-//     fb_post_id + fb_posted_at so the admin panel can link to the
-//     live FB post and surface error rate.
+// Replaces the Make.com loop that ran build → 2026-04-25. That loop
+// surfaced as "Published by Make" (algo discount) and posted text-only
+// (no media boost). 28-day stats: 2,707 views, 0 reactions, 78% follower-
+// only reach. This route publishes natively as the Page with a live
+// wait-time image attached → photo post, no third-party tag.
 //
 // Schedule on cron-job.org: 5:30am, 11:30am, 3:30pm, 7:00pm CT.
+//
+// Coexistence with Make: deliberately self-sufficient. fb-publish does
+// NOT use /api/social/next-post's dedupe gate (which counts every row,
+// including Make-driven ones). Instead it dedupes against its OWN past
+// publishes — `social_posts WHERE fb_post_id IS NOT NULL` rows are the
+// only ones that block. Make's rows have fb_post_id = NULL and are
+// invisible to this dedupe. So Make can stay enabled (with risk of
+// double-posting on the FB page itself) or be disabled (clean) without
+// affecting whether fb-publish fires.
 
 const MIN_GAP_MINUTES = 180
 
 function captionHash(caption: string): string {
   // Same hashing rule as /api/social/next-post — strip the timestamp
-  // and weekday lines so a caption published at 11:31 vs 11:33 in the
-  // same scheduled slot collapses to the same hash. We use this to
-  // find the row next-post just inserted and update it in-place.
+  // and weekday lines so reruns within the same scheduled slot collapse
+  // to the same hash. Used for analytics/grouping, not for dedupe (we
+  // dedupe on fb_posted_at instead — see above).
   const stripped = caption
     .split('\n')
     .filter((line) => !/TIEMPOS EN LOS PUENTES/i.test(line))
@@ -54,73 +53,95 @@ export async function GET(req: NextRequest) {
   const force = req.nextUrl.searchParams.get('force') === '1'
   const apiBase = process.env.NEXT_PUBLIC_APP_URL || 'https://cruzar.app'
   const cronSecret = process.env.CRON_SECRET!
+  const db = getServiceClient()
 
-  // Step 1: get the caption (and have next-post insert the social_posts row).
-  // force=1 propagates so manual admin "Fire Now" can bypass the dedupe.
-  const nextPostUrl = `${apiBase}/api/social/next-post?secret=${encodeURIComponent(cronSecret)}${force ? '&force=1' : ''}`
-  let nextPost: { caption?: string; imageUrl?: string; landingUrl?: string; skip?: boolean; reason?: string } = {}
+  // Step 1: self-dedupe. Only count rows we (the native publisher) wrote
+  // — fb_post_id IS NOT NULL means we successfully posted via Graph API.
+  // Rows from Make's polling have fb_post_id = NULL and don't block us.
+  if (!force) {
+    const since = new Date(Date.now() - MIN_GAP_MINUTES * 60_000).toISOString()
+    const { data: recent } = await db
+      .from('social_posts')
+      .select('id, fb_posted_at, fb_post_id')
+      .eq('platform', 'facebook_page')
+      .not('fb_post_id', 'is', null)
+      .gte('fb_posted_at', since)
+      .order('fb_posted_at', { ascending: false })
+      .limit(1)
+    if (recent && recent.length > 0) {
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: 'native_publisher_recent_post',
+        lastPostedAt: recent[0].fb_posted_at,
+        lastFbPostId: recent[0].fb_post_id,
+        minGapMinutes: MIN_GAP_MINUTES,
+      })
+    }
+  }
+
+  // Step 2: fetch a fresh caption. Pass force=1 so next-post returns
+  // the caption WITHOUT inserting a social_posts row (we manage our own
+  // row inserts here so the row carries fb_post_id from the start).
+  const nextPostUrl = `${apiBase}/api/social/next-post?secret=${encodeURIComponent(cronSecret)}&force=1`
+  let nextPost: { caption?: string } = {}
   try {
     const res = await fetch(nextPostUrl, { cache: 'no-store' })
     nextPost = await res.json()
   } catch (err) {
     return NextResponse.json({ ok: false, stage: 'next-post-fetch', error: String(err) }, { status: 502 })
   }
-
-  if (nextPost.skip) {
-    return NextResponse.json({ ok: true, skipped: true, reason: nextPost.reason || 'recent_post_exists' })
-  }
   if (!nextPost.caption) {
     return NextResponse.json({ ok: false, stage: 'caption-empty' }, { status: 502 })
   }
 
-  // Step 2: validate FB env. If missing, log to the row and return —
-  // captions still generate so admin can see what *would* have posted.
+  const caption = nextPost.caption
+  const hash = captionHash(caption)
+  const ts = Date.now()
+  const imageUrl = `${apiBase}/api/social-image?ts=${ts}`
+
+  // Step 3: validate FB env. If missing, log a row with the error so the
+  // admin panel surfaces it, then return 200 with ok:false (cron-job.org
+  // treats non-2xx as job failure and retries — we don't want that here).
   const pageId = process.env.FACEBOOK_PAGE_ID
   const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN
   if (!pageId || !pageToken) {
-    const db = getServiceClient()
-    const hash = captionHash(nextPost.caption)
-    await db.from('social_posts')
-      .update({ fb_post_error: 'FB_ENV_MISSING', image_kind: 'social-image' })
-      .eq('caption_hash', hash)
-      .is('fb_post_id', null)
+    await db.from('social_posts').insert({
+      platform: 'facebook_page',
+      caption,
+      caption_hash: hash,
+      image_url: imageUrl,
+      image_kind: 'social-image',
+      fb_post_error: 'FB_ENV_MISSING',
+    })
     return NextResponse.json({
       ok: false,
       stage: 'env',
       error: 'FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN missing in production env',
-      captionPreview: nextPost.caption.slice(0, 120),
-    }, { status: 412 })
+      captionPreview: caption.slice(0, 120),
+    })
   }
-
-  // Step 3: build a unique image URL per post so Graph API always pulls
-  // a fresh PNG (cache-busted by ts). We use a 1080×1350 portrait card
-  // rendered by /api/social-image — that's what FB uploads as the
-  // photo asset for this post.
-  const ts = Date.now()
-  const imageUrl = `${apiBase}/api/social-image?ts=${ts}`
 
   // Step 4: post to Graph API.
   const fb = await postPhoto({
     pageId,
     accessToken: pageToken,
     imageUrl,
-    caption: nextPost.caption,
+    caption,
   })
 
-  // Step 5: write back to the social_posts row that next-post inserted.
-  const db = getServiceClient()
-  const hash = captionHash(nextPost.caption)
+  // Step 5: insert the row carrying fb_post_id (or fb_post_error). This is
+  // the row our own dedupe gate (Step 1) checks for in subsequent runs.
   if (fb.ok) {
-    await db.from('social_posts')
-      .update({
-        fb_post_id: fb.postId || null,
-        fb_posted_at: new Date().toISOString(),
-        fb_post_error: null,
-        image_kind: 'social-image',
-        image_url: imageUrl,
-      })
-      .eq('caption_hash', hash)
-      .is('fb_post_id', null)
+    await db.from('social_posts').insert({
+      platform: 'facebook_page',
+      caption,
+      caption_hash: hash,
+      image_url: imageUrl,
+      image_kind: 'social-image',
+      fb_post_id: fb.postId || null,
+      fb_posted_at: new Date().toISOString(),
+    })
     return NextResponse.json({
       ok: true,
       posted: true,
@@ -129,15 +150,14 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // Failure path — record the error so the admin panel surfaces it.
-  await db.from('social_posts')
-    .update({
-      fb_post_error: fb.error || `HTTP ${fb.rawStatus}`,
-      image_kind: 'social-image',
-      image_url: imageUrl,
-    })
-    .eq('caption_hash', hash)
-    .is('fb_post_id', null)
+  await db.from('social_posts').insert({
+    platform: 'facebook_page',
+    caption,
+    caption_hash: hash,
+    image_url: imageUrl,
+    image_kind: 'social-image',
+    fb_post_error: fb.error || `HTTP ${fb.rawStatus}`,
+  })
   return NextResponse.json({
     ok: false,
     stage: 'graph-api',

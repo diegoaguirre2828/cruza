@@ -129,9 +129,9 @@ export default function FBPanelClient() {
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-4 flex items-start gap-3">
         <Trash2 size={20} className="text-amber-400 flex-shrink-0 mt-0.5" />
         <div className="text-sm">
-          <div className="font-semibold text-amber-200 mb-1">Disable the Make scenario</div>
+          <div className="font-semibold text-amber-200 mb-1">Disable the Make scenario before relying on this</div>
           <div className="text-amber-100/80">
-            Once a post here lands successfully (green row below), turn off the Make scenario that was posting to the page. Otherwise both pipelines fire and FB sees duplicate publishes — the algo will throttle both.
+            This pipeline self-dedupes against its own posts (rows w/ <code className="text-amber-200">fb_post_id</code>), so Make can stay enabled without blocking native runs. But if Make is also posting, the FB Page sees two posts per slot — algo throttles both. After the first green row lands here, kill the Make scenario in your Make dashboard.
           </div>
         </div>
       </div>
