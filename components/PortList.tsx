@@ -66,7 +66,19 @@ export function PortList() {
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [direction, setDirection] = useState<Direction>('entering_us')
+  // Direction is sticky per device. Defaults to 'entering_us' on first visit.
+  // Re-enabled 2026-04-25 with toggle for Cruzar Insights B2B data needs +
+  // legitimate consumer use (RGV crowd does cross TO Mexico for family/shopping).
+  const [direction, setDirectionState] = useState<Direction>(() => {
+    if (typeof window === 'undefined') return 'entering_us'
+    const stored = window.localStorage.getItem('cruzar_direction') as Direction | null
+    return stored === 'entering_mexico' ? 'entering_mexico' : 'entering_us'
+  })
+  const setDirection = useCallback((d: Direction) => {
+    setDirectionState(d)
+    if (typeof window !== 'undefined') window.localStorage.setItem('cruzar_direction', d)
+    trackEvent('direction_toggled', { direction: d })
+  }, [])
 
   // Share
   const [shareLabel, setShareLabel] = useState<'idle' | 'copied'>('idle')
@@ -198,16 +210,18 @@ export function PortList() {
 
   async function submitMexReport(condition: string) {
     setMexSubmitting(true)
+    // 'southbound' matches /api/reports normalization (anything-not-'southbound'
+    // gets stored as 'northbound'). Earlier 'mexico' value silently mis-stored.
     await fetch('/api/reports', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ portId: mexPortId, condition, direction: 'mexico', ref: typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null }),
+      body: JSON.stringify({ portId: mexPortId, condition, direction: 'southbound', ref: typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null }),
     }).catch(() => {})
     trackEvent('report_submitted', {
       port_id: mexPortId,
       source: 'home_mex_direction_prompt',
       report_type: condition,
-      direction: 'mexico',
+      direction: 'southbound',
     })
     setMexSubmitting(false)
     setMexSubmitted(true)
@@ -290,10 +304,35 @@ export function PortList() {
         </a>
       )}
 
-      {/* ── ENTERING MEXICO (legacy block, gated off — direction is
-            forced to 'entering_us' for consumers; southbound stays in
-            the Business pages) ── */}
-      {false && direction === 'entering_mexico' && (
+      {/* Direction toggle — sticky per device. Re-enabled 2026-04-25
+          (was gated off via `false &&` — see git history). Both directions
+          now write to crossing_reports.direction with the correct
+          'northbound' / 'southbound' values that /api/reports expects. */}
+      <div className="mb-3 grid grid-cols-2 gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl">
+        <button
+          onClick={() => setDirection('entering_us')}
+          className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
+            direction === 'entering_us'
+              ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          🇺🇸 {lang === 'es' ? 'Entrando a EE.UU.' : 'Entering U.S.'}
+        </button>
+        <button
+          onClick={() => setDirection('entering_mexico')}
+          className={`py-2.5 rounded-xl text-xs font-bold transition-colors ${
+            direction === 'entering_mexico'
+              ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+          }`}
+        >
+          🇲🇽 {lang === 'es' ? 'Entrando a México' : 'Entering Mexico'}
+        </button>
+      </div>
+
+      {/* ── ENTERING MEXICO ── (re-enabled 2026-04-25) */}
+      {direction === 'entering_mexico' && (
         <div className="space-y-4 mb-4">
 
           {/* Insurance nudge — top of Mexico tab, hidden for business accounts */}
