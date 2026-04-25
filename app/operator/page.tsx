@@ -69,16 +69,16 @@ export default function OperatorPage() {
     setFile(null)
   }
 
-  if (authLoading) {
-    return <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" /></div>
-  }
-
-  // Public hero for anonymous visitors — explains the product, links
-  // to the live sample, points to pricing for signup. No upload form
-  // until they sign in + subscribe.
-  if (!user) return <OperatorLanding />
-
   const isOperator = tier === 'operator' || tier === 'business'
+
+  // Default render = the polished marketing landing. Anyone who
+  // visits /operator (anonymous OR logged-in non-paying user) sees
+  // the dark navy / FAQ / comparison-table page first. Only authed
+  // users on the operator / business tier swap into the upload
+  // dashboard. While auth + tier resolves, we still show the landing
+  // (better than a blank spinner — pages need to render copy on
+  // SSR for SEO + perceived speed anyway).
+  if (authLoading || !user || !isOperator) return <OperatorLanding />
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
