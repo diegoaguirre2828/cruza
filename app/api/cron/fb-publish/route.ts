@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
       .eq('name', 'video_manifest')
       .single()
     const manifest = assetRow?.value as
-      | { videos?: Array<{ url: string; compositionId: string; aspect: string }> }
+      | { videos?: Array<{ url: string; compositionId: string; aspect: string; outputName?: string }> }
       | null
     const fresh =
       assetRow?.updated_at &&
@@ -150,9 +150,9 @@ export async function GET(req: NextRequest) {
         .map(asp => manifest.videos!.find(v => v.compositionId === 'WaitTimes' && v.aspect === asp))
         .find(Boolean)
         || manifest.videos.find(v => v.compositionId === 'WaitTimes')
-      if (pick?.url) {
+      if (pick?.url && pick.outputName) {
         // Slot detection: cron-job.org fires at 5:30/11:30/15:30/19:00 CT.
-        // 19:00 CT = "evening" slot. Allow ±90 min tolerance for clock
+        // 19:00 CT = "evening" slot. Allow ±3 hr tolerance for clock
         // drift / delayed cron fires.
         const ctHour = parseInt(
           new Date().toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: 'America/Chicago' }),
@@ -161,7 +161,11 @@ export async function GET(req: NextRequest) {
         const isEveningSlot = ctHour >= 18 && ctHour <= 21
         if (isEveningSlot || force) {
           useVideo = true
-          videoUrl = pick.url
+          // Route through /api/video/[name] proxy. The raw Vercel Blob
+          // URL is private (403 to anonymous fetchers), so FB Graph
+          // can't pull it. The proxy fetches with the BLOB token
+          // server-side and streams back as public.
+          videoUrl = `${apiBase}/api/video/${encodeURIComponent(pick.outputName)}`
         }
       }
     }
