@@ -19,7 +19,7 @@ export function ShareSnapshotLive({ portId, sharedMins }: Props) {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch('/api/ports', { cache: 'no-store' })
+        const res = await fetch('/api/ports')
         if (!res.ok) return
         const data = await res.json()
         const ports: Array<{ portId: string; vehicle: number | null }> = data.ports || []

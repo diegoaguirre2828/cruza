@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): directory listings change rarely; 5 min
+// edge-cache is plenty fresh and removes one of the home-row fetches
+// from the per-visitor origin path.
+export const revalidate = 300
 
 const negociosRateLimit = new Map<string, { count: number; resetAt: number }>()
 

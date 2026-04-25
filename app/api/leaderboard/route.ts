@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): leaderboard updates only on report submits;
+// 5 min staleness is acceptable. The Cache-Control header on the
+// response already says public, s-maxage=300; remove force-dynamic so
+// the edge can actually honour it.
+export const revalidate = 300
 
 export async function GET() {
   const db = getServiceClient()

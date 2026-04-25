@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): historical averages don't change in 30
+// minutes — let the edge cache absorb traffic. Rolling 90-day window
+// keeps the row scan bounded as wait_time_readings grows past 1M.
+export const revalidate = 1800
 
 // Returns best times for multiple ports on a specific day of week
 // Used by the scheduling planner
@@ -13,17 +16,29 @@ export async function GET(req: NextRequest) {
   if (!portIds || portIds.length === 0) {
     return NextResponse.json({ error: 'portIds required' }, { status: 400 })
   }
+  // Cap port batch — a malicious caller passing 100 ports would scan
+  // the entire historical table per port.
+  if (portIds.length > 25) {
+    return NextResponse.json({ error: 'Too many portIds (max 25)' }, { status: 400 })
+  }
 
   const db = getServiceClient()
   const dayNum = targetDay !== null ? parseInt(targetDay) : null
+  const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
 
   let query = db
     .from('wait_time_readings')
     .select('port_id, day_of_week, hour_of_day, vehicle_wait, commercial_wait')
     .in('port_id', portIds)
+    .gte('recorded_at', sinceIso)
 
   if (dayNum !== null) query = query.eq('day_of_week', dayNum)
   if (targetHour !== null) query = query.eq('hour_of_day', parseInt(targetHour))
+
+  // Hard ceiling — 90 days × 24 hours × 25 ports × 4 readings/hr
+  // = 216k upper bound. Add a LIMIT so a runaway query can't stall a
+  // serverless function on its 10s budget.
+  query = query.limit(50000)
 
   const { data, error } = await query
 

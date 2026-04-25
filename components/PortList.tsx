@@ -94,8 +94,13 @@ export function PortList() {
     if (isManual) setRefreshing(true)
     try {
       const [portsRes, reportsRes] = await Promise.all([
-        fetch('/api/ports', { cache: 'no-store' }),
-        fetch('/api/reports/recent?limit=100', { cache: 'no-store' }),
+        // PERF (2026-04-25 audit): use the route handlers' Cache-Control
+        // headers (s-maxage=30, stale-while-revalidate=120) instead of
+        // forcing every visitor through the origin. With no-store the
+        // home page was hitting Supabase + CBP + HERE per request,
+        // ~30× origin pressure at 1k DAU vs the cached path.
+        fetch('/api/ports'),
+        fetch('/api/reports/recent?limit=100'),
       ])
       if (!portsRes.ok) throw new Error('Failed to load')
       const data = await portsRes.json()
@@ -166,8 +171,17 @@ export function PortList() {
     // that was getting the app trashed in FB comment threads — users
     // switching away and coming back now see fresh data immediately
     // instead of whatever was cached when they left.
+    //
+    // PERF (2026-04-25 audit): debounce so a power user toggling
+    // between tabs doesn't fire a fetch on every flip. 30s threshold
+    // lines up with the route handler's s-maxage=30 — anything sooner
+    // would be served from edge cache anyway.
+    let lastFetchAt = Date.now()
     const onVisible = () => {
-      if (document.visibilityState === 'visible') fetchPorts()
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - lastFetchAt < 30_000) return
+      lastFetchAt = Date.now()
+      fetchPorts()
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchRgvWaitTimes } from '@/lib/cbp'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): mirror /api/ports cache window. The widget
+// is third-party-embeddable so origin pressure can spike from any
+// site; cache hard.
+export const revalidate = 60
 
 // Returns embeddable HTML snippet for a specific port
 export async function GET(req: NextRequest) {

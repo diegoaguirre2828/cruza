@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): rewards catalogue updates are rare; 10 min
+// edge-cache. force-dynamic was bypassing the edge entirely.
+export const revalidate = 600
 
 export async function GET(req: NextRequest) {
   const portId = req.nextUrl.searchParams.get('portId')

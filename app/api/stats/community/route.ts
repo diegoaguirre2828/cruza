@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): force-dynamic was overriding the existing
+// revalidate=60 + Cache-Control header. Drop force-dynamic so the
+// edge can actually hold the response for the intended minute.
 export const revalidate = 60
 
 // Public read-only endpoint that powers the home-page social proof strip

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): rate updates ~hourly externally. Edge-cache
+// the response for 5 minutes so every home page view doesn't burn a
+// function invocation.
+export const revalidate = 300
 
 export async function GET() {
   // Fetch official mid-market rate

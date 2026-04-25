@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
+// PERF (2026-04-25 audit): trends rolls up the recent-readings window
+// (45 min back). With the v47 idx_wait_time_readings_recorded_at
+// index landing today, this becomes an indexed range scan instead of
+// a sequential scan. 60s edge-cache absorbs the per-visitor pressure.
+export const revalidate = 60
 
 type Direction = 'up' | 'down' | 'stable'
 

@@ -76,7 +76,11 @@ export function OpsGlance() {
 
   useEffect(() => {
     load()
-    const id = setInterval(load, 60 * 1000)
+    // PERF (2026-04-25 audit): /api/admin/ops-glance fires ~24 COUNT
+    // queries per call. Polling every 60s burns DB capacity for admin
+    // numbers that almost never change minute-over-minute. 5 min is
+    // plenty fresh for the dashboard.
+    const id = setInterval(load, 5 * 60 * 1000)
     return () => clearInterval(id)
   }, [])
 

@@ -108,7 +108,9 @@ export function HeroLiveDelta({ ports: propPorts }: Props) {
     let cancelled = false
     const load = async () => {
       try {
-        const res = await fetch('/api/ports', { cache: 'no-store' })
+        // PERF (2026-04-25 audit): same edge-cache fix as PortList — let
+        // the route handler's s-maxage=30 do its job instead of bypassing.
+        const res = await fetch('/api/ports')
         if (!res.ok) return
         const data = await res.json()
         if (!cancelled) {
