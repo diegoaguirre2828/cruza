@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useState, useEffect, useMemo } from 'react'
 import { PortList } from '@/components/PortList'
 import { NavBar } from '@/components/NavBar'
-import { HomeReportsFeed } from '@/components/HomeReportsFeed'
 import { UrgentAlerts } from '@/components/UrgentAlerts'
 import { WaitingMode } from '@/components/WaitingMode'
 import { BusinessCommandWidget } from '@/components/BusinessCommandWidget'
@@ -17,17 +17,36 @@ import { LiveActivityTicker } from '@/components/LiveActivityTicker'
 import { HeroCarousel } from '@/components/HeroCarousel'
 import { WeatherHook } from '@/components/WeatherHook'
 import { GuardianProgressCard } from '@/components/GuardianProgressCard'
-import { RegionalSnapshot } from '@/components/RegionalSnapshot'
-import { AdBanner } from '@/components/AdBanner'
 import { InstallPill } from '@/components/InstallPill'
 import { ContributionTodayPill } from '@/components/ContributionTodayPill'
 import { CirclesPill } from '@/components/CirclesPill'
-import { HolidayOverlay } from '@/components/HolidayOverlay'
 import { ReciprocityCard } from '@/components/ReciprocityCard'
 import { HeroTriad } from '@/components/HeroTriad'
 import { UserCrossingInsights } from '@/components/UserCrossingInsights'
 import { HomeForecast } from '@/components/HomeForecast'
 import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
+
+// PERF (2026-04-25 audit): below-the-fold + conditional surfaces split
+// into their own chunks. Cuts the home-page first-load JS by deferring
+// modules that won't render until the user scrolls (or never, for
+// guests / non-holiday windows). Each is fine to render client-only —
+// none provide SEO content for the home route.
+const HomeReportsFeed = dynamic(
+  () => import('@/components/HomeReportsFeed').then((m) => ({ default: m.HomeReportsFeed })),
+  { ssr: false },
+)
+const RegionalSnapshot = dynamic(
+  () => import('@/components/RegionalSnapshot').then((m) => ({ default: m.RegionalSnapshot })),
+  { ssr: false },
+)
+const AdBanner = dynamic(
+  () => import('@/components/AdBanner').then((m) => ({ default: m.AdBanner })),
+  { ssr: false },
+)
+const HolidayOverlay = dynamic(
+  () => import('@/components/HolidayOverlay').then((m) => ({ default: m.HolidayOverlay })),
+  { ssr: false },
+)
 import { useLang } from '@/lib/LangContext'
 import { useTier } from '@/lib/useTier'
 import { useAuth } from '@/lib/useAuth'
