@@ -104,11 +104,13 @@ export async function POST(req: NextRequest) {
   // Anonymized write: NO user_id, NO position, only the structured
   // observation. now() is the recorded_at default on wait_time_readings.
   const meta = PORT_META[portId]
+  const portName = meta.localName || meta.city
   const now = new Date()
   const { error } = await db.from('wait_time_readings').insert({
     port_id: portId,
-    crossing_name: meta.localName || meta.city,
-    vehicle_wait: direction === 'northbound' ? dt : null,
+    port_name: portName,
+    crossing_name: portName,
+    vehicle_wait: direction === 'northbound' && lane === 'general' ? dt : null,
     sentri_wait: lane === 'sentri' ? dt : null,
     pedestrian_wait: lane === 'pedestrian' ? dt : null,
     commercial_wait: lane === 'commercial' ? dt : null,
