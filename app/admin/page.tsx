@@ -111,7 +111,8 @@ export default function AdminPage() {
     recentCharges: { id: string; amount: number; email: string; created: number; description: string }[]
   } | null>(null)
   type AdminUserRow = {
-    id: string; email: string; display_name: string | null; tier: string; points: number
+    id: string; email: string; display_name: string | null; tier: string
+    effective_tier: string; pro_source: string | null; points: number
     reports_count: number; last_report_at: string | null; last_sign_in_at: string | null
     created_at: string | null; badges: string[]; sub_status: string | null; sub_tier: string | null
     home_region: string | null; last_seen_at: string | null; last_seen_age_days: number | null
@@ -2009,10 +2010,17 @@ export default function AdminPage() {
                       </div>
                       <div className="col-span-1">
                         <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          u.tier === 'business' ? 'bg-purple-100 text-purple-700' :
-                          u.tier === 'pro'      ? 'bg-blue-100 text-blue-700' :
-                                                  'bg-gray-100 text-gray-600'
-                        }`}>{u.tier}</span>
+                          u.effective_tier === 'business' ? 'bg-purple-100 text-purple-700' :
+                          u.effective_tier === 'pro'      ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-600'
+                        }`} title={u.pro_source ? `pro via ${u.pro_source}` : undefined}>
+                          {u.effective_tier}
+                          {u.pro_source && u.pro_source !== 'paid' && (
+                            <span className="ml-1 text-[8px] opacity-70 uppercase">
+                              {u.pro_source === 'pwa' ? '·pwa' : u.pro_source === 'promo' ? '·1k' : '·ref'}
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="col-span-2 text-xs text-gray-600">
                         {u.last_seen_os ? (

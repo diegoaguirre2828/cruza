@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   // columns by returning undefined) but still requests them.
   const { data: profiles } = await db
     .from('profiles')
-    .select('id, display_name, tier, points, reports_count, badges, created_at, home_region, last_seen_at, last_seen_device, last_seen_os, last_seen_browser, install_state, first_seen_at')
+    .select('id, display_name, tier, points, reports_count, badges, created_at, home_region, last_seen_at, last_seen_device, last_seen_os, last_seen_browser, install_state, first_seen_at, pro_via_pwa_until, promo_first_1000_until, pro_via_referral_until')
 
   // Report aggregates (count + most recent timestamp per user)
   const { data: reportRows } = await db
@@ -77,11 +77,36 @@ export async function GET(req: NextRequest) {
     const lastSeenAt = (p as { last_seen_at?: string | null }).last_seen_at ?? null
     const lastSeenMs = lastSeenAt ? new Date(lastSeenAt).getTime() : null
     const lastSeenAgeDays = lastSeenMs != null ? Math.floor((now - lastSeenMs) / (1000 * 60 * 60 * 24)) : null
+    // Effective tier: dbTier OR active first-1000 promo OR active PWA
+    // grant OR active referral grant. Mirrors useTier.ts so the admin
+    // table reflects what the user actually sees in-app. Without this,
+    // the raw `tier` column reads 'free' for promo/pwa/referral users
+    // and the table mislabels them.
+    const dbTier = (p as { tier?: string | null }).tier || 'free'
+    const pwaUntil = (p as { pro_via_pwa_until?: string | null }).pro_via_pwa_until
+    const promoUntil = (p as { promo_first_1000_until?: string | null }).promo_first_1000_until
+    const refUntil = (p as { pro_via_referral_until?: string | null }).pro_via_referral_until
+    const pwaActive = pwaUntil ? new Date(pwaUntil).getTime() > now : false
+    const promoActive = promoUntil ? new Date(promoUntil).getTime() > now : false
+    const refActive = refUntil ? new Date(refUntil).getTime() > now : false
+    const effectiveTier =
+      dbTier === 'business' ? 'business'
+      : (dbTier === 'pro' || pwaActive || promoActive || refActive) ? 'pro'
+      : dbTier
+    // Source label: paid (DB tier='pro') > pwa > promo > referral
+    const proSource = effectiveTier !== 'pro' ? null
+      : dbTier === 'pro' ? 'paid'
+      : pwaActive ? 'pwa'
+      : promoActive ? 'promo'
+      : refActive ? 'referral'
+      : null
     return {
       id: p.id as string,
       email: auth?.email || (p as { display_name?: string | null }).display_name || '',
       display_name: (p as { display_name?: string | null }).display_name || null,
-      tier: (p as { tier?: string | null }).tier || 'free',
+      tier: dbTier,
+      effective_tier: effectiveTier,
+      pro_source: proSource,
       points: (p as { points?: number | null }).points || 0,
       reports_count: stats?.count || (p as { reports_count?: number | null }).reports_count || 0,
       last_report_at: stats?.lastAt || null,
@@ -101,8 +126,10 @@ export async function GET(req: NextRequest) {
     }
   })
 
-  // Filter
-  if (tierFilter !== 'all') rows = rows.filter(r => r.tier === tierFilter)
+  // Filter — tier filter applies to EFFECTIVE tier so promo/pwa/referral
+  // Pro users surface when filtering by "pro" instead of falling into the
+  // "free" bucket because their DB tier hasn't been flipped yet.
+  if (tierFilter !== 'all') rows = rows.filter(r => r.effective_tier === tierFilter)
   if (osFilter !== 'all') rows = rows.filter(r => r.last_seen_os === osFilter)
   if (deviceFilter !== 'all') rows = rows.filter(r => r.last_seen_device === deviceFilter)
   if (installFilter !== 'all') {
