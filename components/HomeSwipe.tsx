@@ -121,7 +121,7 @@ export function HomeSwipe({ panels, initialPanel = 'cerca' }: Props) {
 
       <div
         ref={containerRef}
-        className="flex overflow-x-auto -mx-4 scrollbar-hide overscroll-x-contain"
+        className="flex overflow-x-auto scrollbar-hide overscroll-x-contain"
         style={{
           scrollSnapType: 'x mandatory',
           WebkitOverflowScrolling: 'touch',
@@ -133,9 +133,13 @@ export function HomeSwipe({ panels, initialPanel = 'cerca' }: Props) {
             id={`home-panel-${p.id}`}
             role="tabpanel"
             aria-label={es ? p.labelEs : p.labelEn}
-            className="px-4"
             style={{
               flex: '0 0 100%',
+              width: '100%',
+              minWidth: 0,
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              overflowX: 'hidden',
               scrollSnapAlign: 'start',
               scrollSnapStop: 'always',
             }}

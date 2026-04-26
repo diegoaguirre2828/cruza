@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useState, useEffect, useMemo } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { PortList } from '@/components/PortList'
 import { NavBar } from '@/components/NavBar'
 import { UrgentAlerts } from '@/components/UrgentAlerts'
@@ -154,7 +155,7 @@ function SavedCrossings({ initialPorts }: { initialPorts: PortWaitTime[] | null 
     return (
       <div className="mt-3 mb-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl px-3 py-2 flex items-center justify-between">
         <p className="text-[11px] text-amber-800 dark:text-amber-200 font-medium">
-          {lang === 'es' ? 'No pudimos cargar tus favoritos' : "Couldn't load your saved bridges"}
+          {lang === 'es' ? 'No pudimos cargar tus favoritos' : "Couldn't load your favorited bridges"}
         </p>
         <button
           onClick={load}
@@ -171,7 +172,7 @@ function SavedCrossings({ initialPorts }: { initialPorts: PortWaitTime[] | null 
     <div className="mt-3 mb-1">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-          {lang === 'es' ? '⭐ Favoritos' : '⭐ Saved'}
+          {lang === 'es' ? '⭐ Favoritos' : '⭐ Favorited'}
         </p>
         <Link href="/dashboard" className="text-xs text-blue-500 hover:underline">
           {lang === 'es' ? 'Ver todos' : 'Manage'}
@@ -283,6 +284,26 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
     } catch { /* ignore */ }
   }, [])
 
+  // Collapsable header — chevron toggles RegionPicker + status pills
+  // + ConversionRibbon. Default expanded; remembers last state per
+  // device. Logo + cruzar wordmark + nav stay visible always.
+  const [headerOpen, setHeaderOpen] = useState(true)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const v = localStorage.getItem('cruzar_header_open')
+      if (v === '0') setHeaderOpen(false)
+    } catch { /* ignore */ }
+  }, [])
+  function toggleHeader() {
+    setHeaderOpen((prev) => {
+      const next = !prev
+      try { localStorage.setItem('cruzar_header_open', next ? '1' : '0') } catch { /* ignore */ }
+      trackEvent('home_header_toggled', { open: next })
+      return next
+    })
+  }
+
   // ─── Panels ────────────────────────────────────────────────
   // Default panel = "Cerca" (the bridge list). Universal landing
   // surface — every visitor sees the data they came for, no scroll.
@@ -326,11 +347,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
           <HeroTriad ports={initialPorts} favoritePortId={favoritePortId} />
           <HomeForecast favoritePortId={favoritePortId} />
           <UserCrossingInsights />
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-            <GuardianProgressCard variant="pill" />
-            <CirclesPill />
-            <ContributionTodayPill />
-          </div>
           <PriorityNudge
             lang={lang}
             nudges={HOME_NUDGES.filter(n => {
@@ -425,11 +441,13 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       <PwaFirstLaunchWelcome />
       <div className="max-w-lg mx-auto px-4 pb-10">
         {/* Sticky app-shell header — always visible while panels swipe
-            underneath. Region picker pinned because it's the most-tapped
-            filter and affects what shows in the Cerca panel. */}
+            underneath. Core row (logo + wordmark + nav + chevron) is
+            always shown. Expandable section below carries the region
+            picker, status pills, and conversion ribbon — collapsable
+            to maximize vertical space for the panels. */}
         <div className="sticky top-0 z-30 -mx-4 px-4 pt-3 pb-2 bg-gray-50/85 dark:bg-gray-950/85 backdrop-blur-md">
-          <div className="flex items-start justify-between">
-            <div className="min-w-0 flex items-center gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex items-center gap-3 flex-1">
               <img
                 src="/logo-icon.svg"
                 alt=""
@@ -441,26 +459,53 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 leading-none tracking-tight lowercase">
                   cruzar
                 </h1>
-                {user && displayName ? (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">
-                    {salutation}, <span className="font-bold text-gray-700 dark:text-gray-200">{displayName}</span>
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">{t.subtitle}</p>
+                {headerOpen && (
+                  user && displayName ? (
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">
+                      {salutation}, <span className="font-bold text-gray-700 dark:text-gray-200">{displayName}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 leading-tight">{t.subtitle}</p>
+                  )
                 )}
               </div>
             </div>
-            <NavBar />
-          </div>
-          {!isBusiness && (
-            <div className="mt-2 flex justify-center">
-              <RegionPicker />
+            <div className="flex items-center gap-1.5">
+              {!isBusiness && (
+                <button
+                  type="button"
+                  onClick={toggleHeader}
+                  aria-label={es ? (headerOpen ? 'Colapsar' : 'Expandir') : (headerOpen ? 'Collapse' : 'Expand')}
+                  aria-expanded={headerOpen}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 active:scale-90 transition-transform"
+                >
+                  {headerOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              )}
+              <NavBar />
             </div>
+          </div>
+          {headerOpen && !isBusiness && (
+            <>
+              <div className="mt-2 flex justify-center">
+                <RegionPicker />
+              </div>
+              {/* Personal status pills — Guardian progress + Circles +
+                  daily contribution. Always-visible in the header so
+                  the user feels the gamification loop on every screen,
+                  not buried inside Mi puente panel. */}
+              {tier !== 'guest' && (
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+                  <GuardianProgressCard variant="pill" />
+                  <CirclesPill />
+                  <ContributionTodayPill />
+                </div>
+              )}
+              {/* Single conversion ribbon — guest signup or alert nudge
+                  based on tier. Visible across all panels. */}
+              <ConversionRibbon />
+            </>
           )}
-          {/* Single conversion ribbon — replaces the GuestSignupBanner +
-              ProNoAlertBanner + bottom Signup CTA stack. Visible across
-              all panels because it sits inside the sticky header. */}
-          {!isBusiness && <ConversionRibbon />}
         </div>
 
         {/* Business tier — flat layout with the command widget; no

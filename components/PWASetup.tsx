@@ -44,18 +44,39 @@ async function tryClaimGrant() {
     if (res.status === 401) return
     if (!res.ok) return
     const data = await res.json()
-    if (data?.ok) {
+
+    // Three response shapes from /api/user/claim-pwa-pro:
+    //   { ok:true, granted:true,  days, pro_via_pwa_until }   → real grant
+    //   { ok:true, granted:false, pending:true, next_grant_at } → 24h gate
+    //   { ok:true, granted:false } w/ no pending → already on paid Pro
+    //
+    // Bug fix 2026-04-26: previously this branch wrote the dedupe flag
+    // for ALL { ok:true } responses, including the pending one. Result:
+    // user installs PWA → PWASetup fires → first call returns pending →
+    // localStorage flag set → PWASetup never retries → ClaimProInPwa is
+    // also hidden because its visibility gate reads the same flag →
+    // user is permanently stuck without Pro. Mirroring the
+    // ClaimProInPwa fix from 2026-04-25: only write the flag on a
+    // real grant or on already-paid response. Pending leaves the flag
+    // unset so the next standalone-mode load (post-24h) can retry.
+    if (data?.granted === true) {
       try { localStorage.setItem(PWA_GRANT_CLAIMED_KEY, String(Date.now())) } catch { /* ignore */ }
-      trackEvent('pwa_grant_claimed', {
-        granted: data.granted || false,
-        days: data.days || null,
-      })
-      // Fire a window event so <PwaGrantCelebration /> shows the modal.
-      if (data.granted && data.days) {
+      trackEvent('pwa_grant_claimed', { granted: true, days: data.days || null })
+      if (data.days) {
         window.dispatchEvent(
           new CustomEvent('cruzar:pwa-grant-claimed', { detail: { days: data.days } }),
         )
       }
+    } else if (data?.ok && data?.pending) {
+      // First call recorded the install — wait 24h, the next standalone
+      // launch will retry and actually grant Pro. No flag write so
+      // ClaimProInPwa stays visible as the manual fallback.
+      trackEvent('pwa_grant_pending', { next_grant_at: data.next_grant_at || null })
+    } else if (data?.ok) {
+      // ok:true but neither granted nor pending → user is already on
+      // paid Pro / Business. Mark claimed so we don't keep poking the
+      // endpoint on every page load.
+      try { localStorage.setItem(PWA_GRANT_CLAIMED_KEY, String(Date.now())) } catch { /* ignore */ }
     }
   } catch { /* silent — endpoint requires auth, fine to fail for guests */ }
 }
