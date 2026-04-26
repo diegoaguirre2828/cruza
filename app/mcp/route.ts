@@ -42,6 +42,40 @@ function originFromRequest(req: Request): string {
   return process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
 }
 
+interface V04Forecast {
+  port_id: string;
+  port_name: string;
+  horizon_min: number;
+  prediction_min: number;
+  model: string;
+  trained_at: string;
+  rmse_min: number;
+  lift_vs_persistence_pct: number | null;
+  lift_vs_cbp_climatology_pct: number | null;
+  now_utc: string;
+  recent_count: number;
+}
+
+async function forecastV04(portId: string, horizonMin: number): Promise<V04Forecast | { error: string }> {
+  const url = process.env.CRUZAR_INSIGHTS_API_URL;
+  const key = process.env.CRUZAR_INSIGHTS_API_KEY;
+  if (!url || !key) return { error: "v0.4 inference API not configured (CRUZAR_INSIGHTS_API_URL/_KEY missing)" };
+  try {
+    const res = await fetch(`${url.replace(/\/$/, "")}/api/forecast`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ port_id: portId, horizon_min: horizonMin }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return { error: `v0.4 API ${res.status}: ${text.slice(0, 200)}` };
+    }
+    return (await res.json()) as V04Forecast;
+  } catch (e) {
+    return { error: `v0.4 API call failed: ${(e as Error).message}` };
+  }
+}
+
 async function smartRoute(lat: number, lng: number, direction: string, limit: number) {
   const db = getServiceClient();
   const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
@@ -173,9 +207,10 @@ async function briefing(portId: string): Promise<string> {
   const dow = now.getDay();
   const hour = now.getHours();
 
-  const [live, hist] = await Promise.all([
+  const [live, hist, fc6h] = await Promise.all([
     liveWait(portId),
     bestTimes([portId], dow, null),
+    forecastV04(portId, 360),
   ]);
 
   const livePort = live[0];
@@ -211,11 +246,26 @@ async function briefing(portId: string): Promise<string> {
   else lines.push(`- Typical vehicle wait at this hour on this day-of-week: **${currentHistAvg} min**`);
   if (anomaly) lines.push(`- **Anomaly:** ${anomaly}`);
   lines.push("");
-  lines.push("## Best remaining window today");
+  lines.push("## 6-hour forecast (v0.4 ML)");
+  if ("error" in fc6h) {
+    lines.push(`- _Forecast unavailable: ${fc6h.error}_`);
+  } else {
+    const liftCbp = fc6h.lift_vs_cbp_climatology_pct;
+    const liftPersist = fc6h.lift_vs_persistence_pct;
+    lines.push(`- Predicted vehicle wait at +6h: **${fc6h.prediction_min} min**`);
+    lines.push(`- Backtest RMSE: ${fc6h.rmse_min} min` +
+      (liftCbp !== null ? ` (${liftCbp >= 0 ? "+" : ""}${liftCbp}% vs CBP climatology baseline)` : "") +
+      (liftPersist !== null ? `, ${liftPersist >= 0 ? "+" : ""}${liftPersist}% vs persistence` : ""));
+    if (liftCbp !== null && liftCbp < 0) {
+      lines.push(`- ⚠️ This crossing currently underperforms the CBP baseline at 6h — concept drift (Pharr-Reynosa pattern). Use with caution.`);
+    }
+  }
+  lines.push("");
+  lines.push("## Best remaining window today (historical)");
   if (!bestUpcoming) lines.push("- No more good windows today (or insufficient data).");
   else lines.push(`- Hour ${bestUpcoming.hour}:00 looks lightest historically (${bestUpcoming.vehicle_avg} min avg, n=${bestUpcoming.samples}).`);
   lines.push("");
-  lines.push("_Source: Cruzar wait_time_readings (CBP scrape, 15-min cadence). Heuristic baseline; v0.4 model coming._");
+  lines.push("_Source: Cruzar wait_time_readings (CBP scrape, 15-min cadence) + v0.4 ML forecast (RandomForest, 8 RGV ports × 2 horizons)._");
   return lines.join("\n");
 }
 
@@ -228,7 +278,8 @@ function buildServer(): McpServer {
         "Use cruzar_smart_route to pick the fastest crossing from a coordinate.",
         "Use cruzar_live_wait for current readings.",
         "Use cruzar_best_times for historical DOW × hour averages.",
-        "Use cruzar_briefing for a one-shot markdown decision summary on a single port (best for dispatcher / broker workflows).",
+        "Use cruzar_forecast for the v0.4 RandomForest ML prediction at a 6h or 24h horizon.",
+        "Use cruzar_briefing for a one-shot markdown decision summary on a single port (live + historical + v0.4 forecast — best for dispatcher / broker workflows).",
       ].join(" "),
     },
   );
@@ -294,6 +345,31 @@ function buildServer(): McpServer {
       return {
         structuredContent: { results: result },
         content: [{ type: "text", text: JSON.stringify({ results: result }, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "cruzar_forecast",
+    {
+      title: "v0.4 ML forecast for a port (6h or 24h horizon)",
+      description: "Calls the Cruzar Insights v0.4 RandomForest model for a single port at a 6h or 24h horizon. Returns prediction + backtest RMSE + lift vs CBP-climatology and persistence baselines. 8 RGV ports supported (Hidalgo, Pharr, Anzalduas, Laredo WTB, Laredo I, Eagle Pass, Brownsville Veterans, Brownsville Gateway).",
+      inputSchema: {
+        port_id: z.string().describe("Cruzar port_id (e.g. '230402' = Laredo WTB)"),
+        horizon_min: z.union([z.literal(360), z.literal(1440)]).default(360).describe("Forecast horizon in minutes: 360 (6h, headline) or 1440 (24h)"),
+      },
+    },
+    async ({ port_id, horizon_min }) => {
+      const fc = await forecastV04(port_id, horizon_min);
+      if ("error" in fc) {
+        return {
+          content: [{ type: "text", text: `Error: ${fc.error}` }],
+          isError: true,
+        };
+      }
+      return {
+        structuredContent: fc as unknown as Record<string, unknown>,
+        content: [{ type: "text", text: JSON.stringify(fc, null, 2) }],
       };
     },
   );
