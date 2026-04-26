@@ -70,6 +70,21 @@ export interface PortWaitTime {
   // hour" instead of "no data — be the first." Part of the sensor-network
   // retention play — the more we capture, the smarter the fallback.
   historicalVehicle?: number | null
+
+  // Pedestrian-specific sensor stack (v55). Headline `pedestrian` field
+  // above is CBP-only; these are the richer signals.
+  communityPedestrian?: number | null
+  cameraPedestrian?: number | null
+  cameraPedestrianCount?: number | null
+  cameraPedestrianConfidence?: 'high' | 'medium' | 'low' | null
+  // Average pedestrians per hour at this port from BTS monthly counts.
+  // Hour-of-day distribution is intentionally flat — BTS is monthly
+  // aggregate so we don't pretend to know intra-day shape we don't have.
+  pedestrianBaselineHourly?: number | null
+  // Where the pedestrian headline number came from. 'baseline' means we
+  // had no live signal and surfaced the BTS-derived expectation as a
+  // last-resort context value.
+  pedestrianSource?: 'cbp' | 'community' | 'camera' | 'baseline' | null
 }
 
 export interface WaitTimeReading {

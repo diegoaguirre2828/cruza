@@ -39,6 +39,7 @@ interface RecentReport {
   report_type: string
   created_at: string
   location_confidence?: string | null
+  lane_type?: string | null
 }
 
 function parseCbpRecorded(s: string | null): Date | null {
@@ -68,10 +69,10 @@ export async function GET() {
     // covers one miss plus slack.
     const cameraSinceIso = new Date(Date.now() - CAMERA_STALE_MIN * 60 * 1000).toISOString()
 
-    const [reportsRes, trafficWaits, overridesRes, cameraReadingsRes] = await Promise.all([
+    const [reportsRes, trafficWaits, overridesRes, cameraReadingsRes, btsBaselineRes] = await Promise.all([
       db
         .from('crossing_reports')
-        .select('port_id, wait_minutes, report_type, created_at, location_confidence')
+        .select('port_id, wait_minutes, report_type, created_at, location_confidence, lane_type')
         .in('port_id', portIds)
         .is('hidden_at', null) // v35 moderation: community blend ignores admin-hidden reports
         .gte('created_at', sinceIso)
@@ -84,31 +85,66 @@ export async function GET() {
       // Latest camera reading per port within the freshness window.
       // Ordered DESC so we can dedupe client-side to "most recent per
       // port." Filter out readings the model flagged as error / low-
-      // confidence — they're noise, not signal.
+      // confidence — they're noise, not signal. v55: also pull pedestrian
+      // fields so the new pedestrian blend can use them.
       db
         .from('camera_wait_readings')
-        .select('port_id, minutes_estimated, confidence, captured_at')
+        .select('port_id, minutes_estimated, confidence, captured_at, pedestrians_estimated, pedestrian_minutes_estimated, pedestrian_confidence, pedestrian_lanes_visible')
         .in('port_id', portIds)
         .gte('captured_at', cameraSinceIso)
         .is('error_code', null)
-        .not('minutes_estimated', 'is', null)
         .order('captured_at', { ascending: false }),
+      // BTS pedestrian baseline — monthly per-port averages from public
+      // BTS data. Used as the "what is normal" context band on hero cards
+      // and as the divisor in flow-rate math when camera count is available.
+      db
+        .from('bts_pedestrian_baseline')
+        .select('port_id, year, month, pedestrians_count')
+        .in('port_id', portIds)
+        .order('year', { ascending: false })
+        .order('month', { ascending: false }),
     ])
 
     // Build a map of portId → latest camera reading (only first per port
-    // since the query is already DESC by captured_at).
+    // since the query is already DESC by captured_at). v55: same row
+    // carries pedestrian fields when the model was able to see a
+    // pedestrian queue in the same frame.
     const cameraByPort = new Map<
       string,
-      { minutes: number; confidence: 'high' | 'medium' | 'low'; capturedAt: string }
+      {
+        minutes: number | null
+        confidence: 'high' | 'medium' | 'low' | null
+        capturedAt: string
+        pedMinutes: number | null
+        pedCount: number | null
+        pedConfidence: 'high' | 'medium' | 'low' | null
+        pedLanes: number | null
+      }
     >()
     for (const row of cameraReadingsRes.data ?? []) {
-      if (!cameraByPort.has(row.port_id) && row.minutes_estimated != null) {
-        cameraByPort.set(row.port_id, {
-          minutes: row.minutes_estimated,
-          confidence: row.confidence as 'high' | 'medium' | 'low',
-          capturedAt: row.captured_at,
-        })
-      }
+      if (cameraByPort.has(row.port_id)) continue
+      // Skip rows that have neither vehicle nor pedestrian data — pure noise.
+      if (row.minutes_estimated == null && row.pedestrian_minutes_estimated == null) continue
+      cameraByPort.set(row.port_id, {
+        minutes: row.minutes_estimated,
+        confidence: row.confidence as 'high' | 'medium' | 'low' | null,
+        capturedAt: row.captured_at,
+        pedMinutes: row.pedestrian_minutes_estimated ?? null,
+        pedCount: row.pedestrians_estimated ?? null,
+        pedConfidence: (row.pedestrian_confidence as 'high' | 'medium' | 'low' | null) ?? null,
+        pedLanes: row.pedestrian_lanes_visible ?? null,
+      })
+    }
+
+    // BTS pedestrian baseline — pick the most recent month per port.
+    // Convert the monthly aggregate to a flat hourly average. Intra-day
+    // shape isn't modeled (BTS is monthly only) — the card frames this
+    // honestly as "normalmente ~X/h por aquí."
+    const btsByPort = new Map<string, number>()
+    for (const row of btsBaselineRes.data ?? []) {
+      if (btsByPort.has(row.port_id)) continue
+      const perHour = Math.round((row.pedestrians_count / 30) / 24)
+      if (perHour > 0) btsByPort.set(row.port_id, perHour)
     }
     // Historical averages — re-enabled 2026-04-16 after adding
     // idx_wait_time_readings_hour_port + idx_wait_time_readings_dow_hour_port.
@@ -165,13 +201,25 @@ export async function GET() {
       const reportsWithWait = reports.filter(
         (r) => r.wait_minutes != null && r.wait_minutes >= 0 && r.location_confidence !== 'far',
       )
-      const weightedItems = reportsWithWait.map((r) => ({
+      // Split by lane_type — vehicle blend ignores explicit-pedestrian
+      // reports, pedestrian blend ignores explicit-vehicle/sentri/commercial.
+      // Reports without lane_type fall into vehicle (legacy default).
+      const vehicleReports = reportsWithWait.filter((r) => r.lane_type !== 'pedestrian')
+      const pedestrianReports = reportsWithWait.filter((r) => r.lane_type === 'pedestrian')
+
+      const weightedItems = vehicleReports.map((r) => ({
         val: r.wait_minutes as number,
         weight: confidenceWeight(r.location_confidence),
       }))
-      const reportCount = reportsWithWait.length
+      const pedWeightedItems = pedestrianReports.map((r) => ({
+        val: r.wait_minutes as number,
+        weight: confidenceWeight(r.location_confidence),
+      }))
+      const reportCount = vehicleReports.length
       const communityVehicle =
         weightedItems.length > 0 ? weightedAvg(weightedItems) : null
+      const communityPedestrian =
+        pedWeightedItems.length > 0 ? weightedAvg(pedWeightedItems) : null
       const lastReportMinAgo =
         reports.length > 0
           ? Math.round((now - new Date(reports[0].created_at).getTime()) / 60000)
@@ -323,9 +371,57 @@ export async function GET() {
         chosen = Math.max(chosen, 30)
       }
 
+      // ────────────────────────────────────────────────────────
+      // Pedestrian wait pick (v55).
+      //
+      // CBP's pedestrian field is sparse and often stale. Trust order
+      // mirrors the vehicle blend but with one extra fallback layer:
+      //   1. Pedestrian-tagged community reports (highest signal — humans
+      //      in the actual line)
+      //   2. Camera-vision pedestrian estimate when confidence is high/medium
+      //      AND the model actually saw a pedestrian queue (pedCount != null)
+      //   3. CBP pedestrian (the field was already on `p` from CBP)
+      //   4. BTS baseline as a "we don't know live, but normally there are
+      //      ~140 peatones/h here" context value — clearly tagged as
+      //      'baseline' so the UI can render it differently
+      // ────────────────────────────────────────────────────────
+      const cbpPedestrian = p.pedestrian
+      const cameraPedestrian = camRow?.pedMinutes ?? null
+      const cameraPedestrianCount = camRow?.pedCount ?? null
+      const cameraPedestrianConfidence = camRow?.pedConfidence ?? null
+      const cameraPedestrianUsable =
+        cameraPedestrian != null &&
+        cameraPedestrianCount != null &&
+        (cameraPedestrianConfidence === 'high' || cameraPedestrianConfidence === 'medium')
+
+      let pedestrianChosen: number | null = cbpPedestrian
+      let pedestrianSource: PortWaitTime['pedestrianSource'] = cbpPedestrian != null ? 'cbp' : null
+
+      if (communityPedestrian != null && pedestrianReports.length >= 1) {
+        pedestrianChosen = communityPedestrian
+        pedestrianSource = 'community'
+      } else if (cameraPedestrianUsable) {
+        pedestrianChosen = cameraPedestrian
+        pedestrianSource = 'camera'
+      } else if (cbpPedestrian == null && btsByPort.has(p.portId)) {
+        // Last resort: convert hourly baseline to a rough wait-minute
+        // estimate using a 3-second-per-person booth throughput. With
+        // 2 booths typical, X people/hour ≈ X/(2 * 1200) hours ≈
+        // X*60/2400 minutes. We surface this as 'baseline' source so
+        // the card can show "típicamente ~5 min" framing instead of
+        // claiming live data.
+        const hourly = btsByPort.get(p.portId)!
+        const queueRoughMin = Math.round((hourly / 2400) * 60)
+        pedestrianChosen = Math.max(1, Math.min(queueRoughMin, 60))
+        pedestrianSource = 'baseline'
+      }
+
       return {
         ...p,
         vehicle: chosen,
+        // Headline pedestrian — overrides the CBP-only value `p.pedestrian`
+        // had with the full-blend pick.
+        pedestrian: pedestrianChosen,
         source,
         cbpVehicle,
         communityVehicle,
@@ -338,6 +434,13 @@ export async function GET() {
         cbpStaleMin,
         localNameOverride: overrideMap.get(p.portId) ?? null,
         historicalVehicle: historicalByPort.get(p.portId) ?? null,
+        // Pedestrian sensor stack (v55)
+        communityPedestrian,
+        cameraPedestrian,
+        cameraPedestrianCount,
+        cameraPedestrianConfidence,
+        pedestrianBaselineHourly: btsByPort.get(p.portId) ?? null,
+        pedestrianSource,
       }
     })
 

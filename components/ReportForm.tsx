@@ -152,6 +152,11 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
   const [lanesXray, setLanesXray] = useState<number | null>(null)
   const [slowLane, setSlowLane] = useState<string | null>(null)
   const [isFirstReport, setIsFirstReport] = useState(false)
+  // Top-level lane mode (v55) — fast 1-tap selector that splits the report
+  // into the right wait-time bucket. Defaults to vehicle since most reports
+  // are vehicle. Pedestrian reports were silently feeding the vehicle blend
+  // before this; now they get their own pedestrianCommunity stream in /api/ports.
+  const [laneMode, setLaneMode] = useState<'vehicle' | 'pedestrian'>('vehicle')
 
   // ─── Data moat fields (progressive disclosure) ──────────────
   // Surfaced only to users who've filed 3+ reports previously. First-
@@ -262,6 +267,7 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
           laneInfo,
           waitMinutes,
           severity,
+          laneType: laneMode,
           ref: typeof window !== 'undefined' ? localStorage.getItem('cruzar_ref') : null,
           lat: coords?.lat,
           lng: coords?.lng,
@@ -574,6 +580,45 @@ export function ReportForm({ portId, onSubmitted, port }: Props) {
           ? '¿Qué está pasando en este puente? Puedes escoger varias.'
           : "What's happening at this crossing? You can pick more than one."}
       </p>
+
+      {/* Lane mode — top-level so pedestrian reports get tagged correctly
+          (v55). Auto wins by default; tap A pie when you're walking. */}
+      <div>
+        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+          {lang === 'es' ? '¿Cómo cruzas?' : 'How are you crossing?'}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setLaneMode('vehicle')}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-bold transition-colors ${
+              laneMode === 'vehicle'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            🚗 {lang === 'es' ? 'En auto' : 'Driving'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLaneMode('pedestrian')}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-bold transition-colors ${
+              laneMode === 'pedestrian'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            🚶 {lang === 'es' ? 'A pie' : 'Walking'}
+          </button>
+        </div>
+        {laneMode === 'pedestrian' && (
+          <p className="text-[11px] text-blue-700 dark:text-blue-300 mt-1.5">
+            {lang === 'es'
+              ? 'Tu reporte va al feed de peatones, separado del carril de autos.'
+              : 'Your report goes to the pedestrian feed, separate from the vehicle lane.'}
+          </p>
+        )}
+      </div>
 
       {GROUPS.map(group => {
         const groupSet =

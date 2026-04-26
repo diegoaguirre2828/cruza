@@ -56,6 +56,15 @@ interface VisionResult {
   cars_estimated: number | null
   minutes_estimated: number | null
   confidence: 'high' | 'medium' | 'low'
+  // Pedestrian queue, when one is visible. Same model call, no extra
+  // image fetch. Most bridge cams point at vehicle approach lanes and
+  // see the pedestrian line obliquely or not at all — when not visible,
+  // these come back null and downstream falls through to community /
+  // BTS baseline. v55.
+  pedestrians_estimated: number | null
+  pedestrian_minutes_estimated: number | null
+  pedestrian_confidence: 'high' | 'medium' | 'low'
+  pedestrian_lanes_visible: number | null
   raw: unknown
   error_code?: string
 }
@@ -71,7 +80,12 @@ export async function analyzeSnapshot(
 ): Promise<VisionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: null, error_code: 'no_api_key' }
+    return {
+      cars_estimated: null, minutes_estimated: null, confidence: 'low',
+      pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+      pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+      raw: null, error_code: 'no_api_key',
+    }
   }
 
   // Fetch image bytes. Cache-bust so we get a fresh frame every run.
@@ -84,7 +98,12 @@ export async function analyzeSnapshot(
       headers: { 'User-Agent': 'Cruzar-CameraVision/1.0 (+https://cruzar.app)' },
     })
     if (!imgRes.ok) {
-      return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: null, error_code: `http_${imgRes.status}` }
+      return {
+        cars_estimated: null, minutes_estimated: null, confidence: 'low',
+        pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+        pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+        raw: null, error_code: `http_${imgRes.status}`,
+      }
     }
     const ct = imgRes.headers.get('content-type') || ''
     if (ct.includes('png')) imageMediaType = 'image/png'
@@ -94,16 +113,26 @@ export async function analyzeSnapshot(
     // Guardrail: skip tiny responses (often a 1×1 pixel auth-wall or
     // redirect page rendered as image).
     if (buf.length < 2000) {
-      return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: null, error_code: 'image_too_small' }
+      return {
+        cars_estimated: null, minutes_estimated: null, confidence: 'low',
+        pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+        pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+        raw: null, error_code: 'image_too_small',
+      }
     }
     imageB64 = buf.toString('base64')
   } catch (err) {
-    return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: null, error_code: 'fetch_failed' }
+    return {
+      cars_estimated: null, minutes_estimated: null, confidence: 'low',
+      pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+      pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+      raw: null, error_code: 'fetch_failed',
+    }
   }
 
   const client = new Anthropic({ apiKey })
 
-  const prompt = `You are analyzing a live traffic camera pointed at a US-Mexico border bridge. Estimate the vehicle queue visible in the frame.
+  const prompt = `You are analyzing a live traffic camera pointed at a US-Mexico border bridge. Estimate BOTH the vehicle queue AND the pedestrian queue visible in the frame.
 
 Return STRICT JSON, no prose, matching this schema exactly:
 {
@@ -112,15 +141,21 @@ Return STRICT JSON, no prose, matching this schema exactly:
   "confidence": "high" | "medium" | "low",
   "visible_lanes": <integer, how many inbound vehicle lanes you can see>,
   "queue_is_moving": <boolean, best guess whether cars are flowing>,
-  "notes": <short string, what you see — e.g. "queue extends off-frame", "empty lanes", "camera shows MX side only, far queue">
+  "pedestrians_estimated": <integer, total people visible standing in the pedestrian inspection line — count single-file walkers approaching the booth. Null if no pedestrian queue is in frame.>,
+  "pedestrian_minutes_estimated": <integer, estimated wait at the back of the pedestrian line. Use ~12 seconds per person per booth as a baseline, adjust for visible motion. Null if no pedestrians visible.>,
+  "pedestrian_confidence": "high" | "medium" | "low",
+  "pedestrian_lanes_visible": <integer or null, how many pedestrian inspection booths/turnstiles are in frame>,
+  "notes": <short string, what you see — e.g. "queue extends off-frame", "empty lanes", "no pedestrians visible — vehicle-only camera", "long pedestrian line wraps around plaza">
 }
 
 Guidance:
-- If the camera is dark, blurry, or shows a "no signal" / error frame, return all nulls and confidence: "low" with notes explaining.
+- If the camera is dark, blurry, or shows a "no signal" / error frame, return all nulls and both confidences: "low" with notes explaining.
 - If cars are visible but you can't tell how many lanes they occupy, estimate conservatively (assume 2 lanes).
-- If the queue clearly extends off-frame, explicitly estimate higher and set confidence to "medium" or "low".
-- Border bridge waits typically range 0-120 minutes; cap your estimate at 120.
-- "high" confidence = you can clearly see the full queue and lane count.
+- Most border cameras point at the vehicle approach and don't capture the pedestrian queue. When pedestrians aren't visible, return pedestrians_estimated: null, pedestrian_minutes_estimated: null, pedestrian_confidence: "low" — DO NOT guess.
+- When pedestrians ARE visible, count single-file walkers in line; ignore people loitering on sidewalks or in parking lots.
+- If the pedestrian queue extends off-frame, estimate higher and drop pedestrian_confidence to "medium" or "low".
+- Border bridge waits typically range 0-120 minutes; cap your estimates at 120.
+- "high" confidence = you can clearly see the full queue and lane/booth count.
 - "medium" = partial visibility or unclear lane count.
 - "low" = can't estimate reliably.`
 
@@ -140,7 +175,12 @@ Guidance:
       ],
     })
   } catch (err) {
-    return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: { error: String(err) }, error_code: 'anthropic_api_error' }
+    return {
+      cars_estimated: null, minutes_estimated: null, confidence: 'low',
+      pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+      pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+      raw: { error: String(err) }, error_code: 'anthropic_api_error',
+    }
   }
 
   const text = msg.content
@@ -156,12 +196,16 @@ Guidance:
   } catch { /* fall through */ }
 
   if (!parsed) {
-    return { cars_estimated: null, minutes_estimated: null, confidence: 'low', raw: { text }, error_code: 'parse_failed' }
+    return {
+      cars_estimated: null, minutes_estimated: null, confidence: 'low',
+      pedestrians_estimated: null, pedestrian_minutes_estimated: null,
+      pedestrian_confidence: 'low', pedestrian_lanes_visible: null,
+      raw: { text }, error_code: 'parse_failed',
+    }
   }
 
   const cars = typeof parsed.cars_estimated === 'number' ? parsed.cars_estimated : null
   let mins = typeof parsed.minutes_estimated === 'number' ? parsed.minutes_estimated : null
-  // Clamp to sane range
   if (mins != null) {
     if (mins < 0) mins = 0
     if (mins > 120) mins = 120
@@ -170,5 +214,27 @@ Guidance:
   const confidence: 'high' | 'medium' | 'low' =
     confRaw === 'high' || confRaw === 'medium' || confRaw === 'low' ? confRaw : 'low'
 
-  return { cars_estimated: cars, minutes_estimated: mins, confidence, raw: parsed }
+  // Pedestrian fields — clamp + validate the same way
+  const peds = typeof parsed.pedestrians_estimated === 'number' ? parsed.pedestrians_estimated : null
+  let pedMins = typeof parsed.pedestrian_minutes_estimated === 'number' ? parsed.pedestrian_minutes_estimated : null
+  if (pedMins != null) {
+    if (pedMins < 0) pedMins = 0
+    if (pedMins > 120) pedMins = 120
+  }
+  const pedConfRaw = parsed.pedestrian_confidence
+  const pedConfidence: 'high' | 'medium' | 'low' =
+    pedConfRaw === 'high' || pedConfRaw === 'medium' || pedConfRaw === 'low' ? pedConfRaw : 'low'
+  const pedLanes = typeof parsed.pedestrian_lanes_visible === 'number' && parsed.pedestrian_lanes_visible >= 0
+    ? parsed.pedestrian_lanes_visible : null
+
+  return {
+    cars_estimated: cars,
+    minutes_estimated: mins,
+    confidence,
+    pedestrians_estimated: peds,
+    pedestrian_minutes_estimated: pedMins,
+    pedestrian_confidence: pedConfidence,
+    pedestrian_lanes_visible: pedLanes,
+    raw: parsed,
+  }
 }

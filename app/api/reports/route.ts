@@ -485,7 +485,12 @@ export async function POST(req: NextRequest) {
   }
 
   const validLaneTypes = ['vehicle', 'sentri', 'pedestrian', 'commercial']
-  const normalizedLaneType = validLaneTypes.includes(laneType) ? laneType : null
+  // Back-compat 2026-04-26: when the reporter picks vehicleType='pedestrian'
+  // in the detailed block but the form didn't send an explicit laneType,
+  // promote it. Prevents pedestrian reports from silently feeding the
+  // vehicle wait-time blend in /api/ports.
+  const effectiveLaneType = laneType || (vehicleType === 'pedestrian' ? 'pedestrian' : null)
+  const normalizedLaneType = effectiveLaneType && validLaneTypes.includes(effectiveLaneType) ? effectiveLaneType : null
 
   // Normalize the optional lane-detail payload. These fields are the
   // moat feature nobody else has — how many lanes are open, how many
@@ -591,6 +596,14 @@ export async function POST(req: NextRequest) {
     return 'community'
   })()
 
+  // Geofence-verified flag: trust this report as ground-truth-at-bridge
+  // only when the WaitingMode prompt fired (waitingMode=true) AND the
+  // server independently confirmed the GPS coords place the reporter
+  // inside the 'near' radius of the port. Drops the trust if the
+  // client claims waitingMode but no GPS came through, or GPS lands
+  // outside the near band — that's how the column survives spoof.
+  const verifiedByGeofence = waitingMode === true && locationConfidence === 'near'
+
   // Raw GPS coords — only persisted when the reporter actually shared
   // them (existing classifyDistance logic gates acceptance). Stored
   // as-is so we can re-derive confidence thresholds later without
@@ -654,6 +667,7 @@ export async function POST(req: NextRequest) {
     source_meta: sourceMeta,
     location_confidence: locationConfidence,
     reporter_distance_km: reporterDistanceKm,
+    verified_by_geofence: verifiedByGeofence,
     // Sensor-network columns (added by migration). Supabase silently
     // drops unknown columns in the Dashboard SQL editor view, but the
     // PostgREST client errors on insert if they don't exist. If Diego
@@ -701,6 +715,7 @@ export async function POST(req: NextRequest) {
         source_meta: sourceMeta,
         location_confidence: locationConfidence,
         reporter_distance_km: reporterDistanceKm,
+        verified_by_geofence: verifiedByGeofence,
       }).select('id').single()
     }
     return result

@@ -530,8 +530,32 @@ export function HeroGenerator() {
                       {sentri != null && (
                         <span className="text-blue-100">SENTRI {waitLabel(sentri)}</span>
                       )}
-                      {ped != null && (
-                        <span className="text-blue-100">A pie {waitLabel(ped)}</span>
+                      {direction === 'north' && ped != null && (() => {
+                        const src = p.pedestrianSource
+                        const srcTag =
+                          src === 'community' ? '(la raza)'
+                          : src === 'camera' ? '(cámara)'
+                          : src === 'baseline' ? '(típico)'
+                          : src === 'cbp' ? '(CBP)' : ''
+                        const tagColor =
+                          src === 'community' ? 'text-green-300'
+                          : src === 'camera' ? 'text-purple-300'
+                          : src === 'baseline' ? 'text-blue-200'
+                          : 'text-blue-100'
+                        return (
+                          <span className={tagColor}>
+                            🚶 {waitLabel(ped)}
+                            {srcTag && <span className="ml-1 text-[9px] opacity-80">{srcTag}</span>}
+                            {p.cameraPedestrianCount != null && (
+                              <span className="ml-1 text-[9px] opacity-80">· {p.cameraPedestrianCount} en fila</span>
+                            )}
+                          </span>
+                        )
+                      })()}
+                      {direction === 'north' && ped == null && p.pedestrianBaselineHourly != null && (
+                        <span className="text-blue-200/70">
+                          🚶 ~{p.pedestrianBaselineHourly}/h normal
+                        </span>
                       )}
                       {hist != null && histDelta != null && (
                         <span className={histColor}>
