@@ -199,6 +199,180 @@ async function bestTimes(portIds: string[], day: number | null, hour: number | n
   return out;
 }
 
+interface RouteRecommendation {
+  rank: number;
+  port_id: string;
+  name: string;
+  city: string;
+  region: string;
+  drive_km: number;
+  drive_min: number;
+  arrival_min_from_now: number;
+  current_wait_min: number | null;
+  forecast_6h_min: number | null;
+  forecast_24h_min: number | null;
+  predicted_wait_at_arrival_min: number;
+  predicted_wait_basis: string;
+  total_eta_min: number;
+  forecast_lift_vs_cbp_pct: number | null;
+  forecast_concept_drift_warn: boolean;
+  current_recorded_at: string | null;
+}
+
+async function recommendRoute(
+  lat: number,
+  lng: number,
+  direction: string,
+  departureOffsetMin: number,
+  candidatePool: number,
+): Promise<RouteRecommendation[]> {
+  const candidates = await smartRoute(lat, lng, direction, candidatePool);
+  // Fetch v0.4 6h + 24h forecasts in parallel for every candidate
+  const forecasts = await Promise.all(
+    candidates.flatMap((c) => [
+      forecastV04(c.port_id, 360),
+      forecastV04(c.port_id, 1440),
+    ]),
+  );
+  const results: RouteRecommendation[] = candidates.map((c, i) => {
+    const fc6 = forecasts[i * 2];
+    const fc24 = forecasts[i * 2 + 1];
+    const v6 = "error" in fc6 ? null : fc6.prediction_min;
+    const v24 = "error" in fc24 ? null : fc24.prediction_min;
+    const liftCbp = "error" in fc6 ? null : fc6.lift_vs_cbp_climatology_pct;
+    const arrival = departureOffsetMin + c.driveMin;
+
+    // Pick basis for predicted-wait-at-arrival:
+    //   <30min:  use current
+    //   30-360:  blend current → 6h linearly
+    //   360-720: use 6h
+    //   >720:    use 24h (or 6h fallback)
+    let predicted: number;
+    let basis: string;
+    if (arrival < 30 || (v6 == null && v24 == null)) {
+      predicted = c.waitMin ?? 30;
+      basis = c.waitMin != null ? "current_live_reading" : "no_data_default_30min";
+    } else if (arrival < 360 && v6 != null && c.waitMin != null) {
+      const w = Math.max(0, Math.min(1, (arrival - 30) / (360 - 30)));
+      predicted = Math.round((1 - w) * c.waitMin + w * v6);
+      basis = `blend_current_to_6h_w=${w.toFixed(2)}`;
+    } else if (arrival < 720 && v6 != null) {
+      predicted = Math.round(v6);
+      basis = "v0.4_6h_forecast";
+    } else if (v24 != null) {
+      predicted = Math.round(v24);
+      basis = "v0.4_24h_forecast";
+    } else if (v6 != null) {
+      predicted = Math.round(v6);
+      basis = "v0.4_6h_forecast_24h_unavailable";
+    } else {
+      predicted = c.waitMin ?? 30;
+      basis = "fallback_current_or_default";
+    }
+
+    return {
+      rank: 0,
+      port_id: c.port_id,
+      name: c.name,
+      city: c.city,
+      region: c.region,
+      drive_km: c.distKm,
+      drive_min: c.driveMin,
+      arrival_min_from_now: arrival,
+      current_wait_min: c.waitMin,
+      forecast_6h_min: v6,
+      forecast_24h_min: v24,
+      predicted_wait_at_arrival_min: predicted,
+      predicted_wait_basis: basis,
+      total_eta_min: c.driveMin + predicted + departureOffsetMin,
+      forecast_lift_vs_cbp_pct: liftCbp,
+      forecast_concept_drift_warn: liftCbp != null && liftCbp < 0,
+      current_recorded_at: c.recorded,
+    };
+  });
+
+  results.sort((a, b) => a.total_eta_min - b.total_eta_min);
+  results.forEach((r, i) => { r.rank = i + 1; });
+  return results;
+}
+
+async function anomalyNow(portId: string) {
+  const meta = PORT_META[portId];
+  if (!meta) return { error: `Unknown port_id "${portId}"` };
+  const now = new Date();
+  const dow = now.getDay();
+  const hour = now.getHours();
+  const [live, hist] = await Promise.all([
+    liveWait(portId),
+    bestTimes([portId], dow, hour),
+  ]);
+  const livePort = live[0];
+  const histRow = (hist[portId] || [])[0];
+  const liveWaitMin = livePort?.vehicle_wait ?? null;
+  const histAvg = histRow?.vehicle_avg ?? null;
+  if (liveWaitMin == null) {
+    return {
+      port_id: portId, name: meta.localName || meta.city,
+      status: "no_recent_reading",
+      live_wait_min: null, historical_avg_min: histAvg,
+    };
+  }
+  if (histAvg == null || histAvg <= 0) {
+    return {
+      port_id: portId, name: meta.localName || meta.city,
+      status: "no_baseline",
+      live_wait_min: liveWaitMin, historical_avg_min: null,
+    };
+  }
+  const ratio = liveWaitMin / histAvg;
+  let status: "anomaly_high" | "anomaly_low" | "normal";
+  if (ratio >= 1.5) status = "anomaly_high";
+  else if (ratio <= 0.67) status = "anomaly_low";
+  else status = "normal";
+  return {
+    port_id: portId,
+    name: meta.localName || meta.city,
+    region: meta.region,
+    status,
+    live_wait_min: liveWaitMin,
+    historical_avg_min: histAvg,
+    ratio: Math.round(ratio * 100) / 100,
+    delta_min: liveWaitMin - histAvg,
+    pct_above_baseline: Math.round((ratio - 1) * 100),
+    recorded_at: livePort.recorded_at,
+    threshold: { high: 1.5, low: 0.67 },
+  };
+}
+
+async function comparePorts(portIds: string[], horizonMin: number) {
+  const fcs = await Promise.all(portIds.map((pid) => forecastV04(pid, horizonMin)));
+  return portIds.map((pid, i) => {
+    const fc = fcs[i];
+    const meta = PORT_META[pid];
+    if ("error" in fc) {
+      return {
+        port_id: pid, name: meta?.localName || meta?.city || pid,
+        error: fc.error,
+      };
+    }
+    return {
+      port_id: pid,
+      name: fc.port_name,
+      region: meta?.region ?? null,
+      forecast_min: fc.prediction_min,
+      horizon_min: horizonMin,
+      rmse_min: fc.rmse_min,
+      lift_vs_cbp_pct: fc.lift_vs_cbp_climatology_pct,
+      lift_vs_persistence_pct: fc.lift_vs_persistence_pct,
+      concept_drift_warn: fc.lift_vs_cbp_climatology_pct != null && fc.lift_vs_cbp_climatology_pct < 0,
+    };
+  }).sort((a, b) => {
+    const af = ("forecast_min" in a && a.forecast_min != null) ? a.forecast_min : Number.POSITIVE_INFINITY;
+    const bf = ("forecast_min" in b && b.forecast_min != null) ? b.forecast_min : Number.POSITIVE_INFINITY;
+    return af - bf;
+  });
+}
+
 async function briefing(portId: string): Promise<string> {
   const meta = PORT_META[portId];
   if (!meta) return `Unknown port_id "${portId}".`;
@@ -279,6 +453,9 @@ function buildServer(): McpServer {
         "Use cruzar_live_wait for current readings.",
         "Use cruzar_best_times for historical DOW × hour averages.",
         "Use cruzar_forecast for the v0.4 RandomForest ML prediction at a 6h or 24h horizon.",
+        "Use cruzar_recommend_route for the FULL dispatcher decision: ranked crossings with predicted wait at the driver's actual arrival time, given drive distance + departure offset.",
+        "Use cruzar_anomaly_now to check if a port is currently >1.5× or <0.67× its DOW × hour baseline (broker red-flag signal).",
+        "Use cruzar_compare_ports for a side-by-side v0.4 forecast across multiple ports at a single horizon.",
         "Use cruzar_briefing for a one-shot markdown decision summary on a single port (live + historical + v0.4 forecast — best for dispatcher / broker workflows).",
       ].join(" "),
     },
@@ -345,6 +522,69 @@ function buildServer(): McpServer {
       return {
         structuredContent: { results: result },
         content: [{ type: "text", text: JSON.stringify({ results: result }, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "cruzar_recommend_route",
+    {
+      title: "Dispatcher decision tool — pick the best border crossing for a load",
+      description:
+        "Given an origin (lat/lng), direction, and optional departure time offset, returns ranked candidate crossings with the v0.4 ML-predicted wait at the driver's expected ARRIVAL time at each bridge (not just current wait). Total ETA = drive_min + predicted_wait_at_arrival_min + departure_offset. This is the broker decision artifact: no other product on the market combines drive distance + ML wait forecast at expected arrival.",
+      inputSchema: {
+        lat: z.number().describe("Origin latitude (US-MX corridor: 14-50)"),
+        lng: z.number().describe("Origin longitude (US-MX corridor: -125 to -85)"),
+        direction: z.enum(["northbound", "southbound"]).default("northbound"),
+        departure_offset_min: z.number().int().min(0).max(1440).default(0).describe("Minutes from now until departure (0 = leaving now). Affects which forecast horizon is used."),
+        candidate_pool: z.number().int().min(1).max(10).default(5).describe("How many nearest crossings to evaluate before returning the ranked list (sorted by total_eta_min)."),
+      },
+    },
+    async ({ lat, lng, direction, departure_offset_min, candidate_pool }) => {
+      if (lat < 14 || lat > 50 || lng < -125 || lng > -85) {
+        return { content: [{ type: "text", text: "Error: lat/lng out of US-MX corridor range" }], isError: true };
+      }
+      const recs = await recommendRoute(lat, lng, direction, departure_offset_min, candidate_pool);
+      return {
+        structuredContent: { recommendations: recs, ranked_at: new Date().toISOString() },
+        content: [{ type: "text", text: JSON.stringify({ recommendations: recs }, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "cruzar_anomaly_now",
+    {
+      title: "Anomaly detection — is this port running unusually high or low right now?",
+      description: "Compares the port's current vehicle wait against the 90-day historical average for this DOW × hour. Returns status (anomaly_high | anomaly_low | normal | no_recent_reading | no_baseline) plus the ratio + delta. Threshold: ≥1.5× = high, ≤0.67× = low.",
+      inputSchema: {
+        port_id: z.string().describe("Cruzar port_id (e.g. '230402' = Laredo WTB)"),
+      },
+    },
+    async ({ port_id }) => {
+      const result = await anomalyNow(port_id);
+      return {
+        structuredContent: result as unknown as Record<string, unknown>,
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    },
+  );
+
+  server.registerTool(
+    "cruzar_compare_ports",
+    {
+      title: "Compare v0.4 forecasts across multiple ports side-by-side",
+      description: "Calls v0.4 forecast for each port_id at the given horizon and returns them sorted by predicted wait (ascending). Useful when a dispatcher has flexibility on which corridor to use and wants to see the forecast horse race.",
+      inputSchema: {
+        port_ids: z.array(z.string()).min(1).max(8).describe("List of Cruzar port_ids to compare. 8 supported: 230501, 230502, 230503, 230402, 230401, 230301, 535502, 535501."),
+        horizon_min: z.union([z.literal(360), z.literal(1440)]).default(360).describe("Forecast horizon: 360 (6h) or 1440 (24h)"),
+      },
+    },
+    async ({ port_ids, horizon_min }) => {
+      const result = await comparePorts(port_ids, horizon_min);
+      return {
+        structuredContent: { comparison: result, horizon_min, ranked_at: new Date().toISOString() },
+        content: [{ type: "text", text: JSON.stringify({ comparison: result }, null, 2) }],
       };
     },
   );
