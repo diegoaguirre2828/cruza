@@ -122,16 +122,16 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // Step 4a: decide PHOTO vs VIDEO.
-  // Video preference: if a fresh WaitTimes 4x5/9x16 MP4 exists in
-  // public_assets (rendered by video-generator + uploaded to Vercel Blob)
-  // AND the current cron slot is the evening peak (7 PM CT, when feed
-  // engagement is highest), post the video instead. Photo is the
-  // default for the other 3 slots — keeps daily variety AND fb-publish
-  // works even before the video pipeline is ever exercised.
+  // Step 4a: PHOTO ONLY for v3.
+  // Video path is temporarily disabled (2026-04-25) — Diego killed the
+  // HookFbGroup composition as too "slideshow-y" and not boost-worthy.
+  // The video selection logic stays in code so when we ship a real
+  // video composition (10-sec single-bridge, real footage end-to-end)
+  // we can re-enable by flipping VIDEO_DISABLED to false.
+  const VIDEO_DISABLED = true
   let useVideo = false
   let videoUrl: string | null = null
-  try {
+  if (!VIDEO_DISABLED) try {
     const { data: assetRow } = await db
       .from('public_assets')
       .select('value, updated_at')

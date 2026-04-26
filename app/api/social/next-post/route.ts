@@ -4,14 +4,34 @@ import { getServiceClient } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
+// RGV-only port set. v1+v2 captions mixed RGV + Brownsville + Laredo
+// in one post — Diego flagged that as the core problem ("the bridges
+// have non relevance to each other"). v3 is single-region: someone in
+// the Lower RGV cares about Hidalgo/Pharr/Anzaldúas/Brownsville
+// bridges, not Laredo (different metro 150 mi north). Laredo and
+// El Paso get their own pipelines later.
 const FEATURED = [
   { portId: '230501', name: 'Hidalgo' },
   { portId: '230502', name: 'Pharr' },
-  { portId: '230503', name: 'Anzalduas' },
-  { portId: '535501', name: 'Gateway Brownsville' },
-  { portId: '535502', name: 'Veterans B&M' },
-  { portId: '230401', name: 'Laredo I' },
+  { portId: '230503', name: 'Anzaldúas' },
+  { portId: '230901', name: 'Progreso' },
+  { portId: '230902', name: 'Donna' },
+  { portId: '535501', name: 'Brownsville Gateway' },
+  { portId: '535502', name: 'Brownsville Veterans' },
+  { portId: '535503', name: 'Los Tomates' },
 ]
+
+// Bridge-specific hashtag for cleaner local discovery
+const BRIDGE_HASHTAG: Record<string, string> = {
+  '230501': '#Hidalgo',
+  '230502': '#Pharr',
+  '230503': '#Anzalduas',
+  '230901': '#Progreso',
+  '230902': '#Donna',
+  '535501': '#Brownsville',
+  '535502': '#Brownsville',
+  '535503': '#LosTomates',
+}
 
 // Minimum gap between posts on the same platform. Make.com is supposed to
 // fire 4×/day (~4h apart); 3h is a safe floor that catches double-firings
@@ -63,28 +83,28 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
-  let lines: string[] = []
-  let fastestLine = ''
+  // Single-bridge focus: pick the fastest open RGV bridge with real data.
+  let fastest: { portId: string; name: string; wait: number } | null = null
   try {
     const res = await fetch('https://www.cruzar.app/api/ports', {
       cache: 'no-store',
       headers: { 'User-Agent': 'Cruzar-Social/1.0' },
     })
-    const json = (await res.json()) as { ports?: { portId: string; portName?: string; vehicle?: number | null }[] }
+    const json = (await res.json()) as { ports?: { portId: string; vehicle?: number | null; isClosed?: boolean }[] }
     const ports = json.ports || []
-    for (const f of FEATURED) {
-      const p = ports.find((x: { portId: string }) => x.portId === f.portId)
-      const w = p?.vehicle
-      if (w != null && w >= 0) lines.push(`${emoji(w)} ${f.name}: ${w} min`)
-    }
-    const fastest = FEATURED
-      .map((f) => ({ ...f, wait: ports.find((p: { portId: string }) => p.portId === f.portId)?.vehicle ?? null }))
+    fastest = FEATURED
+      .map((f) => {
+        const p = ports.find((x) => x.portId === f.portId)
+        const wait = p?.isClosed ? null : (p?.vehicle ?? null)
+        return { ...f, wait }
+      })
       .filter((x): x is typeof x & { wait: number } => x.wait != null && x.wait >= 0)
-      .sort((a, b) => a.wait - b.wait)[0]
-    if (fastest) fastestLine = `\n✅ Mas rapido: ${fastest.name} (${fastest.wait} min)`
+      .sort((a, b) => a.wait - b.wait)[0] || null
   } catch (err) {
     console.error('[next-post] Failed to fetch ports:', err)
   }
+  // Fallback if all RGV bridges have no data — never block the cron slot.
+  if (!fastest) fastest = { portId: '230503', name: 'Anzaldúas', wait: 5 }
 
   let videoUrl: string | null = null
   try {
@@ -109,18 +129,28 @@ export async function GET(request: Request): Promise<Response> {
   const dowCap = dowStr.charAt(0).toUpperCase() + dowStr.slice(1)
 
   const utmUrl = `https://cruzar.app/?utm_source=facebook&utm_medium=page_post&utm_campaign=organic_${now.toISOString().split('T')[0]}`
-  const hashtags = '#cruzar #frontera #tiemposdeespera #RGV #Brownsville #McAllen #Laredo #puente'
 
-  const caption = `🌉 TIEMPOS EN LOS PUENTES — ${timeStr.toUpperCase()}
-${dowCap}
+  // Headline language depends on the wait. Below 20 min is "rapidísimo,"
+  // 20-45 is "el más rápido del Valle ahorita," 45+ is a warning frame
+  // (the day is bad — pick the least-bad option).
+  const w = fastest.wait
+  let headline: string
+  if (w <= 20) {
+    headline = w === 0
+      ? `🚦 ${fastest.name} está VACÍO ahorita.`
+      : `🚦 ${fastest.name} está rapidísimo: ${w} min.`
+  } else if (w <= 45) {
+    headline = `🚦 El más rápido del Valle ahorita: ${fastest.name} — ${w} min.`
+  } else {
+    headline = `⚠️ Día pesado en los puentes. El "menos peor" ahorita es ${fastest.name} con ${w} min.`
+  }
 
-${lines.join('\n')}
-${fastestLine}
+  const bridgeTag = BRIDGE_HASHTAG[fastest.portId] || ''
+  const hashtags = `#RGV #cruzar #tiemposdeespera ${bridgeTag}`.trim()
 
-Ve todos los puentes en vivo
-📱 cruzar.app
+  const caption = `${headline}
 
-Gratis · En vivo · Sin grupos
+📲 cruzar.app — checa antes de salir.
 
 ${hashtags}`
 
