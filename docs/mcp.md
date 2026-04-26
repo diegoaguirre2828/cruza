@@ -22,20 +22,28 @@ Remote MCP server exposing US-MX border wait-time data + smart routing to AI cli
 - **`cruzar_live_wait(port_id?)`** — Most recent CBP reading for one port, or all RGV ports if omitted. Includes vehicle / SENTRI / pedestrian / commercial lanes.
 - **`cruzar_best_times(port_ids[], day?, hour?)`** — Historical average wait by day-of-week × hour over the last 90 days.
 
-## Port IDs (RGV)
+## Port IDs (RGV) — 13 ports w/ v0.4 ML coverage
 
-| port_id | Crossing |
-|---|---|
-| 230501 | Hidalgo |
-| 230502 | Pharr–Reynosa |
-| 230503 | Anzaldúas |
-| 230402 | Laredo World Trade Bridge |
-| 230401 | Laredo I (Gateway) |
-| 230301 | Eagle Pass |
-| 535502 | Brownsville Veterans |
-| 535504 | Brownsville Gateway |
+| port_id | Crossing | v0.4 lift vs CBP @ 6h |
+|---|---|---|
+| 230402 | Laredo World Trade Bridge | +13.6% |
+| 535502 | Brownsville Veterans (Los Tomates) | +18.1% |
+| 230501 | Hidalgo | +6.4% |
+| 230503 | Anzaldúas | +4.6% |
+| 230701 | Rio Grande City | **+37.3%** |
+| 230401 | Laredo I (Gateway) | ~0% (already accurate) |
+| 230301 | Eagle Pass | -3.6% (drift fallback) |
+| 535501 | Brownsville Gateway | +0.3% |
+| 230502 | Pharr–Reynosa | -289% (drift fallback to CBP climatology) |
+| 230901 | Progreso | (fresh — see manifest) |
+| 230902 | Donna | (fresh — see manifest) |
+| 231001 | Roma | (fresh — see manifest) |
+| 535503 | Brownsville Los Indios | (fresh — see manifest) |
 
-Full list available via `cruzar_live_wait()` (no args).
+`degraded:true` ports automatically fall back to the CBP climatology baseline so callers don't see broken predictions. Models retrained weekly Sundays at 06:00 UTC via GH Actions on `cruzar-insights-ml`.
+
+Full live list: `cruzar_live_wait()` (no args).
+Full v0.4 manifest: `GET https://cruzar-insights-api.vercel.app/api/forecast` (with bearer auth).
 
 ## Connect from Claude Desktop / Code
 
