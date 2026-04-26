@@ -140,27 +140,42 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
   ],
 
   // ─── Arizona — Nogales Mariposa ─────────────────────────────────
-  // Pass-4 upgrade 2026-04-17: Heroica Nogales publishes 5 CORS-open
-  // live HLS angles (general + mariposa3-6). All confirmed live
-  // (#EXT-X-MEDIA-SEQUENCE advancing, 5s segments).
-  // Pass-5 2026-04-26: added general2 (second general angle) — Heroica's
-  // canonical webcam page lists it but it wasn't in pass-4's catalog.
+  // Pass-5 audit 2026-04-26: extracted a sample frame from every Heroica
+  // Nogales stream, read the bottom-right caption baked into the video,
+  // and rebuilt these labels to match what the camera ACTUALLY shows
+  // (not what the URL path suggests). Pass-4 had guessed labels from
+  // path naming conventions — those guesses were wrong. Real findings:
+  //   - deconcini/pla-sur is captioned "Garita Mariposa Vista Norte"
+  //     (mislabeled by publisher — it's a Mariposa view, moved here)
+  //   - mariposa/general2 is captioned "Miguel Hidalgo Sur" (a street
+  //     near Mariposa, kept here as approach context)
+  //   - All "pla", "ban", "hot", "san" path names are LANDMARK names
+  //     (Bancomer, Santander, Sentri lane, Hidalgo Ave), not function
+  //     names. None are dedicated pedestrian-platform cameras.
   '260402': [
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/mariposa/general/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita Mariposa — vista general en vivo',
-      label: 'MX · General',
+      note: 'Garita Mariposa — vista general (estacionamiento + acceso)',
+      label: 'MX · Garita',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/deconcini/pla-sur/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Mariposa — vista norte (mislabeled "deconcini/pla-sur" en la URL)',
+      label: 'MX · Vista Norte',
     },
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/mariposa/general2/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita Mariposa — vista general 2 en vivo',
-      label: 'MX · General 2',
+      note: 'Av. Miguel Hidalgo Sur — calle de acceso a Mariposa',
+      label: 'MX · Hidalgo Sur',
     },
     {
       kind: 'hls',
@@ -205,78 +220,84 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
   ],
 
   // ─── Arizona — Nogales DeConcini ────────────────────────────────
-  // Pass-4 (2026-04-17): only had pla-sur HLS — north platform was
-  // claimed to 404, but pass-5 (2026-04-26) discovered the canonical
-  // Heroica webcams page lists 10 DeConcini streams total, ALL live
-  // with rolling MEDIA-SEQUENCE numbers. Naming convention (best
-  // guess from MX garita terminology):
-  //   pla-* = plataforma (pedestrian inspection platform)
-  //   ban-* = banda (lane) or banco
-  //   hot-* = hot lane (likely SENTRI/trusted-traveler)
-  //   san-* = sanidad / sanitation area
-  //   norte/sur = general directional views
+  // Pass-5 audit 2026-04-26 corrected pass-4's wrong path-name guesses.
+  // Sample frames extracted from every Heroica stream show:
+  //   - "deconcini/norte" → captioned "Deconcini Norte" (real DeConcini queue)
+  //   - "deconcini/sur"   → captioned "Deconcini Sur" (real DeConcini queue)
+  //   - "deconcini/ban-*" → captioned "Bancomer Norte/Sur" (DeConcini queue
+  //                          near Bancomer bank — vehicles + sidewalks)
+  //   - "deconcini/hot-*" → captioned "Sentri Sur" / "Acceso Sentri Norte"
+  //                          (DeConcini SENTRI lane vehicle approach)
+  //   - "deconcini/san-*" → captioned "Santander Norte/Sur" (DeConcini area
+  //                          near Santander bank — vehicle queue)
+  //   - "deconcini/pla-sur" → MISLABELED — captioned "Mariposa Vista Norte"
+  //                            (moved to 260402 above)
+  //   - "deconcini/pla-nor" → captioned "Miguel Hidalgo Norte" (Nogales city
+  //                            street, not border — dropped, not a useful
+  //                            wait-time signal)
   //
-  // The pla-nor / pla-sur feeds are the highest-value additions —
-  // they're the actual pedestrian queue cameras. Once HLS frame-grab
-  // is wired into camera-vision cron, these will populate
-  // cameraPedestrianCount + pedestrianFlowRateMin at DeConcini
-  // automatically. Today the cron only reads image/iframe feeds, so
-  // these 9 new HLS streams are user-visible only.
+  // Net: 8 genuine DeConcini-area HLS streams, all VEHICLE QUEUE views.
+  // None are dedicated pedestrian-inspection cams — that publisher
+  // doesn't exist. Some frames show pedestrians on sidewalks but
+  // that's incidental, not a dedicated queue cam.
+  //
+  // Ordered with the cleanest DeConcini queue views first since
+  // pickPrimaryFeed picks index 0 for AI analysis.
   '260401': [
     {
       kind: 'hls',
-      src: 'https://cruce.heroicanogales.gob.mx/deconcini/pla-sur/index.m3u8',
+      src: 'https://cruce.heroicanogales.gob.mx/deconcini/sur/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — plataforma sur (peatonal) en vivo',
-      label: 'MX · Peatonal S',
-    },
-    {
-      kind: 'hls',
-      src: 'https://cruce.heroicanogales.gob.mx/deconcini/pla-nor/index.m3u8',
-      credit: 'Heroica Nogales',
-      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — plataforma norte (peatonal) en vivo',
-      label: 'MX · Peatonal N',
+      note: 'DeConcini Sur — fila principal hacia EU',
+      label: 'MX · DeConcini Sur',
     },
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/deconcini/norte/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — vista general norte en vivo',
-      label: 'MX · Norte',
-    },
-    {
-      kind: 'hls',
-      src: 'https://cruce.heroicanogales.gob.mx/deconcini/sur/index.m3u8',
-      credit: 'Heroica Nogales',
-      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — vista general sur en vivo',
-      label: 'MX · Sur',
+      note: 'DeConcini Norte — fila principal hacia EU',
+      label: 'MX · DeConcini Norte',
     },
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/deconcini/ban-nor/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — banda norte en vivo',
-      label: 'MX · Banda N',
+      note: 'Bancomer Norte — DeConcini fila + acera con peatones visibles',
+      label: 'MX · Bancomer N',
     },
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/deconcini/ban-sur/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — banda sur en vivo',
-      label: 'MX · Banda S',
+      note: 'Bancomer Sur — DeConcini fila',
+      label: 'MX · Bancomer S',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/deconcini/san-nor/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Santander Norte — DeConcini fila bajo el puente',
+      label: 'MX · Santander N',
+    },
+    {
+      kind: 'hls',
+      src: 'https://cruce.heroicanogales.gob.mx/deconcini/san-sur/index.m3u8',
+      credit: 'Heroica Nogales',
+      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
+      note: 'Santander Sur — DeConcini área de Pemex',
+      label: 'MX · Santander S',
     },
     {
       kind: 'hls',
       src: 'https://cruce.heroicanogales.gob.mx/deconcini/hot-nor/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — hot lane (SENTRI) norte en vivo',
+      note: 'Acceso SENTRI Norte — carril de cruzantes confiables',
       label: 'MX · SENTRI N',
     },
     {
@@ -284,31 +305,15 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
       src: 'https://cruce.heroicanogales.gob.mx/deconcini/hot-sur/index.m3u8',
       credit: 'Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — hot lane (SENTRI) sur en vivo',
+      note: 'SENTRI Sur — carril de cruzantes confiables',
       label: 'MX · SENTRI S',
-    },
-    {
-      kind: 'hls',
-      src: 'https://cruce.heroicanogales.gob.mx/deconcini/san-nor/index.m3u8',
-      credit: 'Heroica Nogales',
-      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — sanidad norte en vivo',
-      label: 'MX · Sanidad N',
-    },
-    {
-      kind: 'hls',
-      src: 'https://cruce.heroicanogales.gob.mx/deconcini/san-sur/index.m3u8',
-      credit: 'Heroica Nogales',
-      creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — sanidad sur en vivo',
-      label: 'MX · Sanidad S',
     },
     {
       kind: 'image',
       src: 'https://garitas.elimparcial.com/imgwebcams/garita-deconcini-norte.jpg',
       credit: 'El Imparcial / Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — vista norte (snapshot)',
+      note: 'DeConcini norte (snapshot estático)',
       label: 'MX · Snap N',
     },
     {
@@ -316,7 +321,7 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
       src: 'https://garitas.elimparcial.com/imgwebcams/garita-deconcini-sur.jpg',
       credit: 'El Imparcial / Heroica Nogales',
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
-      note: 'Garita DeConcini — vista sur (snapshot)',
+      note: 'DeConcini sur (snapshot estático)',
       label: 'MX · Snap S',
     },
   ],
