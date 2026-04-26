@@ -28,6 +28,9 @@ import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
 import { SetFavoriteBanner } from '@/components/SetFavoriteBanner'
 import { ConversionRibbon } from '@/components/ConversionRibbon'
 import { HomeSwipe, type SwipePanel } from '@/components/HomeSwipe'
+import { OneTapAlertCard } from '@/components/OneTapAlertCard'
+import { PlannerCTACard } from '@/components/PlannerCTACard'
+import { ReportBridgePrompt } from '@/components/ReportBridgePrompt'
 
 // PERF: below-the-fold + conditional surfaces split into their own
 // chunks so they don't bloat the home-page initial JS.
@@ -307,9 +310,15 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
   // ─── Panels ────────────────────────────────────────────────
   // Default panel = "Cerca" (the bridge list). Universal landing
   // surface — every visitor sees the data they came for, no scroll.
+  // Community signals (live ticker + report prompt) sit at the very
+  // top so reporting feels like the social contract, not a buried
+  // side action — Diego 2026-04-26: "this feels like a check your
+  // wait app not a community thing."
   const cercaPanel = (
     <>
-      <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5">
+      <LiveActivityTicker initialReports={initialReports} />
+      <ReportBridgePrompt favoritePortId={favoritePortId} />
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
         <ExchangeRatePill />
         <WeatherHook variant="pill" />
       </div>
@@ -345,6 +354,15 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       return (
         <>
           <HeroTriad ports={initialPorts} favoritePortId={favoritePortId} />
+          {/* One-tap alert setup — pre-fills threshold for the favorite
+              and posts to /api/alerts directly. Skips /dashboard. The
+              biggest activation lift on this rewrite. */}
+          <OneTapAlertCard favoritePortId={favoritePortId} tier={tier} />
+          {/* Plan-tu-cruce — surfaces /planner (day-of-week + hour
+              prediction) which had zero inbound links. Quick fix to
+              alert-noise: pick a departure hour instead of 24/7
+              threshold pings. */}
+          <PlannerCTACard />
           <HomeForecast favoritePortId={favoritePortId} />
           <UserCrossingInsights />
           <PriorityNudge
@@ -409,15 +427,12 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
     )
   })()
 
-  // Panel 3 — "Comunidad". Live activity, reports feed, regional
-  // snapshot, ad slot.
+  // Panel 3 — "Comunidad". Reports feed + regional snapshot + ad slot.
+  // LiveActivityTicker moved up to Cerca panel for community-vibe
+  // reasons; full reports feed lives here as the deep-dive view.
   const comunidadPanel = (
     <>
-      <p className="mt-1 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-        {es ? 'En vivo' : 'Live'}
-      </p>
-      <LiveActivityTicker initialReports={initialReports} />
-      <div className="mt-4">
+      <div className="mt-1">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t.recentReports}</h2>
         <HomeReportsFeed initialReports={initialReports} />
       </div>
