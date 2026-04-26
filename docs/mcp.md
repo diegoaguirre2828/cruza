@@ -6,12 +6,21 @@ Remote MCP server exposing US-MX border wait-time data + smart routing to AI cli
 **Transport:** Streamable HTTP (stateless)
 **Auth:** `Authorization: Bearer <CRUZAR_MCP_KEY>`
 
-## Tools
+## Tools (7)
 
-- `cruzar_smart_route(lat, lng, direction?, limit?)` — Ranks RGV crossings by total time = current wait + drive distance from origin. Returns top 5.
-- `cruzar_live_wait(port_id?)` — Most recent CBP reading for one port, or all RGV ports if omitted. Includes vehicle / SENTRI / pedestrian / commercial lanes.
-- `cruzar_best_times(port_ids[], day?, hour?)` — Historical average wait by day-of-week × hour over the last 90 days. Filter by specific DOW (0=Sun..6=Sat) or hour (0-23).
-- `cruzar_briefing(port_id)` — One-shot markdown summary: current wait + historical baseline + anomaly flag (>+50% / <-50%) + best remaining window today. The broker decision artifact.
+### Decision tools (broker / dispatcher)
+- **`cruzar_recommend_route(lat, lng, direction?, departure_offset_min?, candidate_pool?)`** — THE dispatcher killer tool. Ranks crossings by `total_eta = drive_min + predicted_wait_at_arrival_min + departure_offset`, where `predicted_wait_at_arrival_min` uses v0.4 forecast at the driver's actual arrival time (not just current). Composes smart_route + v0.4 forecast.
+- **`cruzar_briefing(port_id)`** — One-shot markdown decision artifact: current wait + 90d historical baseline + v0.4 6h forecast + best remaining window. Best for "what should I tell the dispatcher about this bridge right now?"
+- **`cruzar_anomaly_now(port_id)`** — Flags ports running ≥1.5× or ≤0.67× their 90-day DOW × hour baseline. Returns status + ratio + pct_above. Broker red-flag signal.
+
+### Forecast tools
+- **`cruzar_forecast(port_id, horizon_min)`** — v0.4 RandomForest prediction at 360 (6h) or 1440 (24h). Returns prediction + RMSE + lift vs CBP-climatology and persistence baselines. 8 RGV ports supported.
+- **`cruzar_compare_ports(port_ids[], horizon_min)`** — Side-by-side v0.4 forecasts across multiple ports, sorted ascending.
+
+### Data tools
+- **`cruzar_smart_route(lat, lng, direction?, limit?)`** — Heuristic ranking by `current_wait + drive_distance`. Faster + cheaper than recommend_route; use when you don't need ML predictions.
+- **`cruzar_live_wait(port_id?)`** — Most recent CBP reading for one port, or all RGV ports if omitted. Includes vehicle / SENTRI / pedestrian / commercial lanes.
+- **`cruzar_best_times(port_ids[], day?, hour?)`** — Historical average wait by day-of-week × hour over the last 90 days.
 
 ## Port IDs (RGV)
 
