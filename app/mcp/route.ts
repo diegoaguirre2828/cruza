@@ -576,7 +576,7 @@ function buildServer(): McpServer {
       title: "Compare v0.4 forecasts across multiple ports side-by-side",
       description: "Calls v0.4 forecast for each port_id at the given horizon and returns them sorted by predicted wait (ascending). Useful when a dispatcher has flexibility on which corridor to use and wants to see the forecast horse race.",
       inputSchema: {
-        port_ids: z.array(z.string()).min(1).max(8).describe("List of Cruzar port_ids to compare. 8 supported: 230501, 230502, 230503, 230402, 230401, 230301, 535502, 535501."),
+        port_ids: z.array(z.string()).min(1).max(13).describe("List of Cruzar port_ids to compare. 13 supported: 230501, 230502, 230503, 230402, 230401, 230301, 535502, 535501, 535503, 230701, 230901, 230902, 231001."),
         horizon_min: z.union([z.literal(360), z.literal(1440)]).default(360).describe("Forecast horizon: 360 (6h) or 1440 (24h)"),
       },
     },
@@ -593,7 +593,7 @@ function buildServer(): McpServer {
     "cruzar_forecast",
     {
       title: "v0.4 ML forecast for a port (6h or 24h horizon)",
-      description: "Calls the Cruzar Insights v0.4 RandomForest model for a single port at a 6h or 24h horizon. Returns prediction + backtest RMSE + lift vs CBP-climatology and persistence baselines. 8 RGV ports supported (Hidalgo, Pharr, Anzalduas, Laredo WTB, Laredo I, Eagle Pass, Brownsville Veterans, Brownsville Gateway).",
+      description: "Calls the Cruzar Insights v0.4 RandomForest model for a single port at a 6h or 24h horizon. Returns prediction + backtest RMSE + lift vs CBP-climatology and persistence baselines. 13 RGV ports supported (Hidalgo, Pharr, Anzalduas, Laredo WTB, Laredo I, Eagle Pass, Brownsville Veterans / Los Tomates, Brownsville Gateway, Rio Grande City, Progreso, Donna, Roma, Brownsville Los Indios). Drift-affected ports (negative lift_vs_cbp) auto-fall-back to CBP climatology baseline; response includes degraded:true + fallback_basis. Models retrained weekly (Sundays 06:00 UTC).",
       inputSchema: {
         port_id: z.string().describe("Cruzar port_id (e.g. '230402' = Laredo WTB)"),
         horizon_min: z.union([z.literal(360), z.literal(1440)]).default(360).describe("Forecast horizon in minutes: 360 (6h, headline) or 1440 (24h)"),
