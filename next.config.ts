@@ -17,12 +17,17 @@ const nextConfig: NextConfig = {
   // Bundle the ffmpeg-static binary with the camera-analysis cron so it
   // can extract a single JPEG frame from HLS streams (Heroica Nogales
   // pedestrian platforms, El Paso zoocams, etc.) and feed them to Claude
-  // Haiku just like the snapshot-able image/iframe feeds. Without this
-  // include, Vercel's NFT tracer ships the JS but not the linux-x64
-  // binary that ffmpeg-static drops at install time.
+  // Haiku just like the snapshot-able image/iframe feeds.
   outputFileTracingIncludes: {
     '/api/cron/analyze-bridge-cameras': ['./node_modules/ffmpeg-static/**'],
   },
+  // Mark ffmpeg-static as a server external package so Next doesn't try
+  // to bundle its index.js into the function chunk — keeping it as a
+  // regular node_modules require ensures __dirname resolves correctly
+  // at runtime to the bundled binary path. Without this, the ENOENT
+  // error 'spawn /ROOT/node_modules/ffmpeg-static/ffmpeg' fires because
+  // Next rewrote the resolved path while the binary lived elsewhere.
+  serverExternalPackages: ['ffmpeg-static'],
 };
 
 export default withSentryConfig(nextConfig, {

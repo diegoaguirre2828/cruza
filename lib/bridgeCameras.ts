@@ -457,40 +457,73 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
   // CORS-open .m3u8 streams. Rendered via hls.js into a <video> tag.
   // Publisher: zoocams.elpasozoo.org (City of El Paso)
 
-  '240201': [
-    {
-      kind: 'hls',
-      src: 'https://zoocams.elpasozoo.org/memfs/15-bota-hq.m3u8',
-      credit: 'City of El Paso',
-      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
-      note: 'Bridge of the Americas (BOTA) live HLS stream',
-      label: 'US · Live',
-    },
-  ],
+  // Pass-5 2026-04-26: City of El Paso renamed all zoocam stream paths.
+  // Old `/memfs/15-bota-hq.m3u8` etc. now 404. New paths discovered from
+  // the canonical cameras.html. BOTA is no longer published — only PDN /
+  // Stanton / Santa Fe / Zaragoza remain.
 
-  // Corrected 2026-04-17: PDN camera was assigned to 240204 which is
-  // CBP's Stanton DCL crossing. PDN is 240202.
   '240202': [
     {
       kind: 'hls',
-      src: 'https://zoocams.elpasozoo.org/memfs/10-pdn-hq.m3u8',
+      src: 'https://zoocams.elpasozoo.org/bridgepdn1.m3u8',
       credit: 'City of El Paso',
       creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
-      note: 'Paso del Norte (PDN) live HLS stream',
-      label: 'US · Live',
+      note: 'Paso del Norte — bridge view (live)',
+      label: 'US · PDN',
+    },
+    {
+      kind: 'hls',
+      src: 'https://zoocams.elpasozoo.org/bridgesantafe3.m3u8',
+      credit: 'City of El Paso',
+      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
+      note: 'Santa Fe (PdN) — ángulo 3 en vivo',
+      label: 'US · Santa Fe 3',
+    },
+    {
+      kind: 'hls',
+      src: 'https://zoocams.elpasozoo.org/bridgesantafe4.m3u8',
+      credit: 'City of El Paso',
+      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
+      note: 'Santa Fe (PdN) — ángulo 4 en vivo',
+      label: 'US · Santa Fe 4',
     },
   ],
 
-  // Corrected 2026-04-17: Ysleta/Zaragoza camera was assigned to 240221
-  // which CBP treats as a generic "El Paso" port with no crossing name.
-  // Ysleta / Zaragoza is 240203.
   '240203': [
     {
       kind: 'hls',
-      src: 'https://zoocams.elpasozoo.org/memfs/20-zar-hq.m3u8',
+      src: 'https://zoocams.elpasozoo.org/BridgeZaragoza1.m3u8',
       credit: 'City of El Paso',
       creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
-      note: 'Ysleta / Zaragoza live HLS stream',
+      note: 'Ysleta / Zaragoza — ángulo 1 en vivo',
+      label: 'US · Ángulo 1',
+    },
+    {
+      kind: 'hls',
+      src: 'https://zoocams.elpasozoo.org/BridgeZaragoza2.m3u8',
+      credit: 'City of El Paso',
+      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
+      note: 'Ysleta / Zaragoza — ángulo 2 en vivo',
+      label: 'US · Ángulo 2',
+    },
+    {
+      kind: 'hls',
+      src: 'https://zoocams.elpasozoo.org/BridgeZaragoza3.m3u8',
+      credit: 'City of El Paso',
+      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
+      note: 'Ysleta / Zaragoza — ángulo 3 en vivo',
+      label: 'US · Ángulo 3',
+    },
+  ],
+
+  // Stanton DCL — separate physical bridge (BWT 240204), only 1 angle live
+  '240204': [
+    {
+      kind: 'hls',
+      src: 'https://zoocams.elpasozoo.org/BridgeStanton3.m3u8',
+      credit: 'City of El Paso',
+      creditUrl: 'https://www2.elpasotexas.gov/misc/externally_linked/bridges/cameras.html',
+      note: 'Stanton DCL — bridge view (live)',
       label: 'US · Live',
     },
   ],
