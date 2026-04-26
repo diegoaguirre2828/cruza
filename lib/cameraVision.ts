@@ -46,28 +46,27 @@ export function snapshotUrlFor(feed: CameraFeed): string | null {
 }
 
 // Extract a single JPEG frame from an HLS stream using bundled ffmpeg.
-// Workflow: fetch the m3u8 manifest, find the latest .ts segment URL,
-// download that segment, pipe it through ffmpeg, capture stdout. The
-// segment is typically 5s of video — we just grab the first frame.
-//
-// Returns the JPEG bytes, or null on failure (timeout, no segments,
-// ffmpeg crash). Honest about non-fatal errors so the cron loop can
-// keep going across other ports.
-export async function extractHlsFrame(m3u8Url: string): Promise<Buffer | null> {
+// Returns either the JPEG bytes OR a {error} discriminator so the cron
+// can log which step failed (binary missing vs network vs ffmpeg crash).
+export type HlsExtractResult =
+  | { ok: true; jpeg: Buffer }
+  | { ok: false; error: string; detail?: string }
+
+export async function extractHlsFrame(m3u8Url: string): Promise<HlsExtractResult> {
   // 1. Fetch the m3u8 manifest
   let manifest: string
   try {
     const res = await fetch(m3u8Url, { signal: AbortSignal.timeout(6000) })
-    if (!res.ok) return null
+    if (!res.ok) return { ok: false, error: 'm3u8_http_error', detail: String(res.status) }
     manifest = await res.text()
-  } catch {
-    return null
+  } catch (e) {
+    return { ok: false, error: 'm3u8_fetch_failed', detail: String(e).slice(0, 100) }
   }
 
   // 2. Find the latest .ts segment URL (relative to manifest)
   const lines = manifest.split(/\r?\n/).map((l) => l.trim())
   const segments = lines.filter((l) => l && !l.startsWith('#') && (l.endsWith('.ts') || l.includes('.ts?')))
-  if (segments.length === 0) return null
+  if (segments.length === 0) return { ok: false, error: 'no_segments' }
   const lastSeg = segments[segments.length - 1]
   const segUrl = lastSeg.startsWith('http')
     ? lastSeg
@@ -77,56 +76,62 @@ export async function extractHlsFrame(m3u8Url: string): Promise<Buffer | null> {
   let segBuf: Buffer
   try {
     const res = await fetch(segUrl, { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
+    if (!res.ok) return { ok: false, error: 'segment_http_error', detail: String(res.status) }
     segBuf = Buffer.from(await res.arrayBuffer())
-    if (segBuf.length < 1000) return null
-  } catch {
-    return null
+    if (segBuf.length < 1000) return { ok: false, error: 'segment_too_small', detail: String(segBuf.length) }
+  } catch (e) {
+    return { ok: false, error: 'segment_fetch_failed', detail: String(e).slice(0, 100) }
   }
 
   // 4. Pipe segment through ffmpeg, ask for one JPEG frame on stdout.
-  // -f mpegts is the input format hint (HLS uses MPEG-TS containers),
-  // -frames:v 1 stops after the first decoded frame, -f image2 +
-  // -update 1 makes ffmpeg emit a single image to stdout instead of
-  // expecting a numbered output filename.
-  if (!ffmpegPath) return null
+  if (!ffmpegPath) return { ok: false, error: 'ffmpeg_path_null' }
   const ffmpegBin: string = ffmpegPath
-  return await new Promise<Buffer | null>((resolve) => {
+  return await new Promise<HlsExtractResult>((resolve) => {
     const chunks: Buffer[] = []
-    const proc = spawn(ffmpegBin, [
-      '-loglevel', 'error',
-      '-f', 'mpegts',
-      '-i', 'pipe:0',
-      '-frames:v', '1',
-      '-q:v', '5',
-      '-f', 'image2',
-      '-update', '1',
-      'pipe:1',
-    ])
+    const stderrChunks: Buffer[] = []
+    let proc
+    try {
+      proc = spawn(ffmpegBin, [
+        '-loglevel', 'error',
+        '-f', 'mpegts',
+        '-i', 'pipe:0',
+        '-frames:v', '1',
+        '-q:v', '5',
+        '-f', 'image2',
+        '-update', '1',
+        'pipe:1',
+      ])
+    } catch (e) {
+      resolve({ ok: false, error: 'ffmpeg_spawn_threw', detail: String(e).slice(0, 100) })
+      return
+    }
     const timeout = setTimeout(() => {
       proc.kill('SIGKILL')
-      resolve(null)
+      resolve({ ok: false, error: 'ffmpeg_timeout' })
     }, 12000)
     proc.stdout.on('data', (c: Buffer) => chunks.push(c))
-    proc.stderr.on('data', () => { /* swallow ffmpeg stderr — single failed extract isn't actionable */ })
-    proc.on('error', () => {
+    proc.stderr.on('data', (c: Buffer) => stderrChunks.push(c))
+    proc.on('error', (e) => {
       clearTimeout(timeout)
-      resolve(null)
+      resolve({ ok: false, error: 'ffmpeg_proc_error', detail: String(e).slice(0, 200) })
     })
     proc.on('close', (code) => {
       clearTimeout(timeout)
       if (code !== 0) {
-        // Suppress noisy stderr — single failed extract isn't worth a log
-        resolve(null)
+        const stderr = Buffer.concat(stderrChunks).toString('utf8').slice(0, 200)
+        resolve({ ok: false, error: 'ffmpeg_nonzero_exit', detail: `code=${code} stderr=${stderr}` })
         return
       }
       const out = Buffer.concat(chunks)
-      // Sanity check: JPEG starts with 0xFF 0xD8
       if (out.length < 1000 || out[0] !== 0xff || out[1] !== 0xd8) {
-        resolve(null)
+        resolve({ ok: false, error: 'invalid_jpeg_output', detail: `len=${out.length}` })
         return
       }
-      resolve(out)
+      resolve({ ok: true, jpeg: out })
+    })
+    proc.stdin.on('error', (e) => {
+      clearTimeout(timeout)
+      resolve({ ok: false, error: 'ffmpeg_stdin_error', detail: String(e).slice(0, 100) })
     })
     proc.stdin.write(segBuf)
     proc.stdin.end()

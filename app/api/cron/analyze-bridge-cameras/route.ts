@@ -71,18 +71,20 @@ export async function GET(req: NextRequest) {
       cameraUrl = picked.snapshotUrl
     } else if (picked.feed.kind === 'hls') {
       cameraUrl = picked.feed.src
-      const frame = await extractHlsFrame(picked.feed.src)
-      if (!frame) {
-        results.push({ port_id: portId, error_code: 'hls_frame_extract_failed' })
+      const extract = await extractHlsFrame(picked.feed.src)
+      if (!extract.ok) {
+        const errCode = `hls_${extract.error}`
+        results.push({ port_id: portId, feed_kind: 'hls', error_code: errCode, detail: extract.detail })
         await supabase.from('camera_wait_readings').insert({
           port_id: portId,
           camera_url: cameraUrl,
           model: 'claude-haiku-4-5-20251001',
-          error_code: 'hls_frame_extract_failed',
+          error_code: errCode,
+          raw_response: extract.detail ? { detail: extract.detail } : null,
         })
         continue
       }
-      vision = await analyzeImageBytes(frame, 'image/jpeg')
+      vision = await analyzeImageBytes(extract.jpeg, 'image/jpeg')
     } else {
       results.push({ port_id: portId, skipped: 'unknown_feed_kind' })
       continue
