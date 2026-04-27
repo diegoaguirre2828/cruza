@@ -49,6 +49,10 @@ export default function AccountPage() {
   const [brainRoutines, setBrainRoutines] = useState<BrainRoutine[]>([])
   const [brainWiping, setBrainWiping] = useState(false)
   const [brainLastSent, setBrainLastSent] = useState<string | null>(null)
+  type DigestCadence = 'off' | 'weekly' | 'biweekly' | 'monthly'
+  const [digestCadence, setDigestCadence] = useState<DigestCadence>('weekly')
+  const [digestSaving, setDigestSaving] = useState(false)
+  const [digestLastSentAt, setDigestLastSentAt] = useState<string | null>(null)
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login')
@@ -67,6 +71,11 @@ export default function AccountPage() {
         bio:       d.profile?.bio || '',
       })
       setAutoOptIn(!!d.profile?.auto_geofence_opt_in)
+      const cad = d.profile?.digest_cadence
+      if (cad === 'off' || cad === 'weekly' || cad === 'biweekly' || cad === 'monthly') {
+        setDigestCadence(cad)
+      }
+      setDigestLastSentAt(d.profile?.digest_last_sent_at ?? null)
     })
     fetch('/api/pattern-brain/preview').then(r => r.ok ? r.json() : null).then(d => {
       if (!d) return
@@ -105,6 +114,17 @@ export default function AccountPage() {
       body: JSON.stringify({ auto_geofence_opt_in: next }),
     })
     setAutoOptInSaving(false)
+  }
+
+  async function changeDigestCadence(next: DigestCadence) {
+    setDigestCadence(next)
+    setDigestSaving(true)
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ digest_cadence: next }),
+    })
+    setDigestSaving(false)
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -450,6 +470,41 @@ export default function AccountPage() {
                 {brainWiping ? (lang === 'es' ? 'Borrando…' : 'Clearing…') : (lang === 'es' ? 'Borrar rutinas detectadas' : 'Clear detected routines')}
               </button>
             </div>
+          )}
+        </div>
+
+        {/* Digest cadence — Cruzar Insights weekly retrospective */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-4">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex items-start gap-2">
+              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  {lang === 'es' ? 'Resumen por correo — frecuencia' : 'Email digest — frequency'}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {lang === 'es'
+                    ? 'Cada cuándo te enviamos el resumen de cargas y exposición a detention. Tú decides.'
+                    : 'How often we email your loads + detention exposure summary. You decide.'}
+                </p>
+              </div>
+            </div>
+          </div>
+          <select
+            value={digestCadence}
+            onChange={(e) => changeDigestCadence(e.target.value as DigestCadence)}
+            disabled={digestSaving}
+            className="w-full text-sm rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-3 py-2 disabled:opacity-50"
+          >
+            <option value="off">{lang === 'es' ? 'Apagado' : 'Off'}</option>
+            <option value="weekly">{lang === 'es' ? 'Semanal (lunes)' : 'Weekly (Monday)'}</option>
+            <option value="biweekly">{lang === 'es' ? 'Cada 2 semanas' : 'Every 2 weeks'}</option>
+            <option value="monthly">{lang === 'es' ? 'Mensual' : 'Monthly'}</option>
+          </select>
+          {digestLastSentAt && (
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
+              {lang === 'es' ? 'Último envío:' : 'Last sent:'} {new Date(digestLastSentAt).toLocaleString(lang === 'es' ? 'es-MX' : 'en-US')}
+            </p>
           )}
         </div>
 

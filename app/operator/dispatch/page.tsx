@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Truck, Plus, Trash2, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Truck, Plus, Trash2, ExternalLink, RefreshCw } from 'lucide-react'
 
 interface Driver {
   id: string
@@ -79,6 +79,11 @@ export default function OperatorDispatchPage() {
   async function delDriver(id: string) {
     if (!confirm('Delete driver?')) return
     await fetch(`/api/operator/drivers/${id}`, { method: 'DELETE' })
+    loadAll()
+  }
+  async function rotateDriverToken(id: string) {
+    if (!confirm('Rotate this driver\'s checkin link? The old link will stop working.')) return
+    await fetch(`/api/operator/drivers/${id}/rotate-token`, { method: 'POST' })
     loadAll()
   }
 
@@ -191,6 +196,13 @@ export default function OperatorDispatchPage() {
                     <Link href={`/driver-app/${d.checkin_token}`} target="_blank" className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1">
                       <ExternalLink className="w-3 h-3" /> Driver link
                     </Link>
+                    <button
+                      onClick={() => rotateDriverToken(d.id)}
+                      title="Rotate checkin link (old link stops working)"
+                      className="text-xs text-zinc-400 hover:text-amber-600 inline-flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Rotate
+                    </button>
                     <button onClick={() => delDriver(d.id)} className="text-zinc-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </li>

@@ -55,6 +55,13 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.copilot_voice_opt_in === 'boolean') {
     updates.copilot_voice_opt_in = body.copilot_voice_opt_in
   }
+  // Weekly retrospective digest cadence — user-tailored per-account.
+  if (typeof body.digest_cadence === 'string') {
+    if (!['off', 'weekly', 'biweekly', 'monthly'].includes(body.digest_cadence)) {
+      return NextResponse.json({ error: 'invalid digest_cadence' }, { status: 400 })
+    }
+    updates.digest_cadence = body.digest_cadence
+  }
   // Boolean settings — currently just the auto-crossing opt-in.
   // We also stamp auto_geofence_opt_in_at on the upgrade edge (false→true)
   // so we have an audit trail of when the user explicitly accepted the

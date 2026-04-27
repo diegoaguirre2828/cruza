@@ -164,24 +164,60 @@ async function sendEmail(s: UserSummary, fromDate: string, toDate: string): Prom
   }
 }
 
-// Batch resolve emails + display names for a set of user IDs in two queries
-// instead of one admin RPC per user. listUsers paginates at 1000 by default;
-// for the active operator base we fit comfortably in one page.
-async function buildIdentMap(userIds: string[]): Promise<Map<string, { email: string; name: string | null }>> {
-  const map = new Map<string, { email: string; name: string | null }>();
+// Batch resolve emails + display names + digest preferences for a set of
+// user IDs in two queries instead of one admin RPC per user. listUsers
+// paginates at 1000 by default; for the active operator base we fit
+// comfortably in one page.
+interface UserIdent {
+  email: string;
+  name: string | null;
+  cadence: 'off' | 'weekly' | 'biweekly' | 'monthly';
+  lastSentAt: string | null;
+}
+
+async function buildIdentMap(userIds: string[]): Promise<Map<string, UserIdent>> {
+  const map = new Map<string, UserIdent>();
   if (userIds.length === 0) return map;
   const db = getServiceClient();
   const [profilesRes, usersRes] = await Promise.all([
-    db.from("profiles").select("id, display_name").in("id", userIds),
+    db.from("profiles").select("id, display_name, digest_cadence, digest_last_sent_at").in("id", userIds),
     db.auth.admin.listUsers({ perPage: 1000 }),
   ]);
-  const nameById = new Map<string, string | null>();
-  for (const p of profilesRes.data ?? []) nameById.set(p.id as string, (p.display_name as string | null) ?? null);
+  const profById = new Map<string, { name: string | null; cadence: UserIdent['cadence']; lastSentAt: string | null }>();
+  for (const p of profilesRes.data ?? []) {
+    const cadence = (p.digest_cadence as UserIdent['cadence'] | null) ?? 'weekly';
+    profById.set(p.id as string, {
+      name: (p.display_name as string | null) ?? null,
+      cadence,
+      lastSentAt: (p.digest_last_sent_at as string | null) ?? null,
+    });
+  }
   for (const u of usersRes.data?.users ?? []) {
     if (!userIds.includes(u.id) || !u.email) continue;
-    map.set(u.id, { email: u.email, name: nameById.get(u.id) ?? null });
+    const prof = profById.get(u.id);
+    map.set(u.id, {
+      email: u.email,
+      name: prof?.name ?? null,
+      cadence: prof?.cadence ?? 'weekly',
+      lastSentAt: prof?.lastSentAt ?? null,
+    });
   }
   return map;
+}
+
+// Cadence interval in milliseconds. 'off' means never send.
+const CADENCE_MS: Record<UserIdent['cadence'], number | null> = {
+  off: null,
+  weekly: 7 * 24 * 60 * 60 * 1000,
+  biweekly: 14 * 24 * 60 * 60 * 1000,
+  monthly: 30 * 24 * 60 * 60 * 1000,
+};
+
+function isDueThisCycle(ident: UserIdent, now: number): boolean {
+  const interval = CADENCE_MS[ident.cadence];
+  if (interval === null) return false;
+  if (!ident.lastSentAt) return true;
+  return now - new Date(ident.lastSentAt).getTime() >= interval;
 }
 
 export async function GET(req: NextRequest) {
@@ -251,17 +287,37 @@ export async function GET(req: NextRequest) {
   }
 
   // Resolve emails + send. Batch ident lookup once instead of per-user.
+  // Gate each user on their digest_cadence preference + last-sent timestamp.
   let sent = 0;
   let skipped = 0;
+  let skippedNotDue = 0;
+  let skippedCadenceOff = 0;
   const errors: string[] = [];
   const identMap = await buildIdentMap(Array.from(byUser.keys()));
+  const now = Date.now();
+  const sentUserIds: string[] = [];
   for (const [userId, summary] of byUser) {
     const ident = identMap.get(userId);
     if (!ident) { skipped += 1; continue; }
+    if (ident.cadence === 'off') { skippedCadenceOff += 1; continue; }
+    if (!isDueThisCycle(ident, now)) { skippedNotDue += 1; continue; }
     summary.email = ident.email;
     summary.ownerName = ident.name;
     const ok = await sendEmail(summary, fromDate, toDate);
-    if (ok) sent += 1; else errors.push(`${ident.email} send failed`);
+    if (ok) {
+      sent += 1;
+      sentUserIds.push(userId);
+    } else {
+      errors.push(`${ident.email} send failed`);
+    }
+  }
+
+  // Stamp digest_last_sent_at for everyone we just emailed.
+  if (sentUserIds.length > 0) {
+    await db
+      .from('profiles')
+      .update({ digest_last_sent_at: new Date().toISOString() })
+      .in('id', sentUserIds);
   }
 
   return NextResponse.json({
@@ -270,6 +326,8 @@ export async function GET(req: NextRequest) {
     users_with_loads: byUser.size,
     emails_sent: sent,
     skipped_no_email: skipped,
+    skipped_not_due_this_cycle: skippedNotDue,
+    skipped_cadence_off: skippedCadenceOff,
     errors,
   });
 }
