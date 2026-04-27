@@ -47,6 +47,7 @@ const EXPLORE_ITEMS: MenuItem[] = [
   { href: '/for-fleets', emoji: '🚛', labelEs: 'Para flotas / Trucking', labelEn: 'For fleets / Trucking', subEs: 'Panel de flota + alertas + ROI', subEn: 'Fleet dashboard + alerts + ROI' },
   { href: '/negocios', emoji: '🏪', labelEs: 'Negocios locales', labelEn: 'Local businesses', subEs: 'Dental, farmacias, cambios', subEn: 'Dental, pharmacy, exchange' },
   { href: '/guide', emoji: '📖', labelEs: 'Guía del cruzante', labelEn: 'Crosser\'s guide', subEs: 'Documentos, FMM, SENTRI', subEn: 'Documents, FMM, SENTRI' },
+  { href: '/compare', emoji: '⚖️', labelEs: '¿Por qué Cruzar?', labelEn: 'Why Cruzar?', subEs: 'Cruzar vs grupos de Facebook vs otras apps', subEn: 'Cruzar vs Facebook groups vs other apps' },
 ]
 
 const INFO_ITEMS: MenuItem[] = [

@@ -262,6 +262,31 @@ Thanks,`,
           </p>
         </div>
 
+        {/* Adjacent fleet products — surface /express-cert (CTPAT/OEA
+            certification application generator) which was previously
+            orphan with no inbound link. Same audience as /for-fleets. */}
+        <Link
+          href="/express-cert"
+          className="mt-6 block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-5 active:scale-[0.99] transition-transform"
+        >
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <span className="text-xl">🛡️</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-black text-gray-900 dark:text-gray-100 leading-tight">
+                {es ? 'CTPAT / OEA — generador de aplicación' : 'CTPAT / OEA — application generator'}
+              </p>
+              <p className="text-[12px] text-gray-600 dark:text-gray-400 mt-1 leading-snug">
+                {es
+                  ? 'Pa\' flotas que quieren cruzar más rápido vía programas de seguridad fronteriza. Llenas 20 preguntas, te entregamos la aplicación lista.'
+                  : 'For fleets seeking the fast-lane border-security certifications. 20 questions in, ready application out.'}
+              </p>
+            </div>
+            <span className="flex-shrink-0 text-gray-400 dark:text-gray-500 text-base">→</span>
+          </div>
+        </Link>
+
         {/* Pricing footer */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">

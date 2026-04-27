@@ -201,6 +201,31 @@ const SECTIONS: Section[] = [
         lineEn: 'Driver tracking, shipments, delay costs — all in one place',
         badge: 'business',
       },
+      {
+        href: '/express-cert',
+        emoji: '🛡️',
+        titleEs: 'Certificación CTPAT / OEA',
+        titleEn: 'CTPAT / OEA certification',
+        lineEs: 'Generador de aplicación pa\' programas de seguridad fronteriza',
+        lineEn: 'Application generator for trade-security programs',
+        badge: 'business',
+      },
+    ],
+  },
+  {
+    titleEs: 'Por qué Cruzar',
+    titleEn: 'Why Cruzar',
+    subtitleEs: 'Cómo nos comparamos con grupos de Facebook y otras apps',
+    subtitleEn: 'How we stack up against Facebook groups and other apps',
+    features: [
+      {
+        href: '/compare',
+        emoji: '⚖️',
+        titleEs: 'Comparación de funciones',
+        titleEn: 'Feature comparison',
+        lineEs: 'Cruzar vs grupos de Facebook vs Border Times — honesto, fila por fila',
+        lineEn: 'Cruzar vs Facebook groups vs Border Times — honest, row by row',
+      },
     ],
   },
 ]

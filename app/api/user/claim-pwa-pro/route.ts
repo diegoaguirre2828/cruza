@@ -18,13 +18,17 @@ export const dynamic = 'force-dynamic'
 // install date for analytics.
 
 const PWA_PRO_DAYS = 90
-// SECURITY (2026-04-25 audit): require the install record to be at
-// least this old before granting Pro. This forces an attacker to do
-// the work twice with a 24h gap between calls instead of getting Pro
-// for 90 days from a single POST. Combined with the per-account
-// alerts cap, it neutralises the financial-DoS path through
-// Twilio/Resend.
-const REQUIRED_INSTALL_AGE_MS = 24 * 60 * 60 * 1000  // 24h
+// 24h anti-spam gate REMOVED 2026-04-26. Diego's repeated frustration
+// ("again, same issue with the pwa") was this: any user who installed
+// the PWA within the last 24h saw 'free' tier. The gate's stated
+// purpose was financial-DoS prevention against Twilio/Resend through
+// alert-spam, but its effect on legitimate users (a full day of "did
+// the install do anything?" confusion) was much worse. The right
+// defense for SMS/email DoS lives at the alerts-cap layer (per-account
+// alert limits + per-cron rate limits on outbound dispatch) — not at
+// the Pro-grant layer. First call to this endpoint now grants both
+// the 90-day PWA Pro and the lifetime first-1000 promo immediately,
+// no install-age check.
 
 export async function POST() {
   const cookieStore = await cookies()
@@ -48,33 +52,11 @@ export async function POST() {
   const now = new Date()
   const currentTier = profile?.tier || 'free'
 
-  // Two-phase install verification. First call records pwa_installed_at
-  // but does NOT yet grant Pro. Subsequent call ≥24h later promotes the
-  // recorded install into the actual grant. An attacker still gets Pro
-  // eventually if they wait, but the wait + per-account alerts cap means
-  // the attack stops being profitable for SMS/email-spam financial DoS.
-  const installedAt = profile?.pwa_installed_at ? new Date(profile.pwa_installed_at) : null
-  if (!installedAt) {
-    // First time we hear about this install — record it and exit.
+  // Stamp pwa_installed_at on first hit so we have a record of when
+  // the user crossed the install threshold (used by analytics + the
+  // backfill scripts). Not gating on it anymore.
+  if (!profile?.pwa_installed_at) {
     await db.from('profiles').update({ pwa_installed_at: now.toISOString() }).eq('id', user.id)
-    return NextResponse.json({
-      ok: true,
-      granted: false,
-      tier: currentTier,
-      pending: true,
-      next_grant_at: new Date(now.getTime() + REQUIRED_INSTALL_AGE_MS).toISOString(),
-      message: 'Install recorded. Pro will activate after 24 hours of confirmed use.',
-    })
-  }
-  if (now.getTime() - installedAt.getTime() < REQUIRED_INSTALL_AGE_MS) {
-    return NextResponse.json({
-      ok: true,
-      granted: false,
-      tier: currentTier,
-      pending: true,
-      next_grant_at: new Date(installedAt.getTime() + REQUIRED_INSTALL_AGE_MS).toISOString(),
-      message: 'Install verification in progress. Try again in a few hours.',
-    })
   }
 
   const grantExpiresAt = new Date(now.getTime() + PWA_PRO_DAYS * 24 * 60 * 60 * 1000)
