@@ -17,8 +17,8 @@ Standing capability across every project Diego owns. Canonical rules live in the
 **Cruzar-specific audit surfaces:**
 - Build: run `npm run build` — must produce 159 of 159 pages clean
 - Live verify: curl `https://cruzar.app/api/ports` (at least 50 ports), plus `/privacy` and `/pricing`
-- Railway fb-poster: **decommissioned 2026-04-17** — `lastPosted: null` is expected; don't flag. If resurrected, re-verify cycles at 5am/4pm CT.
-- Schema source: `supabase/migrations/` is authoritative (v27 → v40). Top-level `supabase-schema-v*.sql` files are per-version deltas, not full schema dumps. No canonical full-schema file is committed — rebuild from ordered migrations.
+- Railway fb-poster: **decommissioned 2026-04-17** — `lastPosted: null` is expected; don't flag. Native Graph API publisher SHIPPED 2026-04-25 (see /api/social + admin/fb).
+- Schema source: `supabase/migrations/` is authoritative (v27 → v57 as of 2026-04-26). Top-level `supabase-schema-v*.sql` files are per-version deltas, not full schema dumps. No canonical full-schema file is committed — rebuild from ordered migrations.
 - Coord sync: the files `lib/portMeta.ts` and `components/WaitingMode.tsx` must match exactly on every port's coordinates
 - Bilingual coverage: every user-facing string in `app/` pages and `components/` must route through `LangContext`
 - Cron auth: every route under `/api/cron/` must accept both `?secret=` query and `Authorization: Bearer` header
@@ -46,10 +46,11 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 **What it is:** A real-time border crossing wait time app for the US-Mexico border. Shows live wait times from the CBP (Customs and Border Protection) API, lets users submit community reports, tracks historical patterns, and provides fleet management tools for trucking companies.
 **Why it exists:** The only current solution is Facebook border crossing groups — people manually post wait times in group chats. Cruzar replaces this with a structured, real-time, bilingual app.
 **Biggest gap vs. competition:** CONVENIENCE. Facebook groups require you to scroll, read posts, and guess. Cruzar shows the number instantly. This is the core pitch.
-**Status:** Live and deployed. Pre-revenue. ~3-4 test accounts. Goal: 1,000 users in 3 months. First dollar in 3 months.
-**Live URL:** https://cruzar.app (domain purchased, pending activation — temporary: cruzaapp.vercel.app)
+**Status:** Live + iOS in TestFlight (build 20, Apr-25). Pre-revenue, ~62 founders enrolled (PWA-gated lifetime Pro promo, 938 slots open). Goal: 1,000 users in 3 months. First dollar in 3 months.
+**Live URL:** https://cruzar.app (active)
 **GitHub:** https://github.com/diegoaguirre2828/cruza
-**Social media:** No Cruzar social accounts created yet — this is the next marketing step.
+**iOS:** TestFlight build 20 — RevenueCat IAP + native plugins on Capacitor 8.3.1.
+**Social media:** Cruzar FB Page live + Natividad Rivera FB alt; FB native publisher pipeline live.
 
 ---
 
@@ -115,13 +116,17 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 
 ### Backend
 - **API:** Next.js App Router API routes (serverless)
-- **Database:** Supabase (PostgreSQL) with Row-Level Security
-- **Auth:** Supabase Auth (email/password + Google OAuth)
-- **File:** No file storage currently
+- **Database:** Supabase (PostgreSQL) with Row-Level Security. Service-role key migrated to `sb_secret_` 2026-04-23. Anon → `sb_publishable_`. Legacy JWTs DISABLED.
+- **Auth:** Supabase Auth (email/password + Google OAuth + native Sign-in with Apple on iOS)
+- **File storage:** Vercel Blob (port photos, camera frames, social-post images)
+- **Rate limiting + KV:** Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`)
+- **Errors:** Sentry (`@sentry/nextjs`)
+- **MCP server:** Cruzar MCP at `/api/mcp` — `smart_route`, `live_wait`, `best_times`, `briefing` over Streamable HTTP (bearer-auth, tracked in `mcp_keys` table)
+- **iOS native:** Capacitor 8.3.1 + RevenueCat 13.0.1 (IAP) + native plugins (App, Geolocation, Preferences, Push, SplashScreen, StatusBar)
 
 ### Infrastructure
 - **Deployment:** Vercel (Hobby plan — free)
-- **Cron jobs:** cron-job.org (NOT Vercel cron — Vercel free plan limits to daily)
+- **Cron jobs:** cron-job.org (NOT Vercel cron). API wired at `/api/admin/create-cron-jobs` — NEVER tell Diego to add cron-job.org jobs manually.
 - **Cron schedule:** Every 15 minutes for fetch-wait-times and send-alerts
 - **Weekly digest:** Mondays at 8:00 AM
 
@@ -213,7 +218,7 @@ Alert:         "Bajó la espera en [puente] — [X] min ahorita"
 
 ## 8. Database Schema
 
-**Schema source of truth:** `supabase/migrations/` — ordered files `v27-*.sql` through `v40-*.sql` plus `20260416_referrals.sql`. Apply in filename order via Supabase SQL Editor for a fresh environment.
+**Schema source of truth:** `supabase/migrations/` — ordered files `v27-*.sql` through `v57-*.sql` (current as of 2026-04-26) plus `20260416_referrals.sql`. Apply in filename order via the `npm run apply-migration -- <path>` script (hits Supabase Management API via `SUPABASE_PAT`). Never paste SQL to Diego to hand-run.
 
 The top-level `supabase-schema-v12.sql` … `supabase-schema-v26.sql` files are historical per-version deltas, NOT full schema dumps. There is no canonical single-file dump committed. Core tables (`profiles`, `crossing_reports`, `wait_time_readings`, `alert_preferences`, `push_subscriptions`, `drivers`, `shipments`, `saved_crossings`, `subscriptions`, `rewards_*`) were created in pre-v12 files that are no longer in the repo — prod was built incrementally. Re-creating prod from scratch currently requires a Supabase dump; not possible from git alone. If you add new tables, prefer an idempotent `CREATE TABLE IF NOT EXISTS` migration in `supabase/migrations/` with the next `v<n>-` prefix.
 
@@ -283,8 +288,15 @@ The top-level `supabase-schema-v12.sql` … `supabase-schema-v26.sql` files are 
 |---|---|---|
 | `/api/ports/[portId]/history` | GET | Historical wait data |
 | `/api/ports/[portId]/best-times` | GET | Best time to cross by day/hour |
-| `/api/predict` | GET | AI predictions (historical averages) |
+| `/api/predict` | GET | Free-tier predictions (historical averages) |
+| `/api/predictions` | GET | Pro-tier ML forecasts (proxies cruzar-insights-api v0.5.2) |
 | `/api/route-optimize` | GET | Route optimizer for fleet (Pro+) |
+| `/api/smart-route` | GET | MCP-friendly best-port-now lookup |
+| `/api/auto-crossings` | GET/POST | Opt-in bridge + checkpoint detection (v48/v49) |
+| `/api/intelligence` | GET | Operator+Intel tier dashboards (v52) |
+| `/api/mcp` | POST | Cruzar MCP server (Streamable HTTP, bearer-auth) |
+| `/api/social/*` | various | FB native Graph API publisher pipeline |
+| `/api/port-photos`, `/api/cameras` | various | Camera HLS feeds + frame extraction (v43, v55c) |
 
 ### Cron (protected by CRON_SECRET)
 | Route | Schedule | Purpose |
@@ -438,35 +450,45 @@ Examples:
 
 ## 14. Environment Variables
 
-### Local (.env.local) — incomplete, missing some keys
+### Local (.env.local)
 ```
 NEXT_PUBLIC_SUPABASE_URL=          (set)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=     (set)
-SUPABASE_SERVICE_ROLE_KEY=         (set)
-CRON_SECRET=                       (set — do not expose)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=(set — placeholder, verify live)
-STRIPE_SECRET_KEY=                 (set — placeholder, verify live)
-STRIPE_WEBHOOK_SECRET=             (set — placeholder, verify live)
-STRIPE_PRO_PRICE_ID=               (set — placeholder, verify live)
-STRIPE_BUSINESS_PRICE_ID=          (set — placeholder, verify live)
-NEXT_PUBLIC_ADSENSE_CLIENT=        (set — placeholder)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=     (sb_publishable_… as of 2026-04-23)
+SUPABASE_SERVICE_ROLE_KEY=         (sb_secret_… as of 2026-04-23)
+SUPABASE_PAT=                      (Management API token — used by apply-migration script)
+CRON_SECRET=                       (set — rotated 2026-04-23)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=(live)
+STRIPE_SECRET_KEY=                 (live, rotated 2026-04-23)
+STRIPE_WEBHOOK_SECRET=             (live)
+STRIPE_PRO_PRICE_ID=               (live)
+STRIPE_BUSINESS_PRICE_ID=          (live)
+ANTHROPIC_API_KEY=                 (rotated 2026-04-23)
+RESEND_API_KEY=                    (rotated 2026-04-23)
+HERE_API_KEY=                      (rotated 2026-04-23)
+SENTRY_DSN=                        (rotated 2026-04-23)
+UPSTASH_REDIS_REST_URL=            (set)
+UPSTASH_REDIS_REST_TOKEN=          (set)
+BLOB_READ_WRITE_TOKEN=             (Vercel Blob)
+FACEBOOK_PAGE_ID=                  (FB Graph API publisher)
+FACEBOOK_PAGE_ACCESS_TOKEN=        (long-lived page token)
+CRUZAR_INSIGHTS_API_KEY=           (bearer for ML forecast endpoint)
 ```
 
 ### Vercel (production — all set)
-All of the above PLUS:
+All of the above PLUS push + email:
 ```
-RESEND_API_KEY=                    (set — email alerts)
-RESEND_FROM_EMAIL=                 (set — Cruzar Alerts <alerts@cruzar.app>)
-VAPID_PUBLIC_KEY=                  (set — push notifications)
-VAPID_PRIVATE_KEY=                 (set — push notifications)
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=      (set)
-NEXT_PUBLIC_APP_URL=               (set)
-OWNER_EMAIL=                       (set)
+VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / NEXT_PUBLIC_VAPID_PUBLIC_KEY
+RESEND_FROM_EMAIL=Cruzar Alerts <alerts@cruzar.app>
+NEXT_PUBLIC_APP_URL=https://cruzar.app
+OWNER_EMAIL
 ```
 
+### Verification before revenue claims
+Before saying a flow is ready: `vercel env pull` and confirm keys exist + curl the live endpoint. Autosites had Stripe unwired in prod — every buy button 503'd — caught only on smoke test. Same lesson applies here.
+
 ### Known Gaps
-- Emails send from `Cruzar Alerts <alerts@cruzar.app>` — domain verified in Resend, delivers to real users.
-- Stripe keys may be placeholder values — verify before charging real users.
+- Emails: domain verified in Resend, delivers to real users.
+- Stripe: live mode, all 7 leaked keys rotated 2026-04-23 (see `project_cruzar_security_fixes_shipped_20260423.md`). DO NOT re-propose rotation.
 - Custom domain: cruzar.app (live).
 
 ---
@@ -510,27 +532,32 @@ Expected response: `{"saved": 52, "at": "..."}`
 - Map with color-coded dots ✅
 - Geolocation "Near Me" ✅
 - Language toggle (ES/EN) ✅
-- User auth (email + Google) ✅
-- Push notification infrastructure ✅
+- User auth (email + Google + native SIWA on iOS) ✅
+- Push notification infrastructure (multi-device per v40) ✅
 - Cron data collection ✅
 - Video generator ✅
+- **Auto-crossing detection** (v48+v49) — opt-in bridge + inland checkpoint geofence, SHIPPED 2026-04-25
+- **Cruzar Insights ML** — v0.5.2 RandomForest models, 52-port coverage, served from `cruzar-insights-api.vercel.app/api/forecast`. Repo: `C:\Users\dnawa\cruzar-insights-ml`
+- **Cruzar MCP server** — `/api/mcp` (smart_route, live_wait, best_times, briefing) — bearer-auth via `mcp_keys`
+- **Native FB Graph API publisher** (v50-social-posts-fb-publish) — replaced Make.com loop
+- **Camera HLS feeds + frame extraction** (v43, v55c) — ffmpeg-static for AI-readable border cams
+- **Officer staffing alerts** (v55d → v56) — leading-indicator Pro-tier push
+- **First-1000 lifetime Pro promo** (v37 + v51 + v57) — gated to PWA install
+- **Operator + Express Cert tier** (v50) — phase 1 auto-crossing infrastructure
+- **3-panel home swipe** — Cerca / Mi puente / Comunidad (commit c2f7745)
+- **Stripe live + rotated** ✅
+- **Anthropic SDK** (`@anthropic-ai/sdk`) — used for AI features
 
-### Unverified / Potentially Broken
-- Stripe payments — keys may be placeholders, payment flow untested
-- Email alerts to real users — needs custom Resend domain
-- SMS via Twilio — configured but untested
-- ~~`driver_events` table~~ — 2026-04-18 probe confirmed table does not exist in any schema AND no code actually references it. Ghost claim from earlier memory. Resolved — no action needed.
+### Open / In-flight
 - Team collaboration — schema exists, no UI built
-- Rewards system — businesses seeded with `approved=false`, no admin UI to approve
-- AI predictions label — it's actually historical averages, rename to "historical patterns"
-- Data export (CSV) — route exists, implementation may be incomplete
+- Rewards system — businesses seeded with `approved=false`, admin UI partially built
+- AI predictions label — historical averages on free tier; v0.5.2 ML forecasts on Pro+
+- Pharr-Reynosa ML — degraded → CBP climatology fallback (regime shift)
+- iOS submission — TestFlight build 20 in Apple review (last status check Apr-25)
 
-### Missing Features (Prioritized)
-1. Custom domain (not a code issue — needs domain purchase)
-2. Facebook Page API auto-posting
-3. More video template types (tip card, best-time, alert)
-4. Resend email domain verification
-5. Stripe live payment testing
+### Shelved / DO NOT re-propose
+- Play Console closed test gate (12-tester/14-day rule infeasible solo) — `project_cruzar_play_console_closed_test_gate_20260423.md`. iOS-only mobile.
+- Cruzar × Aguirre family insurance pairing — Nevada agency, RGV product, zero overlap. TIER-0 rule.
 
 ---
 
