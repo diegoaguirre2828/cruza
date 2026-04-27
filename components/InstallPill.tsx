@@ -65,7 +65,7 @@ export function InstallPill() {
     >
       <span className="text-base leading-none">📲</span>
       <span className="text-[11px] font-black whitespace-nowrap">
-        {es ? 'Instalar · 3 meses Pro' : 'Install · 3mo Pro'}
+        {es ? 'Instalar · Pro de por vida' : 'Install · Lifetime Pro'}
       </span>
       <button
         type="button"

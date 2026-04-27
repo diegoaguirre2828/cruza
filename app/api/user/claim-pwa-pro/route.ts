@@ -41,7 +41,7 @@ export async function POST() {
   // Read current state
   const { data: profile } = await db
     .from('profiles')
-    .select('tier, pro_via_pwa_until, pwa_installed_at')
+    .select('tier, pro_via_pwa_until, pwa_installed_at, promo_first_1000_until')
     .eq('id', user.id)
     .single()
 
@@ -95,6 +95,27 @@ export async function POST() {
   }
   if (willUpgradeTier) updates.tier = 'pro'
 
+  // First-1000 founding-member lifetime promo. Moved here from
+  // handle_new_user (see v57 migration). Granted ONLY when the user has
+  // verified their PWA install via this endpoint AND there's still a
+  // slot under the global 1000 cap AND they don't already hold the
+  // grant. Existing pre-v57 grants on the 267 backfilled users are
+  // grandfathered and won't be re-granted (the !already check below).
+  let promoGranted = false
+  if (!profile?.promo_first_1000_until) {
+    const { count: globalPromoCount } = await db
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .not('promo_first_1000_until', 'is', null)
+    if ((globalPromoCount ?? 0) < 1000) {
+      // 100-year window matches v51 / v37 convention — effectively
+      // permanent founding-member status.
+      const promoExpiresAt = new Date(now.getTime() + 100 * 365 * 24 * 60 * 60 * 1000)
+      updates.promo_first_1000_until = promoExpiresAt.toISOString()
+      promoGranted = true
+    }
+  }
+
   const { error } = await db.from('profiles').update(updates).eq('id', user.id)
   if (error) {
     console.error('claim-pwa-pro: update failed', error)
@@ -107,5 +128,6 @@ export async function POST() {
     tier: willUpgradeTier ? 'pro' : currentTier,
     pro_via_pwa_until: newExpiry.toISOString(),
     days: PWA_PRO_DAYS,
+    founding_member: promoGranted,
   })
 }

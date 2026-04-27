@@ -54,6 +54,10 @@ const MetaPixel = dynamic(
   () => import('./MetaPixel').then(m => m.MetaPixel),
   { ssr: false }
 )
+const PostSignupInstallNudge = dynamic(
+  () => import('./PostSignupInstallNudge').then(m => m.PostSignupInstallNudge),
+  { ssr: false }
+)
 
 export function LazyGlobalOverlays() {
   const [ready, setReady] = useState(false)
@@ -88,6 +92,7 @@ export function LazyGlobalOverlays() {
       <TwaPromoBanner />
       <GlobalPushPromptOnAlertCreated />
       <MetaPixel />
+      <PostSignupInstallNudge />
     </>
   )
 }

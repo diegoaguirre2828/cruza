@@ -142,13 +142,13 @@ export function FirstVisitInstallSheet() {
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/25 border border-amber-300/50 mb-3">
             <span className="text-sm">🎁</span>
             <span className="text-[11px] font-black text-amber-100 uppercase tracking-wide">
-              {es ? '3 meses Pro gratis' : '3 months Pro free'}
+              {es ? 'Pro de por vida · Primeros 1,000' : 'Lifetime Pro · First 1,000'}
             </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white leading-[1.05]">
             {es
-              ? 'Agrega Cruzar a tu pantalla de inicio y desbloquea todo Pro — gratis por 90 días.'
-              : 'Add Cruzar to your home screen and unlock all of Pro — free for 90 days.'}
+              ? 'Agrega Cruzar a tu pantalla de inicio — Pro de por vida pa\' los primeros 1,000.'
+              : 'Add Cruzar to your home screen — lifetime Pro for the first 1,000 founders.'}
           </h2>
           <ul className="mt-3 space-y-1.5 text-sm text-blue-100">
             <li className="flex items-start gap-2">
