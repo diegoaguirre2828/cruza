@@ -6,6 +6,7 @@ import { Gift, X } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
 import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
+import { useFoundingSlots } from '@/lib/useFoundingSlots'
 import { trackEvent } from '@/lib/trackEvent'
 
 // Persistent install nudge for SIGNED-IN users without the PWA. The
@@ -32,13 +33,18 @@ export function PostSignupInstallNudge() {
   const { user, loading: authLoading } = useAuth()
   const { tier } = useTier()
   const { lang } = useLang()
+  const { full: capFull } = useFoundingSlots()
   const es = lang === 'es'
   const [show, setShow] = useState(false)
 
   useEffect(() => {
     if (authLoading) return
     if (!user) return
-    if (tier === 'business') return
+    // Only nudge users who'd actually benefit from the install grant.
+    // Pro/Business have already converted; pestering them about a
+    // "lifetime Pro" carrot they already paid for is annoying. Free
+    // users (no grant) are the only audience for this banner.
+    if (tier !== 'free') return
     if (typeof window === 'undefined') return
 
     const isStandalone =
@@ -84,12 +90,14 @@ export function PostSignupInstallNudge() {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-black text-white leading-tight">
-          {es ? '🎁 Pro de por vida — instala la app' : '🎁 Lifetime Pro — install the app'}
+          {capFull
+            ? (es ? '🎁 3 meses Pro — instala la app' : '🎁 3 months Pro — install the app')
+            : (es ? '🎁 Pro de por vida — instala la app' : '🎁 Lifetime Pro — install the app')}
         </p>
         <p className="text-[10px] text-white/90 mt-0.5 leading-snug">
-          {es
-            ? 'Primeros 1,000 que se registren e instalen · alertas + cámaras + favoritos'
-            : 'First 1,000 to sign up + install · alerts + cameras + favorites'}
+          {capFull
+            ? (es ? 'Alertas + cámaras + favoritos por 3 meses gratis' : 'Alerts + cameras + favorites free for 3 months')
+            : (es ? 'Primeros 1,000 que se registren e instalen · alertas + cámaras + favoritos' : 'First 1,000 to sign up + install · alerts + cameras + favorites')}
         </p>
       </div>
       <span className="flex-shrink-0 bg-white text-orange-600 text-[11px] font-black px-3 py-1.5 rounded-full whitespace-nowrap">

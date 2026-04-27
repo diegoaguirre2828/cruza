@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
+import { useFoundingSlots } from '@/lib/useFoundingSlots'
 
 // Compact install CTA pill for the home header row. Shown whenever
 // the app is NOT running as an installed PWA. Replaces the bottom-
@@ -24,6 +25,7 @@ const DISMISS_KEY = 'cruzar_install_pill_dismissed_at'
 
 export function InstallPill() {
   const { lang } = useLang()
+  const { full: capFull } = useFoundingSlots()
   const es = lang === 'es'
   const [show, setShow] = useState(false)
 
@@ -65,7 +67,9 @@ export function InstallPill() {
     >
       <span className="text-base leading-none">📲</span>
       <span className="text-[11px] font-black whitespace-nowrap">
-        {es ? 'Instalar · Pro de por vida' : 'Install · Lifetime Pro'}
+        {capFull
+          ? (es ? 'Instalar · 3 meses Pro' : 'Install · 3mo Pro')
+          : (es ? 'Instalar · Pro de por vida' : 'Install · Lifetime Pro')}
       </span>
       <button
         type="button"

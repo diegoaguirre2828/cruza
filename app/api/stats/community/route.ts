@@ -15,7 +15,11 @@ export const revalidate = 60
 //   reportsLast7d   — count of crossing_reports in last 7 days
 //   reportsLast24h  — count of crossing_reports in last 24 hours
 //   topReporters    — up to 5 public display names + points, ordered by reports_count
-//   promoRemaining  — max(0, 1000 - totalUsers) — drives the "X cupos restantes" strip
+//   promoRemaining  — max(0, 1000 - active promo holders). Counts rows
+//                     where promo_first_1000_until is set, NOT total
+//                     signups. Matters because v57 (2026-04-26) gated
+//                     the promo to PWA install + the 211-user revoke
+//                     means signups >> promo holders.
 
 interface StatsResponse {
   totalUsers: number
@@ -32,10 +36,11 @@ export async function GET(): Promise<Response> {
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const [{ count: totalUsers }, { count: reports7 }, { count: reports24 }, topRes] = await Promise.all([
+  const [{ count: totalUsers }, { count: reports7 }, { count: reports24 }, { count: promoHolders }, topRes] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
     db.from('crossing_reports').select('id', { count: 'exact', head: true }).gte('created_at', since7d),
     db.from('crossing_reports').select('id', { count: 'exact', head: true }).gte('created_at', since24h),
+    db.from('profiles').select('id', { count: 'exact', head: true }).not('promo_first_1000_until', 'is', null),
     db.from('profiles').select('display_name, points, reports_count').order('reports_count', { ascending: false }).limit(5),
   ])
 
@@ -52,7 +57,7 @@ export async function GET(): Promise<Response> {
     reportsLast7d: reports7 || 0,
     reportsLast24h: reports24 || 0,
     topReporters,
-    promoRemaining: Math.max(0, 1000 - (totalUsers || 0)),
+    promoRemaining: Math.max(0, 1000 - (promoHolders || 0)),
     generatedAt: new Date().toISOString(),
   }
 
