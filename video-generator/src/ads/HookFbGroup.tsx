@@ -6,6 +6,8 @@ import {
   useVideoConfig,
   Easing,
   Sequence,
+  OffthreadVideo,
+  staticFile,
 } from 'remotion';
 import { z } from 'zod';
 
@@ -164,60 +166,92 @@ function Scene2Frustration({ localFrame }: { localFrame: number }) {
 
   const titleShake = Math.sin(localFrame / 4) * 2;
 
+  // Subtle Ken-Burns zoom on the b-roll so a 5s clip feels less static
+  // when it loops/holds for the 3.5s scene window.
+  const videoScale = interpolate(localFrame, [0, 105], [1.0, 1.08], {
+    easing: Easing.inOut(Easing.cubic),
+  });
+
   return (
-    <AbsoluteFill
-      style={{
-        background: 'linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 60px',
-        opacity,
-      }}
-    >
-      <div style={{ transform: `translateX(${titleShake}px)` }}>
+    <AbsoluteFill style={{ opacity, background: '#000' }}>
+      {/* AI b-roll background — POV inside car at border crossing.
+          Cinematic frustration shot. Generated via Luma 2026-04-25. */}
+      <AbsoluteFill style={{ transform: `scale(${videoScale})` }}>
+        <OffthreadVideo
+          src={staticFile('broll/frustration-1.mp4')}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          muted
+          startFrom={0}
+          // Loop the clip if the scene runs longer than the source.
+          // Luma free-tier outputs are 5s; scene is 3.5s so no loop
+          // needed today, but keeps behavior safe if scene grows.
+        />
+      </AbsoluteFill>
+
+      {/* Dark gradient overlay so text stays legible over any frame */}
+      <AbsoluteFill
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 35%, rgba(0,0,0,0.75) 100%)',
+        }}
+      />
+
+      {/* Text stack — same copy as before, on top of video */}
+      <AbsoluteFill
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 60px',
+        }}
+      >
+        <div style={{ transform: `translateX(${titleShake}px)` }}>
+          <div
+            style={{
+              fontSize: 76,
+              fontWeight: 900,
+              color: 'white',
+              textAlign: 'center',
+              lineHeight: 1,
+              letterSpacing: -1.5,
+              marginBottom: 32,
+              textShadow: '0 4px 24px rgba(0,0,0,0.85)',
+            }}
+          >
+            Respuestas
+            <br />
+            contradictorias.
+          </div>
+        </div>
         <div
           style={{
-            fontSize: 64,
-            fontWeight: 900,
-            color: 'white',
+            fontSize: 44,
+            fontWeight: 800,
+            color: '#fecaca',
             textAlign: 'center',
-            lineHeight: 1,
-            letterSpacing: -1,
-            marginBottom: 40,
+            lineHeight: 1.2,
+            marginBottom: 24,
+            textShadow: '0 2px 14px rgba(0,0,0,0.8)',
           }}
         >
-          Respuestas
-          <br />
-          contradictorias.
+          Tiempos de hace 2 horas.
         </div>
-      </div>
-      <div
-        style={{
-          fontSize: 42,
-          fontWeight: 700,
-          color: '#fca5a5',
-          textAlign: 'center',
-          lineHeight: 1.2,
-          marginBottom: 30,
-        }}
-      >
-        Tiempos de hace 2 horas.
-      </div>
-      <div
-        style={{
-          fontSize: 36,
-          fontWeight: 600,
-          color: '#fca5a5',
-          textAlign: 'center',
-          lineHeight: 1.3,
-        }}
-      >
-        Nadie sabe qué carril
-        <br />
-        está moviendo.
-      </div>
+        <div
+          style={{
+            fontSize: 38,
+            fontWeight: 700,
+            color: '#fecaca',
+            textAlign: 'center',
+            lineHeight: 1.3,
+            textShadow: '0 2px 14px rgba(0,0,0,0.8)',
+          }}
+        >
+          Nadie sabe qué carril
+          <br />
+          está moviendo.
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 }
@@ -472,19 +506,6 @@ function Scene5Cta({ localFrame }: { localFrame: number }) {
         }}
       >
         Gratis · En vivo · Sin grupos
-      </div>
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 700,
-          color: '#fcd34d',
-          background: 'rgba(0,0,0,0.25)',
-          padding: '12px 28px',
-          borderRadius: 999,
-          letterSpacing: 1,
-        }}
-      >
-        🎁 Primeros 1,000 · Pro gratis 3 meses
       </div>
     </AbsoluteFill>
   );
