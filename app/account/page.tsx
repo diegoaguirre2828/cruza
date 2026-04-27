@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/useAuth'
 import { createClient } from '@/lib/auth'
 import { BADGES } from '@/lib/points'
 import { useLang } from '@/lib/LangContext'
-import { ArrowLeft, Save, CreditCard, LogOut, User, Building2, FileText, Trophy, Navigation } from 'lucide-react'
+import { ArrowLeft, Save, CreditCard, LogOut, User, Building2, FileText, Trophy, Navigation, Brain, Trash2 } from 'lucide-react'
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth()
@@ -36,6 +36,19 @@ export default function AccountPage() {
   const [portalError, setPortalError] = useState('')
   const [autoOptIn, setAutoOptIn] = useState(false)
   const [autoOptInSaving, setAutoOptInSaving] = useState(false)
+  interface BrainRoutine {
+    port_id: string
+    port_name: string
+    dow: number
+    hour: number
+    wake_up_hour_ct: number
+    sample_count: number
+  }
+  const [brainOptIn, setBrainOptIn] = useState(false)
+  const [brainSaving, setBrainSaving] = useState(false)
+  const [brainRoutines, setBrainRoutines] = useState<BrainRoutine[]>([])
+  const [brainWiping, setBrainWiping] = useState(false)
+  const [brainLastSent, setBrainLastSent] = useState<string | null>(null)
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login')
@@ -55,7 +68,32 @@ export default function AccountPage() {
       })
       setAutoOptIn(!!d.profile?.auto_geofence_opt_in)
     })
+    fetch('/api/pattern-brain/preview').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) return
+      setBrainOptIn(!!d.opt_in)
+      setBrainRoutines(d.routines || [])
+      setBrainLastSent(d.last_sent_at ?? null)
+    })
   }, [user])
+
+  async function toggleBrainOptIn() {
+    const next = !brainOptIn
+    setBrainOptIn(next)
+    setBrainSaving(true)
+    await fetch('/api/pattern-brain/preview', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ opt_in: next }),
+    })
+    setBrainSaving(false)
+  }
+
+  async function wipeBrainRoutines() {
+    setBrainWiping(true)
+    await fetch('/api/pattern-brain/preview', { method: 'DELETE' })
+    setBrainRoutines([])
+    setBrainWiping(false)
+  }
 
   async function toggleAutoOptIn() {
     const next = !autoOptIn
@@ -330,6 +368,89 @@ export default function AccountPage() {
           >
             {lang === 'es' ? 'Cómo manejamos estos datos' : 'How we handle this data'}
           </Link>
+        </div>
+
+        {/* Pattern Brain — Pillar 1: wake-up + routine */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-4">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex items-start gap-2">
+              <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  {lang === 'es' ? 'Pattern Brain — despertador del puente' : 'Pattern Brain — bridge wake-up'}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {lang === 'es'
+                    ? 'Si reportas espera en el mismo puente a la misma hora varias veces, te avisamos 1 hora antes la próxima vez. Solo tú lo ves. Apaga cuando quieras.'
+                    : 'If you report waits at the same bridge and hour multiple times, we ping you 1 hour before next time. Only you see it. Turn off anytime.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={brainOptIn}
+              onClick={toggleBrainOptIn}
+              disabled={brainSaving}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                brainOptIn ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  brainOptIn ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {brainOptIn && brainRoutines.length === 0 && (
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-3">
+              {lang === 'es'
+                ? 'Aún no detectamos un patrón. Necesitamos al menos 3 reportes en el mismo puente y la misma hora.'
+                : "No pattern detected yet. We need at least 3 reports at the same bridge × hour."}
+            </p>
+          )}
+
+          {brainOptIn && brainRoutines.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {lang === 'es' ? `Rutinas detectadas (${brainRoutines.length})` : `Detected routines (${brainRoutines.length})`}
+              </p>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {brainRoutines.map((r) => {
+                  const dowName = (lang === 'es'
+                    ? ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+                    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])[r.dow]
+                  const hourLabel = `${String(r.hour).padStart(2, '0')}:00`
+                  const wakeLabel = `${String(r.wake_up_hour_ct).padStart(2, '0')}:00`
+                  return (
+                    <div key={`${r.port_id}-${r.dow}-${r.hour}`} className="flex items-center justify-between text-xs bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{r.port_name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {dowName} {hourLabel} · {lang === 'es' ? 'aviso' : 'wake-up'} {wakeLabel} CT · n={r.sample_count}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {brainLastSent && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                  {lang === 'es' ? 'Último aviso:' : 'Last ping:'} {new Date(brainLastSent).toLocaleString(lang === 'es' ? 'es-MX' : 'en-US')}
+                </p>
+              )}
+              <button
+                onClick={wipeBrainRoutines}
+                disabled={brainWiping}
+                className="flex items-center gap-1.5 text-[11px] text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-3 h-3" />
+                {brainWiping ? (lang === 'es' ? 'Borrando…' : 'Clearing…') : (lang === 'es' ? 'Borrar rutinas detectadas' : 'Clear detected routines')}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Account actions */}
