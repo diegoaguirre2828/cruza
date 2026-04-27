@@ -13,6 +13,7 @@
 // week", "IAB rescue rate trend", etc.
 
 import { track as vercelTrack } from '@vercel/analytics'
+import { captureLegacy } from './tracking/track'
 
 const SESSION_ID_KEY = 'cruzar_session_id_v1'
 
@@ -63,5 +64,13 @@ export function trackEvent(
       }),
       keepalive: true,
     }).catch(() => { /* ignore */ })
+  } catch { /* ignore */ }
+
+  // Fire-and-forget the PostHog sink. captureLegacy() applies the legacy
+  // alias map so existing snake_case names route to the dotted PostHog
+  // event names without editing any call site. No-op when PostHog isn't
+  // configured (preview deploys, local dev).
+  try {
+    captureLegacy(eventName, props)
   } catch { /* ignore */ }
 }

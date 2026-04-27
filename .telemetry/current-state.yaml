@@ -1,0 +1,354 @@
+# Current State: reverse-engineered tracking inventory
+# Scanned: 2026-04-26
+# SDK: in-house (Vercel Analytics + custom server-side app_events table)
+# Note: 81 trackEvent() call sites across 37 files; share + click trackers in addition.
+
+sdk:
+  product_analytics: none-installed
+  in_house_wrapper:
+    file: lib/trackEvent.ts
+    sinks:
+      - "@vercel/analytics (track function — page-view product, NOT a full product analytics tool)"
+      - "POST /api/events/track -> Supabase table app_events (custom server log)"
+  related_in_house_modules:
+    - lib/trackClick.ts (POST /api/track/click)
+    - lib/trackShare.ts (POST /api/user/share-event)
+    - lib/useSessionPing.ts (POST /api/user/touch — heartbeat for last_seen_at, NOT events)
+  external_observability:
+    - "@sentry/nextjs (error monitoring + 10% perf traces + replay-on-error)"
+    - "@vercel/speed-insights (Web Vitals)"
+
+events:
+  # ---- Inbound / source ----
+  - name: inbound_source_tag
+    status: LIVE
+    locations: [app/g/page.tsx:36]
+    properties: [source, path]
+
+  # ---- Home / navigation ----
+  - name: home_visited
+    status: LIVE
+    locations: [components/HomeClient.tsx:266]
+    properties: [has_saved_bridge]
+  - name: home_header_toggled
+    status: LIVE
+    locations: [components/HomeClient.tsx:306]
+    properties: [open]
+  - name: home_action_taken
+    status: LIVE
+    locations: [components/HomeClient.tsx:190, components/HeroTriad.tsx:156, components/HeroTriad.tsx:186]
+    properties: [action, port_id, position, badges]
+  - name: home_panel_changed
+    status: LIVE
+    locations: [components/HomeSwipe.tsx:75, components/HomeSwipe.tsx:90]
+    properties: [panel, via]
+  - name: direction_toggled
+    status: LIVE
+    locations: [components/PortList.tsx:80]
+    properties: [direction]
+
+  # ---- Reports / community ----
+  - name: report_submitted
+    status: LIVE
+    locations:
+      - components/JustCrossedPrompt.tsx:68
+      - components/PortList.tsx:234
+      - components/ReportForm.tsx:299
+      - components/WaitingMode.tsx:167
+    properties: [port_id, type, wait_minutes, source]
+    notes: "Property shape varies between call sites — not all sites pass identical keys."
+  - name: report_prompt_tapped
+    status: LIVE
+    locations: [components/ReportBridgePrompt.tsx:39]
+    properties: [source, has_favorite]
+  - name: port_photo_submitted
+    status: LIVE
+    locations: [components/SubmitBridgePhoto.tsx:138]
+    properties: [port_id]
+  - name: wait_confirm_vote
+    status: LIVE
+    locations: [components/WaitConfirmStrip.tsx:76]
+    properties: [port_id, accurate, actual_wait]
+
+  # ---- Auto-crossing / WaitingMode ----
+  - name: auto_crossing_started
+    status: LIVE
+    locations: [components/WaitingMode.tsx:188]
+    properties: [port_id]
+  - name: auto_crossing_confirmed
+    status: LIVE
+    locations: [components/WaitingMode.tsx:211]
+    properties: [port_id]
+  - name: auto_crossing_rejected
+    status: LIVE
+    locations: [components/WaitingMode.tsx:227]
+    properties: [port_id]
+
+  # ---- Alerts ----
+  - name: alert_created
+    status: LIVE
+    locations:
+      - app/dashboard/page.tsx:206
+      - components/LiveCameraTile.tsx:95
+      - app/port/[portId]/PortDetailClient.tsx:340
+    properties: [port_id, threshold, lane_type, source]
+  - name: alert_nudge_shown
+    status: LIVE
+    locations: [app/dashboard/page.tsx:806]
+    properties: []
+  - name: one_tap_alert_tapped
+    status: LIVE
+    locations: [components/OneTapAlertCard.tsx:47]
+    properties: [port_id, tier]
+  - name: one_tap_alert_created
+    status: LIVE
+    locations: [components/OneTapAlertCard.tsx:61]
+    properties: [port_id, tier]
+
+  # ---- Push permission ----
+  - name: push_prompt_allow_clicked
+    status: LIVE
+    locations: [components/PushPermissionPrompt.tsx:45]
+    properties: [bridge, source]
+  - name: push_prompt_granted
+    status: LIVE
+    locations: [components/PushPermissionPrompt.tsx:51]
+    properties: [bridge, source]
+  - name: push_prompt_denied
+    status: LIVE
+    locations: [components/PushPermissionPrompt.tsx:59]
+    properties: [bridge, source]
+  - name: push_prompt_dismissed
+    status: LIVE
+    locations: [components/PushPermissionPrompt.tsx:69]
+    properties: [bridge, source]
+
+  # ---- Install / PWA / iOS ----
+  - name: install_sheet_shown
+    status: LIVE
+    locations: [components/FirstVisitInstallSheet.tsx:113]
+    properties: []
+  - name: install_sheet_dismissed
+    status: LIVE
+    locations: [components/FirstVisitInstallSheet.tsx:121]
+    properties: [expanded]
+  - name: install_prompt_available
+    status: LIVE
+    locations: [components/InstallGuide.tsx:48, components/InstallGuide.tsx:57]
+    properties: [variant, platform]
+  - name: install_completed
+    status: LIVE
+    locations: [components/InstallGuide.tsx:64]
+    properties: [variant]
+  - name: install_button_tapped
+    status: LIVE
+    locations: [components/InstallGuide.tsx:83]
+    properties: [variant]
+  - name: install_prompt_choice
+    status: LIVE
+    locations: [components/InstallGuide.tsx:87]
+    properties: [variant, outcome]
+  - name: ios_install_page_view
+    status: LIVE
+    locations: [app/ios-install/page.tsx:32]
+    properties: []
+  - name: ios_install_copy_link
+    status: LIVE
+    locations: [app/ios-install/page.tsx:46]
+    properties: []
+  - name: ios_install_whatsapp
+    status: LIVE
+    locations: [app/ios-install/page.tsx:58]
+    properties: []
+  - name: ios_install_skip
+    status: LIVE
+    locations: [app/ios-install/page.tsx:62]
+    properties: []
+  - name: post_signup_install_nudge_shown
+    status: LIVE
+    locations: [components/PostSignupInstallNudge.tsx:66]
+    properties: []
+  - name: post_signup_install_nudge_dismissed
+    status: LIVE
+    locations: [components/PostSignupInstallNudge.tsx:75]
+    properties: []
+  - name: post_signup_install_nudge_tapped
+    status: LIVE
+    locations: [components/PostSignupInstallNudge.tsx:84]
+    properties: []
+  - name: pwa_welcome_install_tapped
+    status: LIVE
+    locations: [components/PwaFirstLaunchWelcome.tsx:88]
+    properties: [platform]
+  - name: pwa_welcome_install_choice
+    status: LIVE
+    locations: [components/PwaFirstLaunchWelcome.tsx:100]
+    properties: [outcome]
+
+  # ---- TWA banner (Android) ----
+  - name: twa_banner_shown
+    status: LIVE
+    locations: [components/TwaPromoBanner.tsx:43]
+    properties: [platform]
+  - name: twa_banner_install_clicked
+    status: LIVE
+    locations: [components/TwaPromoBanner.tsx:49]
+    properties: [platform]
+  - name: twa_banner_dismissed
+    status: LIVE
+    locations: [components/TwaPromoBanner.tsx:54]
+    properties: [platform]
+
+  # ---- In-app-browser banner ----
+  - name: iab_banner_shown
+    status: LIVE
+    locations: [components/InAppBrowserBanner.tsx:64]
+    properties: [platform]
+  - name: iab_banner_dismissed
+    status: LIVE
+    locations: [components/InAppBrowserBanner.tsx:72]
+    properties: [platform]
+  - name: iab_banner_escape
+    status: LIVE
+    locations: [components/InAppBrowserBanner.tsx:77]
+    properties: [platform]
+
+  # ---- PWA grant claim ----
+  - name: pwa_grant_claimed
+    status: LIVE
+    locations: [components/PWASetup.tsx:64]
+    properties: [granted, days]
+  - name: pwa_grant_pending
+    status: LIVE
+    locations: [components/PWASetup.tsx:74, components/ClaimProInPwa.tsx:116]
+    properties: [next_grant_at]
+  - name: pwa_grant_claimed_manual
+    status: LIVE
+    locations: [components/ClaimProInPwa.tsx:105]
+    properties: [granted, days]
+  - name: pwa_grant_already_paid
+    status: LIVE
+    locations: [components/ClaimProInPwa.tsx:130]
+    properties: []
+
+  # ---- Camaras CTA ----
+  - name: camaras_install_cta_shown
+    status: LIVE
+    locations: [components/CamarasStickyInstallCta.tsx:86]
+    properties: [platform]
+  - name: camaras_install_cta_dismissed
+    status: LIVE
+    locations: [components/CamarasStickyInstallCta.tsx:92]
+    properties: [platform]
+  - name: camaras_install_cta_clicked
+    status: LIVE
+    locations: [components/CamarasStickyInstallCta.tsx:97]
+    properties: [platform]
+  - name: camaras_install_cta_choice
+    status: LIVE
+    locations: [components/CamarasStickyInstallCta.tsx:110]
+    properties: [platform, outcome]
+  - name: camaras_sticky_shown
+    status: LIVE
+    locations: [components/StickyCamarasCta.tsx:55]
+    properties: []
+  - name: camaras_sticky_dismissed
+    status: LIVE
+    locations: [components/StickyCamarasCta.tsx:62]
+    properties: []
+  - name: camaras_sticky_clicked
+    status: LIVE
+    locations: [components/StickyCamarasCta.tsx:85]
+    properties: []
+
+  # ---- Conversion ribbon / nudges ----
+  - name: conversion_ribbon_dismissed
+    status: LIVE
+    locations: [components/ConversionRibbon.tsx:114]
+    properties: [variant]
+  - name: conversion_ribbon_tapped
+    status: LIVE
+    locations: [components/ConversionRibbon.tsx:122]
+    properties: [variant]
+  - name: planner_cta_tapped
+    status: LIVE
+    locations: [components/PlannerCTACard.tsx:22]
+    properties: [source]
+  - name: insights_pill_tapped
+    status: LIVE
+    locations: [components/InsightsPill.tsx:23]
+    properties: [source]
+
+  # ---- FB / external links ----
+  - name: fb_page_follow_click
+    status: LIVE
+    locations: [components/FbPagePill.tsx:26, components/FbPageFollowCard.tsx:35]
+    properties: [source, variant]
+  - name: fb_page_pill_tap
+    status: LIVE
+    locations: [components/FbPagePill.tsx:31]
+    properties: [source]
+
+  # ---- Affiliate ----
+  - name: affiliate_clicked
+    status: LIVE
+    locations:
+      - app/welcome/page.tsx:583
+      - app/camaras/page.tsx:369
+      - app/camaras/page.tsx:389
+      - app/servicios/page.tsx:90
+      - app/port/[portId]/PortDetailClient.tsx:1152
+    properties: [partner, slot, port_id]
+    notes: "Property shape varies — not all callers pass identical keys."
+  - name: servicios_page_view
+    status: LIVE
+    locations: [app/servicios/page.tsx:48]
+    properties: []
+
+# Track-share / Track-click — separate codepaths (server endpoints, not Vercel Analytics)
+share_events:
+  endpoint: POST /api/user/share-event
+  callers:
+    - components/HeroLiveDelta.tsx (copy, whatsapp, facebook channels)
+    - components/SharePrompt.tsx (native, native_success, copy, whatsapp)
+    - components/PortCard.tsx (native)
+    - components/ReportForm.tsx (whatsapp, copy)
+    - components/LiveCameraTile.tsx (native)
+    - components/JustCrossedPrompt.tsx (whatsapp, copy)
+    - app/port/[portId]/PortDetailClient.tsx (native, copy)
+  payload: {channel, context}
+
+click_events:
+  endpoint: POST /api/track/click
+  callers:
+    - app/negocios/page.tsx (phone, whatsapp, website)
+  payload: {business_id, click_type, port_id?, referrer?} OR {url, context?, port_id?}
+
+identity:
+  identify_calls: []
+  group_calls: []
+  observed_user_resolution:
+    - "Server route /api/events/track resolves auth.getUser() at write time and stamps app_events.user_id when available — analogous to identify but only at write time, no traits set."
+    - "Server route /api/user/touch upserts profile traits (last_seen_device, last_seen_os, last_seen_browser, install_state, first_seen_at, last_seen_at) on signed-in users via heartbeat."
+  reset_on_logout: not_observed
+  session_id_cookie: "sessionStorage key cruzar_session_id_v1, generated client-side, base36 timestamp + random"
+
+patterns:
+  naming_style: snake_case (consistent across all 81 trackEvent call sites)
+  centralized: yes (single lib/trackEvent.ts wrapper used everywhere); shares + clicks have separate wrappers
+  centralized_definitions: no (event names are inlined string literals at each call site, not enumerated in one file)
+  client_vs_server: client-side only (trackEvent fires from browser; server log written by API route)
+  type_safety: weak (event_name is `string`; props is `Record<string, string|number|boolean|null|undefined>`)
+  pii_in_props: none observed (no email, phone, name in property keys scanned)
+  pricing_tier_in_props: partial (one_tap_alert_* events pass `tier`; most events do not)
+  group_dimension_in_props: none (no business_account_id ever passed; Business tier events have no account context)
+  duplication: |
+    - 4 call sites for `report_submitted` with overlapping but non-identical property keys.
+    - 5 call sites for `affiliate_clicked` with varying property shapes.
+    - 3 call sites for `alert_created`.
+    - `pwa_grant_pending` fires from two distinct components.
+  destination_coverage: |
+    Vercel Analytics receives every trackEvent call but is a page-view product — no funnels, no retention cohorts, no group analytics.
+    The app_events Supabase table is queryable but only surfaces in admin tile (GrowthEventsTile.tsx) which counts events per name in last 7/30 days — no per-user funnel, no conversion %, no cohort.
+  installed_but_unused_for_product_analytics: |
+    Sentry, Speed Insights, Vercel Analytics — all wired in lib/instrumentation-client.ts and app/layout.tsx but none track product behaviour.

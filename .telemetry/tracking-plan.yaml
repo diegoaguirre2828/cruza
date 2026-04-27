@@ -1,0 +1,917 @@
+meta:
+  product: "Cruzar"
+  version: 1
+  created: 2026-04-26
+  updated: 2026-04-26
+  owner: "Diego (solo)"
+  destinations: [posthog]
+  pii_policy: traits_only        # email/display_name in identify() traits, never in event properties
+  internal_user_policy: exclude  # skip events when profiles.email matches OWNER_EMAIL or is on internal allowlist
+  naming_convention: "object.action snake_case"
+  notes: |
+    Existing 53 events are snake_case verb-object (`report_submitted`, `home_visited`).
+    Target keeps the same names where they already match the chosen object.action shape — names like `report_submitted`, `alert_created`, `home_visited` already read as object.action even without the dot. Where a rename adds clarity (e.g., `affiliate_clicked` -> `outbound.affiliate_clicked`) the delta calls it out explicitly.
+    All existing wrapper code in lib/trackEvent.ts is preserved; PostHog becomes a third sink alongside Vercel Analytics and the Supabase app_events log.
+
+entities:
+  user:
+    id_property: distinct_id   # PostHog distinct_id
+    id_format: "Supabase auth UUID v4 once signed in; cruzar_session_id_v1 (sessionStorage) before login; PostHog auto-generates a guest distinct_id otherwise"
+    traits:
+      # Classification
+      - name: tier
+        type: string
+        enum: [guest, free, pro, business]
+        required: true
+        update: on_change
+        source: profiles.tier
+      - name: is_founder
+        type: boolean
+        required: false
+        update: on_change
+        source: profiles.is_founder
+      - name: install_state
+        type: string
+        enum: [web, pwa, twa, capacitor]
+        required: false
+        update: on_change
+        source: profiles.install_state (set by /api/user/touch)
+      - name: language
+        type: string
+        enum: [es, en]
+        required: false
+        update: on_change
+        source: LangContext (es | en)
+      - name: home_region
+        type: string
+        required: false
+        update: on_change
+        source: lib/useHomeRegion.ts
+      # Lifecycle dates
+      - name: signed_up_at
+        type: datetime
+        required: true
+        update: one_time
+        source: auth.users.created_at
+      - name: first_seen_at
+        type: datetime
+        required: false
+        update: one_time
+        source: profiles.first_seen_at
+      - name: last_active_at
+        type: datetime
+        required: false
+        update: scheduled  # via /api/user/touch heartbeat
+        source: profiles.last_seen_at
+      - name: pro_started_at
+        type: datetime
+        required: false
+        update: on_change
+        source: subscriptions where tier='pro' and active=true
+      - name: business_started_at
+        type: datetime
+        required: false
+        update: on_change
+        source: subscriptions where tier='business' and active=true
+      # Snapshot metrics (counts)
+      - name: saved_crossings_count
+        type: integer
+        required: false
+        update: scheduled
+        source: COUNT(saved_crossings WHERE user_id=u)
+      - name: alerts_count
+        type: integer
+        required: false
+        update: scheduled
+        source: COUNT(alert_preferences WHERE user_id=u AND active=true)
+      - name: reports_submitted_count
+        type: integer
+        required: false
+        update: scheduled
+        source: profiles.reports_count
+      - name: points
+        type: integer
+        required: false
+        update: scheduled
+        source: profiles.points
+      - name: share_count
+        type: integer
+        required: false
+        update: scheduled
+        source: profiles.share_count
+      # PII (traits only, never event properties)
+      - name: email
+        type: string
+        pii: true
+        required: false
+        update: one_time
+        source: auth.users.email
+      - name: display_name
+        type: string
+        pii: true
+        required: false
+        update: on_change
+        source: profiles.display_name
+
+groups:
+  - type: business_account
+    id_format: "Supabase auth UUID v4 of the dispatcher (profiles.id, where tier='business')"
+    is_top_level: true
+    triggers:
+      - on: business_account.created                 # fires when a user's tier flips to 'business'
+      - on: business_account.trait_changed           # MRR/driver/shipment count change
+      - on: scheduled (daily 09:00 CT)
+    traits:
+      - name: name
+        type: string
+        required: false
+        source: profiles.display_name (dispatcher) or fleet_name if added later
+      - name: plan
+        type: string
+        enum: [business]
+        required: true
+      - name: mrr
+        type: number
+        required: true
+        source: subscriptions amount (USD/month)
+      - name: created_at
+        type: datetime
+        required: true
+        source: subscriptions.started_at
+      - name: drivers_count
+        type: integer
+        required: true
+        source: COUNT(drivers WHERE owner_user_id=u)
+      - name: shipments_active_count
+        type: integer
+        required: false
+        source: COUNT(shipments WHERE owner_user_id=u AND status NOT IN ('delivered','canceled'))
+      - name: shipments_total_count
+        type: integer
+        required: false
+        source: COUNT(shipments WHERE owner_user_id=u)
+
+snapshot_sync:
+  cadence: daily
+  job: "/api/cron/posthog-traits-snapshot (new — to be added)"
+  user_traits:
+    - tier
+    - install_state
+    - language
+    - last_active_at
+    - saved_crossings_count
+    - alerts_count
+    - reports_submitted_count
+    - points
+    - share_count
+  group_traits:
+    - mrr
+    - drivers_count
+    - shipments_active_count
+    - shipments_total_count
+
+events:
+  # ====================================================================
+  # LIFECYCLE — auth, install, identify
+  # ====================================================================
+  - name: user.signed_up
+    category: lifecycle
+    group_level: user
+    description: User creates account (email signup, Google OAuth, or Apple SIWA on iOS)
+    fire_from: client (after Supabase signUp resolves) AND server (Supabase webhook fallback)
+    properties:
+      - name: method
+        type: string
+        enum: [email, google, apple]
+        required: true
+      - name: source
+        type: string
+        required: false
+        description: "Inbound source captured before signup — e.g., 'fb', 'whatsapp', 'r/<code>'"
+      - name: referrer_code
+        type: string
+        required: false
+    expected_frequency: low
+
+  - name: user.signed_in
+    category: lifecycle
+    group_level: user
+    description: Returning user authenticates
+    fire_from: client (after Supabase signIn resolves)
+    properties:
+      - name: method
+        type: string
+        enum: [email, google, apple]
+        required: true
+    expected_frequency: medium
+
+  - name: user.signed_out
+    category: lifecycle
+    group_level: user
+    description: User explicitly logs out (calls posthog.reset)
+    fire_from: client
+    properties: []
+    expected_frequency: low
+
+  - name: user.account_deleted
+    category: lifecycle
+    group_level: user
+    description: User deletes account via /data-deletion
+    fire_from: server (after row delete confirmed)
+    properties:
+      - name: reason
+        type: string
+        required: false
+    expected_frequency: low
+
+  - name: install.completed
+    category: lifecycle
+    group_level: user
+    description: PWA install finished (web), or Capacitor app first launch detected, or TWA shortcut completion
+    fire_from: client
+    properties:
+      - name: variant
+        type: string
+        enum: [pwa_browser, ios_capacitor, android_twa, ios_safari]
+        required: true
+      - name: source
+        type: string
+        required: false
+        description: "Where the install nudge was tapped — first_visit_sheet, post_signup_nudge, camaras_sticky, ios_install_page, etc."
+    expected_frequency: low
+    notes: "Replaces existing `install_completed` (variant only) — adds source attribution."
+
+  # ====================================================================
+  # CORE VALUE — wait times, alerts, smart-route
+  # ====================================================================
+  - name: home.visited
+    category: core_value
+    group_level: user
+    description: Home screen rendered. Primary value moment — checking the wait time.
+    fire_from: client (HomeClient mount)
+    properties:
+      - name: has_saved_bridge
+        type: boolean
+        required: true
+      - name: panel
+        type: string
+        enum: [cerca, mio, comunidad]
+        required: false
+        description: "Which of the three swipe panels is initially shown"
+    expected_frequency: very_high
+    notes: "Existing event — keep name, drop chatty `home_header_toggled` and `home_panel_changed` (low signal)."
+
+  - name: port.viewed
+    category: core_value
+    group_level: user
+    description: User opened a specific port detail page. The headline 'check the wait time' moment.
+    fire_from: client (port/[portId]/PortDetailClient mount)
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: port_name
+        type: string
+        required: true
+      - name: direction
+        type: string
+        enum: [northbound, southbound]
+        required: true
+      - name: vehicle_wait
+        type: integer
+        required: false
+      - name: source
+        type: string
+        required: false
+        description: "Where the user came from — home_saved, home_triad, list, map, search, alert_push, deep_link"
+    expected_frequency: very_high
+
+  - name: crossing.saved
+    category: core_value
+    group_level: user
+    description: User added a crossing to favorites/saved
+    fire_from: client (after /api/saved POST resolves)
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: source
+        type: string
+        required: false
+    expected_frequency: medium
+
+  - name: crossing.unsaved
+    category: core_value
+    group_level: user
+    description: User removed a crossing from favorites
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: low
+
+  - name: alert.created
+    category: core_value
+    group_level: user
+    description: User set a wait-time threshold alert
+    fire_from: client (after /api/alerts POST resolves)
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: threshold_minutes
+        type: integer
+        required: true
+      - name: lane_type
+        type: string
+        enum: [vehicle, sentri, pedestrian, commercial]
+        required: true
+      - name: source
+        type: string
+        required: false
+        description: "dashboard, port_detail, one_tap, live_camera, smart_route_nudge"
+    expected_frequency: medium
+    notes: "Consolidates existing `alert_created` and `one_tap_alert_created` (one_tap becomes a `source` value)."
+
+  - name: alert.removed
+    category: core_value
+    group_level: user
+    description: User deleted an alert preference
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: low
+
+  - name: alert.delivered
+    category: core_value
+    group_level: user
+    description: System sent a wait-time alert to user (push/email/sms). Fires server-side.
+    fire_from: server (/api/cron/send-alerts after successful send)
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: channel
+        type: string
+        enum: [push, email, sms]
+        required: true
+      - name: threshold_minutes
+        type: integer
+        required: true
+      - name: actual_wait
+        type: integer
+        required: true
+    expected_frequency: medium
+
+  - name: alert.opened
+    category: core_value
+    group_level: user
+    description: User opened an alert (clicked push notification or email link)
+    fire_from: client (deep-link landing page reads ?from=alert)
+    properties:
+      - name: port_id
+        type: string
+        required: false
+      - name: channel
+        type: string
+        enum: [push, email, sms]
+        required: true
+    expected_frequency: medium
+
+  - name: smart_route.requested
+    category: core_value
+    group_level: user
+    description: Pro user asked for the best-crossing-right-now recommendation
+    fire_from: client (planner / smart-route page)
+    properties:
+      - name: from_lat
+        type: number
+        required: false
+      - name: from_lng
+        type: number
+        required: false
+      - name: top_pick_port_id
+        type: string
+        required: false
+      - name: top_pick_wait_minutes
+        type: integer
+        required: false
+    expected_frequency: medium
+
+  - name: best_times.viewed
+    category: core_value
+    group_level: user
+    description: User viewed the best-time-to-cross historical pattern for a port
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: medium
+
+  - name: report.submitted
+    category: core_value
+    group_level: user
+    description: Community report (manual, just-crossed, port-list inline, or waiting-mode geofence)
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: report_type
+        type: string
+        enum: [wait_time, slow, fast, closed, accident, other]
+        required: true
+      - name: wait_minutes
+        type: integer
+        required: false
+      - name: source
+        type: string
+        enum: [report_form, just_crossed, port_list_inline, waiting_mode]
+        required: true
+    expected_frequency: medium
+    notes: "Consolidates 4 existing `report_submitted` call sites with consistent properties."
+
+  - name: report.upvoted
+    category: core_value
+    group_level: user
+    description: User upvoted another user's report
+    fire_from: client
+    properties:
+      - name: report_id
+        type: string
+        required: true
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: low
+
+  - name: wait_confirm.voted
+    category: core_value
+    group_level: user
+    description: User confirmed/corrected the displayed wait time
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: accurate
+        type: boolean
+        required: true
+      - name: actual_wait
+        type: integer
+        required: false
+    expected_frequency: medium
+    notes: "Existing `wait_confirm_vote` renamed to dotted form."
+
+  - name: photo.submitted
+    category: core_value
+    group_level: user
+    description: User uploaded a bridge photo
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: low
+
+  - name: auto_crossing.detected
+    category: core_value
+    group_level: user
+    description: WaitingMode geofence detected user at a port
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: medium
+    notes: "Existing `auto_crossing_started`."
+
+  - name: auto_crossing.confirmed
+    category: core_value
+    group_level: user
+    description: User confirmed they crossed (turns into a report)
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+      - name: wait_minutes
+        type: integer
+        required: false
+    expected_frequency: medium
+
+  - name: auto_crossing.rejected
+    category: core_value
+    group_level: user
+    description: User dismissed the auto-detected crossing prompt
+    fire_from: client
+    properties:
+      - name: port_id
+        type: string
+        required: true
+    expected_frequency: low
+
+  # ====================================================================
+  # PUSH / NOTIFICATIONS
+  # ====================================================================
+  - name: push.permission_prompted
+    category: configuration
+    group_level: user
+    description: User saw the browser/OS push permission prompt
+    fire_from: client
+    properties:
+      - name: source
+        type: string
+        required: false
+      - name: bridge
+        type: string
+        required: false
+    expected_frequency: medium
+
+  - name: push.permission_resolved
+    category: configuration
+    group_level: user
+    description: User responded to the permission prompt
+    fire_from: client
+    properties:
+      - name: outcome
+        type: string
+        enum: [granted, denied, dismissed]
+        required: true
+      - name: source
+        type: string
+        required: false
+      - name: bridge
+        type: string
+        required: false
+    expected_frequency: medium
+    notes: "Consolidates push_prompt_granted/denied/dismissed into one event with outcome enum."
+
+  # ====================================================================
+  # BUSINESS TIER (Fleet)
+  # ====================================================================
+  - name: driver.added
+    category: core_value
+    group_level: business_account
+    description: Dispatcher added a driver to fleet
+    fire_from: client (after /api/business/drivers POST)
+    properties:
+      - name: driver_count_after
+        type: integer
+        required: true
+    expected_frequency: low
+
+  - name: driver.removed
+    category: core_value
+    group_level: business_account
+    description: Dispatcher removed a driver
+    fire_from: client
+    properties:
+      - name: driver_count_after
+        type: integer
+        required: true
+    expected_frequency: low
+
+  - name: driver.checked_in
+    category: core_value
+    group_level: business_account
+    description: Driver check-in via signed token (no auth)
+    fire_from: server (/api/driver/checkin)
+    properties:
+      - name: driver_id
+        type: string
+        required: true
+      - name: status
+        type: string
+        enum: [in_line, at_bridge, cleared, delivered]
+        required: true
+      - name: port_id
+        type: string
+        required: false
+    expected_frequency: medium
+
+  - name: shipment.created
+    category: core_value
+    group_level: business_account
+    description: Dispatcher created a shipment
+    fire_from: client
+    properties:
+      - name: shipment_id
+        type: string
+        required: true
+      - name: port_id
+        type: string
+        required: false
+    expected_frequency: low
+
+  - name: shipment.status_changed
+    category: core_value
+    group_level: business_account
+    description: Shipment moved through lifecycle (in_line/at_bridge/cleared/delivered)
+    fire_from: server
+    properties:
+      - name: shipment_id
+        type: string
+        required: true
+      - name: from_status
+        type: string
+        required: true
+      - name: to_status
+        type: string
+        required: true
+    expected_frequency: medium
+
+  - name: fleet_dashboard.viewed
+    category: core_value
+    group_level: business_account
+    description: Dispatcher opened /business or /fleet
+    fire_from: client
+    properties: []
+    expected_frequency: medium
+
+  - name: fleet_export.requested
+    category: core_value
+    group_level: business_account
+    description: Dispatcher requested CSV export
+    fire_from: client (/api/export)
+    properties:
+      - name: row_count
+        type: integer
+        required: false
+      - name: range_days
+        type: integer
+        required: false
+    expected_frequency: low
+
+  # ====================================================================
+  # BILLING — critical commercial signals
+  # ====================================================================
+  - name: pricing.viewed
+    category: billing
+    group_level: user
+    description: User landed on /pricing
+    fire_from: client
+    properties:
+      - name: source
+        type: string
+        required: false
+    expected_frequency: medium
+
+  - name: checkout.started
+    category: billing
+    group_level: user
+    description: Stripe checkout session created (or RevenueCat purchase initiated on iOS)
+    fire_from: client (after /api/stripe/checkout returns) OR server (RevenueCat webhook)
+    properties:
+      - name: target_tier
+        type: string
+        enum: [pro, business]
+        required: true
+      - name: price_id
+        type: string
+        required: true
+      - name: provider
+        type: string
+        enum: [stripe, revenuecat]
+        required: true
+    expected_frequency: low
+
+  - name: subscription.activated
+    category: billing
+    group_level: user
+    description: First successful payment for a tier (also fires group-level identify for business)
+    fire_from: server (Stripe webhook checkout.session.completed; RevenueCat webhook PURCHASE)
+    properties:
+      - name: tier
+        type: string
+        enum: [pro, business]
+        required: true
+      - name: provider
+        type: string
+        enum: [stripe, revenuecat]
+        required: true
+      - name: mrr
+        type: number
+        required: true
+    expected_frequency: low
+
+  - name: subscription.renewed
+    category: billing
+    group_level: user
+    description: Recurring renewal succeeded
+    fire_from: server (Stripe invoice.paid webhook)
+    properties:
+      - name: tier
+        type: string
+        enum: [pro, business]
+        required: true
+      - name: mrr
+        type: number
+        required: true
+    expected_frequency: medium
+
+  - name: subscription.canceled
+    category: billing
+    group_level: user
+    description: User canceled (will lapse at period end) or subscription lapsed
+    fire_from: server
+    properties:
+      - name: tier
+        type: string
+        enum: [pro, business]
+        required: true
+      - name: reason
+        type: string
+        required: false
+      - name: period_end_at
+        type: datetime
+        required: false
+    expected_frequency: low
+
+  - name: pwa_grant.claimed
+    category: billing
+    group_level: user
+    description: PWA-install promo granted Pro days (founder mechanic)
+    fire_from: client (after /api/claim-pwa-pro returns granted)
+    properties:
+      - name: days
+        type: integer
+        required: true
+      - name: manual
+        type: boolean
+        required: true
+        description: "true = user clicked the explicit claim button; false = auto-grant on PWA detection"
+    expected_frequency: low
+    notes: "Consolidates existing pwa_grant_claimed and pwa_grant_claimed_manual."
+
+  # ====================================================================
+  # COLLABORATION / SOCIAL — sharing, FB, referrals
+  # ====================================================================
+  - name: share.executed
+    category: collaboration
+    group_level: user
+    description: User shared a wait time / report / camera tile
+    fire_from: client (replaces existing trackShare wrapper sink)
+    properties:
+      - name: channel
+        type: string
+        enum: [whatsapp, copy, facebook, native, native_success]
+        required: true
+      - name: context
+        type: string
+        required: true
+        description: "Where the share button lives — hero_live_delta, port_card, share_prompt, report_form, just_crossed, port_detail, camera_tile"
+      - name: port_id
+        type: string
+        required: false
+    expected_frequency: medium
+
+  - name: referral.link_visited
+    category: lifecycle
+    group_level: user
+    description: Anonymous visit to /r/<code>
+    fire_from: client (page mount on /r/[code])
+    properties:
+      - name: referrer_code
+        type: string
+        required: true
+    expected_frequency: low
+
+  - name: fb_page.follow_clicked
+    category: collaboration
+    group_level: user
+    description: User clicked the FB page follow CTA
+    fire_from: client
+    properties:
+      - name: source
+        type: string
+        required: true
+      - name: variant
+        type: string
+        required: false
+    expected_frequency: low
+
+  # ====================================================================
+  # CONFIGURATION — settings, language, install nudges
+  # ====================================================================
+  - name: language.changed
+    category: configuration
+    group_level: user
+    description: User toggled ES/EN
+    fire_from: client (LangContext setter)
+    properties:
+      - name: from
+        type: string
+        enum: [es, en]
+        required: true
+      - name: to
+        type: string
+        enum: [es, en]
+        required: true
+    expected_frequency: low
+
+  - name: install_nudge.shown
+    category: configuration
+    group_level: user
+    description: Any install nudge surfaced (FirstVisitInstallSheet, PostSignupInstallNudge, CamarasStickyInstallCta, TwaPromoBanner, IabBanner)
+    fire_from: client
+    properties:
+      - name: variant
+        type: string
+        enum: [first_visit_sheet, post_signup, camaras_sticky, twa_banner, iab_banner, ios_install_page, pwa_welcome]
+        required: true
+      - name: platform
+        type: string
+        enum: [ios, android, desktop, ios_safari]
+        required: false
+    expected_frequency: medium
+    notes: "Collapses 11 existing impression events into one with `variant`."
+
+  - name: install_nudge.resolved
+    category: configuration
+    group_level: user
+    description: User responded to an install nudge
+    fire_from: client
+    properties:
+      - name: variant
+        type: string
+        enum: [first_visit_sheet, post_signup, camaras_sticky, twa_banner, iab_banner, ios_install_page, pwa_welcome]
+        required: true
+      - name: outcome
+        type: string
+        enum: [tapped_install, dismissed, copy_link, whatsapp, skip, accepted, declined]
+        required: true
+      - name: platform
+        type: string
+        required: false
+    expected_frequency: medium
+    notes: "Collapses ~17 existing dismiss/click/choice events."
+
+  # ====================================================================
+  # OUTBOUND — affiliates, business directory
+  # ====================================================================
+  - name: outbound.affiliate_clicked
+    category: collaboration
+    group_level: user
+    description: User clicked an affiliate/partner link
+    fire_from: client
+    properties:
+      - name: partner
+        type: string
+        required: true
+      - name: slot
+        type: string
+        required: false
+        description: "Where the link rendered — welcome, camaras, servicios, port_detail"
+      - name: port_id
+        type: string
+        required: false
+    expected_frequency: medium
+    notes: "Existing `affiliate_clicked` renamed for consistency. Property shape standardized."
+
+  - name: outbound.business_clicked
+    category: collaboration
+    group_level: user
+    description: User tapped a business directory listing's phone/whatsapp/website
+    fire_from: client (replaces /api/track/click sink, also fires PostHog)
+    properties:
+      - name: business_id
+        type: string
+        required: true
+      - name: click_type
+        type: string
+        enum: [phone, whatsapp, website, address, instagram, facebook]
+        required: true
+      - name: port_id
+        type: string
+        required: false
+      - name: referrer
+        type: string
+        required: false
+    expected_frequency: low
+
+  # ====================================================================
+  # NAVIGATION — sparse, only the high-signal ones
+  # ====================================================================
+  - name: insights.viewed
+    category: navigation
+    group_level: user
+    description: B2B insights landing page viewed (lead-capture relevant)
+    fire_from: client
+    properties:
+      - name: source
+        type: string
+        required: false
+    expected_frequency: low
+
+  - name: pricing_table.viewed
+    category: navigation
+    group_level: user
+    description: User scrolled the pricing table into view
+    fire_from: client
+    properties: []
+    expected_frequency: low

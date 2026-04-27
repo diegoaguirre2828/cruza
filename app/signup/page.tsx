@@ -13,6 +13,7 @@ import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
 import { getPortMeta } from '@/lib/portMeta'
 import { portIdFromSlug } from '@/lib/portSlug'
 import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
+import { trackUserSignedUp, identifyUser } from '@/lib/tracking'
 
 type Mode = 'password' | 'magic' | 'phone'
 
@@ -160,7 +161,7 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data: signupData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -198,6 +199,33 @@ export default function SignupPage() {
       } catch { /* non-critical */ }
     }
     trackFunnel('signup_complete', { method: mode })
+
+    // PostHog instrumentation — proof-of-life demo wire-up for the new
+    // tracking module. Fires user.signed_up + binds the new identity so
+    // every subsequent event in this session is attributed to the user.
+    // No-op when NEXT_PUBLIC_POSTHOG_KEY isn't set (preview deploys / dev).
+    try {
+      const refCodeForPosthog = typeof window !== 'undefined'
+        ? localStorage.getItem('cruzar_referral_code')
+        : null
+      const inboundSource = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('source') ?? undefined
+        : undefined
+      trackUserSignedUp({
+        method: mode === 'password' ? 'email' : mode,
+        source: inboundSource,
+        referrer_code: refCodeForPosthog ?? undefined,
+      })
+      if (signupData?.user) {
+        identifyUser(signupData.user, {
+          tier: 'free',
+          language: lang,
+          install_state: 'web',
+          signed_up_at: signupData.user.created_at,
+        })
+      }
+    } catch { /* never block signup on telemetry */ }
+
     // Always route new signups through /welcome (install carrot + alert
     // setup). Pass through any `next` param so /welcome forwards the user
     // to their intended destination AFTER completing the install step.
