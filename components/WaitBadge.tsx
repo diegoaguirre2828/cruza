@@ -8,9 +8,15 @@ interface Props {
   label: string
   lanesOpen?: number | null
   isClosed?: boolean
+  // Officer staffing — passed by callers that have CBP officer-count data
+  // for this lane type (currently pedestrian only). When typical is set
+  // and differs by 2+ from open, the badge surfaces it as a leading-
+  // indicator of imminent wait change ("fewer officers than usual at
+  // this hour" → wait is about to spike even if current number is OK).
+  lanesTypical?: number | null
 }
 
-export function WaitBadge({ minutes, label, lanesOpen, isClosed }: Props) {
+export function WaitBadge({ minutes, label, lanesOpen, isClosed, lanesTypical }: Props) {
   const { t, lang } = useLang()
   const level = getWaitLevel(minutes)
   const colors = isClosed
@@ -29,6 +35,18 @@ export function WaitBadge({ minutes, label, lanesOpen, isClosed }: Props) {
       : `${lanesOpen} ${lanesOpen === 1 ? 'lane' : 'lanes'}`
     : null
 
+  const staffingDelta = !isClosed && lanesOpen != null && lanesTypical != null
+    ? lanesOpen - lanesTypical
+    : null
+  const staffingLabel = staffingDelta != null && Math.abs(staffingDelta) >= 2
+    ? lang === 'es'
+      ? (staffingDelta < 0 ? `${Math.abs(staffingDelta)} menos que normal` : `${staffingDelta} más que normal`)
+      : (staffingDelta < 0 ? `${Math.abs(staffingDelta)} fewer than typical` : `${staffingDelta} more than typical`)
+    : null
+  const staffingColor = staffingDelta != null && staffingDelta < 0
+    ? 'text-red-500 dark:text-red-400'
+    : 'text-green-600 dark:text-green-400'
+
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="text-sm text-gray-500 font-semibold">{label}</span>
@@ -37,6 +55,9 @@ export function WaitBadge({ minutes, label, lanesOpen, isClosed }: Props) {
       </span>
       {lanesLabel && (
         <span className="text-xs text-gray-400 dark:text-gray-500">{lanesLabel}</span>
+      )}
+      {staffingLabel && (
+        <span className={`text-[10px] font-semibold ${staffingColor}`}>{staffingLabel}</span>
       )}
     </div>
   )

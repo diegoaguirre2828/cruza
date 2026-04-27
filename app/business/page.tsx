@@ -1276,6 +1276,49 @@ function BusinessPortalPage() {
               <p className="text-xs text-gray-400 dark:text-gray-500">CBP data combined with community reports for a complete operational picture.</p>
             </div>
 
+            {/* Live Officer Staffing — leading-indicator alerts from CBP
+                lanes_open vs the 30-day historical average for this hour.
+                Officers dropping ≥2 below typical predicts a wait spike
+                in the next 15-30 min even when current wait is still OK.
+                Prioritized over holiday alerts because it's actionable now. */}
+            {(() => {
+              const staffingDrops = ports
+                .filter(p => p.commercialOfficersTypical != null && p.commercialLanesOpen != null)
+                .map(p => ({
+                  port: p,
+                  delta: (p.commercialLanesOpen ?? 0) - (p.commercialOfficersTypical ?? 0),
+                }))
+                .filter(x => x.delta <= -2)
+                .sort((a, b) => a.delta - b.delta)
+                .slice(0, 5)
+              if (staffingDrops.length === 0) return null
+              return (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-200 dark:border-red-800 shadow-sm p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      Officer staffing alert — wait spike likely in 15–30 min
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Commercial booth count dropped vs typical. Route trucks to alternative crossings now.
+                  </p>
+                  <div className="space-y-1.5">
+                    {staffingDrops.map(({ port: p, delta }) => (
+                      <div key={p.portId} className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                          {(p.localNameOverride || p.portName).slice(0, 30)}
+                        </span>
+                        <span className="text-red-600 dark:text-red-400 font-bold tabular-nums">
+                          {p.commercialLanesOpen} open ({delta > 0 ? '+' : ''}{delta} vs typical {p.commercialOfficersTypical})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Feature 1: Holiday Surge Alerts */}
             {upcomingHolidays.length > 0 && (
               <div className="space-y-2">

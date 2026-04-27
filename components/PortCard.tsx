@@ -361,10 +361,10 @@ export function PortCard({ port, signal }: Props) {
               )
             })()}
             <div className="flex gap-3 mt-2 justify-around">
-              {(port.vehicle !== null || port.vehicleClosed) && <WaitBadge minutes={port.vehicle} label={t.laneCar} lanesOpen={port.vehicleLanesOpen} isClosed={port.vehicleClosed} />}
-              {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} lanesOpen={port.sentriLanesOpen} />}
-              {(port.pedestrian !== null || port.pedestrianClosed) && <WaitBadge minutes={port.pedestrian} label={t.laneWalk} lanesOpen={port.pedestrianLanesOpen} isClosed={port.pedestrianClosed} />}
-              {(port.commercial !== null || port.commercialClosed) && <WaitBadge minutes={port.commercial} label={t.laneTruck} lanesOpen={port.commercialLanesOpen} isClosed={port.commercialClosed} />}
+              {(port.vehicle !== null || port.vehicleClosed) && <WaitBadge minutes={port.vehicle} label={t.laneCar} lanesOpen={port.vehicleLanesOpen} lanesTypical={port.vehicleOfficersTypical} isClosed={port.vehicleClosed} />}
+              {port.sentri !== null && <WaitBadge minutes={port.sentri} label={t.laneSentri} lanesOpen={port.sentriLanesOpen} lanesTypical={port.sentriOfficersTypical} />}
+              {(port.pedestrian !== null || port.pedestrianClosed) && <WaitBadge minutes={port.pedestrian} label={t.laneWalk} lanesOpen={port.pedestrianLanesOpen} lanesTypical={port.pedestrianOfficersTypical} isClosed={port.pedestrianClosed} />}
+              {(port.commercial !== null || port.commercialClosed) && <WaitBadge minutes={port.commercial} label={t.laneTruck} lanesOpen={port.commercialLanesOpen} lanesTypical={port.commercialOfficersTypical} isClosed={port.commercialClosed} />}
             </div>
           </>
         ) : port.historicalVehicle != null ? (

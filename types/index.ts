@@ -90,17 +90,24 @@ export interface PortWaitTime {
   // pedestrian_lanes_visible. Independent of the pedestrian headline pick
   // — surfaced in the UI as a sanity-check alongside the headline number.
   pedestrianFlowRateMin?: number | null
-  // Officer / booth staffing — derived from CBP's pedestrian lanes_open
-  // field. Public BWT API publishes this every poll; we expose it
-  // semantically as "officers currently open" since each pedestrian
-  // booth corresponds 1:1 with a CBP officer doing inspections.
+  // Officer / booth staffing — derived from CBP's lanes_open fields.
+  // Public BWT API publishes these every poll; we expose them
+  // semantically as "officers currently open" since each booth
+  // corresponds 1:1 with a CBP officer doing inspections. The
+  // "Typical" companion fields are the avg at this hour-of-day
+  // computed from the last 30 days of wait_time_readings, which
+  // lets cards/dashboards surface "fewer officers than usual" as a
+  // leading-indicator of imminent wait spikes (officer dips precede
+  // wait spikes by 15-30 min per CBP operational research).
+  // pedestrian* — pedestrian booths
   pedestrianOfficersOpen?: number | null
-  // Average pedestrian lanes_open at this port at this hour-of-day,
-  // computed from the last 30 days of wait_time_readings. Lets the
-  // card surface "fewer officers than usual" as a leading indicator
-  // — wait time can still be low when CBP just understaffed a booth,
-  // but it's about to spike.
   pedestrianOfficersTypical?: number | null
+  // vehicle* — passenger-vehicle inspection lanes (general public)
+  vehicleOfficersTypical?: number | null
+  // commercial* — truck inspection lanes (the trucker-dispatch signal)
+  commercialOfficersTypical?: number | null
+  // sentri* — SENTRI/NEXUS trusted-traveler lanes
+  sentriOfficersTypical?: number | null
 }
 
 export interface WaitTimeReading {

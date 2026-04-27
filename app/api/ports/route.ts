@@ -153,7 +153,10 @@ export async function GET() {
     // typical at this hour" — fewer officers than usual is a leading
     // indicator of wait spikes even when current wait is still low.
     const historicalByPort = new Map<string, number>()
-    const officersTypicalByPort = new Map<string, number>()
+    const pedestrianOfficersTypicalByPort = new Map<string, number>()
+    const vehicleOfficersTypicalByPort = new Map<string, number>()
+    const commercialOfficersTypicalByPort = new Map<string, number>()
+    const sentriOfficersTypicalByPort = new Map<string, number>()
     try {
       const nowCT = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }))
       const dow = nowCT.getDay()
@@ -161,33 +164,44 @@ export async function GET() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
       const { data: histRows } = await db
         .from('wait_time_readings')
-        .select('port_id, vehicle_wait, lanes_pedestrian_open')
+        .select('port_id, vehicle_wait, lanes_pedestrian_open, lanes_vehicle_open, lanes_commercial_open, lanes_sentri_open')
         .eq('day_of_week', dow)
         .eq('hour_of_day', hour)
         .gte('recorded_at', thirtyDaysAgo)
       if (histRows) {
         const waitSums = new Map<string, { total: number; count: number }>()
-        const officerSums = new Map<string, { total: number; count: number }>()
+        const pedSums = new Map<string, { total: number; count: number }>()
+        const vehSums = new Map<string, { total: number; count: number }>()
+        const comSums = new Map<string, { total: number; count: number }>()
+        const senSums = new Map<string, { total: number; count: number }>()
+        const accumulate = (
+          map: Map<string, { total: number; count: number }>,
+          portId: string,
+          val: number | null | undefined,
+        ) => {
+          if (val == null || val <= 0) return
+          const s = map.get(portId) ?? { total: 0, count: 0 }
+          s.total += val
+          s.count++
+          map.set(portId, s)
+        }
         for (const r of histRows) {
-          if (r.vehicle_wait != null) {
-            const s = waitSums.get(r.port_id) ?? { total: 0, count: 0 }
-            s.total += r.vehicle_wait
-            s.count++
-            waitSums.set(r.port_id, s)
-          }
-          if (r.lanes_pedestrian_open != null && r.lanes_pedestrian_open > 0) {
-            const s = officerSums.get(r.port_id) ?? { total: 0, count: 0 }
-            s.total += r.lanes_pedestrian_open
-            s.count++
-            officerSums.set(r.port_id, s)
+          if (r.vehicle_wait != null) accumulate(waitSums, r.port_id, r.vehicle_wait)
+          accumulate(pedSums, r.port_id, r.lanes_pedestrian_open)
+          accumulate(vehSums, r.port_id, r.lanes_vehicle_open)
+          accumulate(comSums, r.port_id, r.lanes_commercial_open)
+          accumulate(senSums, r.port_id, r.lanes_sentri_open)
+        }
+        const finalize = (sums: Map<string, { total: number; count: number }>, target: Map<string, number>) => {
+          for (const [pid, s] of sums) {
+            if (s.count >= 3) target.set(pid, Math.round(s.total / s.count))
           }
         }
-        for (const [pid, s] of waitSums) {
-          if (s.count >= 3) historicalByPort.set(pid, Math.round(s.total / s.count))
-        }
-        for (const [pid, s] of officerSums) {
-          if (s.count >= 3) officersTypicalByPort.set(pid, Math.round(s.total / s.count))
-        }
+        finalize(waitSums, historicalByPort)
+        finalize(pedSums, pedestrianOfficersTypicalByPort)
+        finalize(vehSums, vehicleOfficersTypicalByPort)
+        finalize(comSums, commercialOfficersTypicalByPort)
+        finalize(senSums, sentriOfficersTypicalByPort)
       }
     } catch {
       // Non-critical — if historical query fails, cards just won't show historical fallback
@@ -498,9 +512,14 @@ export async function GET() {
         pedestrianFlowRateMin,
         // Officer staffing — CBP exposes lanes_open every poll; this
         // is the most-current "officers working right now" signal
-        // available without internal CBP system access.
+        // available without internal CBP system access. Per-lane
+        // typicals computed above from 30 days of wait_time_readings
+        // at this hour-of-day.
         pedestrianOfficersOpen: p.pedestrianLanesOpen ?? null,
-        pedestrianOfficersTypical: officersTypicalByPort.get(p.portId) ?? null,
+        pedestrianOfficersTypical: pedestrianOfficersTypicalByPort.get(p.portId) ?? null,
+        vehicleOfficersTypical: vehicleOfficersTypicalByPort.get(p.portId) ?? null,
+        commercialOfficersTypical: commercialOfficersTypicalByPort.get(p.portId) ?? null,
+        sentriOfficersTypical: sentriOfficersTypicalByPort.get(p.portId) ?? null,
       }
     })
 
