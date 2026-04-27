@@ -69,6 +69,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "validation failed", issues: parsed.error.issues }, { status: 400 });
   }
 
+  // eta_slip_minutes requires comparing a prior compute against a fresh one
+  // each cron pass. The cron currently reads the stored snapshot only and
+  // does not refresh ETA in-loop, so this trigger would never fire. Reject
+  // at create time instead of silently dropping every dispatch.
+  if (parsed.data.trigger_kind === "eta_slip_minutes") {
+    return NextResponse.json({
+      error: "eta_slip_minutes not yet supported — auto-refresh in cron not wired (would burn HERE quota). Use wait_threshold or p_make_appt_below for now.",
+    }, { status: 422 });
+  }
+
   const { data, error } = await sb
     .from("operator_alert_rules")
     .insert({

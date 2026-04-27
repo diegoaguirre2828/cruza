@@ -90,11 +90,21 @@ async function run(req: NextRequest) {
 
     let frame_blob_url: string | null = null;
     let camera_source: string | null = null;
+    let captureNote: string | null = null;
     try {
       const feed = pickPrimaryFeed(portId);
-      if (feed && feed.feed.kind === "hls" && process.env.BLOB_READ_WRITE_TOKEN) {
+      if (!feed) {
+        captureNote = "no_camera_feed";
+      } else if (feed.feed.kind !== "hls") {
+        captureNote = `feed_kind_${feed.feed.kind}_unsupported`;
+      } else if (!process.env.BLOB_READ_WRITE_TOKEN) {
+        captureNote = "blob_token_missing";
+      } else {
         const out = await extractHlsFrame(feed.feed.src);
-        if (out.ok) {
+        if (!out.ok) {
+          captureNote = `extract_${out.error}${out.detail ? `_${out.detail.slice(0, 60)}` : ""}`;
+          console.error("[anomaly-camera] frame extract failed", { portId, error: out.error, detail: out.detail });
+        } else {
           const filename = `anomaly-camera/${portId}/${Date.now()}.jpg`;
           const upload = await put(filename, out.jpeg, {
             access: "public",
@@ -106,7 +116,10 @@ async function run(req: NextRequest) {
           captured++;
         }
       }
-    } catch {/* swallow — log row written either way */}
+    } catch (err) {
+      captureNote = `capture_threw_${(err as Error)?.message?.slice(0, 60) ?? "unknown"}`;
+      console.error("[anomaly-camera] capture threw", { portId, err });
+    }
 
     const { data: row } = await db
       .from("anomaly_camera_events")
@@ -118,7 +131,7 @@ async function run(req: NextRequest) {
         baseline_min: ev.baseline,
         frame_blob_url,
         camera_source,
-        notes: frame_blob_url ? null : "no camera frame captured",
+        notes: frame_blob_url ? null : (captureNote ?? "no camera frame captured"),
       })
       .select()
       .single();

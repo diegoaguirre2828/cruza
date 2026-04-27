@@ -162,12 +162,23 @@ async function run(req: NextRequest) {
   type Stat = { rule_id: string; load_id: string; fired: boolean; reason: string; delivered: boolean; error?: string };
   const stats: Stat[] = [];
 
+  // Track rules that fired earlier in this same pass. For a global rule
+  // (load_id=null) iterating across many loads, we must NOT re-fire the
+  // same rule on every load — the local `rule.last_fired_at` is read once
+  // from the initial query and never refreshed in-memory, so the cooldown
+  // check inside evaluateRule wouldn't catch the just-fired state.
+  const firedThisPass = new Set<string>();
+
   for (const rule of (rules || []) as AlertRule[]) {
     const { data: loads } = rule.load_id
       ? await db.from("tracked_loads").select("*").eq("id", rule.load_id).eq("user_id", rule.user_id).limit(1)
       : await db.from("tracked_loads").select("*").eq("user_id", rule.user_id).in("status", ["tracking", "crossed"]).limit(50);
 
     for (const ld of loads || []) {
+      if (firedThisPass.has(rule.id)) {
+        stats.push({ rule_id: rule.id, load_id: ld.id, fired: false, reason: "already_fired_this_pass", delivered: false });
+        continue;
+      }
       const snapshot: LoadSnapshot = {
         id: ld.id,
         load_ref: ld.load_ref,
@@ -204,6 +215,7 @@ async function run(req: NextRequest) {
         delivery_error: outcome.error ?? null,
       });
       await db.from("operator_alert_rules").update({ last_fired_at: new Date().toISOString() }).eq("id", rule.id);
+      firedThisPass.add(rule.id);
       stats.push({ rule_id: rule.id, load_id: ld.id, fired: true, reason: ev.reason, delivered: outcome.delivered, error: outcome.error });
     }
   }

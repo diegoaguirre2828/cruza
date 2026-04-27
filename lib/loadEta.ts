@@ -34,11 +34,11 @@ const APPROACHES: Record<string, BridgeApproach> = {
   '535504': { approach: { lat: 25.8910, lng: -97.5050 }, border: { lat: 25.9044, lng: -97.5040 } },
 };
 
-function getApproach(portId: string): BridgeApproach {
+function getApproach(portId: string): BridgeApproach | null {
   const cal = APPROACHES[portId];
   if (cal) return cal;
   const meta = PORT_META[portId];
-  if (!meta) return { approach: { lat: 0, lng: 0 }, border: { lat: 0, lng: 0 } };
+  if (!meta) return null;
   return {
     approach: { lat: meta.lat, lng: meta.lng },
     border:   { lat: meta.lat, lng: meta.lng },
@@ -163,6 +163,7 @@ async function evaluateBridge(
   const meta = PORT_META[portId];
   if (!meta) return null;
   const approach = getApproach(portId);
+  if (!approach) return null;
 
   // Drive to the bridge
   const driveToBridge = await driveMinutes(

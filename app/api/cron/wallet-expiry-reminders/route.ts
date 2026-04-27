@@ -55,7 +55,10 @@ async function run(req: NextRequest) {
       .eq("user_id", d.user_id);
 
     const days = Math.ceil((new Date(d.expires_at).getTime() - Date.now()) / 86400_000);
-    const body = `${d.doc_type.replace(/_/g, " ")}${d.label ? ` (${d.label})` : ""} vence en ${days}d`;
+    const docLabel = `${d.doc_type.replace(/_/g, " ")}${d.label ? ` (${d.label})` : ""}`;
+    // Send bilingual body — most users read ES, but EN side is a hard rule.
+    const body = `${docLabel} — vence en ${days}d · expires in ${days}d`;
+    const title = "Cruzar — documento por vencer · expiring document";
 
     let delivered = false;
     for (const sub of subs ?? []) {
@@ -64,7 +67,7 @@ async function run(req: NextRequest) {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           JSON.stringify({
-            title: "Cruzar — documento por vencer",
+            title,
             body,
             tag: `wallet-expiry-${d.id}`,
             url: "/wallet",

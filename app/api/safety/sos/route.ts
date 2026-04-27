@@ -136,7 +136,9 @@ export async function POST(req: NextRequest) {
               `An emergency contact has triggered SOS in Cruzar.`,
               `Kind: ${parsed.data.kind}`,
               parsed.data.port_id ? `Port: ${parsed.data.port_id}` : "",
-              parsed.data.lat ? `Location: ${parsed.data.lat.toFixed(5)}, ${parsed.data.lng?.toFixed(5)}` : "",
+              parsed.data.lat != null && parsed.data.lng != null
+                ? `Location: ${parsed.data.lat.toFixed(5)}, ${parsed.data.lng.toFixed(5)}`
+                : "",
               parsed.data.notes ? `Notes: ${parsed.data.notes}` : "",
               "",
               "Open Cruzar: https://cruzar.app/sos",

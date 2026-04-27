@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 import { getPortMeta } from '@/lib/portMeta'
+import { slugForPort } from '@/lib/portSlug'
 import webpush from 'web-push'
 
 export const runtime = 'nodejs'
@@ -101,6 +102,12 @@ async function refreshRoutines(): Promise<{ users_scanned: number; routines_upse
   }
 
   const qualifying = Array.from(buckets.values()).filter((r) => r.sample_count >= 3)
+
+  // Wipe routines for users we just rescanned so dropped patterns disappear.
+  // Without this, an upsert-only refresh leaves phantom 7am pings forever
+  // for users who stopped that commute.
+  await db.from('pattern_brain_routines').delete().in('user_id', userIds)
+
   if (qualifying.length === 0) return { users_scanned: userIds.length, routines_upserted: 0 }
 
   const upsertRows = qualifying.map((r) => ({
@@ -112,11 +119,11 @@ async function refreshRoutines(): Promise<{ users_scanned: number; routines_upse
     last_seen_at: new Date().toISOString(),
   }))
 
-  // Upsert in chunks of 500
+  // Insert in chunks of 500
   for (let i = 0; i < upsertRows.length; i += 500) {
     await db
       .from('pattern_brain_routines')
-      .upsert(upsertRows.slice(i, i + 500), { onConflict: 'user_id,port_id,dow,hour' })
+      .insert(upsertRows.slice(i, i + 500))
   }
 
   return { users_scanned: userIds.length, routines_upserted: upsertRows.length }
@@ -171,7 +178,7 @@ async function sendWakeUps(): Promise<{ candidates: number; delivered: number; e
     const portName = meta.localName || meta.city
     const title = `🌅 Cruzar — ${portName} en 1 hora`
     const body = `Cruzas a esta hora normalmente. Espera ahorita: revisa antes de salir.`
-    const url = `/cruzar/${encodeURIComponent(String(c.port_id))}`
+    const url = `/cruzar/${slugForPort(String(c.port_id))}`
 
     let anyDelivered = false
     for (const sub of subs) {

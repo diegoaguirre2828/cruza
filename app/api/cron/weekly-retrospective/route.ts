@@ -164,14 +164,24 @@ async function sendEmail(s: UserSummary, fromDate: string, toDate: string): Prom
   }
 }
 
-async function getEmailFor(userId: string): Promise<{ email: string; name: string | null } | null> {
+// Batch resolve emails + display names for a set of user IDs in two queries
+// instead of one admin RPC per user. listUsers paginates at 1000 by default;
+// for the active operator base we fit comfortably in one page.
+async function buildIdentMap(userIds: string[]): Promise<Map<string, { email: string; name: string | null }>> {
+  const map = new Map<string, { email: string; name: string | null }>();
+  if (userIds.length === 0) return map;
   const db = getServiceClient();
-  const { data: profile } = await db
-    .from("profiles").select("display_name").eq("id", userId).maybeSingle();
-  // Email isn't on profiles in this schema — fetch from auth.users via admin API
-  const { data: { user } } = await db.auth.admin.getUserById(userId);
-  if (!user?.email) return null;
-  return { email: user.email, name: profile?.display_name ?? null };
+  const [profilesRes, usersRes] = await Promise.all([
+    db.from("profiles").select("id, display_name").in("id", userIds),
+    db.auth.admin.listUsers({ perPage: 1000 }),
+  ]);
+  const nameById = new Map<string, string | null>();
+  for (const p of profilesRes.data ?? []) nameById.set(p.id as string, (p.display_name as string | null) ?? null);
+  for (const u of usersRes.data?.users ?? []) {
+    if (!userIds.includes(u.id) || !u.email) continue;
+    map.set(u.id, { email: u.email, name: nameById.get(u.id) ?? null });
+  }
+  return map;
 }
 
 export async function GET(req: NextRequest) {
@@ -240,12 +250,13 @@ export async function GET(req: NextRequest) {
       .slice(0, 5);
   }
 
-  // Resolve emails + send
+  // Resolve emails + send. Batch ident lookup once instead of per-user.
   let sent = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const identMap = await buildIdentMap(Array.from(byUser.keys()));
   for (const [userId, summary] of byUser) {
-    const ident = await getEmailFor(userId);
+    const ident = identMap.get(userId);
     if (!ident) { skipped += 1; continue; }
     summary.email = ident.email;
     summary.ownerName = ident.name;
