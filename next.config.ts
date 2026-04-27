@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
       // Common other typos people guess
       { source: '/cameras', destination: '/camaras', permanent: true },
       { source: '/cameras/:path*', destination: '/camaras', permanent: true },
+      // Orphan routes — feature-discovery audit 2026-04-26. These were
+      // shipped earlier and superseded by better routes; they had zero
+      // inbound hrefs from any primary surface so users only landed on
+      // them via search or stale shares. 301 to the canonical equivalent
+      // so old links keep working.
+      { source: '/smart-route', destination: '/planner', permanent: true },
+      { source: '/predict', destination: '/datos', permanent: true },
+      { source: '/favorites', destination: '/dashboard?tab=favorites', permanent: true },
+      { source: '/fleet', destination: '/business', permanent: true },
     ]
   },
   // Bundle the ffmpeg-static binary with the camera-analysis cron so it

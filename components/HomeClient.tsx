@@ -31,6 +31,7 @@ import { HomeSwipe, type SwipePanel } from '@/components/HomeSwipe'
 import { OneTapAlertCard } from '@/components/OneTapAlertCard'
 import { PlannerCTACard } from '@/components/PlannerCTACard'
 import { ReportBridgePrompt } from '@/components/ReportBridgePrompt'
+import { InsightsPill } from '@/components/InsightsPill'
 
 // PERF: below-the-fold + conditional surfaces split into their own
 // chunks so they don't bloat the home-page initial JS.
@@ -496,14 +497,16 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
                 <RegionPicker />
               </div>
               {/* Personal status pills — Guardian progress + Circles +
-                  daily contribution. Always-visible in the header so
-                  the user feels the gamification loop on every screen,
-                  not buried inside Mi puente panel. */}
+                  daily contribution + (Pro only) Insights shortcut.
+                  Always-visible in the header so the user feels the
+                  gamification loop on every screen, not buried inside
+                  Mi puente panel. */}
               {tier !== 'guest' && (
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
                   <GuardianProgressCard variant="pill" />
                   <CirclesPill />
                   <ContributionTodayPill />
+                  {tier === 'pro' && <InsightsPill />}
                 </div>
               )}
               {/* Single conversion ribbon — guest signup or alert nudge

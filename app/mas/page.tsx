@@ -100,16 +100,28 @@ export default function MasPage() {
             <div className="relative">
               <p className="text-2xl leading-none mb-2">📲</p>
               <p className="text-base font-black leading-tight">
-                {es ? 'Agrega Cruzar a tu pantalla de inicio · 3 meses Pro GRATIS' : 'Add Cruzar to Home Screen · 3 months Pro FREE'}
+                {es ? 'Agrega Cruzar a tu pantalla de inicio · Pro de por vida' : 'Add Cruzar to Home Screen · Lifetime Pro'}
               </p>
               <p className="text-[11px] text-blue-100 mt-1 leading-snug">
                 {es
-                  ? 'Alertas que de verdad llegan a tu pantalla · Un tap pa\' abrir sin escribir nada'
-                  : 'Alerts that actually reach your lock screen · One tap to open, no typing'}
+                  ? 'Primeros 1,000 que se registren e instalen · alertas + cámaras + favoritos'
+                  : 'First 1,000 to sign up + install · alerts + cameras + favorites'}
               </p>
               <div className="mt-4 bg-white dark:bg-gray-900 rounded-2xl p-4 text-gray-900 dark:text-gray-100">
                 <InstallGuide variant="banner" />
               </div>
+              {/* iOS-specific 3-tap walkthrough — listed here because
+                  /ios-install was previously orphan (no inbound link
+                  from any primary surface). iOS Safari can't be
+                  triggered programmatically so manual A2HS is the
+                  only path. */}
+              <Link
+                href="/ios-install"
+                className="mt-3 flex items-center justify-between gap-2 bg-white/10 hover:bg-white/15 rounded-xl px-3 py-2 text-white text-[11px] font-bold transition-colors"
+              >
+                <span>{es ? '🍎 Instrucciones específicas para iPhone' : '🍎 iPhone-specific instructions'}</span>
+                <span className="opacity-70">→</span>
+              </Link>
             </div>
           </div>
         )}
