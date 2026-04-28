@@ -31,6 +31,7 @@ import {
   totalYardCount as transloadCount,
 } from "@/lib/transloadYards";
 import type { MegaRegion } from "@/lib/portMeta";
+import { fetchNearbyEvents } from "@/lib/eonet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -306,7 +307,10 @@ async function recommendRoute(
   return results;
 }
 
-async function anomalyNow(portId: string) {
+async function anomalyNow(
+  portId: string,
+  opts: { includeNaturalEvents?: boolean } = {},
+) {
   const meta = PORT_META[portId];
   if (!meta) return { error: `Unknown port_id "${portId}"` };
   const now = new Date();
@@ -339,6 +343,29 @@ async function anomalyNow(portId: string) {
   if (ratio >= 1.5) status = "anomaly_high";
   else if (ratio <= 0.67) status = "anomaly_low";
   else status = "normal";
+
+  // EONET context — only auto-fetched when the port is anomaly_high (the
+  // case where "what is going on" is the broker's actual question). For
+  // anomaly_low / normal, callers can still ask via the dedicated tool.
+  // Fetch is cached for 1h + bbox-scoped, so the cost is negligible.
+  let nearbyEvents = undefined as
+    | undefined
+    | Awaited<ReturnType<typeof fetchNearbyEvents>>;
+  if (opts.includeNaturalEvents ?? status === "anomaly_high") {
+    try {
+      nearbyEvents = await fetchNearbyEvents(
+        { lat: meta.lat, lng: meta.lng },
+        100, // km
+        7, // days
+        "open",
+      );
+    } catch (err) {
+      // Don't tank the anomaly check if EONET hiccups.
+      console.warn("[anomalyNow] EONET fetch failed:", (err as Error).message);
+      nearbyEvents = [];
+    }
+  }
+
   return {
     port_id: portId,
     name: meta.localName || meta.city,
@@ -351,6 +378,9 @@ async function anomalyNow(portId: string) {
     pct_above_baseline: Math.round((ratio - 1) * 100),
     recorded_at: livePort.recorded_at,
     threshold: { high: 1.5, low: 0.67 },
+    nearby_natural_events: nearbyEvents,
+    nearby_natural_events_attribution:
+      nearbyEvents !== undefined ? "NASA EONET v3 (public domain)" : undefined,
   };
 }
 
@@ -464,7 +494,8 @@ function buildServer(): McpServer {
         "Use cruzar_best_times for historical DOW × hour averages.",
         "Use cruzar_forecast for the v0.4 RandomForest ML prediction at a 6h or 24h horizon.",
         "Use cruzar_recommend_route for the FULL dispatcher decision: ranked crossings with predicted wait at the driver's actual arrival time, given drive distance + departure offset.",
-        "Use cruzar_anomaly_now to check if a port is currently >1.5× or <0.67× its DOW × hour baseline (broker red-flag signal).",
+        "Use cruzar_anomaly_now to check if a port is currently >1.5× or <0.67× its DOW × hour baseline (broker red-flag signal). Auto-fetches NASA EONET nearby natural events when the port flags anomaly_high — wildfires, severe storms, dust haze, floods within 100km that explain the wait spike.",
+        "Use cruzar_nearby_natural_events to query EONET for a port without running the wait-anomaly check — useful when the broker just wants the natural-event context.",
         "Use cruzar_compare_ports for a side-by-side v0.4 forecast across multiple ports at a single horizon.",
         "Use cruzar_briefing for a one-shot markdown decision summary on a single port (live + historical + v0.4 forecast — best for dispatcher / broker workflows).",
         "Use cruzar_history to pull raw recent wait readings for a port over the last N days (max 14) for power users who want the underlying time series, not a summary.",
@@ -572,17 +603,92 @@ function buildServer(): McpServer {
     "cruzar_anomaly_now",
     {
       title: "Anomaly detection — is this port running unusually high or low right now?",
-      description: "Compares the port's current vehicle wait against the 90-day historical average for this DOW × hour. Returns status (anomaly_high | anomaly_low | normal | no_recent_reading | no_baseline) plus the ratio + delta. Threshold: ≥1.5× = high, ≤0.67× = low.",
+      description:
+        "Compares the port's current vehicle wait against the 90-day historical average for this DOW × hour. Returns status (anomaly_high | anomaly_low | normal | no_recent_reading | no_baseline) plus the ratio + delta. Threshold: ≥1.5× = high, ≤0.67× = low. When the port flags anomaly_high, the response also includes nearby_natural_events from NASA EONET (wildfires, severe storms, floods, dust events within 100km) — explanatory context for WHY a wait spike is happening. Pass include_natural_events=true to force the EONET fetch even when the port is normal.",
       inputSchema: {
         port_id: z.string().describe("Cruzar port_id (e.g. '230402' = Laredo WTB)"),
+        include_natural_events: z
+          .boolean()
+          .optional()
+          .describe("Force fetch of nearby NASA EONET events even when the port is not anomaly_high. Default false (auto-fetched only on anomaly_high)."),
       },
     },
-    async ({ port_id }) => {
-      const result = await anomalyNow(port_id);
+    async ({ port_id, include_natural_events }) => {
+      const result = await anomalyNow(port_id, {
+        includeNaturalEvents: include_natural_events ?? undefined,
+      });
       return {
         structuredContent: result as unknown as Record<string, unknown>,
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };
+    },
+  );
+
+  server.registerTool(
+    "cruzar_nearby_natural_events",
+    {
+      title: "NASA EONET natural events near a port-of-entry",
+      description:
+        "Queries NASA EONET for active natural events (wildfires, severe storms, floods, dust haze, volcanoes, etc.) within a radius of a port. Source: NASA Earth Observatory Natural Event Tracker, public domain. Useful for explaining wait-time anomalies (\"wildfire 50km west of Pharr — CBP slows commercial inspections in smoke advisories\") or for proactive dispatcher context. Cached 1h to keep EONET happy.",
+      inputSchema: {
+        port_id: z.string().describe("Cruzar port_id (e.g. '230501' = Hidalgo)"),
+        radius_km: z
+          .number()
+          .min(10)
+          .max(500)
+          .default(100)
+          .describe("Filter radius from the port. Events whose geometry is outside this radius are dropped."),
+        days: z
+          .number()
+          .int()
+          .min(1)
+          .max(60)
+          .default(7)
+          .describe("Look-back window in days. EONET events stay in the feed until source closes them."),
+        status: z
+          .enum(["open", "closed", "all"])
+          .default("open")
+          .describe("Event status filter. Default 'open' = currently active."),
+      },
+    },
+    async ({ port_id, radius_km, days, status }) => {
+      const meta = PORT_META[port_id];
+      if (!meta) {
+        return {
+          content: [{ type: "text", text: `Error: unknown port_id "${port_id}"` }],
+          isError: true,
+        };
+      }
+      try {
+        const events = await fetchNearbyEvents(
+          { lat: meta.lat, lng: meta.lng },
+          radius_km,
+          days,
+          status,
+        );
+        const result = {
+          port_id,
+          port_name: meta.localName || meta.city,
+          radius_km,
+          days,
+          status,
+          fetched_at: new Date().toISOString(),
+          count: events.length,
+          events,
+          attribution: "NASA EONET v3 (public domain)",
+        };
+        return {
+          structuredContent: result as unknown as Record<string, unknown>,
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (err) {
+        return {
+          content: [
+            { type: "text", text: `EONET fetch failed: ${(err as Error).message}` },
+          ],
+          isError: true,
+        };
+      }
     },
   );
 
