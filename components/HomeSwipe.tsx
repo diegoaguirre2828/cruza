@@ -95,8 +95,9 @@ export function HomeSwipe({ panels, initialPanel = 'cerca' }: Props) {
   // is the affordance Diego flagged was missing — users were forgetting
   // they could swipe between panels because the pills looked like filters
   // or nav links, not a paginator.
-  const indicatorWidthPct = 100 / panels.length
-  const indicatorOffsetPct = activeIdx * indicatorWidthPct
+  // NOTE: animate `left` (parent-relative %) not `translateX` (self-relative
+  // %) — the translateX form mis-aligns the pill because % resolves against
+  // the indicator's own 1/3 width, not the parent's full width.
 
   return (
     <div className="mt-2">
@@ -108,11 +109,10 @@ export function HomeSwipe({ panels, initialPanel = 'cerca' }: Props) {
         {/* Sliding active-tab pill */}
         <div
           aria-hidden="true"
-          className="absolute top-1 bottom-1 bg-white dark:bg-gray-700 rounded-lg shadow-sm transition-transform duration-200 ease-out"
+          className="absolute top-1 bottom-1 bg-white dark:bg-gray-700 rounded-lg shadow-sm transition-[left] duration-200 ease-out"
           style={{
-            width: `calc(${indicatorWidthPct}% - 0.25rem)`,
-            transform: `translateX(calc(${indicatorOffsetPct}% + 0.125rem))`,
-            left: 0,
+            width: `calc((100% - 0.5rem) / ${panels.length})`,
+            left: `calc(0.25rem + ${activeIdx} * (100% - 0.5rem) / ${panels.length})`,
           }}
         />
         {panels.map((p, i) => {
