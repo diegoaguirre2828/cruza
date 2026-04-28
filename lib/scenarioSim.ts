@@ -18,6 +18,9 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { PORT_META } from "./portMeta";
+import { logCalibrationPrediction } from "./calibration";
+
+export const SCENARIO_SIM_VERSION = "v0";
 
 export type Lang = "en" | "es";
 export type Confidence = "high" | "moderate" | "low";
@@ -204,7 +207,7 @@ ${RESPONSE_SCHEMA_DOC}`;
   const userCaveats = Array.isArray(obj.caveats) ? (obj.caveats as string[]) : [];
   const allCaveats = [...baseCaveats, ...userCaveats];
 
-  return {
+  const result: ScenarioSimOutput = {
     scenario: input.scenario,
     generated_at: new Date().toISOString(),
     lang,
@@ -215,4 +218,40 @@ ${RESPONSE_SCHEMA_DOC}`;
     caveats: allCaveats,
     is_simulation: true,
   };
+
+  // Calibration log write — non-blocking, fire-and-forget.
+  // Stores the prediction so we can later compare predicted_minutes against
+  // observed CBP wait differential for the same time window.
+  const tags: string[] = [
+    `port:${result.primary_recommendation.port_id}`,
+    `lang:${lang}`,
+    `confidence:${result.primary_recommendation.confidence}`,
+  ];
+  if (input.appointment_time_iso) tags.push("has_appointment");
+  if (input.origin) tags.push("has_origin");
+
+  void logCalibrationPrediction({
+    project: "cruzar",
+    sim_kind: "scenario-sim",
+    sim_version: SCENARIO_SIM_VERSION,
+    predicted: {
+      primary_port_id: result.primary_recommendation.port_id,
+      primary_delta_minutes: result.primary_recommendation.delta_vs_baseline_minutes,
+      primary_confidence: result.primary_recommendation.confidence,
+      alternatives: result.alternatives.map((a) => ({
+        port_id: a.port_id,
+        delta_minutes: a.delta_vs_baseline_minutes,
+      })),
+      cascade_count: result.cascade_predictions.length,
+    },
+    context: {
+      scenario: input.scenario,
+      origin: input.origin ?? null,
+      destination: input.destination ?? null,
+      appointment_time_iso: input.appointment_time_iso ?? null,
+    },
+    tags,
+  });
+
+  return result;
 }
