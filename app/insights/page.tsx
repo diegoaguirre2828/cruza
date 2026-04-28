@@ -27,17 +27,27 @@ export const metadata = {
   alternates: { canonical: "https://www.cruzar.app/insights" },
 };
 
-// Backtest results — derived live from v0.5.2 manifest, 6-hour horizon.
-// Status thresholds:
-//   TX corridor (CBP climatology available):
-//     lift_vs_cbp >= 5   → decision-grade
-//     0 < lift_vs_cbp < 5 → marginal
-//     lift_vs_cbp < 0    → drift-fallback (inference serves CBP climatology directly)
-//   CA/AZ/NM (CBP API returns null climatology — structurally unavailable, NOT a backfill gap):
-//     lift_vs_persistence >= 5  → model-only (beats the naive baseline brokers default to)
-//     0 < lift_vs_persistence < 5 → marginal (no CBP basis for cross-baseline claim)
-//     lift_vs_persistence < 0   → drift-fallback (model worse than persistence)
-type PortStatus = "decision-grade" | "marginal" | "model-only" | "drift-fallback";
+// Backtest results — derived live from the v0.5 manifest, 6-hour horizon.
+// Two baselines:
+//   CBP climatology — strongest baseline a TX broker already uses. Only
+//     published by the CBP API for TX ports (verified empirically — CA/AZ/NM
+//     return literal "{}" sentinel, not a Cruzar gap).
+//   Self climatology — Cruzar's own DOW × hour mean from the training window.
+//     Available for every trained port. Honest first-party baseline.
+//
+// Status thresholds (CBP wins when both available, since brokers can verify it):
+//   lift_vs_cbp >= 5     → decision-grade (we beat CBP meaningfully)
+//   lift_vs_cbp 0-5%     → marginal vs CBP
+//   lift_vs_cbp < 0      → drift-fallback (inference auto-serves CBP)
+//   no CBP, lift_vs_self ≥ 5  → self-baseline (we beat our own historical avg)
+//   no CBP, lift_vs_self 0-5% → marginal-self
+//   no CBP, lift_vs_self < 0  → drift-fallback (inference auto-serves self-climatology)
+type PortStatus =
+  | "decision-grade"
+  | "marginal"
+  | "self-baseline"
+  | "marginal-self"
+  | "drift-fallback";
 type ClusterKey = "rgv" | "laredo" | "coahuila-tx" | "el-paso" | "sonora-az" | "baja" | "other";
 
 type PortRow = {
@@ -47,6 +57,7 @@ type PortRow = {
   rmse: number | null;
   vsCbp: number | null;
   vsPersistence: number | null;
+  vsSelfClimatology: number | null;
   status: PortStatus;
   note?: string;
   noteEs?: string;
@@ -59,6 +70,9 @@ interface ManifestModel {
   rmse_min: number | null;
   lift_vs_persistence_pct: number | null;
   lift_vs_cbp_climatology_pct: number | null;
+  // v0.5.3: first-party DOW × hour climatology baseline. Available for every
+  // trained port (including CA/AZ/NM where CBP doesn't publish).
+  lift_vs_self_climatology_pct?: number | null;
   n_train: number;
   n_test: number;
 }
@@ -78,14 +92,16 @@ function buildPortRows(m: Manifest): PortRow[] {
     const meta = getPortMeta(row.port_id);
     const liftCbp = row.lift_vs_cbp_climatology_pct;
     const liftPers = row.lift_vs_persistence_pct;
+    const liftSelf = row.lift_vs_self_climatology_pct ?? null;
 
     let status: PortStatus;
     let note: string | undefined;
     let noteEs: string | undefined;
 
     // CBP /api/historicalwaittimes/ returns null climatology for CA/AZ/NM
-    // ports (structurally — verified across 30k API rows). For those ports,
-    // we judge against persistence (last-reading naive baseline) instead.
+    // ports (structurally — verified across 30k API rows). For those ports
+    // we use Cruzar's own DOW × hour climatology computed from the training
+    // window (lift_vs_self_climatology). Same shape, different upstream.
     const cbpAvailable = liftCbp !== null && liftCbp !== 0;
 
     if (cbpAvailable) {
@@ -98,22 +114,30 @@ function buildPortRows(m: Manifest): PortRow[] {
         note = "Concept drift or regime shift. Inference returns CBP climatology until next retrain restores lift.";
         noteEs = "Drift o cambio de régimen. Inferencia devuelve climatología CBP hasta que el reentrenamiento restaure la ventaja.";
       }
-    } else {
-      // No CBP baseline published by the upstream API for this port. Use
-      // persistence as the comparison instead.
-      const liftP = liftPers ?? 0;
-      if (liftP >= 5) {
-        status = "model-only";
-        note = "CBP doesn't publish historical climatology for this corridor. Lift quoted vs persistence (last-reading baseline).";
-        noteEs = "CBP no publica climatología histórica para este corredor. Lift comparado contra persistencia (última lectura).";
-      } else if (liftP > 0) {
-        status = "marginal";
-        note = "No CBP baseline for this corridor; small edge over persistence only.";
-        noteEs = "Sin baseline CBP en este corredor; ventaja pequeña sobre persistencia.";
+    } else if (liftSelf !== null) {
+      // CBP doesn't publish here. Compare against Cruzar's own climatology.
+      if (liftSelf >= 5) {
+        status = "self-baseline";
+        note = "CBP doesn't publish historical climatology for this corridor. Lift quoted vs Cruzar's own DOW × hour baseline (first-party, computed from the training window).";
+        noteEs = "CBP no publica climatología histórica para este corredor. Lift comparado contra el baseline propio de Cruzar (DOW × hora, computado de la ventana de entrenamiento).";
+      } else if (liftSelf > 0) {
+        status = "marginal-self";
+        note = "No CBP baseline for this corridor. Small edge over Cruzar's own DOW × hour climatology.";
+        noteEs = "Sin baseline CBP en este corredor. Ventaja pequeña sobre la propia climatología DOW × hora de Cruzar.";
       } else {
         status = "drift-fallback";
-        note = "Model trails persistence baseline. Inference falls back to last-reading until next retrain.";
-        noteEs = "El modelo va detrás de la persistencia. Inferencia cae a la última lectura hasta el siguiente reentrenamiento.";
+        note = "Model trails Cruzar's own climatology baseline. Inference falls back to that baseline until next retrain.";
+        noteEs = "El modelo va detrás del baseline propio de Cruzar. Inferencia cae a ese baseline hasta el siguiente reentrenamiento.";
+      }
+    } else {
+      // Neither baseline available — use persistence as a last-resort frame.
+      const liftP = liftPers ?? 0;
+      if (liftP >= 5) {
+        status = "self-baseline";
+      } else if (liftP > 0) {
+        status = "marginal-self";
+      } else {
+        status = "drift-fallback";
       }
     }
 
@@ -122,10 +146,12 @@ function buildPortRows(m: Manifest): PortRow[] {
       name: meta.localName ?? `${meta.city}`,
       cluster: meta.megaRegion as ClusterKey,
       rmse: row.rmse_min,
-      // model-only: render "—" for the CBP column since the upstream API
-      // doesn't publish a baseline for this port.
-      vsCbp: status === "model-only" ? null : liftCbp,
+      // self-baseline / marginal-self: render "—" for the CBP column since the
+      // upstream API doesn't publish a baseline for this port.
+      vsCbp:
+        status === "self-baseline" || status === "marginal-self" ? null : liftCbp,
       vsPersistence: liftPers,
+      vsSelfClimatology: liftSelf,
       status,
       note,
       noteEs,
@@ -134,13 +160,25 @@ function buildPortRows(m: Manifest): PortRow[] {
 }
 
 const PORTS: PortRow[] = buildPortRows(manifest as Manifest)
-  // Sort: decision-grade first by lift desc, then model-only by persistence-lift,
-  // then marginal, then drift.
+  // Sort: decision-grade first by CBP lift, then self-baseline by self lift,
+  // then marginals, then drift.
   .sort((a, b) => {
-    const order = { "decision-grade": 0, "model-only": 1, marginal: 2, "drift-fallback": 3 } as const;
+    const order = {
+      "decision-grade": 0,
+      "self-baseline": 1,
+      marginal: 2,
+      "marginal-self": 3,
+      "drift-fallback": 4,
+    } as const;
     if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
-    const aKey = a.status === "model-only" ? (a.vsPersistence ?? -1000) : (a.vsCbp ?? -1000);
-    const bKey = b.status === "model-only" ? (b.vsPersistence ?? -1000) : (b.vsCbp ?? -1000);
+    const aKey =
+      a.status === "self-baseline" || a.status === "marginal-self"
+        ? (a.vsSelfClimatology ?? -1000)
+        : (a.vsCbp ?? -1000);
+    const bKey =
+      b.status === "self-baseline" || b.status === "marginal-self"
+        ? (b.vsSelfClimatology ?? -1000)
+        : (b.vsCbp ?? -1000);
     return bKey - aKey;
   });
 
@@ -383,28 +421,32 @@ export default function InsightsPage() {
               const tone =
                 p.status === "decision-grade"
                   ? "text-amber-400"
-                  : p.status === "model-only"
+                  : p.status === "self-baseline"
                   ? "text-sky-300"
-                  : p.status === "marginal"
+                  : p.status === "marginal" || p.status === "marginal-self"
                   ? "text-white/70"
                   : "text-rose-300/70";
               const barColor =
                 p.status === "decision-grade"
                   ? "bg-amber-400"
-                  : p.status === "model-only"
+                  : p.status === "self-baseline"
                   ? "bg-sky-400/40"
-                  : p.status === "marginal"
+                  : p.status === "marginal" || p.status === "marginal-self"
                   ? "bg-white/30"
                   : "bg-rose-400/30";
-              // For model-only ports, the bar reads against persistence (since CBP isn't published).
-              const barLift = p.status === "model-only" ? p.vsPersistence : p.vsCbp;
+              // For self-baseline / marginal-self ports, bar reads against the
+              // self-climatology baseline (CBP isn't published for those).
+              const barLift =
+                p.status === "self-baseline" || p.status === "marginal-self"
+                  ? p.vsSelfClimatology
+                  : p.vsCbp;
               return (
                 <div
                   key={p.name + i}
                   className={`grid grid-cols-[1.6fr_2.4fr_auto_auto] items-center gap-3 border-b border-white/[0.05] px-5 py-5 last:border-b-0 sm:grid-cols-[2fr_3fr_1fr_1fr_1fr] sm:gap-4 sm:px-6 sm:py-4 ${
                     p.status === "drift-fallback"
                       ? "bg-rose-950/10"
-                      : p.status === "model-only"
+                      : p.status === "self-baseline" || p.status === "marginal-self"
                         ? "bg-sky-950/10"
                         : ""
                   }`}
@@ -463,11 +505,11 @@ export default function InsightsPage() {
             <div>
               Tick at the midpoint = +20%. <span className="text-amber-300">Amber</span> = decision-grade
               lift vs CBP climatology (the strongest free baseline a TX broker already uses).{' '}
-              <span className="text-sky-300">Sky</span> = model-only (CBP doesn&apos;t publish historical
-              climatology for this corridor — typically CA/AZ/NM ports — so the bar reads against the
-              persistence baseline instead). Grey = small positive edge.{' '}
+              <span className="text-sky-300">Sky</span> = self-baseline (CBP doesn&apos;t publish for that
+              corridor — typically CA/AZ/NM — so the bar reads against Cruzar&apos;s own DOW × hour
+              climatology computed from the training window). Grey = small positive edge.{' '}
               <span className="text-rose-300/80">Rose</span> = drift-fallback; the inference API auto-returns
-              the persistence or CBP fallback directly so callers never see broken predictions.
+              whichever baseline is available so callers never see broken predictions.
             </div>
           </div>
         </div>
@@ -759,7 +801,7 @@ export default function InsightsPage() {
               // Count ports we'd recommend — beats the relevant baseline (CBP for TX,
               // persistence for CA/AZ/NM where CBP isn't published).
               const decision = cPorts.filter(
-                (p) => p.status === "decision-grade" || p.status === "model-only",
+                (p) => p.status === "decision-grade" || p.status === "self-baseline",
               ).length;
               return (
                 <div key={c.key} className="bg-[#0a1020] p-6 sm:p-7">
@@ -781,14 +823,16 @@ export default function InsightsPage() {
                           className={`font-mono text-[11px] tabular-nums ${
                             p.status === "decision-grade"
                               ? "text-amber-400"
-                              : p.status === "model-only"
+                              : p.status === "self-baseline"
                               ? "text-sky-300"
-                              : p.status === "marginal"
+                              : p.status === "marginal" || p.status === "marginal-self"
                               ? "text-white/45"
                               : "text-rose-300/70"
                           }`}
                         >
-                          {p.status === "model-only" ? `${fmtPct(p.vsPersistence)}p` : fmtPct(p.vsCbp)}
+                          {p.status === "self-baseline" || p.status === "marginal-self"
+                            ? `${fmtPct(p.vsSelfClimatology)}s`
+                            : fmtPct(p.vsCbp)}
                         </span>
                       </li>
                     ))}
