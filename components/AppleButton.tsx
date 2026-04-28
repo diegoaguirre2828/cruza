@@ -1,27 +1,32 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
+import { isIOSAppClient } from '@/lib/platform'
+import { signInWithAppleNative } from '@/lib/socialLogin'
 
 // Apple Sign-In button. Apple guideline 4.8 mandates Sign in with Apple
 // any time the app offers another third-party identity provider (we do
 // — Google).
 //
-// Uses the Supabase OAuth redirect flow on both web and inside the
-// Capacitor iOS WebView. The native @capacitor-community/apple-sign-in
-// plugin is pinned to Capacitor 7 and doesn't yet support Capacitor 8,
-// so we route everything through the web redirect — Apple accepts this
-// for 4.8 as long as the button is visible and works.
+// On iOS app builds (Capacitor) → native Apple sheet via
+// @capgo/capacitor-social-login → Supabase signInWithIdToken. This was
+// the fix for build-1.0(19) Apple Review rejection (guideline 4.0 +
+// 2.1(a)) where the prior web-redirect flow pushed users to Safari and
+// broke on iPad.
 //
-// Supabase dependency: Authentication → Providers → Apple must be
-// enabled with Services ID + Key ID + Team ID + private key.
+// On web / PWA → existing Supabase OAuth redirect flow. Different code
+// path because the web has no native auth surface and the Apple Services
+// ID config is what backs that flow on the desktop browser.
 
 export function AppleButton({
   label,
   next = '/welcome',
 }: { label?: string; next?: string }) {
   const { lang } = useLang()
+  const router = useRouter()
   const es = lang === 'es'
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
@@ -31,6 +36,20 @@ export function AppleButton({
     setError(null)
     setLoading(true)
 
+    // iOS native path — opens the Apple system sheet, exchanges the
+    // returned identity token with Supabase, and we navigate locally.
+    if (isIOSAppClient()) {
+      const result = await signInWithAppleNative()
+      if (!result.ok) {
+        setError(result.error || (es ? 'No se pudo iniciar con Apple' : 'Could not start Apple sign-in'))
+        setLoading(false)
+        return
+      }
+      router.push(next)
+      return
+    }
+
+    // Web / PWA path — Supabase OAuth redirect.
     try {
       const supabase = createClient()
       const origin = typeof window !== 'undefined'

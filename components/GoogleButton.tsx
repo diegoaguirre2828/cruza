@@ -1,8 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
+import { isIOSAppClient } from '@/lib/platform'
+import { signInWithGoogleNative } from '@/lib/socialLogin'
 
 // Detects Facebook / Instagram / TikTok in-app browsers, which are
 // notorious for breaking OAuth flows — they block cross-origin
@@ -36,6 +39,7 @@ export function GoogleButton({
   next = '/welcome',
 }: { label?: string; next?: string }) {
   const { lang } = useLang()
+  const router = useRouter()
   const es = lang === 'es'
   // If no label provided, use bilingual default. Callers can still
   // override with an explicit label when they need custom copy (e.g.
@@ -61,6 +65,21 @@ export function GoogleButton({
     setStalled(false)
     setDebugUrl(null)
     setLoading(true)
+
+    // iOS native path — Google native sheet → Supabase signInWithIdToken.
+    // Fix for build-1.0(19) Apple Review rejection (guideline 4.0): no
+    // more bouncing the user out to Safari for OAuth.
+    if (isIOSAppClient()) {
+      const result = await signInWithGoogleNative()
+      if (!result.ok) {
+        setError(result.error || (es ? 'No se pudo iniciar con Google' : 'Could not start Google sign-in'))
+        setLoading(false)
+        return
+      }
+      router.push(next)
+      return
+    }
+
     try {
       const supabase = createClient()
       const origin = typeof window !== 'undefined'

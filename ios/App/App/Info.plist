@@ -64,5 +64,30 @@
 		<string>en</string>
 		<string>es</string>
 	</array>
+	<!--
+	  Google Sign-In (native, via @capgo/capacitor-social-login) needs the
+	  REVERSED iOS OAuth client ID registered as a URL scheme so the
+	  Google sheet can hand control back to the app after auth.
+
+	  TODO before the next TestFlight build (build 20 candidate):
+	    1. Google Cloud Console → APIs & Services → Credentials → Create
+	       OAuth 2.0 Client ID → iOS → bundle id matches Cruzar's iOS
+	       PRODUCT_BUNDLE_IDENTIFIER.
+	    2. Copy the iOS client ID, e.g. 1234-abcd.apps.googleusercontent.com
+	    3. Set NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID + NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID
+	       in Vercel env (web client id may already exist for Supabase).
+	    4. Replace the REVERSED-CLIENT-ID-PLACEHOLDER below with the
+	       reversed form (e.g. com.googleusercontent.apps.1234-abcd).
+	    5. npx cap sync ios && open in Xcode → archive → upload.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.REVERSED-CLIENT-ID-PLACEHOLDER</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
