@@ -7,8 +7,15 @@ name: Sync Cruzar Insights manifest
 # Without this sync, the page goes stale within a week of the next retrain.
 #
 # Schedule: Mondays at 07:00 UTC, one hour after cruzar-insights-ml's
-# weekly-retrain.yml (Sundays 06:00 UTC). One-directional pull, no
-# cross-repo PAT required — just a public raw URL fetch.
+# weekly-retrain.yml (Sundays 06:00 UTC). One-directional pull from a
+# PRIVATE source repo using a read-only fine-grained PAT.
+#
+# Required secret (one-time setup — without this the workflow 404s):
+#   CRUZAR_INSIGHTS_ML_TOKEN
+#     Fine-grained PAT scoped to diegoaguirre2828/cruzar-insights-ml
+#     with READ-ONLY "Contents" repository permission.
+#     Generate at github.com/settings/personal-access-tokens/new
+#     Add at github.com/diegoaguirre2828/cruzar/settings/secrets/actions
 
 on:
   schedule:
@@ -28,11 +35,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch latest manifest from cruzar-insights-ml
+      - name: Fetch latest manifest from cruzar-insights-ml (private)
+        env:
+          GH_TOKEN: ${{ secrets.CRUZAR_INSIGHTS_ML_TOKEN }}
         run: |
-          curl -fsSL \
-            -o /tmp/manifest.json \
-            "https://raw.githubusercontent.com/diegoaguirre2828/cruzar-insights-ml/main/artifacts/v05/manifest.json"
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::CRUZAR_INSIGHTS_ML_TOKEN secret is not set."
+            echo "Create a fine-grained PAT with READ-ONLY Contents access to"
+            echo "diegoaguirre2828/cruzar-insights-ml and add it as a repo secret."
+            exit 1
+          fi
+          gh api \
+            -H "Accept: application/vnd.github.raw+json" \
+            "/repos/diegoaguirre2828/cruzar-insights-ml/contents/artifacts/v05/manifest.json?ref=main" \
+            > /tmp/manifest.json
 
       - name: Diff vs current snapshot
         id: diff
