@@ -6,9 +6,13 @@ name: Sync Cruzar Insights manifest
 # Why: /insights renders from data/insights-manifest.json at module load.
 # Without this sync, the page goes stale within a week of the next retrain.
 #
-# Schedule: Mondays at 07:00 UTC, one hour after cruzar-insights-ml's
-# weekly-retrain.yml (Sundays 06:00 UTC). One-directional pull from a
-# PRIVATE source repo using a read-only fine-grained PAT.
+# Schedule: every day at 07:00 UTC (~02:00 CT). One-directional pull from
+# a PRIVATE source repo using a read-only fine-grained PAT.
+# - cruzar-insights-ml has a Sunday 06:00 UTC weekly-retrain
+# - The watchdog can also trigger off-cycle retrains mid-week when data
+#   threshold crosses
+# Daily cadence catches both without burning meaningful Actions minutes
+# (no-change runs exit in <10s after the diff step).
 #
 # Required secret (one-time setup — without this the workflow 404s):
 #   CRUZAR_INSIGHTS_ML_TOKEN
@@ -19,7 +23,7 @@ name: Sync Cruzar Insights manifest
 
 on:
   schedule:
-    - cron: "0 7 * * 1"   # Mondays 07:00 UTC
+    - cron: "0 7 * * *"   # Daily at 07:00 UTC (02:00 CT)
   workflow_dispatch:       # allow manual run
 
 concurrency:
