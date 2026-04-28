@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
       p_make_appointment: r.p_make_appointment,
       detention_risk_dollars: r.detention_dollars,
       eta_refreshed_at: new Date().toISOString(),
+      drive_cache: eta.drive_cache,
     })
     .select()
     .single();

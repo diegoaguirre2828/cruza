@@ -99,6 +99,28 @@ async function driveMinutes(fromLat: number, fromLng: number, toLat: number, toL
   return fallbackDriveMinutes(fromLat, fromLng, toLat, toLng);
 }
 
+// Per-port drive-time cache for a single tracked load.
+//   { "<port_id>": { to_bridge_min, to_dock_min, cached_at: ISO } }
+// 24hr TTL — drive routes don't shift much within a day, especially given
+// HERE's truck-mode baseline already accounts for typical congestion. This
+// cache is what makes the dispatch-alerts (c)-layer full re-route affordable
+// at the 250k/mo HERE free tier (first compute = full cost, subsequent = 0).
+export interface DriveCacheEntry {
+  to_bridge_min: number;
+  to_dock_min: number;
+  cached_at: string;
+}
+export type DriveCache = Record<string, DriveCacheEntry>;
+
+const DRIVE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function cacheFresh(entry: DriveCacheEntry | undefined): boolean {
+  if (!entry) return false;
+  const ts = new Date(entry.cached_at).getTime();
+  if (Number.isNaN(ts)) return false;
+  return Date.now() - ts < DRIVE_CACHE_TTL_MS;
+}
+
 // Standard normal CDF approximation (Abramowitz & Stegun 26.2.17).
 function normCdf(x: number): number {
   const a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741;
@@ -120,6 +142,7 @@ export interface LoadEtaInput {
   detention_grace_hours?: number;       // default 2.0
   preferred_port_id?: string | null;    // null = auto-pick best
   candidate_pool?: string[];            // override default RGV+Brownsville set
+  drive_cache?: DriveCache;             // per-port drive cache (24hr TTL)
 }
 
 export interface BridgeOption {
@@ -143,9 +166,10 @@ export interface LoadEtaResult {
   recommended: BridgeOption;
   alternatives: BridgeOption[];          // ranked, recommended is duplicated as [0]
   computed_at: string;
-  inputs_echo: Required<Omit<LoadEtaInput, "preferred_port_id" | "candidate_pool">> & {
+  inputs_echo: Required<Omit<LoadEtaInput, "preferred_port_id" | "candidate_pool" | "drive_cache">> & {
     preferred_port_id: string | null;
   };
+  drive_cache: DriveCache;               // updated cache (caller persists to row)
 }
 
 const DEFAULT_POOL = [
@@ -159,17 +183,35 @@ const DEFAULT_POOL = [
 async function evaluateBridge(
   portId: string,
   input: LoadEtaInput,
+  cacheUpdates: DriveCache,
 ): Promise<BridgeOption | null> {
   const meta = PORT_META[portId];
   if (!meta) return null;
   const approach = getApproach(portId);
   if (!approach) return null;
 
-  // Drive to the bridge
-  const driveToBridge = await driveMinutes(
-    input.origin_lat, input.origin_lng,
-    approach.approach.lat, approach.approach.lng,
-  );
+  // Drive times: cache hit on (b) layer + warm starts; cache miss = full HERE.
+  const cached = input.drive_cache?.[portId];
+  let driveToBridge: number;
+  let driveToDock: number;
+  if (cacheFresh(cached)) {
+    driveToBridge = cached!.to_bridge_min;
+    driveToDock = cached!.to_dock_min;
+  } else {
+    driveToBridge = await driveMinutes(
+      input.origin_lat, input.origin_lng,
+      approach.approach.lat, approach.approach.lng,
+    );
+    driveToDock = await driveMinutes(
+      approach.border.lat, approach.border.lng,
+      input.dest_lat, input.dest_lng,
+    );
+    cacheUpdates[portId] = {
+      to_bridge_min: driveToBridge,
+      to_dock_min: driveToDock,
+      cached_at: new Date().toISOString(),
+    };
+  }
 
   // Pick forecast horizon — match the predicted-arrival window
   const horizonMin = driveToBridge < 90 ? 360 : 1440;
@@ -180,12 +222,6 @@ async function evaluateBridge(
   }
   const waitMin = Math.max(0, Math.round(fc.prediction_min));
   const rmse = fc.rmse_min ?? 20;
-
-  // Drive from US-side booth to dock
-  const driveToDock = await driveMinutes(
-    approach.border.lat, approach.border.lng,
-    input.dest_lat, input.dest_lng,
-  );
 
   const totalEta = driveToBridge + waitMin + driveToDock;
   const arrival = new Date(Date.now() + totalEta * 60_000);
@@ -219,7 +255,8 @@ async function evaluateBridge(
 
 export async function computeLoadEta(input: LoadEtaInput): Promise<LoadEtaResult> {
   const pool = input.preferred_port_id ? [input.preferred_port_id] : (input.candidate_pool ?? DEFAULT_POOL);
-  const evaluated = await Promise.all(pool.map((id) => evaluateBridge(id, input)));
+  const cacheUpdates: DriveCache = {};
+  const evaluated = await Promise.all(pool.map((id) => evaluateBridge(id, input, cacheUpdates)));
   const valid = evaluated.filter((b): b is BridgeOption => b !== null);
   if (valid.length === 0) {
     throw new Error("no bridges could be evaluated — forecast API or HERE may be unavailable");
@@ -231,6 +268,9 @@ export async function computeLoadEta(input: LoadEtaInput): Promise<LoadEtaResult
     }
     return a.detention_dollars - b.detention_dollars;
   });
+  // Merge any prior cache the caller passed in with the fresh entries we
+  // just looked up. Caller persists this to tracked_loads.drive_cache.
+  const mergedCache: DriveCache = { ...(input.drive_cache ?? {}), ...cacheUpdates };
   return {
     recommended: ranked[0],
     alternatives: ranked,
@@ -245,5 +285,6 @@ export async function computeLoadEta(input: LoadEtaInput): Promise<LoadEtaResult
       detention_grace_hours: input.detention_grace_hours ?? 2,
       preferred_port_id: input.preferred_port_id ?? null,
     },
+    drive_cache: mergedCache,
   };
 }

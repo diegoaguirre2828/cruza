@@ -44,6 +44,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       detention_rate_per_hour: load.detention_rate_per_hour,
       detention_grace_hours: load.detention_grace_hours,
       preferred_port_id: load.preferred_port_id ?? null,
+      drive_cache: (load.drive_cache as Record<string, { to_bridge_min: number; to_dock_min: number; cached_at: string }>) ?? {},
     });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 503 });
@@ -60,7 +61,10 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
       rmse_minutes: r.rmse_min,
       p_make_appointment: r.p_make_appointment,
       detention_risk_dollars: r.detention_dollars,
+      // Stamp prior so cron's eta_slip_minutes rule has a stable comparison.
+      prior_predicted_eta_minutes: load.predicted_eta_minutes ?? null,
       eta_refreshed_at: new Date().toISOString(),
+      drive_cache: eta.drive_cache,
     })
     .eq("id", id).eq("user_id", user.id);
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 });

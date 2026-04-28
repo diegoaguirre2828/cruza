@@ -15,6 +15,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { evaluateRule, renderAlertText, type AlertRule, type LoadSnapshot } from "@/lib/alertEngine";
+import { forecast, isForecastError } from "@/lib/forecastClient";
+import { computeLoadEta, type DriveCache } from "@/lib/loadEta";
 import webpush from "web-push";
 
 export const runtime = "nodejs";
@@ -36,6 +38,137 @@ function authorized(req: NextRequest): boolean {
   if (q && q === secret) return true;
   const auth = req.headers.get("authorization") || "";
   return auth.replace(/^Bearer\s+/i, "").trim() === secret;
+}
+
+// Standard normal CDF (Abramowitz & Stegun 26.2.17). Mirrors lib/loadEta.
+function normCdf(x: number): number {
+  const a1 =  0.254829592, a2 = -0.284496736, a3 =  1.421413741;
+  const a4 = -1.453152027, a5 =  1.061405429, p  =  0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  const ax = Math.abs(x) / Math.sqrt(2);
+  const t = 1.0 / (1.0 + p * ax);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-ax * ax);
+  return 0.5 * (1.0 + sign * y);
+}
+
+const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
+interface RefreshOutcome {
+  snapshot: LoadSnapshot;          // patched with fresh values
+  priorEtaMinutes: number | null;
+  currentEtaResult: Awaited<ReturnType<typeof computeLoadEta>> | null;  // populated only on (c) full re-route
+  persist: Record<string, unknown>;  // fields to write back to tracked_loads
+}
+
+// Layer (b) — refresh only the recommended port via a forecast API call,
+// reuse stored drive_minutes. Cheap (1 forecast call, 0 HERE). Returns a
+// patched snapshot + the persistence delta.
+async function refreshRecommendedOnly(load: Record<string, unknown>, baseSnapshot: LoadSnapshot): Promise<RefreshOutcome | null> {
+  const portId = baseSnapshot.recommended_port_id;
+  if (!portId) return null;
+  const drive = (load.predicted_drive_minutes as number | null) ?? 0;
+  const apptStr = load.appointment_at as string | null;
+  if (!apptStr) return null;
+  const apptMs = new Date(apptStr).getTime();
+  if (Number.isNaN(apptMs)) return null;
+  const minutesUntil = (apptMs - Date.now()) / 60_000;
+  const horizon = minutesUntil < 90 ? 360 : 1440;
+
+  const fc = await forecast(portId, horizon);
+  if (isForecastError(fc)) return null;
+
+  const wait = Math.max(0, Math.round(fc.prediction_min));
+  const rmse = fc.rmse_min ?? (load.rmse_minutes as number | null) ?? 20;
+  const totalEta = drive + wait;
+  const arrival = new Date(Date.now() + totalEta * 60_000);
+  const slackMin = (apptMs - arrival.getTime()) / 60_000;
+  const p = Math.max(0, Math.min(1, normCdf(slackMin / rmse)));
+  const grace = (load.detention_grace_hours as number | null) ?? 2;
+  const rate = (load.detention_rate_per_hour as number | null) ?? 75;
+  const detentionMin = Math.max(0, -slackMin - grace * 60);
+  const detentionDollars = Math.round((detentionMin / 60) * rate * 100) / 100;
+  const priorEta = (load.predicted_eta_minutes as number | null) ?? null;
+
+  const snapshot: LoadSnapshot = {
+    ...baseSnapshot,
+    predicted_wait_minutes: wait,
+    predicted_eta_minutes: totalEta,
+    predicted_arrival_at: arrival.toISOString(),
+    p_make_appointment: p,
+    detention_risk_dollars: detentionDollars,
+    eta_refreshed_at: new Date().toISOString(),
+  };
+  return {
+    snapshot,
+    priorEtaMinutes: priorEta,
+    currentEtaResult: null,
+    persist: {
+      predicted_wait_minutes: wait,
+      predicted_eta_minutes: totalEta,
+      predicted_arrival_at: arrival.toISOString(),
+      p_make_appointment: p,
+      detention_risk_dollars: detentionDollars,
+      prior_predicted_eta_minutes: priorEta,
+      eta_refreshed_at: new Date().toISOString(),
+    },
+  };
+}
+
+// Layer (c) — for loads with appointment_at < now+6hr, do a full re-route
+// across the bridge pool. drive_cache (24hr TTL) keeps HERE quota safe.
+async function refreshFullRoute(load: Record<string, unknown>, baseSnapshot: LoadSnapshot): Promise<RefreshOutcome | null> {
+  const destLat = load.dest_lat as number | null;
+  const destLng = load.dest_lng as number | null;
+  const apptStr = load.appointment_at as string | null;
+  if (!destLat || !destLng || !apptStr) return null;
+
+  let eta;
+  try {
+    eta = await computeLoadEta({
+      origin_lat: load.origin_lat as number,
+      origin_lng: load.origin_lng as number,
+      dest_lat: destLat,
+      dest_lng: destLng,
+      appointment_at: apptStr,
+      detention_rate_per_hour: (load.detention_rate_per_hour as number | undefined),
+      detention_grace_hours: (load.detention_grace_hours as number | undefined),
+      preferred_port_id: (load.preferred_port_id as string | null) ?? null,
+      drive_cache: ((load.drive_cache as DriveCache | null) ?? {}),
+    });
+  } catch {
+    return null;
+  }
+
+  const r = eta.recommended;
+  const priorEta = (load.predicted_eta_minutes as number | null) ?? null;
+  const snapshot: LoadSnapshot = {
+    ...baseSnapshot,
+    recommended_port_id: r.port_id,
+    predicted_wait_minutes: r.predicted_wait_min,
+    predicted_eta_minutes: r.total_eta_min,
+    predicted_arrival_at: r.predicted_arrival_at,
+    p_make_appointment: r.p_make_appointment,
+    detention_risk_dollars: r.detention_dollars,
+    eta_refreshed_at: new Date().toISOString(),
+  };
+  return {
+    snapshot,
+    priorEtaMinutes: priorEta,
+    currentEtaResult: eta,
+    persist: {
+      recommended_port_id: r.port_id,
+      predicted_wait_minutes: r.predicted_wait_min,
+      predicted_eta_minutes: r.total_eta_min,
+      predicted_arrival_at: r.predicted_arrival_at,
+      predicted_drive_minutes: r.drive_to_bridge_min + r.drive_to_dock_min,
+      rmse_minutes: r.rmse_min,
+      p_make_appointment: r.p_make_appointment,
+      detention_risk_dollars: r.detention_dollars,
+      prior_predicted_eta_minutes: priorEta,
+      eta_refreshed_at: new Date().toISOString(),
+      drive_cache: eta.drive_cache,
+    },
+  };
 }
 
 async function isAnomalyHigh(db: ReturnType<typeof getServiceClient>, portId: string): Promise<boolean> {
@@ -168,6 +301,10 @@ async function run(req: NextRequest) {
   // from the initial query and never refreshed in-memory, so the cooldown
   // check inside evaluateRule wouldn't catch the just-fired state.
   const firedThisPass = new Set<string>();
+  // Refresh-result memo: refresh each load at most once per cron pass, even
+  // if multiple rules target it. Layer (b) for >6hr-out, (c) full re-route
+  // for <6hr-out. Persisted snapshots get written back at the end.
+  const refreshMemo = new Map<string, RefreshOutcome | null>();
 
   for (const rule of (rules || []) as AlertRule[]) {
     const { data: loads } = rule.load_id
@@ -179,7 +316,7 @@ async function run(req: NextRequest) {
         stats.push({ rule_id: rule.id, load_id: ld.id, fired: false, reason: "already_fired_this_pass", delivered: false });
         continue;
       }
-      const snapshot: LoadSnapshot = {
+      const baseSnapshot: LoadSnapshot = {
         id: ld.id,
         load_ref: ld.load_ref,
         recommended_port_id: ld.recommended_port_id,
@@ -190,10 +327,30 @@ async function run(req: NextRequest) {
         detention_risk_dollars: ld.detention_risk_dollars,
         eta_refreshed_at: ld.eta_refreshed_at,
       };
+
+      // Refresh once per load (memoized). (c) for urgent loads, (b) otherwise.
+      let refreshed: RefreshOutcome | null;
+      if (refreshMemo.has(ld.id)) {
+        refreshed = refreshMemo.get(ld.id) ?? null;
+      } else {
+        const apptMs = ld.appointment_at ? new Date(ld.appointment_at).getTime() : NaN;
+        const urgent = !Number.isNaN(apptMs) && apptMs - Date.now() < SIX_HOURS_MS && apptMs > Date.now();
+        refreshed = urgent
+          ? await refreshFullRoute(ld, baseSnapshot)
+          : await refreshRecommendedOnly(ld, baseSnapshot);
+        refreshMemo.set(ld.id, refreshed);
+        if (refreshed) {
+          // Persist refreshed snapshot + drive_cache + prior eta back to row.
+          await db.from("tracked_loads").update(refreshed.persist).eq("id", ld.id);
+        }
+      }
+
+      const snapshot = refreshed?.snapshot ?? baseSnapshot;
+      const priorEta = refreshed?.priorEtaMinutes ?? null;
       const anomalyHigh = rule.trigger_kind === "anomaly_at_recommended" && snapshot.recommended_port_id
         ? await isAnomalyHigh(db, snapshot.recommended_port_id)
         : false;
-      const ev = evaluateRule(rule, snapshot, null, null, anomalyHigh);
+      const ev = evaluateRule(rule, snapshot, refreshed?.currentEtaResult ?? null, priorEta, anomalyHigh);
       if (!ev.fired) {
         stats.push({ rule_id: rule.id, load_id: ld.id, fired: false, reason: ev.reason, delivered: false });
         continue;
