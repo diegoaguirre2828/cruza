@@ -76,18 +76,29 @@ export interface ScenarioSimOutput {
   is_simulation: true; // explicit flag, never lies
 }
 
-// Compact port snapshot for the prompt — keeps grounding small but real.
+// Compact port snapshot for the prompt — every US-Mexico crossing the model
+// trains on. Grouped by megaRegion so the LLM can quickly route a scenario to
+// the right corridor (Baja for Otay Mesa, Sonora-AZ for Nogales, etc.).
 function portSnapshotForPrompt(): string {
-  const lines: string[] = [];
+  const groups: Record<string, string[]> = {};
   for (const [id, meta] of Object.entries(PORT_META)) {
-    if (meta.megaRegion === "rgv" || meta.megaRegion === "laredo") {
-      lines.push(`${id} | ${meta.city} (${meta.region}) | lat=${meta.lat.toFixed(3)} lng=${meta.lng.toFixed(3)}`);
-    }
+    if (meta.megaRegion === "other") continue;
+    const group = meta.megaRegion;
+    if (!groups[group]) groups[group] = [];
+    const label = meta.localName ? `${meta.localName} (${meta.city})` : meta.city;
+    groups[group].push(`${id} | ${label} | ${meta.region}`);
   }
-  return lines.join("\n");
+  // Order west-to-east: California → Arizona → New Mexico/El Paso → Eagle Pass/Del Rio → Laredo → RGV.
+  const order: Array<keyof typeof groups> = ["baja", "sonora-az", "el-paso", "coahuila-tx", "laredo", "rgv"];
+  return order
+    .filter((k) => groups[k]?.length)
+    .map((k) => `## ${k.toUpperCase()}\n${groups[k].join("\n")}`)
+    .join("\n\n");
 }
 
-const SYSTEM_PROMPT_EN = `You are a dispatcher decision-support agent for the US-Mexico border crossing context (RGV + Laredo). You produce SIMULATION output, never claims of fact about actual current wait times.
+const SYSTEM_PROMPT_EN = `You are a dispatcher decision-support agent for the US-Mexico border crossing context — the full land border (California / Arizona / New Mexico / El Paso / Eagle Pass / Laredo / RGV). You produce SIMULATION output, never claims of fact about actual current wait times.
+
+CRITICAL: route the scenario to the correct CORRIDOR. If the scenario names a port (e.g. "Otay Mesa", "Nogales", "Calexico"), the primary recommendation MUST be in that port's megaRegion (Baja, Sonora-AZ, etc.) — not a far-away corridor. Use the PORT SNAPSHOT below to pick the right port_id.
 
 Your output MUST be actionable, risk-weighted, and decision-grade. Forbidden output forms:
 - Abstract narrative ("the situation is complex")
@@ -104,7 +115,9 @@ Always include caveats: this is SIMULATION, not real-time prediction. Cascade mo
 
 Reply with JSON only, matching the schema. Do not include any text outside the JSON.`;
 
-const SYSTEM_PROMPT_ES = `Eres un agente de apoyo a decisiones de despachadores en el contexto de cruces fronterizos US-México (RGV + Laredo). Tu salida es SIMULACIÓN, nunca afirmaciones de hecho sobre tiempos de espera actuales.
+const SYSTEM_PROMPT_ES = `Eres un agente de apoyo a decisiones de despachadores en el contexto de cruces fronterizos US-México — toda la frontera terrestre (California / Arizona / Nuevo México / El Paso / Eagle Pass / Laredo / RGV). Tu salida es SIMULACIÓN, nunca afirmaciones de hecho sobre tiempos de espera actuales.
+
+CRÍTICO: enruta el escenario al CORREDOR correcto. Si el escenario nombra un puerto (ej. "Otay Mesa", "Nogales", "Calexico"), la recomendación primaria DEBE estar en la megaRegión de ese puerto (Baja, Sonora-AZ, etc.) — no un corredor lejano. Usa el SNAPSHOT DE PUERTOS abajo para elegir el port_id correcto.
 
 Tu salida DEBE ser accionable, ponderada por riesgo, y de calidad de decisión. Formas prohibidas:
 - Narrativa abstracta ("la situación es compleja")
