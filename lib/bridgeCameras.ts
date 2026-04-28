@@ -111,7 +111,34 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
     },
   ],
 
-  // ─── California — Calexico / Mexicali Nuevo ─────────────────────
+  // ─── California — Calexico East POE ↔ Mexicali Nuevo ────────────
+  // Pass-6 audit 2026-04-28: Mexicali Nuevo is the EAST crossing
+  // (~32.679, -115.39), so its El Imparcial cams pair with 250301
+  // (Calexico East), not 250302. Previous entry had them mis-keyed.
+  '250301': [
+    {
+      kind: 'image',
+      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-nuevoe.jpg',
+      credit: 'El Imparcial',
+      creditUrl: 'https://www.elimparcial.com/mexicali/site/garitas/',
+      note: 'Garita Mexicali Nuevo — vista este',
+      label: 'MX · Nuevo Este',
+    },
+    {
+      kind: 'image',
+      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-nuevoo.jpg',
+      credit: 'El Imparcial',
+      creditUrl: 'https://www.elimparcial.com/mexicali/site/garitas/',
+      note: 'Garita Mexicali Nuevo — vista oeste',
+      label: 'MX · Nuevo Oeste',
+    },
+  ],
+
+  // ─── California — Calexico West (downtown) ↔ Mexicali Centro ────
+  // Pass-6 add 2026-04-28: Mexicali Centro pair pulled from El Imparcial
+  // /mexicali/site/garitas/ — correct pairing for the downtown Calexico
+  // West POE. The existing Caltrans cam stays here (NB SR-111 jn 2nd St
+  // is downtown Calexico, ground truth verified).
   '250302': [
     {
       kind: 'image',
@@ -123,19 +150,19 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
     },
     {
       kind: 'image',
-      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-nuevoe.jpg',
+      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-centroe.jpg',
       credit: 'El Imparcial',
-      creditUrl: 'https://www.elimparcial.com/',
-      note: 'Garita Mexicali Nuevo — vista este',
-      label: 'MX · Este',
+      creditUrl: 'https://www.elimparcial.com/mexicali/site/garitas/',
+      note: 'Garita Mexicali Centro — vista este',
+      label: 'MX · Centro Este',
     },
     {
       kind: 'image',
-      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-nuevoo.jpg',
+      src: 'https://garitas.elimparcial.com/imgwebcams/garita-mexicali-centroo.jpg',
       credit: 'El Imparcial',
-      creditUrl: 'https://www.elimparcial.com/',
-      note: 'Garita Mexicali Nuevo — vista oeste',
-      label: 'MX · Oeste',
+      creditUrl: 'https://www.elimparcial.com/mexicali/site/garitas/',
+      note: 'Garita Mexicali Centro — vista oeste',
+      label: 'MX · Centro Oeste',
     },
   ],
 
@@ -323,6 +350,60 @@ export const BRIDGE_CAMERAS: Record<string, CameraFeed[]> = {
       creditUrl: 'https://heroicanogales.gob.mx/webcams-garitas',
       note: 'DeConcini sur (snapshot estático)',
       label: 'MX · Snap S',
+    },
+  ],
+
+  // ─── Texas Coahuila — Eagle Pass / Piedras Negras ───────────────
+  // Pass-6 discovery 2026-04-28: City of Eagle Pass publishes ipcamlive
+  // feeds (same publisher as our Brownsville/Matamoros cams). Bridge I
+  // page exposes 2 working aliases, Bridge II page exposes 4 aliases of
+  // which 3 return live snapshots (the 4th polls without a snapshot →
+  // skipped as offline). Verified via DevTools network capture.
+  // Source: https://www.eaglepasstx.gov/310/ + /335/
+
+  '230301': [
+    {
+      kind: 'iframe',
+      src: 'https://www.ipcamlive.com/player/player.php?alias=bridge1trafficplaza&autoplay=1',
+      credit: 'City of Eagle Pass',
+      creditUrl: 'https://www.eaglepasstx.gov/310/International-Bridge-I-Cameras',
+      note: 'Bridge I (Puente Viejo) — plaza de tráfico',
+      label: 'US · Plaza',
+    },
+    {
+      kind: 'iframe',
+      src: 'https://www.ipcamlive.com/player/player.php?alias=bridge1platform&autoplay=1',
+      credit: 'City of Eagle Pass',
+      creditUrl: 'https://www.eaglepasstx.gov/310/International-Bridge-I-Cameras',
+      note: 'Bridge I (Puente Viejo) — plataforma del puente',
+      label: 'US · Puente',
+    },
+  ],
+
+  '230302': [
+    {
+      kind: 'iframe',
+      src: 'https://www.ipcamlive.com/player/player.php?alias=67231a475ead1&autoplay=1',
+      credit: 'City of Eagle Pass',
+      creditUrl: 'https://www.eaglepasstx.gov/335/International-Bridge-2-Cameras',
+      note: 'Bridge II (Camino Real) — ángulo 1 en vivo',
+      label: 'US · Ángulo 1',
+    },
+    {
+      kind: 'iframe',
+      src: 'https://www.ipcamlive.com/player/player.php?alias=639ba5d96b3f6&autoplay=1',
+      credit: 'City of Eagle Pass',
+      creditUrl: 'https://www.eaglepasstx.gov/335/International-Bridge-2-Cameras',
+      note: 'Bridge II (Camino Real) — ángulo 2 en vivo',
+      label: 'US · Ángulo 2',
+    },
+    {
+      kind: 'iframe',
+      src: 'https://www.ipcamlive.com/player/player.php?alias=68f3f8b846277&autoplay=1',
+      credit: 'City of Eagle Pass',
+      creditUrl: 'https://www.eaglepasstx.gov/335/International-Bridge-2-Cameras',
+      note: 'Bridge II (Camino Real) — ángulo 3 en vivo',
+      label: 'US · Ángulo 3',
     },
   ],
 
