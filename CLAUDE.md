@@ -18,7 +18,7 @@ Standing capability across every project Diego owns. Canonical rules live in the
 - Build: run `npm run build` — must produce 197 of 197 pages clean
 - Live verify: curl `https://cruzar.app/api/ports` (at least 50 ports), plus `/privacy` and `/pricing`
 - Railway fb-poster: **decommissioned 2026-04-17** — `lastPosted: null` is expected; don't flag. Native Graph API publisher SHIPPED 2026-04-25 (see /api/social + admin/fb).
-- Schema source: `supabase/migrations/` is authoritative (v27 → v63 as of 2026-04-28). Top-level `supabase-schema-v*.sql` files are per-version deltas, not full schema dumps. No canonical full-schema file is committed — rebuild from ordered migrations.
+- Schema source: `supabase/migrations/` is authoritative (v27 → v68 as of 2026-04-28 evening). Top-level `supabase-schema-v*.sql` files are per-version deltas, not full schema dumps. No canonical full-schema file is committed — rebuild from ordered migrations.
 - Coord sync: the files `lib/portMeta.ts` and `components/WaitingMode.tsx` must match exactly on every port's coordinates
 - Bilingual coverage: every user-facing string in `app/` pages and `components/` must route through `LangContext`
 - Cron auth: every route under `/api/cron/` must accept both `?secret=` query and `Authorization: Bearer` header
@@ -121,7 +121,7 @@ Heed all deprecation notices. Do NOT assume standard Next.js 13/14/15 patterns a
 - **File storage:** Vercel Blob (port photos, camera frames, social-post images)
 - **Rate limiting + KV:** Upstash Redis (`@upstash/redis` + `@upstash/ratelimit`)
 - **Errors:** Sentry (`@sentry/nextjs`)
-- **MCP server:** Cruzar MCP at `/api/mcp` — 13 tools (`smart_route`, `live_wait`, `best_times`, `briefing`, `recommend_route`, `forecast`, `anomaly_now`, `compare_ports`, `history`, `load_eta`, `safety_script`, `generate_customs`, `anomaly_camera_recent`) over Streamable HTTP (bearer-auth, tracked in `mcp_keys` table)
+- **MCP server:** Cruzar MCP at `/api/mcp` — 15 tools (`smart_route`, `live_wait`, `best_times`, `briefing`, `recommend_route`, `forecast`, `anomaly_now`, `compare_ports`, `history`, `load_eta`, `safety_script`, `generate_customs`, `anomaly_camera_recent`, `transload_yards`, `nearby_natural_events`) over Streamable HTTP (bearer-auth, tracked in `mcp_keys` table). `anomaly_now` auto-attaches NASA EONET nearby natural events when port flags `anomaly_high`.
 - **iOS native:** Capacitor 8.3.1 + RevenueCat 13.0.1 (IAP) + native plugins (App, Geolocation, Preferences, Push, SplashScreen, StatusBar)
 
 ### Infrastructure
@@ -547,6 +547,12 @@ Expected response: `{"saved": 52, "at": "..."}`
 - **Operator + Express Cert tier** (v50) — phase 1 auto-crossing infrastructure
 - **3-panel home swipe** — Cerca / Mi puente / Comunidad (commit c2f7745)
 - **Scenario Sim v0** (2026-04-28) — `/api/insights/scenario-sim` + `/admin/scenario-sim` console. Haiku-backed dispatcher decision sim. Always labels `is_simulation: true`. Calibration log wired (v63 migration applied; row id=1 verified live).
+- **Co-Pilot trip mode** (2026-04-28) — `/copilot` page with start-trip/auto-cross-detection (geolocation watchPosition + auto-fire `/api/family/eta` + auto-fire `/api/copilot/cross-detected`). iOS Live Activity opt-in stub (lands when iOS build 22+ ships the Swift widget extension). v68 migration adds `copilot_live_activity_opt_in` + `copilot_active_trip_id` profile columns.
+- **Transload directory** (2026-04-28) — `/transload` public page + `/api/transload` + `cruzar_transload_yards` MCP. 62 OSM-sourced freight facilities across 6 megaRegions. `negocios` cross-link in transload category.
+- **/insights v0.5.4** (2026-04-28) — manifest-driven render (52 ports across TX/NM/AZ/CA), per-port RF-vs-XGBoost winner selection, self-climatology baseline (sky-tinted rows for CA/AZ/NM where CBP doesn't publish), payday + holiday features. `data/insights-manifest.json` snapshot synced from cruzar-insights-ml weekly via `.github/workflows/sync-insights-manifest.yml` (needs `CRUZAR_INSIGHTS_ML_TOKEN` repo secret to run).
+- **EONET anomaly explanation** (2026-04-28) — `lib/eonet.ts` + augmented `cruzar_anomaly_now` MCP tool + new `cruzar_nearby_natural_events` tool. NASA wildfires/storms/floods within 100km of port-of-entry. Public domain. 1h cache.
+- **Calibration dashboard** (concurrent session) — `/admin/calibration` + mark-observed flow. Service-role read of `calibration_log` + `calibration_accuracy_30d` view. Closes predicted-vs-observed loop end-to-end.
+- **PWA funnel + Supabase advisor cleanup** (concurrent session 2026-04-28 evening) — install-sheet whitelist (only on `/`), iOS step-1 → /ios-install dwell banner, post-signup nudge throttled, v64-v67 cleared all 27 Supabase advisor findings (3 errors + 16 warn + 8 info), SW v9 bump.
 - **Stripe live + rotated** ✅
 - **Anthropic SDK** (`@anthropic-ai/sdk`) — used for AI features
 
