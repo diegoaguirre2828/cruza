@@ -221,7 +221,7 @@ export default function CalibrationPage() {
               ) : (
                 <ul className="divide-y divide-white/[0.04]">
                   {data.recent.map((r) => (
-                    <RowItem key={r.id} row={r} />
+                    <RowItem key={r.id} row={r} onSaved={load} />
                   ))}
                 </ul>
               )}
@@ -252,10 +252,51 @@ function Counter({
   )
 }
 
-function RowItem({ row }: { row: LogRow }) {
+function RowItem({ row, onSaved }: { row: LogRow; onSaved: () => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [observedJson, setObservedJson] = useState('')
+  const [lossInput, setLossInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const created = new Date(row.created_at)
   const resolved = row.observed != null
+
+  async function saveObservation(e: React.MouseEvent) {
+    e.stopPropagation()
+    setSaveError(null)
+    let observed: unknown
+    try {
+      observed = observedJson.trim() ? JSON.parse(observedJson) : {}
+    } catch {
+      setSaveError('observed must be valid JSON')
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/calibration/observe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: row.id,
+          observed,
+          loss: lossInput.trim() ? Number(lossInput) : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setSaveError(data.error || `HTTP ${res.status}`)
+        return
+      }
+      setEditing(false)
+      onSaved()
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'save failed')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <li
       className="px-5 py-3.5 hover:bg-white/[0.02] cursor-pointer"
@@ -289,23 +330,89 @@ function RowItem({ row }: { row: LogRow }) {
         ))}
       </div>
       {expanded && (
-        <div className="mt-3 ml-[18px] grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/40 mb-1">
-              Predicted
+        <div className="mt-3 ml-[18px] space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40 mb-1">
+                Predicted
+              </div>
+              <pre className="font-mono text-[10px] text-white/70 bg-[#040814] border border-white/[0.06] rounded-lg p-2 overflow-x-auto">
+                {JSON.stringify(row.predicted, null, 2)}
+              </pre>
             </div>
-            <pre className="font-mono text-[10px] text-white/70 bg-[#040814] border border-white/[0.06] rounded-lg p-2 overflow-x-auto">
-              {JSON.stringify(row.predicted, null, 2)}
-            </pre>
-          </div>
-          <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/40 mb-1">
-              Observed
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/40 mb-1">
+                Observed
+              </div>
+              <pre className="font-mono text-[10px] text-white/70 bg-[#040814] border border-white/[0.06] rounded-lg p-2 overflow-x-auto">
+                {row.observed ? JSON.stringify(row.observed, null, 2) : '—'}
+              </pre>
             </div>
-            <pre className="font-mono text-[10px] text-white/70 bg-[#040814] border border-white/[0.06] rounded-lg p-2 overflow-x-auto">
-              {row.observed ? JSON.stringify(row.observed, null, 2) : '—'}
-            </pre>
           </div>
+
+          {!resolved && !editing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setEditing(true)
+                // Seed the observed input from predicted shape so Diego can edit
+                // values rather than retype the schema.
+                setObservedJson(JSON.stringify(row.predicted, null, 2))
+              }}
+              className="text-[11px] font-bold text-[#0a1020] bg-amber-400 hover:bg-amber-300 rounded-lg px-3 py-1.5"
+            >
+              Mark observed
+            </button>
+          )}
+
+          {editing && (
+            <div onClick={(e) => e.stopPropagation()} className="space-y-2 rounded-xl border border-white/[0.08] bg-[#040814] p-3">
+              <div>
+                <label className="block text-[10px] uppercase tracking-[0.18em] text-white/55 mb-1">
+                  Observed (JSON — edit to match real outcome)
+                </label>
+                <textarea
+                  value={observedJson}
+                  onChange={(e) => setObservedJson(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-lg border border-white/[0.08] bg-[#020410] px-2 py-1.5 font-mono text-[11px] text-white focus:border-amber-400/40 focus:outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] uppercase tracking-[0.18em] text-white/55">
+                  Loss
+                </label>
+                <input
+                  value={lossInput}
+                  onChange={(e) => setLossInput(e.target.value)}
+                  placeholder="e.g. 12.5"
+                  className="w-32 rounded-lg border border-white/[0.08] bg-[#020410] px-2 py-1 font-mono text-[11px] text-white focus:border-amber-400/40 focus:outline-none"
+                />
+                <span className="text-[10px] text-white/35">scalar — mean abs error, % off, or 0/1 hit</span>
+              </div>
+              {saveError && (
+                <div className="text-[11px] text-rose-300">✗ {saveError}</div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={saveObservation}
+                  disabled={saving}
+                  className="text-[11px] font-bold text-[#0a1020] bg-emerald-400 hover:bg-emerald-300 disabled:opacity-40 rounded-lg px-3 py-1.5"
+                >
+                  {saving ? 'Saving…' : 'Save observation'}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditing(false)
+                    setSaveError(null)
+                  }}
+                  className="text-[11px] text-white/55 hover:text-white rounded-lg px-3 py-1.5"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </li>
