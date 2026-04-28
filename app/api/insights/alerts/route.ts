@@ -73,6 +73,32 @@ export async function POST(req: NextRequest) {
   // full re-route on loads with appointment_at < now+6hr and stamps a
   // prior_predicted_eta_minutes column for stable slip comparison.)
 
+  // Dedup: don't let an operator pile up identical rules. We treat a rule
+  // as a duplicate if (load_id, trigger_kind, channel, threshold_value)
+  // matches another active or paused rule the same user owns. They can
+  // adjust the existing one or delete it — but creating a second copy
+  // just doubles the noise.
+  let dupQuery = sb
+    .from("operator_alert_rules")
+    .select("id, active")
+    .eq("user_id", user.id)
+    .eq("trigger_kind", parsed.data.trigger_kind)
+    .eq("channel", parsed.data.channel)
+    .eq("threshold_value", parsed.data.threshold_value)
+    .limit(1);
+  if (parsed.data.load_id) {
+    dupQuery = dupQuery.eq("load_id", parsed.data.load_id);
+  } else {
+    dupQuery = dupQuery.is("load_id", null);
+  }
+  const { data: dup } = await dupQuery;
+  if (dup && dup.length > 0) {
+    return NextResponse.json({
+      error: "duplicate rule — you already have an alert with these settings. Edit or delete the existing one instead.",
+      existing_rule_id: dup[0].id,
+    }, { status: 409 });
+  }
+
   const { data, error } = await sb
     .from("operator_alert_rules")
     .insert({

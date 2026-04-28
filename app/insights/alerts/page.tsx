@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { Bell } from 'lucide-react'
+import { getPortMeta } from '@/lib/portMeta'
+
+function bridgeName(portId: string | null | undefined): string {
+  if (!portId) return '—'
+  const meta = getPortMeta(portId)
+  if (!meta) return portId
+  if (meta.localName && meta.localName !== meta.city) return meta.localName
+  return meta.localName || meta.city || portId
+}
 
 interface Rule {
   id: string
@@ -60,6 +70,7 @@ export default function AlertsPage() {
   const [cooldown, setCooldown] = useState(30)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [justCreated, setJustCreated] = useState(false)
 
   async function loadAll() {
     const [r, d, l] = await Promise.all([
@@ -91,6 +102,9 @@ export default function AlertsPage() {
       const j = await res.json()
       if (!res.ok) throw new Error(j.error || 'failed')
       await loadAll()
+      // Bell-animation confirmation. Disappears after 2.5s.
+      setJustCreated(true)
+      setTimeout(() => setJustCreated(false), 2500)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -115,6 +129,24 @@ export default function AlertsPage() {
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      {/* Confirmation toast — fires when a new rule is created. */}
+      {justCreated && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg ring-1 ring-emerald-500/40"
+          style={{ animation: 'cruzar-toast-in 220ms ease-out' }}
+        >
+          <Bell className="w-5 h-5 animate-bounce" />
+          <span className="text-sm font-semibold">Alert created · Alerta creada</span>
+        </div>
+      )}
+      <style jsx>{`
+        @keyframes cruzar-toast-in {
+          0%   { opacity: 0; transform: translateY(-12px) scale(0.96); }
+          100% { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+      `}</style>
       <div className="max-w-3xl mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -165,7 +197,7 @@ export default function AlertsPage() {
               <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Apply to</label>
               <select value={loadId} onChange={(e) => setLoadId(e.target.value)} className="w-full text-sm rounded-lg bg-stone-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-3 py-2">
                 <option value="">All my tracked loads</option>
-                {loads.map((l) => <option key={l.id} value={l.id}>{l.load_ref} → {l.recommended_port_id ?? '?'}</option>)}
+                {loads.map((l) => <option key={l.id} value={l.id}>{l.load_ref} → {bridgeName(l.recommended_port_id)}</option>)}
               </select>
             </div>
             <div>

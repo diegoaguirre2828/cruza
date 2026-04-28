@@ -7,6 +7,18 @@
 // the dispatch row + delivering via the chosen channel.
 
 import type { computeLoadEta } from "@/lib/loadEta";
+import { getPortMeta } from "@/lib/portMeta";
+
+function bridgeLabel(portId: string | null | undefined): string {
+  if (!portId) return "(unknown bridge)";
+  const meta = getPortMeta(portId);
+  if (!meta) return portId;
+  // Prefer the bridge's local name (e.g. "Brownsville Vets") over city
+  // ("Brownsville"). Fall back to "<localName> · <city>" when the names
+  // are identical so the city isn't dropped silently.
+  if (meta.localName && meta.localName !== meta.city) return meta.localName;
+  return meta.localName || meta.city || portId;
+}
 
 type EtaResult = Awaited<ReturnType<typeof computeLoadEta>>;
 
@@ -124,7 +136,7 @@ function mkEval(
 
 export function renderAlertText(rule: AlertRule, load: LoadSnapshot, ev: RuleEval): { en: string; es: string } {
   const ref = load.load_ref;
-  const port = load.recommended_port_id ?? "unknown";
+  const port = bridgeLabel(load.recommended_port_id);
   const arr = load.predicted_arrival_at
     ? new Date(load.predicted_arrival_at).toISOString().slice(11, 16) + " UTC"
     : "—";
