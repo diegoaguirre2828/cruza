@@ -20,12 +20,14 @@ import { trackEvent } from '@/lib/trackEvent'
 //   - signed-in user
 //   - tier !== 'business' (they have their own UI)
 //   - NOT running as standalone PWA
-//   - dismiss flag not set within last 24h
+//   - hasn't already shown this session OR dismissed in last 24h
 //
-// Bottom-sticky banner above the BottomNav. Dismissable but re-fires
-// daily because the carrot is huge (lifetime Pro). Routes to /mas
-// where the InstallGuide handles platform-specific install steps.
+// Bottom-sticky banner above the BottomNav. Throttled to ONCE per browser
+// session — funnel data 2026-04-28 showed 229 nudge_shown events from 68
+// unique sessions (~3.4× per session) which trains users to reflex-dismiss.
+// One firing per session is enough exposure without harassment.
 
+const SESSION_SHOWN_KEY = 'cruzar_post_signup_install_shown_session'
 const DISMISS_KEY = 'cruzar_post_signup_install_dismissed_at'
 const DISMISS_HOURS = 24
 
@@ -52,6 +54,13 @@ export function PostSignupInstallNudge() {
       (navigator as Navigator & { standalone?: boolean }).standalone === true
     if (isStandalone) return
 
+    // Once-per-session throttle. sessionStorage clears on tab close so
+    // the next visit sees the nudge again, but a single browse session
+    // doesn't get re-pestered on every page nav.
+    try {
+      if (sessionStorage.getItem(SESSION_SHOWN_KEY) === '1') return
+    } catch { /* sessionStorage unavailable — fall through */ }
+
     try {
       const dismissedAt = localStorage.getItem(DISMISS_KEY)
       if (dismissedAt) {
@@ -63,6 +72,7 @@ export function PostSignupInstallNudge() {
     // Defer a beat so the home content paints first.
     const id = setTimeout(() => {
       setShow(true)
+      try { sessionStorage.setItem(SESSION_SHOWN_KEY, '1') } catch { /* ignore */ }
       trackEvent('post_signup_install_nudge_shown')
     }, 800)
     return () => clearTimeout(id)

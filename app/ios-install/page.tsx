@@ -26,6 +26,12 @@ export default function IosInstallPage() {
   const { lang } = useLang()
   const es = lang === 'es'
   const [copied, setCopied] = useState(false)
+  // Dwell-triggered confirmation banner. Funnel data 2026-04-28: iOS users
+  // read the steps, follow them in Safari, then return to this tab still
+  // showing the same instructions — there's no signal to close Safari and
+  // open the new home-screen icon. After 14s of dwell we surface a banner
+  // that explicitly tells them the next move.
+  const [showDoneBanner, setShowDoneBanner] = useState(false)
 
   // Fire page-view once on mount + redirect already-installed users.
   useEffect(() => {
@@ -40,7 +46,20 @@ export default function IosInstallPage() {
         window.location.replace('/dashboard')
       }
     } catch { /* ignore */ }
+    // Fire the "did you add it?" banner after 14s — long enough that a
+    // user who's actually following the 3 taps has had time to do so,
+    // short enough that idle dwellers still see the next-move nudge.
+    const dwellTimer = setTimeout(() => {
+      setShowDoneBanner(true)
+      trackEvent('ios_install_done_banner_shown')
+    }, 14000)
+    return () => clearTimeout(dwellTimer)
   }, [])
+
+  function onConfirmAdded() {
+    trackEvent('ios_install_done_banner_confirmed')
+    setShowDoneBanner(false)
+  }
 
   async function onCopyLink() {
     trackEvent('ios_install_copy_link')
@@ -162,6 +181,48 @@ export default function IosInstallPage() {
           </Link>
         </div>
       </div>
+
+      {/* Dwell-triggered "did you add it?" banner. Pinned to bottom so
+          it overlays the existing scrollable content instead of pushing
+          the share/skip buttons off screen. Tells the user the
+          next-move (close Safari, tap the new icon) which the static
+          steps don't. */}
+      {showDoneBanner && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-black/80 to-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-live="polite"
+        >
+          <div className="mx-auto max-w-sm bg-white rounded-2xl shadow-2xl border border-amber-300 p-4">
+            <p className="text-base font-black text-orange-700 leading-tight">
+              {es
+                ? '¿Ya lo agregaste? Casi terminas 🎯'
+                : 'Did you add it? Almost there 🎯'}
+            </p>
+            <p className="text-[12px] text-gray-700 mt-1.5 leading-snug">
+              {es
+                ? 'Cierra Safari y toca el nuevo ícono de Cruzar en tu pantalla de inicio. Ahí se activan los 3 meses de Pro automático.'
+                : 'Close Safari and tap the new Cruzar icon on your home screen. That\'s where the 3 months of Pro activate automatically.'}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={onConfirmAdded}
+                className="flex-1 bg-gradient-to-r from-orange-600 to-pink-600 text-white text-sm font-black py-2.5 rounded-xl active:scale-[0.98] transition-transform shadow-lg"
+              >
+                {es ? '✓ Listo, lo agregué' : '✓ Yep, I added it'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDoneBanner(false)}
+                className="px-3 text-[11px] font-bold text-gray-500 hover:text-gray-700"
+              >
+                {es ? 'Aún no' : 'Not yet'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

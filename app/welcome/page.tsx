@@ -58,25 +58,23 @@ function WelcomeInner() {
 
   // iOS Safari non-installed redirect — send authenticated iOS Safari
   // users to /ios-install, the dedicated 3-tap Safari-only walkthrough.
-  // Funnel data 2026-04-17: iOS is 2× Android in registered users but
-  // iOS users mostly fail the generic install carrot on step 1. A
-  // Safari-specific page converts far better.
+  // Funnel data 2026-04-28: 175 pwa_welcome_install_tapped events but
+  // only 6 pwa_welcome_install_choice — iOS users tap install on the
+  // inline step-1 guide, see 3-step instructions, and bounce. /ios-install
+  // converts better (dedicated hero, animated phone, copy-link/WhatsApp
+  // share, escape hatch). Fire the redirect on step 1 too — matching
+  // the orange palette means no carrot is lost.
   //
-  // Change 2026-04-18: only redirect once the user advances past step 1.
-  // Showing step 1 first lets iOS users see the 3-month Pro carrot — our
-  // biggest hook — before we punt them to the install flow. Also honors
-  // the `cruzar_ios_install_skipped` flag so users who tapped "Skip for
-  // now" on /ios-install aren't looped back.
-  //
-  // Preserves ?next= so after install the user still lands where they
-  // were headed. Android/desktop continue through the normal flow.
+  // Honors `cruzar_ios_install_skipped` so users who tapped "Skip for
+  // now" on /ios-install aren't looped back. Preserves ?next= so after
+  // install the user still lands where they were headed. Android/desktop
+  // continue through the normal flow (beforeinstallprompt works there).
   useEffect(() => {
     if (authLoading || !user) return
     if (typeof window === 'undefined') return
     if (window.location.pathname === '/ios-install') return
     if (!isIosSafari()) return
     if (isPwaInstalled()) return
-    if (step !== 2) return
     try {
       if (sessionStorage.getItem('cruzar_ios_install_skipped') === '1') return
     } catch { /* ignore */ }
@@ -85,7 +83,7 @@ function WelcomeInner() {
       ? `/ios-install?next=${encodeURIComponent(next)}`
       : '/ios-install'
     router.replace(dest)
-  }, [user, authLoading, router, params, step])
+  }, [user, authLoading, router, params])
 
   // Redirect guests to signup
   useEffect(() => {
