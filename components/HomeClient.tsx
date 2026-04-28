@@ -29,7 +29,6 @@ import { SetFavoriteBanner } from '@/components/SetFavoriteBanner'
 import { ConversionRibbon } from '@/components/ConversionRibbon'
 import { HomeSwipe, type SwipePanel } from '@/components/HomeSwipe'
 import { OneTapAlertCard } from '@/components/OneTapAlertCard'
-import { PlannerCTACard } from '@/components/PlannerCTACard'
 import { ReportBridgePrompt } from '@/components/ReportBridgePrompt'
 import { InsightsPill } from '@/components/InsightsPill'
 
@@ -359,12 +358,13 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
               and posts to /api/alerts directly. Skips /dashboard. The
               biggest activation lift on this rewrite. */}
           <OneTapAlertCard favoritePortId={favoritePortId} tier={tier} />
-          {/* Plan-tu-cruce — surfaces /planner (day-of-week + hour
-              prediction) which had zero inbound links. Quick fix to
-              alert-noise: pick a departure hour instead of 24/7
-              threshold pings. */}
-          <PlannerCTACard />
           <HomeForecast favoritePortId={favoritePortId} />
+          {/* UserCrossingInsights now fuses pattern + next-crossing
+              prediction + planner deep-link. Renders PlannerCTACard
+              inline as fallback for users with <3 reports who don't
+              have a pattern yet. The standalone PlannerCTACard above
+              this line was removed in the same commit — single owner
+              of the planner surface. */}
           <UserCrossingInsights />
           <PriorityNudge
             lang={lang}

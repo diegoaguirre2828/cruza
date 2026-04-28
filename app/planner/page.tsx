@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useLang } from '@/lib/LangContext'
 import { useAuth } from '@/lib/useAuth'
 import { REGIONS, type RegionKey } from '@/lib/regionMatchers'
@@ -47,12 +48,34 @@ export default function PlannerPage() {
   const es = lang === 'es'
 
   const now = new Date()
+  const searchParams = useSearchParams()
   const [region, setRegion] = useState<RegionKey>('rgv')
   const [day, setDay] = useState<number>(now.getDay())
   const [hour, setHour] = useState<number>(now.getHours())
   const [result, setResult] = useState<PlannerResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Read deep-link params from /home next-crossing card so the user
+  // lands on /planner with their pattern (day + hour) pre-filled,
+  // skipping a redundant manual entry. Only applied on first mount.
+  useEffect(() => {
+    const dayParam = searchParams.get('day')
+    const hourParam = searchParams.get('hour')
+    const regionParam = searchParams.get('region') as RegionKey | null
+    if (dayParam !== null) {
+      const d = parseInt(dayParam, 10)
+      if (!Number.isNaN(d) && d >= 0 && d <= 6) setDay(d)
+    }
+    if (hourParam !== null) {
+      const h = parseInt(hourParam, 10)
+      if (!Number.isNaN(h) && h >= 0 && h <= 23) setHour(h)
+    }
+    if (regionParam && Object.keys(REGIONS).includes(regionParam)) {
+      setRegion(regionParam)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ALL hooks must be declared BEFORE any conditional return — this
   // page was throwing "Rendered more hooks than during the previous
