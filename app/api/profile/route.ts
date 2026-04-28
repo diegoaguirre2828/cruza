@@ -55,6 +55,14 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.copilot_voice_opt_in === 'boolean') {
     updates.copilot_voice_opt_in = body.copilot_voice_opt_in
   }
+  if (typeof body.copilot_live_activity_opt_in === 'boolean') {
+    updates.copilot_live_activity_opt_in = body.copilot_live_activity_opt_in
+  }
+  // copilot_active_trip_id: client passes the family_eta_pings row id when
+  // starting a trip, null when ending. Used to dedupe the auto-cross ping.
+  if (body.copilot_active_trip_id === null || typeof body.copilot_active_trip_id === 'string') {
+    updates.copilot_active_trip_id = body.copilot_active_trip_id
+  }
   // Weekly retrospective digest cadence — user-tailored per-account.
   if (typeof body.digest_cadence === 'string') {
     if (!['off', 'weekly', 'biweekly', 'monthly'].includes(body.digest_cadence)) {
