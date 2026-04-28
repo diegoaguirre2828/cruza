@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
-import { Mic, MicOff, Volume2, ArrowLeft, RadioTower, Check, Play, Square, Smartphone } from 'lucide-react'
+import { Mic, MicOff, Volume2, ArrowLeft, RadioTower, Check, Play, Square, Smartphone, MessageCircle } from 'lucide-react'
 
 interface NearbyPort {
   port_id: string
@@ -31,6 +31,9 @@ export default function CopilotPage() {
   const [autoTextCircleId, setAutoTextCircleId] = useState('')
   const [voiceOptIn, setVoiceOptIn] = useState(false)
   const [liveActivityOptIn, setLiveActivityOptIn] = useState(false)
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false)
+  const [whatsappPhone, setWhatsappPhone] = useState('')
+  const [whatsappLang, setWhatsappLang] = useState<'es' | 'en'>('es')
   const [crossed, setCrossed] = useState(false)
   const [busy, setBusy] = useState(false)
   const recogRef = useRef<unknown>(null)
@@ -88,6 +91,9 @@ export default function CopilotPage() {
       if (typeof p.copilot_voice_opt_in === 'boolean') setVoiceOptIn(p.copilot_voice_opt_in)
       if (typeof p.copilot_live_activity_opt_in === 'boolean') setLiveActivityOptIn(p.copilot_live_activity_opt_in)
       if (p.copilot_auto_text_circle_id) setAutoTextCircleId(p.copilot_auto_text_circle_id)
+      if (typeof p.whatsapp_optin === 'boolean') setWhatsappOptIn(p.whatsapp_optin)
+      if (typeof p.whatsapp_phone_e164 === 'string') setWhatsappPhone(p.whatsapp_phone_e164)
+      if (p.whatsapp_template_lang === 'es' || p.whatsapp_template_lang === 'en') setWhatsappLang(p.whatsapp_template_lang)
     }).catch(() => {})
   }, [])
 
@@ -271,6 +277,14 @@ export default function CopilotPage() {
   }
 
   async function saveSettings() {
+    // E.164 client-side guard — server enforces too via /api/profile validation.
+    const trimmedPhone = whatsappPhone.trim()
+    if (whatsappOptIn && !/^\+[1-9][0-9]{6,14}$/.test(trimmedPhone)) {
+      speak(lang === 'es'
+        ? 'El teléfono debe estar en formato E.164, por ejemplo +5218990001234.'
+        : 'Phone must be E.164 format, e.g. +5218990001234.')
+      return
+    }
     await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -278,6 +292,9 @@ export default function CopilotPage() {
         copilot_voice_opt_in: voiceOptIn,
         copilot_live_activity_opt_in: liveActivityOptIn,
         copilot_auto_text_circle_id: autoTextCircleId || null,
+        whatsapp_optin: whatsappOptIn,
+        whatsapp_phone_e164: whatsappOptIn ? trimmedPhone : null,
+        whatsapp_template_lang: whatsappLang,
       }),
     })
   }
@@ -455,6 +472,60 @@ export default function CopilotPage() {
               </span>
             </span>
           </label>
+
+          {/* WhatsApp opt-in — paired phone + consent. The DB constraint
+              profiles_whatsapp_consent_pair enforces this on the server side
+              too. Sends are no-ops until WHATSAPP_ACCESS_TOKEN env lands. */}
+          <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <label className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={whatsappOptIn}
+                onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="inline-flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" />
+                  {lang === 'es' ? 'Avisar por WhatsApp cuando cruce' : 'Notify me via WhatsApp when I cross'}
+                </span>
+                <span className="block text-[10.5px] text-gray-400 dark:text-gray-500 mt-0.5 italic">
+                  {lang === 'es'
+                    ? 'Mensaje al teléfono que pongas (no a tu círculo). Activo cuando habilitemos WhatsApp.'
+                    : 'Message to the phone you enter (not your circle). Activates once WhatsApp is approved.'}
+                </span>
+              </span>
+            </label>
+            {whatsappOptIn && (
+              <div className="mt-2 ml-5 space-y-2">
+                <input
+                  type="tel"
+                  value={whatsappPhone}
+                  onChange={(e) => setWhatsappPhone(e.target.value)}
+                  placeholder="+5218990001234"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  className="w-full text-xs rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-2 py-1.5 font-mono"
+                />
+                <div className="flex items-center gap-2 text-[10.5px] text-gray-500">
+                  <span>{lang === 'es' ? 'Idioma:' : 'Language:'}</span>
+                  {(['es', 'en'] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setWhatsappLang(l)}
+                      className={`rounded-md px-2 py-0.5 font-mono ${
+                        whatsappLang === l ? 'bg-green-600 text-white' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      {l.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <button onClick={saveSettings} className="mt-3 w-full text-xs font-medium text-blue-600 hover:underline">{t.saveSettings}</button>
         </section>
 

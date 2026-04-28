@@ -9,6 +9,8 @@ import { cookies } from "next/headers";
 import { getServiceClient } from "@/lib/supabase";
 import webpush from "web-push";
 import { z } from "zod";
+import { sendTemplate } from "@/lib/whatsapp";
+import { getPortMeta } from "@/lib/portMeta";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,42 +69,128 @@ export async function POST(req: NextRequest) {
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  // Resolve the crossing port to a human label for the message bodies. Falls
+  // back gracefully when port_id is missing or unmapped.
+  const portMeta = parsed.data.port_id ? getPortMeta(parsed.data.port_id) : null;
+  const portLabel = portMeta?.localName || portMeta?.city || (parsed.data.port_id ?? "el puente");
+
+  // Sender's display name — used in the WhatsApp template parameter so the
+  // recipient sees who crossed. Falls back to "Tu familiar" / "Your family" if
+  // the profile has no name.
+  const { data: senderProfile } = await db
+    .from("profiles")
+    .select("display_name, full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const senderName = (senderProfile?.display_name as string | null)
+    || (senderProfile?.full_name as string | null)
+    || "Tu familiar";
+
+  // Resolve the circle members ONCE; both push + whatsapp loops below reuse it.
+  const { data: members } = await db
+    .from("circle_members")
+    .select("user_id")
+    .eq("circle_id", circleId);
+  const memberIds = (members ?? []).map((m) => m.user_id).filter((id) => id !== user.id);
+
   // Push to other circle members
   let delivered = 0;
-  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-    const { data: members } = await db
-      .from("circle_members")
-      .select("user_id")
-      .eq("circle_id", circleId);
-    const memberIds = (members ?? []).map((m) => m.user_id).filter((id) => id !== user.id);
-    if (memberIds.length > 0) {
-      const { data: subs } = await db
-        .from("push_subscriptions")
-        .select("endpoint, p256dh, auth, user_id")
-        .in("user_id", memberIds);
-      for (const sub of subs ?? []) {
-        if (!sub?.endpoint) continue;
-        try {
-          await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            JSON.stringify({
-              title: "Cruzar — cruce reportado",
-              body: `Tu familiar cruzó en ${parsed.data.port_id ?? "el puente"}.`,
-              tag: `family-cross-${ping.id}`,
-              url: "/circle",
-            }),
-            { urgency: "normal", TTL: 3600 },
-          );
-          delivered++;
-        } catch (err) {
-          const e = err as { statusCode?: number };
-          if (e?.statusCode === 410) {
-            await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
-          }
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && memberIds.length > 0) {
+    const { data: subs } = await db
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth, user_id")
+      .in("user_id", memberIds);
+    for (const sub of subs ?? []) {
+      if (!sub?.endpoint) continue;
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          JSON.stringify({
+            title: "Cruzar — cruce reportado",
+            body: `${senderName} cruzó en ${portLabel}.`,
+            tag: `family-cross-${ping.id}`,
+            url: "/circle",
+          }),
+          { urgency: "normal", TTL: 3600 },
+        );
+        delivered++;
+      } catch (err) {
+        const e = err as { statusCode?: number };
+        if (e?.statusCode === 410) {
+          await db.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
         }
       }
     }
   }
 
-  return NextResponse.json({ ok: true, ping, delivered });
+  // WhatsApp broadcast — only members who have opted in + provided a phone.
+  // sendTemplate() no-ops gracefully when WHATSAPP_ACCESS_TOKEN is missing
+  // (every attempt logs to whatsapp_messages with status='failed' for audit).
+  // Once Meta verification + env vars land, this lights up without further code.
+  let whatsapp_delivered = 0;
+  if (memberIds.length > 0) {
+    const { data: optInRows } = await db
+      .from("profiles")
+      .select("id, whatsapp_optin, whatsapp_phone_e164, whatsapp_template_lang")
+      .in("id", memberIds)
+      .eq("whatsapp_optin", true)
+      .not("whatsapp_phone_e164", "is", null);
+    for (const row of optInRows ?? []) {
+      const phone = row.whatsapp_phone_e164 as string | null;
+      if (!phone) continue;
+      const lang = (row.whatsapp_template_lang as "es" | "en" | null) ?? "es";
+      const result = await sendTemplate({
+        user_id: row.id as string,
+        to_phone_e164: phone,
+        // Templates must be pre-approved in Meta Business Manager. Names
+        // chosen here MUST match the approved templates — see
+        // docs/whatsapp-business-setup.md Phase 3 for the exact body text.
+        template_name: lang === "en" ? "cruzar_arrival_en" : "cruzar_arrival_es",
+        template_lang: lang,
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: senderName },
+              { type: "text", text: portLabel },
+            ],
+          },
+        ],
+      });
+      if (result.sent) whatsapp_delivered++;
+    }
+  }
+
+  // Also notify the SENDER themselves on WhatsApp if they opted in (separate
+  // from the circle path — this is the "confirm I crossed" receipt).
+  let whatsapp_self_sent = false;
+  {
+    const { data: senderRow } = await db
+      .from("profiles")
+      .select("whatsapp_optin, whatsapp_phone_e164, whatsapp_template_lang")
+      .eq("id", user.id)
+      .maybeSingle();
+    const phone = (senderRow?.whatsapp_phone_e164 as string | null) ?? null;
+    if (senderRow?.whatsapp_optin && phone) {
+      const lang = (senderRow.whatsapp_template_lang as "es" | "en" | null) ?? "es";
+      const result = await sendTemplate({
+        user_id: user.id,
+        to_phone_e164: phone,
+        template_name: lang === "en" ? "cruzar_arrival_en" : "cruzar_arrival_es",
+        template_lang: lang,
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: senderName },
+              { type: "text", text: portLabel },
+            ],
+          },
+        ],
+      });
+      whatsapp_self_sent = result.sent;
+    }
+  }
+
+  return NextResponse.json({ ok: true, ping, delivered, whatsapp_delivered, whatsapp_self_sent });
 }

@@ -63,6 +63,31 @@ export async function PATCH(req: NextRequest) {
   if (body.copilot_active_trip_id === null || typeof body.copilot_active_trip_id === 'string') {
     updates.copilot_active_trip_id = body.copilot_active_trip_id
   }
+  // WhatsApp opt-in (paired). DB constraint enforces phone-implies-consent;
+  // we mirror that here. Setting opt_in=true requires a valid E.164 phone
+  // and stamps optin_at; setting opt_in=false clears the phone too.
+  if (typeof body.whatsapp_optin === 'boolean') {
+    if (body.whatsapp_optin === true) {
+      const phone = typeof body.whatsapp_phone_e164 === 'string' ? body.whatsapp_phone_e164.trim() : ''
+      // Server-side E.164 validation — must match the DB constraint.
+      if (!/^\+[1-9][0-9]{6,14}$/.test(phone)) {
+        return NextResponse.json(
+          { error: 'whatsapp_phone_e164 must be E.164 format (e.g. +5218990001234)' },
+          { status: 400 },
+        )
+      }
+      updates.whatsapp_optin = true
+      updates.whatsapp_phone_e164 = phone
+      updates.whatsapp_optin_at = new Date().toISOString()
+    } else {
+      updates.whatsapp_optin = false
+      updates.whatsapp_phone_e164 = null
+      updates.whatsapp_optin_at = null
+    }
+  }
+  if (body.whatsapp_template_lang === 'es' || body.whatsapp_template_lang === 'en') {
+    updates.whatsapp_template_lang = body.whatsapp_template_lang
+  }
   // Weekly retrospective digest cadence — user-tailored per-account.
   if (typeof body.digest_cadence === 'string') {
     if (!['off', 'weekly', 'biweekly', 'monthly'].includes(body.digest_cadence)) {
