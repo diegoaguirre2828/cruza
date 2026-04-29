@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 //   type = 'reply'    → generate 3 short Spanish replies to a pasted FB
 //                       group post or comment
 //   type = 'post'     → generate 3 new promoter post variants (call-to-
-//                       action format, no URLs, "cruzar punto app" verbal)
+//                       action format, no URLs, "cruzar.app" verbal)
 //   type = 'comment'  → generate 3 short comment-style replies (1-sentence,
 //                       casual, no greeting)
 //
@@ -27,7 +27,7 @@ The audience is RGV / Matamoros / Laredo border commuters on Facebook. They are 
 Voice rules (NON-NEGOTIABLE):
 - Write in casual RGV border Spanish. Use "ahorita", "checa", "pa'", "uff", "caramba", "raza", "compas", "la gente".
 - NO EMOJIS, EVER. The user is trying NOT to look like a bot. Zero exceptions.
-- NEVER include URLs. Facebook group admins reject posts with links. When referencing the app, verbally spell it: "cruzar punto app" — the reader types it in their browser.
+- The app is cruzar.app. Use that exact form when referencing the app. Don't include other URLs (FB groups still reject deep links).
 - Never salesy. Don't say "prueba", "descarga", "echenle un ojo a nuestra app", "la mejor app". Frame Cruzar as "the thing I use" / "the thing the community uses" / "pa' la próxima".
 - Don't use exclamation marks unless the user's input used them.
 - Don't start with "Hola" — FB replies don't need greetings.
@@ -65,11 +65,11 @@ TASK: Generate 3 promoter-style POSTS for a Facebook border-crossing group. The 
 Each post:
 - 2–5 lines maximum. Short, scannable, neighborhood voice.
 - One clear hook at the top (an observation about the situation, NOT a sales line)
-- Mentions cruzar punto app verbally at least once but NOT as the opening line
+- Mentions cruzar.app verbally at least once but NOT as the opening line
 - Different angles across the 3 variants:
     Variant 1 (observation): starts from a shared experience ("este finde se puso pesado")
     Variant 2 (tip): leads with a practical tip for crossing smarter
-    Variant 3 (community): frames cruzar punto app as what the community uses
+    Variant 3 (community): frames cruzar.app as what the community uses
 
 Output ONLY valid JSON in this exact shape, no markdown fences:
 {
@@ -89,10 +89,10 @@ TASK: Generate 3 SHORT comment-style replies — the kind you drop under someone
 Each comment:
 - ONE sentence, maximum two. Never longer.
 - Casual, natural, sounds like a neighbor
-- Mentions cruzar punto app verbally, but gently (not sales)
+- Mentions cruzar.app verbally, but gently (not sales)
 - Three tones:
     Variant 1 (supportive): short agreement + tip
-    Variant 2 (practical): direct instruction / "tecleen cruzar punto app en su navegador"
+    Variant 2 (practical): direct instruction / "tecleen cruzar.app en su navegador"
     Variant 3 (light): friendly one-liner
 
 Output ONLY valid JSON in this exact shape, no markdown fences:

@@ -9,8 +9,8 @@ const ADMIN_EMAIL = 'cruzabusiness@gmail.com'
 // Quick-reply generator for Diego's FB group workflow.
 //
 // Input: a pasted FB post or comment (raw text) + optional tone hint.
-// Output: 3 casual RGV-Spanish reply variants that mention cruzar punto
-// app without being salesy. No emojis. Ready to paste back into FB.
+// Output: 3 casual RGV-Spanish reply variants that mention cruzar.app
+// without being salesy. No emojis. Ready to paste back into FB.
 //
 // Uses Claude Haiku for natural-sounding variation across variants. Falls
 // back to a simple "sorry I can't generate right now" message if the API
@@ -23,7 +23,7 @@ const SYSTEM_PROMPT = `You generate replies for a Facebook border-crossing group
 STRICT RULES:
 - Write in casual RGV border Spanish (not textbook Spanish). Use "ahorita", "checa", "pa'", "uff", "caramba", "gente", "compas" etc. — same register as the original post.
 - NO EMOJIS. Zero. The user is trying to avoid looking like a bot.
-- Mention "cruzar punto app" (NOT cruzar.app — Facebook blocks links, so always verbal spelling). Sometimes mention it in a sentence, sometimes as an instruction "tecleen cruzar punto app en su navegador".
+- Mention cruzar.app naturally — sometimes in a sentence, sometimes as an instruction ("entra a cruzar.app en tu navegador"). Use the literal "cruzar.app" form, not the spelled-out "cruzar punto app".
 - Each reply must be 1-3 sentences. NOT a paragraph.
 - Each reply must acknowledge or respond to the specific content of the post — don't just drop a generic Cruzar mention.
 - Never be salesy. Never say "check out my app". Frame Cruzar as "the thing I use" or "the thing the community uses" or "pa la próxima" advice.
