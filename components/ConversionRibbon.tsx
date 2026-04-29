@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/useAuth'
 import { useTier } from '@/lib/useTier'
 import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 import { trackEvent } from '@/lib/trackEvent'
+import { useVariant } from '@/lib/useVariant'
 
 // Single conversion ribbon shown under the sticky header. Replaces the
 // stack of {GuestSignupBanner, ProNoAlertBanner, bottom Signup CTA,
@@ -35,6 +36,17 @@ interface RibbonState {
   ctaEn: string
 }
 
+// A/B experiment 2026-04-29: do guests see a dismissible ribbon
+// (control, current behavior) or a non-dismissible one (sticky)?
+// 50/50 split, sticky bucketed via localStorage so a user who saw
+// 'sticky' on day 1 keeps seeing 'sticky' on day 7 — keeps the
+// measurement honest. Variant is recorded on every signup/dismiss
+// event and on the signup link as ?variant= so /signup attribution
+// breaks down by experiment arm.
+const RIBBON_EXPERIMENT_KEY = 'ribbon_dismissible_v1'
+const RIBBON_VARIANTS = ['control', 'sticky'] as const
+type RibbonVariant = typeof RIBBON_VARIANTS[number]
+
 export function ConversionRibbon() {
   const { lang } = useLang()
   const { user, loading: authLoading } = useAuth()
@@ -42,6 +54,7 @@ export function ConversionRibbon() {
   const es = lang === 'es'
   const [state, setState] = useState<RibbonState | null>(null)
   const [dismissed, setDismissed] = useState(false)
+  const ribbonVariant = useVariant<RibbonVariant>(RIBBON_EXPERIMENT_KEY, RIBBON_VARIANTS)
 
   useEffect(() => {
     if (authLoading) return
@@ -56,10 +69,14 @@ export function ConversionRibbon() {
     } catch { /* ignore */ }
 
     if (!user) {
+      // Tag the variant on the signup URL so /signup attribution can
+      // break down by experiment arm. Falls back to 'control' on the
+      // SSR / first-render pass before useVariant resolves.
+      const v = ribbonVariant ?? 'control'
       setState({
         show: true,
         variant: 'guest',
-        href: '/signup?source=home_ribbon&next=%2F',
+        href: `/signup?source=home_ribbon&variant=${v}&next=%2F`,
         titleEs: 'Alertas + cámaras + favoritos cuando creas cuenta',
         titleEn: 'Alerts + cameras + favorites when you make an account',
         ctaEs: 'Gratis →',
@@ -98,7 +115,7 @@ export function ConversionRibbon() {
         }
       })
       .catch(() => { /* keep hidden */ })
-  }, [user, authLoading, tier])
+  }, [user, authLoading, tier, ribbonVariant])
 
   if (authLoading || dismissed || !state) return null
 
@@ -111,15 +128,27 @@ export function ConversionRibbon() {
       } catch { /* ignore */ }
     }
     if (state) {
-      trackEvent('conversion_ribbon_dismissed', { variant: state.variant })
+      trackEvent('conversion_ribbon_dismissed', {
+        variant: state.variant,
+        ab_arm: ribbonVariant ?? 'control',
+      })
     }
     setDismissed(true)
   }
 
+  // A/B test: signed-out guests in the 'sticky' arm don't see the
+  // dismiss button. Free / Pro users see the dismiss button regardless
+  // — the experiment is only on the guest signup flow.
+  const isGuestRibbon = state.variant === 'guest'
+  const showDismiss = !isGuestRibbon || ribbonVariant !== 'sticky'
+
   return (
     <Link
       href={state.href}
-      onClick={() => trackEvent('conversion_ribbon_tapped', { variant: state.variant })}
+      onClick={() => trackEvent('conversion_ribbon_tapped', {
+        variant: state.variant,
+        ab_arm: ribbonVariant ?? 'control',
+      })}
       className="mt-2 flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 active:scale-[0.99] transition-transform"
     >
       <p className="flex-1 min-w-0 text-[12px] font-bold text-white leading-snug truncate">
@@ -128,14 +157,16 @@ export function ConversionRibbon() {
       <span className="flex-shrink-0 bg-white text-blue-700 text-[11px] font-black px-2.5 py-1 rounded-full whitespace-nowrap">
         {es ? state.ctaEs : state.ctaEn}
       </span>
-      <button
-        type="button"
-        aria-label={es ? 'Cerrar' : 'Dismiss'}
-        onClick={dismiss}
-        className="flex-shrink-0 text-white/70 hover:text-white text-base leading-none px-1"
-      >
-        ×
-      </button>
+      {showDismiss && (
+        <button
+          type="button"
+          aria-label={es ? 'Cerrar' : 'Dismiss'}
+          onClick={dismiss}
+          className="flex-shrink-0 text-white/70 hover:text-white text-base leading-none px-1"
+        >
+          ×
+        </button>
+      )}
     </Link>
   )
 }

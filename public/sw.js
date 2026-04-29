@@ -19,8 +19,8 @@
 // fix landed in <1hr). Bump v8 → v9 to force every client to drop the
 // shell + API caches on next launch and re-hydrate against fresh
 // chunk hashes. Same recovery pattern as 1c41343 earlier today.
-const CACHE = 'cruzar-v9'
-const API_CACHE = 'cruzar-api-v9'
+const CACHE = 'cruzar-v10'
+const API_CACHE = 'cruzar-api-v10'
 // Intentionally NOT precaching '/' — the cached HTML shell from an old deploy
 // references Next.js chunk hashes that get deleted on every deploy. Serving
 // that stale shell on a slow-network fallback caused soft-navigations between
