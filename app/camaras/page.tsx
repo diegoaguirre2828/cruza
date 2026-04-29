@@ -21,15 +21,17 @@ import { ProTabSwitcher } from '@/components/ProTabSwitcher'
 import { AdBanner } from '@/components/AdBanner'
 import type { MegaRegion } from '@/lib/portMeta'
 
-const REGION_ORDER: MegaRegion[] = ['rgv', 'laredo', 'coahuila-tx', 'el-paso', 'sonora-az', 'baja', 'other']
-
 export default function CamarasPage() {
   const { lang } = useLang()
   const { user } = useAuth()
   const { tier } = useTier()
   const es = lang === 'es'
   const { ports, loading } = usePorts()
-  const [filter, setFilter] = useState<MegaRegion | 'all'>('all')
+  // Filter is by CITY (Brownsville / Pharr / Laredo / Eagle Pass / Del
+  // Rio / El Paso / Tornillo / Nogales / Calexico / San Diego). Cities
+  // are more meaningful to a daily commuter than mega-regions ('I cross
+  // Pharr', not 'I cross RGV'). Special value 'all' shows everything.
+  const [filter, setFilter] = useState<string>('all')
   // Lightbox-expanded port. Click on a tile (Pro user) opens this; ESC,
   // backdrop click, or X closes. Lets users cycle camera angles for one
   // port without leaving /camaras.
@@ -72,7 +74,12 @@ export default function CamarasPage() {
       megaRegion: MegaRegion
       lng: number
       wait: number | null
-      lane: 'vehicle' | 'commercial' | 'sentri' | 'pedestrian' | null
+      // True when the general-vehicle lane is closed for this bridge,
+      // even if other lanes (cargo, SENTRI, pedestrian) are still open.
+      // /camaras is a daily-commuter surface, so we surface 'GV cerrado'
+      // instead of falling back to a cargo/SENTRI number that would
+      // mislead a passenger driver.
+      vehicleClosed: boolean
       isClosed: boolean
       noData: boolean
       feedIdx: number
@@ -89,20 +96,6 @@ export default function CamarasPage() {
       // Pick representative feed: prefer live video over snapshot
       const liveIdx = feeds.findIndex((f) => f.kind === 'hls' || f.kind === 'iframe' || f.kind === 'youtube')
       const repIdx = liveIdx >= 0 ? liveIdx : 0
-      // Pick the best-available wait. Some bridges (Stanton DCL,
-      // Pharr-Reynosa) close their general-vehicle lanes but stay
-      // active for SENTRI / commercial — vehicle: null then. Falling
-      // back to other lanes shows real numbers instead of 's/datos'.
-      // Lane label is rendered on the tile pill so the user knows
-      // 'this 45 min is for cargo, not GV'.
-      let wait: number | null = null
-      let lane: 'vehicle' | 'commercial' | 'sentri' | 'pedestrian' | null = null
-      if (port) {
-        if (port.vehicle != null) { wait = port.vehicle; lane = 'vehicle' }
-        else if (port.commercial != null) { wait = port.commercial; lane = 'commercial' }
-        else if (port.sentri != null) { wait = port.sentri; lane = 'sentri' }
-        else if (port.pedestrian != null) { wait = port.pedestrian; lane = 'pedestrian' }
-      }
       rows.push({
         portId,
         portName: name,
@@ -110,34 +103,52 @@ export default function CamarasPage() {
         regionLabel,
         megaRegion: meta.megaRegion,
         lng: meta.lng ?? 0,
-        wait,
-        lane,
+        wait: port?.vehicle ?? null,
+        vehicleClosed: port?.vehicleClosed ?? false,
         isClosed: port?.isClosed ?? false,
         noData: port?.noData ?? true,
         feedIdx: repIdx,
         angleCount: feeds.length,
       })
     }
-    // Sort by region order first (matches the megaRegion grouping in the
-    // header), then west → east by longitude (ascending lng) within each
-    // region. Was wait-asc, but wait times shuffle every 15 min — users
-    // could never find a specific bridge twice in a row. Geographic order
-    // is stable AND matches the natural mental map.
-    const regionRank = (r: MegaRegion) => REGION_ORDER.indexOf(r)
+    // City order is east → west (max lng descending — higher lng = more
+    // east; Brownsville at -97.5 → San Diego at -117). Within each city,
+    // bridges are sorted west → east (ascending lng) for stable display.
+    // RGV-first ordering matches Diego's audience and the existing
+    // mental map (consistent w/ the previous REGION_ORDER convention).
+    const cityMaxLng = new Map<string, number>()
+    for (const r of rows) {
+      const cur = cityMaxLng.get(r.city)
+      if (cur === undefined || r.lng > cur) cityMaxLng.set(r.city, r.lng)
+    }
     rows.sort((a, b) => {
-      const ra = regionRank(a.megaRegion)
-      const rb = regionRank(b.megaRegion)
-      if (ra !== rb) return ra - rb
+      const cityA = cityMaxLng.get(a.city) ?? 0
+      const cityB = cityMaxLng.get(b.city) ?? 0
+      if (cityA !== cityB) return cityB - cityA
       return a.lng - b.lng
     })
     return rows
   }, [ports, es])
 
-  const visible = filter === 'all' ? tiles : tiles.filter((t) => t.megaRegion === filter)
+  const visible = filter === 'all' ? tiles : tiles.filter((t) => t.city === filter)
 
-  const regionCounts = useMemo(() => {
+  // Unique cities in display order (east → west by max lng), used to
+  // build the filter chips + section headers. Computed off `tiles` so
+  // we only show cities that actually have at least one camera.
+  const cityOrder = useMemo(() => {
+    const seen = new Set<string>()
+    const order: string[] = []
+    for (const t of tiles) {
+      if (!t.city || seen.has(t.city)) continue
+      seen.add(t.city)
+      order.push(t.city)
+    }
+    return order
+  }, [tiles])
+
+  const cityCounts = useMemo(() => {
     const counts: Record<string, number> = {}
-    for (const t of tiles) counts[t.megaRegion] = (counts[t.megaRegion] || 0) + 1
+    for (const t of tiles) counts[t.city] = (counts[t.city] || 0) + 1
     return counts
   }, [tiles])
 
@@ -204,9 +215,16 @@ export default function CamarasPage() {
             RGV sees Mexican insurance + Holafly + Bankrate, Baja sees
             Baja Bound + Tijuana dental + Holafly, etc. The 3-card cap
             keeps it compact above the camera grid. Horizontal scroll on
-            mobile, grid on desktop. */}
+            mobile, grid on desktop.
+            Filter is by city now, so we look up the mega-region of
+            the first tile in the selected city to pick the right
+            affiliate set. 'all' falls through to the global pool. */}
         <CamarasServicesStrip
-          filter={filter}
+          filter={
+            filter === 'all'
+              ? 'all'
+              : (tiles.find((t) => t.city === filter)?.megaRegion ?? 'all')
+          }
           es={es}
         />
 
@@ -219,9 +237,9 @@ export default function CamarasPage() {
           <FilterChip active={filter === 'all'} onClick={() => setFilter('all')} count={tiles.length}>
             {es ? 'Todas' : 'All'}
           </FilterChip>
-          {REGION_ORDER.filter((r) => (regionCounts[r] || 0) > 0).map((r) => (
-            <FilterChip key={r} active={filter === r} onClick={() => setFilter(r)} count={regionCounts[r] || 0}>
-              {es ? MEGA_REGION_LABELS[r]?.es : MEGA_REGION_LABELS[r]?.en}
+          {cityOrder.map((city) => (
+            <FilterChip key={city} active={filter === city} onClick={() => setFilter(city)} count={cityCounts[city] || 0}>
+              {city}
             </FilterChip>
           ))}
         </div>
@@ -258,26 +276,28 @@ export default function CamarasPage() {
           <div className="py-16 text-center">
             <Camera className="w-10 h-10 text-white/30 mx-auto mb-3" />
             <p className="text-sm text-white/50">
-              {es ? 'No hay cámaras en esta región por ahora.' : 'No cameras in this region yet.'}
+              {es ? 'No hay cámaras en esta ciudad por ahora.' : 'No cameras in this city yet.'}
             </p>
           </div>
         ) : filter === 'all' ? (
-          // Group by region when viewing all, so the grid reads as an
-          // organized catalog instead of an opaque flat list.
+          // Group by city when viewing all — gives finer organization
+          // than mega-region (commuters think 'I cross Pharr', not 'I
+          // cross RGV'). Within each city, bridges still ordered
+          // west → east by lng for stability.
           (() => {
-            const byRegion = new Map<MegaRegion, typeof visible>()
+            const byCity = new Map<string, typeof visible>()
             for (const t of visible) {
-              const bucket = byRegion.get(t.megaRegion) ?? []
+              const bucket = byCity.get(t.city) ?? []
               bucket.push(t)
-              byRegion.set(t.megaRegion, bucket)
+              byCity.set(t.city, bucket)
             }
             return (
               <div className="space-y-6">
-                {REGION_ORDER.filter((r) => byRegion.has(r)).map((r) => {
-                  const group = byRegion.get(r)!
-                  const label = es ? MEGA_REGION_LABELS[r]?.es : MEGA_REGION_LABELS[r]?.en
+                {cityOrder.filter((c) => byCity.has(c)).map((c) => {
+                  const group = byCity.get(c)!
+                  const label = c
                   return (
-                    <section key={r}>
+                    <section key={c}>
                       <h2 className="text-xs font-black uppercase tracking-widest text-white/60 mb-2.5 px-0.5">
                         {label}
                         <span className="ml-2 text-white/30 font-bold">{group.length}</span>
@@ -295,7 +315,7 @@ export default function CamarasPage() {
                                 portName={angleNote ? `${t.portName} · ${angleNote}` : t.portName}
                                 regionLabel={t.regionLabel}
                                 wait={t.wait}
-                                lane={t.lane}
+                                vehicleClosed={t.vehicleClosed}
                                 isClosed={t.isClosed}
                                 noData={t.noData}
                                 feed={feed}
@@ -325,7 +345,7 @@ export default function CamarasPage() {
                     portName={angleNote ? `${t.portName} · ${angleNote}` : t.portName}
                     regionLabel={t.regionLabel}
                     wait={t.wait}
-                    lane={t.lane}
+                    vehicleClosed={t.vehicleClosed}
                     isClosed={t.isClosed}
                     noData={t.noData}
                     feed={feed}

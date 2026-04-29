@@ -12,20 +12,17 @@ import { trackShare } from '@/lib/trackShare'
 import { trackEvent } from '@/lib/trackEvent'
 import { FeedPlayer } from '@/components/BridgeCameras'
 
-type Lane = 'vehicle' | 'commercial' | 'sentri' | 'pedestrian' | null
-
 interface Props {
   portId: string
   portName: string
   regionLabel: string
   wait: number | null
-  // Which CBP lane the wait number is for. When null/'vehicle' the pill
-  // renders bare; for 'commercial'/'sentri'/'pedestrian' it appends a
-  // small label so the user knows '45 min' refers to cargo, not GV.
-  // Bridges like Stanton DCL + Pharr-Reynosa close their general-vehicle
-  // lanes but stay active for commercial / SENTRI — the page falls back
-  // to those waits instead of showing 's/datos'.
-  lane?: Lane
+  // True when the general-vehicle lane is closed for this bridge but the
+  // bridge itself isn't fully closed (cargo / SENTRI may still be open).
+  // Daily commuters see 'GV cerrado' instead of 's/datos' so they know
+  // to pick a different bridge — the page deliberately doesn't fall
+  // back to a cargo number that would mislead a passenger driver.
+  vehicleClosed?: boolean
   isClosed: boolean
   noData: boolean
   feed: CameraFeed
@@ -35,9 +32,12 @@ interface Props {
   onExpand?: (portId: string) => void
 }
 
-function levelTone(mins: number | null, isClosed: boolean): { text: string; border: string; label: string } {
-  if (isClosed) return { text: 'text-gray-100', border: 'border-gray-300/60', label: 'Cerrado' }
-  if (mins === null) return { text: 'text-gray-100', border: 'border-gray-300/60', label: 's/datos' }
+function levelTone(mins: number | null, isClosed: boolean, vehicleClosed: boolean, es: boolean): { text: string; border: string; label: string } {
+  if (isClosed) return { text: 'text-gray-100', border: 'border-gray-300/60', label: es ? 'Cerrado' : 'Closed' }
+  if (mins === null) {
+    if (vehicleClosed) return { text: 'text-amber-200', border: 'border-amber-300/60', label: es ? 'Vehículo cerrado' : 'GV closed' }
+    return { text: 'text-gray-100', border: 'border-gray-300/60', label: 's/datos' }
+  }
   if (mins <= 20) return { text: 'text-green-300', border: 'border-green-300/70', label: `${mins} min` }
   if (mins <= 45) return { text: 'text-amber-300', border: 'border-amber-300/70', label: `${mins} min` }
   return { text: 'text-red-300', border: 'border-red-300/70', label: `${mins} min` }
@@ -73,13 +73,13 @@ function Polled({ src, alt, intervalMs = 15000 }: { src: string; alt: string; in
   )
 }
 
-export function LiveCameraTile({ portId, portName, regionLabel, wait, lane = 'vehicle', isClosed, noData, feed, onExpand }: Props) {
-  const tone = levelTone(wait, isClosed)
+export function LiveCameraTile({ portId, portName, regionLabel, wait, vehicleClosed = false, isClosed, noData, feed, onExpand }: Props) {
   const { tier } = useTier()
   const { user } = useAuth()
   const { lang } = useLang()
   const router = useRouter()
   const es = lang === 'es'
+  const tone = levelTone(wait, isClosed, vehicleClosed, es)
   const isPaid = tier === 'pro' || tier === 'business'
   // 2026-04-28: /camaras locked to Pro per Diego's pick. Free users see
   // a teaser tile (bridge name + region + wait time + locked-camera
@@ -286,14 +286,6 @@ export function LiveCameraTile({ portId, portName, regionLabel, wait, lane = 've
           </button>
           <div className={`rounded-full border px-2.5 py-1 text-xs font-bold tabular-nums bg-black/75 backdrop-blur-sm shadow-lg ${tone.text} ${tone.border}`}>
             {tone.label}
-            {wait != null && !isClosed && lane && lane !== 'vehicle' && (
-              <span className="ml-1 text-[9px] font-bold uppercase tracking-wider opacity-80">
-                {lane === 'commercial' ? (es ? 'carga' : 'cargo')
-                  : lane === 'sentri' ? 'SENTRI'
-                  : lane === 'pedestrian' ? (es ? 'peat.' : 'ped.')
-                  : ''}
-              </span>
-            )}
           </div>
         </div>
         {alertState === 'done' && (
