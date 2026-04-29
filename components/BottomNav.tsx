@@ -44,9 +44,9 @@ export function BottomNav() {
       ),
     },
     {
-      href: '/mapa',
+      href: '/todos',
       label: es ? 'Todos' : 'All bridges',
-      active: isActive('/mapa'),
+      active: isActive('/todos'),
       icon: (active: boolean) => (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />

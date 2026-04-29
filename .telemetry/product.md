@@ -35,7 +35,7 @@
 **Check live wait time for a crossing the user cares about.** If users stop opening the app to check a wait time before crossing, the product has failed. Every other feature exists to bring them back to that moment or capitalize on it (alerts, saves, smart-route, fleet tools).
 
 ### Core Features (directly deliver value)
-1. **Live wait times list + map** (`/`, `/mapa`) — the headline feature. Real-time CBP data per port, color-coded.
+1. **Live wait times list + all-bridges browser** (`/`, `/todos`) — the headline feature. Real-time CBP data per port, color-coded.
 2. **Saved crossings / favorites** (`/favorites`, `lib/useFavorites.tsx`) — turns one-shot visitors into returning users by personalizing the home screen.
 3. **Push alerts on threshold** (`alert_preferences`, `/api/cron/send-alerts`, `lib/usePushNotifications.ts`) — Pro-tier core, replaces the Facebook-group manual scrolling pattern.
 4. **Smart-route / "best crossing right now"** (`/api/route-optimize`, `lib/smartRoute`) — Pro-tier decision overlay across nearby ports.

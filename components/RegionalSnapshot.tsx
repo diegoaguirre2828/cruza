@@ -104,7 +104,7 @@ export function RegionalSnapshot({ ports }: Props) {
               : 'Fast, moderate, and slow crossings by region'}
           </p>
         </div>
-        <Link href="/mapa" className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 ml-3">
+        <Link href="/todos" className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0 ml-3">
           {es ? 'Mapa →' : 'Map →'}
         </Link>
       </div>
@@ -113,7 +113,7 @@ export function RegionalSnapshot({ ports }: Props) {
           const fastestName = fastest
             ? (fastest.port.localNameOverride || getPortMeta(fastest.port.portId).localName || fastest.port.portName)
             : ''
-          const href = fastest ? `/port/${encodeURIComponent(fastest.port.portId)}` : '/mapa'
+          const href = fastest ? `/port/${encodeURIComponent(fastest.port.portId)}` : '/todos'
           return (
             <Link
               key={region.key}

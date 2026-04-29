@@ -310,7 +310,7 @@ export default function MapaPage() {
 
         {/* Signup CTA for guests */}
         <Link
-          href="/signup?next=/mapa"
+          href="/signup?source=todos_signup&next=%2Ftodos"
           className="mt-6 block bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-center active:scale-[0.98] transition-transform"
         >
           <p className="text-sm font-black text-white">

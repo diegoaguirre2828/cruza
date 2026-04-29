@@ -52,7 +52,7 @@ export function PortList() {
   // are business tier (fleets cross multiple regions and need the full
   // picture). homeRegion === null means "show all", so no scoping.
   // Per Diego 2026-04-14 late: the home page is ONLY the user's region.
-  // To browse other regions, users tap into /mapa (read-only all bridges).
+  // To browse other regions, users tap into /todos (read-only all bridges).
   const scopeActive = !isBusiness && homeRegion != null
   // Hydrate from the localStorage cache on first render so even a
   // cold-offline load shows data. The network fetch below still
@@ -447,7 +447,7 @@ export function PortList() {
           {/* Main list is ALWAYS scoped to the user's home region now —
               the region dropdown and Near Me button are both gone. Users
               who want to browse outside their region use the dedicated
-              read-only "All bridges" view (replacing /mapa). Search is
+              read-only "All bridges" view (/todos). Search is
               kept because it's the fastest way to find a specific bridge
               by name. */}
           <div className="mb-4 space-y-2">
@@ -523,7 +523,7 @@ export function PortList() {
               <LiveActivityTicker /> so it pairs with the live
               community reports surface.) */}
 
-          {/* "See all bridges" deep-link into the read-only /mapa view
+          {/* "See all bridges" deep-link into the read-only /todos view
               that replaced the Leaflet map. Users stuck in their region
               who want to peek at the whole border can still do so. */}
           {scopeActive && !searchQuery.trim() && homeRegion && (
@@ -534,7 +534,7 @@ export function PortList() {
                   : `Showing ${MEGA_REGION_LABELS[homeRegion].en}`}
               </p>
               <Link
-                href="/mapa"
+                href="/todos"
                 className="text-[10px] font-bold text-blue-700 dark:text-blue-300 underline underline-offset-2"
               >
                 {lang === 'es' ? 'Ver todos →' : 'See all →'}

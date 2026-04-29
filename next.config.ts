@@ -3,12 +3,15 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // Redirects for typo URLs Diego has been pasting in FB groups.
-  // /mapas (plural) → /mapa (singular, the real route). Without this
-  // every FB post that uses the plural form 404s, killing inbound clicks.
+  // /mapa (and /mapas typo) → /todos — the route was renamed
+  // 2026-04-29 because the page is now a region-filtered list, not a
+  // map. Old FB posts referencing /mapa keep working via 301.
   async redirects() {
     return [
-      { source: '/mapas', destination: '/mapa', permanent: true },
-      { source: '/mapas/:path*', destination: '/mapa', permanent: true },
+      { source: '/mapa', destination: '/todos', permanent: true },
+      { source: '/mapa/:path*', destination: '/todos', permanent: true },
+      { source: '/mapas', destination: '/todos', permanent: true },
+      { source: '/mapas/:path*', destination: '/todos', permanent: true },
       // Common other typos people guess
       { source: '/cameras', destination: '/camaras', permanent: true },
       { source: '/cameras/:path*', destination: '/camaras', permanent: true },

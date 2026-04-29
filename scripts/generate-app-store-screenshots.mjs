@@ -32,7 +32,7 @@ const SCALE = 3
 // system locale that doesn't match.
 const FRAMES = [
   { slug: '01-home',       path: '/' },
-  { slug: '02-map',        path: '/mapa' },
+  { slug: '02-map',        path: '/todos' },
   { slug: '03-port',       path: '/port/230501' },
   { slug: '04-planner',    path: '/planner' },
   { slug: '05-pricing',    path: '/pricing' },

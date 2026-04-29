@@ -37,6 +37,13 @@ const CHUNK_RELOAD_KEY = 'cruzar_chunk_reload_at'
 const CHUNK_LOOP_WINDOW_MS = 10_000
 
 export default function GlobalError({ error, reset }: Props) {
+  // Detect chunk-load errors first — these auto-recover via the SW
+  // wipe + reload below, so we shouldn't flash the loud 'Something
+  // broke' card while that happens. Diego flagged 2026-04-29 that
+  // /live → /insights was showing the error UI for a beat before
+  // self-healing; rendering a quiet loader for chunk errors keeps
+  // the recovery invisible.
+  const isChunkError = looksLikeChunkError(error)
   // Network-aware copy: "we're on it" reads as our fault, which for
   // the #1 failure mode (spotty border cell) is a lie — user is
   // offline. Checking navigator.onLine lets us swap to "check your
@@ -85,6 +92,21 @@ export default function GlobalError({ error, reset }: Props) {
       })()
     }
   }, [error])
+
+  // Quiet loader for chunk errors — recovery is already running in
+  // the useEffect above; just bridge the user across the reload
+  // without flashing the scary error UI. No copy ('Loading…' is
+  // not even shown — the reload should fire within ~50ms).
+  if (isChunkError) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-gray-400">
+          <BridgeLogo size={32} />
+          <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-700 border-t-blue-500 animate-spin" />
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
