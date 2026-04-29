@@ -8,6 +8,9 @@ import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 0.1,
+  // Dropped from 10% to 1% on 2026-04-29 (quota triage). Edge proxy
+  // runs on every request, so the multiplier here is highest.
+  tracesSampleRate: 0.01,
+  ignoreErrors: [/AbortError/],
   debug: false,
 })

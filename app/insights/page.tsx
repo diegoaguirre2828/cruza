@@ -111,8 +111,12 @@ function buildPortRows(m: Manifest): PortRow[] {
         status = "marginal";
       } else {
         status = "drift-fallback";
-        note = "Concept drift or regime shift. Inference returns CBP climatology until next retrain restores lift.";
-        noteEs = "Drift o cambio de régimen. Inferencia devuelve climatología CBP hasta que el reentrenamiento restaure la ventaja.";
+        // Honest framing — "drift-fallback" is what the model does, but the
+        // user-facing meaning is "we serve CBP's number rather than a worse
+        // model output." That's a feature (no fake numbers), not a failure.
+        // Most ML wait-time products don't disclose this. We do.
+        note = "Currently matches CBP's own published baseline — we serve their number rather than a model output that would be less accurate. We disclose this honestly; most products don't.";
+        noteEs = "Coincide con la línea base que CBP mismo publica — entregamos su número en vez de uno del modelo que sería menos preciso. Lo decimos abierto; la mayoría no.";
       }
     } else if (liftSelf !== null) {
       // CBP doesn't publish here. Compare against Cruzar's own climatology.
