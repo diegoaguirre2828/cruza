@@ -1,12 +1,18 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { ChevronDown, Check } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import { usePorts } from '@/lib/usePorts'
 import { getPortMeta } from '@/lib/portMeta'
 import { MEGA_REGION_LABELS } from '@/lib/useHomeRegion'
+import type { MegaRegion } from '@/lib/portMeta'
 import type { PortWaitTime, WaitLevel } from '@/types'
+
+type RegionFilter = MegaRegion | 'all'
+
+const REGION_ORDER: MegaRegion[] = ['rgv', 'laredo', 'coahuila-tx', 'el-paso', 'sonora-az', 'baja', 'other']
 
 // "All bridges" tab — replaces the old Leaflet-based border map.
 //
@@ -28,6 +34,7 @@ import type { PortWaitTime, WaitLevel } from '@/types'
 // interactivity. This page is for curiosity, not action.
 
 interface Section {
+  key: string
   region: string
   regionEn: string
   ports: Array<{ port: PortWaitTime; name: string; city: string; level: WaitLevel }>
@@ -61,6 +68,12 @@ export default function MapaPage() {
   const { lang } = useLang()
   const es = lang === 'es'
   const { ports, loading } = usePorts()
+  // Region filter — single dropdown instead of a long stacked list of
+  // every region. Shareable + screenshot-friendly: pick a region, get a
+  // clean per-region card. Default 'all' preserves the previous behavior
+  // for users who want the full-border view.
+  const [region, setRegion] = useState<RegionFilter>('all')
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   // Group by mega region for a scannable read-only view.
   const sections = useMemo<Section[]>(() => {
@@ -71,7 +84,7 @@ export default function MapaPage() {
       const regionEn = MEGA_REGION_LABELS[meta.megaRegion]?.en || 'Other'
       const name = port.localNameOverride || meta.localName || port.crossingName || port.portName
       if (!byRegion.has(meta.megaRegion)) {
-        byRegion.set(meta.megaRegion, { region, regionEn, ports: [] })
+        byRegion.set(meta.megaRegion, { key: meta.megaRegion, region, regionEn, ports: [] })
       }
       byRegion.get(meta.megaRegion)!.ports.push({
         port,
@@ -93,42 +106,163 @@ export default function MapaPage() {
         return av - bv
       })
     }
-    // Standard display order for the sections themselves.
-    const order = ['rgv', 'laredo', 'coahuila-tx', 'el-paso', 'sonora-az', 'baja', 'other']
-    return order
-      .map((key) => byRegion.get(key))
-      .filter((s): s is Section => s != null && s.ports.length > 0)
+    // Standard display order for the sections themselves. The
+    // megaRegion key was stashed on each Section above so the filter
+    // dropdown can match by key.
+    const out: Section[] = []
+    for (const key of REGION_ORDER) {
+      const s = byRegion.get(key)
+      if (s && s.ports.length > 0) out.push(s)
+    }
+    return out
   }, [ports])
+
+  // Apply the region filter — 'all' shows every section.
+  const visibleSections = region === 'all'
+    ? sections
+    : sections.filter((s) => s.key === region)
+
+  // Per-region counts for the dropdown menu — only show regions that
+  // actually have ports (no Sonora row if there's nothing in Sonora).
+  const regionsWithCounts = sections.map((s) => ({
+    key: s.key as MegaRegion,
+    label: es ? s.region : s.regionEn,
+    count: s.ports.length,
+  }))
+  const totalCount = sections.reduce((acc, s) => acc + s.ports.length, 0)
+  const currentLabel = region === 'all'
+    ? (es ? 'Toda la frontera' : 'All border')
+    : (es ? MEGA_REGION_LABELS[region]?.es : MEGA_REGION_LABELS[region]?.en)
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-lg mx-auto px-4 pb-24">
-        <div className="pt-6 pb-3">
-          <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">
-            {es ? '🌉 Todos los puentes' : '🌉 All bridges'}
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
-            {es
-              ? 'Vista de toda la frontera · solo lectura · para reportar usa tu zona en el inicio'
-              : 'Whole-border view · read-only · to report use your zone on home'}
-          </p>
+        {/* Header row: title + region dropdown on the left, app-name
+            wordmark on the right. Wordmark is always visible so it
+            shows up in screenshots people share — turns each share
+            into a name-recognition surface ('what app is this?'). */}
+        <div className="pt-6 pb-3 flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-black text-gray-900 dark:text-gray-100">
+              {es ? '🌉 Todos los puentes' : '🌉 All bridges'}
+            </h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
+              {es
+                ? 'Solo lectura · para reportar usa tu zona en el inicio'
+                : 'Read-only · to report use your zone on home'}
+            </p>
+          </div>
+          <Link
+            href="/"
+            aria-label="cruzar.app"
+            className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-black tracking-tight shadow-sm hover:bg-blue-700 transition-colors"
+          >
+            <span className="text-base leading-none">🌉</span>
+            <span className="leading-none">cruzar.app</span>
+          </Link>
+        </div>
+
+        {/* Region dropdown — single source of truth for the filter.
+            Replaces the long stacked-section view with one region at
+            a time, which reads cleaner on a screenshot. 'All border'
+            preserves the original whole-frontier view. */}
+        <div className="relative mb-4">
+          <button
+            type="button"
+            onClick={() => setPickerOpen((o) => !o)}
+            aria-expanded={pickerOpen}
+            aria-haspopup="listbox"
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg leading-none">📍</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
+                {currentLabel}
+              </span>
+              <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 tabular-nums">
+                · {region === 'all' ? totalCount : (regionsWithCounts.find((r) => r.key === region)?.count ?? 0)}
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {pickerOpen && (
+            <>
+              {/* Click-outside backdrop. Closes the menu without
+                  navigating away, which a Link-based blur wouldn't. */}
+              <button
+                type="button"
+                aria-hidden="true"
+                tabIndex={-1}
+                onClick={() => setPickerOpen(false)}
+                className="fixed inset-0 z-30 cursor-default"
+              />
+              <ul
+                role="listbox"
+                className="absolute z-40 mt-1 w-full max-h-80 overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl py-1"
+              >
+                <li>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={region === 'all'}
+                    onClick={() => { setRegion('all'); setPickerOpen(false) }}
+                    className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
+                      region === 'all'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🌎</span>
+                      <span className="text-sm font-bold">{es ? 'Toda la frontera' : 'All border'}</span>
+                      <span className="text-[11px] text-gray-400 tabular-nums">· {totalCount}</span>
+                    </span>
+                    {region === 'all' && <Check className="w-4 h-4" />}
+                  </button>
+                </li>
+                {regionsWithCounts.map((r) => (
+                  <li key={r.key}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={region === r.key}
+                      onClick={() => { setRegion(r.key); setPickerOpen(false) }}
+                      className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors ${
+                        region === r.key
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                          : 'text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="text-sm font-bold">{r.label}</span>
+                        <span className="text-[11px] text-gray-400 tabular-nums">· {r.count}</span>
+                      </span>
+                      {region === r.key && <Check className="w-4 h-4" />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
 
         {loading ? (
           <div className="py-12 text-center">
             <p className="text-sm text-gray-400">{es ? 'Cargando puentes…' : 'Loading bridges…'}</p>
           </div>
-        ) : sections.length === 0 ? (
+        ) : visibleSections.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {es ? 'No pudimos cargar los puentes.' : "Couldn't load bridges."}
+              {sections.length === 0
+                ? (es ? 'No pudimos cargar los puentes.' : "Couldn't load bridges.")
+                : (es ? 'No hay puentes en esta zona.' : 'No bridges in this region.')}
             </p>
             <Link href="/" className="mt-2 inline-block text-xs text-blue-600 hover:underline">
               {es ? '← Volver al inicio' : '← Back to home'}
             </Link>
           </div>
         ) : (
-          sections.map((section) => (
+          visibleSections.map((section) => (
             <div key={section.region} className="mb-5">
               <h2 className="text-[10px] uppercase tracking-widest font-black text-gray-600 dark:text-gray-400 mb-2 px-1">
                 {es ? section.region : section.regionEn}{' '}
