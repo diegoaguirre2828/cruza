@@ -35,6 +35,8 @@ import { trackShare } from '@/lib/trackShare'
 import { useAuth } from '@/lib/useAuth'
 import { useTier, canAccess } from '@/lib/useTier'
 import Link from 'next/link'
+import { SignupIntentModal, type SignupIntent } from '@/components/SignupIntentModal'
+import { recordPortView } from '@/lib/recentPorts'
 import { Bell, Share2, Check } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 import type { PortWaitTime, WaitTimeReading } from '@/types'
@@ -148,6 +150,16 @@ export function PortDetailClient({ port, portId }: Props) {
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
+  // Moments-of-want signup modal — opened when guests click save / alert.
+  // Replaces the previous "silent return" gate that converted at ~10%.
+  const [signupModalIntent, setSignupModalIntent] = useState<SignupIntent | null>(null)
+
+  // Track this port view in localStorage so /signup can personalize +
+  // /welcome's geolocation fallback can prefer ports the user actually
+  // checked. Fires once per portId per mount.
+  useEffect(() => {
+    if (portId) recordPortView(portId)
+  }, [portId])
   // Whether the current user already has an active alert for THIS
   // port. Drives the one-tap "Create alert" CTA near the hero: if
   // they have one we show "Alert active · manage", otherwise we show
@@ -329,6 +341,13 @@ export function PortDetailClient({ port, portId }: Props) {
   }))
 
   async function saveAlert() {
+    // Moments-of-want gate — guests get the inline signup modal instead of
+    // a silent fail. Pre-fills the threshold the user just chose so the
+    // intent flows through /signup → /welcome → /api/alerts cleanly.
+    if (!user) {
+      setSignupModalIntent('alert')
+      return
+    }
     setAlertSaving(true)
     const res = await fetch('/api/alerts', {
       method: 'POST',
@@ -354,7 +373,13 @@ export function PortDetailClient({ port, portId }: Props) {
   }
 
   async function toggleSave() {
-    if (!user) return
+    // Moments-of-want gate — guests get the inline signup modal instead of
+    // the previous silent return. Modal pushes them through /signup with
+    // the favorite intent queued; /welcome saves the bridge post-auth.
+    if (!user) {
+      setSignupModalIntent('favorite')
+      return
+    }
     setSaving(true)
     if (saved) {
       await fetch(`/api/saved?portId=${encodeURIComponent(portId)}`, { method: 'DELETE' })

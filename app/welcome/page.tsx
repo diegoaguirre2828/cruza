@@ -14,6 +14,7 @@ import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 import { getAffiliate } from '@/lib/affiliates'
 import { trackEvent } from '@/lib/trackEvent'
 import type { PortWaitTime } from '@/types'
+import { readPendingIntent, clearPendingIntent, executeIntent } from '@/lib/signupIntent'
 
 // Forced activation flow. Every new signup lands here before the dashboard.
 // Single mandatory step: pick ONE bridge to get alerts for. No skip button,
@@ -42,6 +43,31 @@ function WelcomeInner() {
   const [submitting, setSubmitting] = useState(false)
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null)
   const [geoTried, setGeoTried] = useState(false)
+  const [intentExecuted, setIntentExecuted] = useState<{ kind: string; port_id: string } | null>(null)
+
+  // Execute any pending signup-intent left behind by /signup. Covers the
+  // moments-of-want flow: user clicked "🔔 alert me when Pharr drops"
+  // before signing up — /signup queued the intent into localStorage —
+  // now we run it against /api/alerts or /api/saved with the cookies
+  // the OAuth/email signup just established.
+  useEffect(() => {
+    if (authLoading || !user) return
+    const intent = readPendingIntent()
+    if (!intent) return
+    let cancelled = false
+    ;(async () => {
+      const result = await executeIntent(intent)
+      if (cancelled) return
+      if (result.ok) {
+        setIntentExecuted({ kind: intent.kind, port_id: intent.port_id })
+        // If the user came from /port/X via the intent, forward there
+        // after the welcome flow completes (handled by safeNext in
+        // existing redirect logic).
+      }
+      clearPendingIntent()
+    })()
+    return () => { cancelled = true }
+  }, [user, authLoading])
   const [error, setError] = useState<string | null>(null)
   // Two-step flow — REVERSED 2026-04-14 per PWA funnel audit.
   //   Step 1: INSTALL + claim Pro (carrot: "3 months Pro FREE")

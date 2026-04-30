@@ -14,6 +14,7 @@ import { getPortMeta } from '@/lib/portMeta'
 import { portIdFromSlug } from '@/lib/portSlug'
 import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
 import { trackUserSignedUp, identifyUser } from '@/lib/tracking'
+import { parseIntentFromUrl, queueIntent, type PendingIntent } from '@/lib/signupIntent'
 
 type Mode = 'password' | 'magic' | 'phone'
 
@@ -135,20 +136,39 @@ export default function SignupPage() {
   // headline names the bridge they were checking. Cold visitors see the
   // generic copy; hot visitors get personalized intent reflected back.
   const [contextPortName, setContextPortName] = useState<string | null>(null)
+  const [pendingIntent, setPendingIntent] = useState<Omit<PendingIntent, 'queued_at'> | null>(null)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const next = new URLSearchParams(window.location.search).get('next')
-    if (!next) return
-    let pid: string | null = null
-    const portMatch = next.match(/^\/port\/(\d+)/)
-    const slugMatch = next.match(/^\/cruzar\/([a-z0-9-]+)/i)
-    if (portMatch) pid = portMatch[1]
-    else if (slugMatch) pid = portIdFromSlug(slugMatch[1])
-    if (pid) {
-      const meta = getPortMeta(pid)
-      const name = meta.localName || meta.city
-      if (name) setContextPortName(name)
+    if (next) {
+      let pid: string | null = null
+      const portMatch = next.match(/^\/port\/(\d+)/)
+      const slugMatch = next.match(/^\/cruzar\/([a-z0-9-]+)/i)
+      if (portMatch) pid = portMatch[1]
+      else if (slugMatch) pid = portIdFromSlug(slugMatch[1])
+      if (pid) {
+        const meta = getPortMeta(pid)
+        const name = meta.localName || meta.city
+        if (name) setContextPortName(name)
+      }
     }
+    // Moments-of-want intent — lib/signupIntent. If user came from a port
+    // row's "🔔 alert me" or favorite click, queue the intent in localStorage
+    // so /welcome can execute it post-auth (covers all signup methods —
+    // password / OAuth / magic / phone).
+    const parsed = parseIntentFromUrl(window.location.href)
+    if (parsed) {
+      queueIntent(parsed)
+      setPendingIntent(parsed)
+      // Surface the bridge name in the existing contextPortName slot if not
+      // already set by ?next=
+      if (!contextPortName) {
+        const meta = getPortMeta(parsed.port_id)
+        const name = meta.localName || meta.city
+        if (name) setContextPortName(name)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Capture ?ref= query param from URL (set by /r/[code] redirect)
@@ -420,6 +440,35 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
+
+        {/* Pending intent banner — surfaced when user came from a moments-of-want
+            CTA (🔔 alert me / star/favorite / push). Replaces generic "create
+            account" with the specific outcome the user just clicked toward. The
+            actual queued intent in localStorage will be executed by /welcome
+            post-auth. */}
+        {pendingIntent && (
+          <div className="mb-4 rounded-xl border border-amber-300 dark:border-amber-600/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm">
+            <div className="flex items-baseline gap-2">
+              <span className="text-base">
+                {pendingIntent.kind === 'alert' ? '🔔' : pendingIntent.kind === 'favorite' ? '⭐' : '📲'}
+              </span>
+              <div className="text-amber-900 dark:text-amber-200 font-semibold leading-tight">
+                {pendingIntent.kind === 'alert' && (es
+                  ? `Te avisamos cuando ${contextPortName ?? 'tu puente'} baje de ${pendingIntent.threshold_min ?? 30} min`
+                  : `We'll text you when ${contextPortName ?? 'your bridge'} drops below ${pendingIntent.threshold_min ?? 30} min`)}
+                {pendingIntent.kind === 'favorite' && (es
+                  ? `Guardamos ${contextPortName ?? 'tu puente'} en tus favoritos`
+                  : `We'll save ${contextPortName ?? 'your bridge'} to your favorites`)}
+                {pendingIntent.kind === 'notify' && (es
+                  ? `Activamos push para ${contextPortName ?? 'tu puente'}`
+                  : `We'll turn on push for ${contextPortName ?? 'your bridge'}`)}
+              </div>
+            </div>
+            <div className="mt-1 text-[11px] text-amber-700/80 dark:text-amber-300/70 ml-7">
+              {es ? 'Continúa con Google o Apple — un toque, sin contraseña.' : 'Continue with Google or Apple — one tap, no password.'}
+            </div>
+          </div>
+        )}
 
         {/* Header — value-first. Funnel data 2026-04-17: 82% of /signup
             visitors never tap a method — they land cold from FB without
