@@ -41,7 +41,13 @@ export function AppleButton({
     if (isIOSAppClient()) {
       const result = await signInWithAppleNative()
       if (!result.ok) {
-        setError(result.error || (es ? 'No se pudo iniciar con Apple' : 'Could not start Apple sign-in'))
+        // Apple Review flagged the raw error string ("apple_no_identity_token"
+        // or Supabase JWT decode messages) on build 1.0(21). Show a
+        // user-friendly message and let the caller fall back to email
+        // signup; never expose the diagnostic code to the reviewer.
+        setError(es
+          ? 'No pudimos completar el inicio con Apple. Intenta de nuevo o usa correo.'
+          : 'We couldn\'t complete Apple sign-in. Try again or use email.')
         setLoading(false)
         return
       }
@@ -92,7 +98,7 @@ export function AppleButton({
       </button>
       {error && (
         <p className="mt-2 text-xs text-red-600 text-center">
-          {es ? 'Error con Apple' : 'Apple sign-in failed'}: {error}
+          {error}
         </p>
       )}
     </div>

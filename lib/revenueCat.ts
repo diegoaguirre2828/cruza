@@ -26,19 +26,53 @@ export async function initRevenueCat(userId?: string): Promise<void> {
   return configurePromise
 }
 
+// User-facing error string — deliberately vendor-agnostic. Apple Review
+// flagged "No monthly package configured in RevenueCat" on build 1.0(21)
+// as a 2.1(a) completeness bug because (a) it surfaces the third-party
+// vendor name and (b) reads like a developer log, not a user message.
+const SUBS_TEMP_UNAVAILABLE_EN = 'Subscriptions are temporarily unavailable. Please try again in a moment.'
+const SUBS_TEMP_UNAVAILABLE_ES = 'Las suscripciones no están disponibles temporalmente. Inténtalo de nuevo en un momento.'
+
+function localizedTempUnavailable() {
+  if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('es')) {
+    return SUBS_TEMP_UNAVAILABLE_ES
+  }
+  return SUBS_TEMP_UNAVAILABLE_EN
+}
+
+// Best-effort server log so we can debug review-time failures without
+// adding Sentry overhead. Fire-and-forget; never blocks the user flow.
+function logIapFailure(reason: string, detail?: string) {
+  if (typeof fetch === 'undefined') return
+  try {
+    fetch('/api/log/ios-iap-failure', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason, detail, ts: new Date().toISOString() }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // Swallow — telemetry must never break the purchase flow.
+  }
+}
+
 export async function purchaseProMonthly(): Promise<{ purchased: boolean; error?: string }> {
   if (!isIOSAppClient()) return { purchased: false, error: 'IAP only available in iOS app' }
   try {
     const offerings = await Purchases.getOfferings()
     const pkg = offerings.current?.monthly
-    if (!pkg) return { purchased: false, error: 'No monthly package configured in RevenueCat' }
+    if (!pkg) {
+      logIapFailure('no_monthly_package', `current=${offerings.current?.identifier ?? 'null'}`)
+      return { purchased: false, error: localizedTempUnavailable() }
+    }
     const result = await Purchases.purchasePackage({ aPackage: pkg })
     const entitled = !!result.customerInfo.entitlements.active['pro']
     return { purchased: entitled }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     if (msg.toLowerCase().includes('cancel')) return { purchased: false }
-    return { purchased: false, error: msg }
+    logIapFailure('purchase_threw', msg)
+    return { purchased: false, error: localizedTempUnavailable() }
   }
 }
 

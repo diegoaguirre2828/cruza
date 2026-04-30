@@ -45,6 +45,24 @@ interface SignInResult {
   error?: string
 }
 
+// Best-effort server log so we can debug review-time SIWA failures. Apple
+// Review (build 1.0.21, 2026-04-30) flagged a SIWA error and we have no
+// audit trail of which step failed — plugin token grab vs Supabase
+// signInWithIdToken. This fixes that.
+function logAppleFailure(stage: string, detail?: string) {
+  if (typeof fetch === 'undefined') return
+  try {
+    fetch('/api/log/ios-siwa-failure', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stage, detail, ts: new Date().toISOString() }),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // Telemetry must never break the auth flow.
+  }
+}
+
 // Native Apple sign-in. Returns ok=true on a Supabase session, false
 // (with error) otherwise. Caller is responsible for redirecting after.
 export async function signInWithAppleNative(): Promise<SignInResult> {
@@ -58,6 +76,7 @@ export async function signInWithAppleNative(): Promise<SignInResult> {
     // identityToken (the JWT we hand to Supabase).
     const r = result.result as { identityToken?: string; nonce?: string } | undefined
     if (!r?.identityToken) {
+      logAppleFailure('no_identity_token')
       return { ok: false, error: 'apple_no_identity_token' }
     }
     const supabase = createClient()
@@ -66,10 +85,15 @@ export async function signInWithAppleNative(): Promise<SignInResult> {
       token: r.identityToken,
       nonce: r.nonce,
     })
-    if (error) return { ok: false, error: error.message }
+    if (error) {
+      logAppleFailure('supabase_rejected', error.message)
+      return { ok: false, error: error.message }
+    }
     return { ok: true }
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+    const msg = e instanceof Error ? e.message : String(e)
+    logAppleFailure('threw', msg)
+    return { ok: false, error: msg }
   }
 }
 
