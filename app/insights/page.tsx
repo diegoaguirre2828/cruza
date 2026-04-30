@@ -407,7 +407,7 @@ export default function InsightsPage() {
               </ul>
               <p className="mt-3 text-[11.5px] text-white/45 leading-[1.5]">
                 If your lanes cross these ports → real value today. Other lanes → we honestly defer to CBP&apos;s own number rather than fake one.
-                Use the &quot;Ask 3 experts&quot; panel below to get an unvarnished read on YOUR specific port.
+                Pick your port below for the per-port read.
               </p>
             </div>
           )}
