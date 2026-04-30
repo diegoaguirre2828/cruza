@@ -1,4 +1,5 @@
 import { MomentsNav } from "@/components/MomentsNav";
+import { InsightsExpertPanel } from "@/components/InsightsExpertPanel";
 import { getPortMeta } from "@/lib/portMeta";
 import manifest from "@/data/insights-manifest.json";
 
@@ -402,6 +403,16 @@ export default function InsightsPage() {
           </div>
         </div>
       </header>
+
+      {/* ─── 3-PERSONA TRUST PANEL ───────────────────────────────── */}
+      <InsightsExpertPanel
+        ports={PORTS.map((p) => ({
+          port_id: p.portId,
+          label: `${p.name} — ${p.cluster.toUpperCase()}`,
+          lift_vs_cbp: p.vsCbp,
+          status: p.status,
+        }))}
+      />
 
       {/* ─── SECTION 1 / EVIDENCE ─────────────────────────────────── */}
       <section id="evidence" className="border-b border-white/[0.07]">

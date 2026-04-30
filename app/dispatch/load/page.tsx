@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PersonaPanelDisplay, type PanelResult } from "@/components/PersonaPanelDisplay";
 
 interface RecommendPort {
   port_id: string;
@@ -54,6 +55,39 @@ export default function LoadAdvisor() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RecommendResponse | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewPanel, setReviewPanel] = useState<PanelResult | null>(null);
+
+  async function runRouteReview() {
+    if (!result) return;
+    setReviewLoading(true);
+    setReviewError(null);
+    setReviewPanel(null);
+    try {
+      const res = await fetch("/api/dispatch/recommend/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          picks: result.picks,
+          appt_at: apptAt ? new Date(apptAt).toISOString() : undefined,
+          cargo_type: cargo,
+          driver_name: driverName || undefined,
+          origin_label: originLabel,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setReviewError(json?.error ?? `HTTP ${res.status}`);
+        return;
+      }
+      setReviewPanel(json.panel as PanelResult);
+    } catch (e) {
+      setReviewError(e instanceof Error ? e.message : "request failed");
+    } finally {
+      setReviewLoading(false);
+    }
+  }
 
   function pickPreset(label: string) {
     const preset = ORIGIN_PRESETS.find((p) => p.label === label);
@@ -232,6 +266,36 @@ export default function LoadAdvisor() {
               {result.picks.map((p, i) => (
                 <PickCard key={p.port_id} pick={p} rank={i + 1} apptProvided={!!apptAt} apptAt={apptAt} />
               ))}
+
+              {/* 3-persona review trigger + panel */}
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-4">
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                  <div>
+                    <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
+                      Pre-execution review · 3-persona panel
+                    </div>
+                    <p className="mt-1 text-[12px] text-white/55">
+                      Run the recommendation through Driver · Dispatcher · Receiver Operations.
+                      Catches what a single algorithm misses (driver hours, customer SLA, dock-window fit).
+                    </p>
+                  </div>
+                  <button
+                    onClick={runRouteReview}
+                    disabled={reviewLoading}
+                    className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
+                  >
+                    {reviewLoading ? "Reviewing…" : reviewPanel ? "Re-run review" : "Run review"}
+                  </button>
+                </div>
+                {reviewError && (
+                  <div className="text-[12px] text-rose-300">✗ {reviewError}</div>
+                )}
+                {reviewPanel && (
+                  <div className="mt-3">
+                    <PersonaPanelDisplay result={reviewPanel} />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
