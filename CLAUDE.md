@@ -6,6 +6,25 @@
 
 ---
 
+## Cross-portfolio context (lazy-fetch — pull only when needed)
+
+Diego runs an 11-project portfolio. For context this project doesn't have, the brain vault holds cross-portfolio synthesis:
+
+- **Brain vault:** `~/brain/` (Karpathy LLM Wiki structure — raw / wiki / schema)
+- **This project's high-level page:** `~/brain/projects/Cruzar.md` (status, Active queue, decisions, blockers)
+- **Cross-portfolio concepts:** `~/brain/wiki/concepts/` (e.g., RGV trucking ecosystem, USMCA dynamics, etc.)
+- **Cross-portfolio entities:** `~/brain/wiki/entities/` (people, products, tools across portfolio)
+- **Per-source summaries:** `~/brain/wiki/sources/` (compiled from articles, reels, papers ingested into raw/)
+- **Active inbox:** `~/brain/inbox.md` (Diego's barf channel — items routed to projects/ Active queues)
+- **Cross-portfolio memory rules:** `~/.claude/projects/C--Users-dnawa/memory/MEMORY.md` (auto-loaded by Claude Code)
+- **Cruzar code knowledge graph:** `~/cruzar/graphify-obsidian/` (when graphified — open as a separate Obsidian vault for code-level Q&A)
+
+**When to read these:** lazy-fetch only — pull when this project's local code/docs don't answer. Don't preload (token-efficient per the canonical executive-assistant pattern from `~/brain/raw/youtube-sboNwYmH3AY.md`).
+
+The brain vault is the cross-portfolio synthesis layer; Cruzar is one of many projects pulling from it.
+
+---
+
 ## 0. Sensei audit mode (inherited)
 
 Standing capability across every project Diego owns. Canonical rules live in the user-level memory folder under `~/.claude/projects/C--Users-dnawa/memory/` — see the files `feedback_sensei_audit_method.md` and `feedback_prevent_stale_memory_audits.md`. Locked 2026-04-16.

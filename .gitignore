@@ -54,3 +54,7 @@ fb-poster/scraped-posts.json
 fb-poster/commented-posts.json
 
 .env*.local
+
+# graphify outputs (regenerable knowledge graph)
+graphify-obsidian/
+graphify-out/
