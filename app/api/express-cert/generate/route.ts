@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   const completion = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 6000,
-    system: SYSTEM_PROMPT,
+    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: [{
       role: 'user',
       content: `Program: ${app.program.toUpperCase()}\n\nAnswers (JSON):\n${JSON.stringify(app.answers, null, 2)}`,

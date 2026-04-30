@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1200,
-        system: promptConfig.system,
+        system: [{ type: 'text', text: promptConfig.system, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: promptConfig.user(context) }],
       }),
     })

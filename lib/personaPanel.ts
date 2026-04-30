@@ -134,7 +134,7 @@ export async function runPersonaPanel(opts: RunOptions): Promise<PanelResult> {
   const res = await client.messages.create({
     model,
     max_tokens: opts.maxTokens ?? DEFAULT_MAX_TOKENS,
-    system,
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
     temperature: opts.temperature ?? 0.4,
     messages: [{ role: "user", content: opts.input }],
   });

@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 900,
-        system: TRANSLATOR_SYSTEM,
+        system: [{ type: 'text', text: TRANSLATOR_SYSTEM, cache_control: { type: 'ephemeral' } }],
         messages: [{ role: 'user', content: `Source message to translate:\n"""\n${text}\n"""\n\nReturn 3 variants.` }],
       }),
     })

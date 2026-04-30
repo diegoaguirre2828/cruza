@@ -262,12 +262,13 @@ Guidance:
     msg = await client.messages.create({
       model: MODEL,
       max_tokens: 300,
+      system: [{ type: 'text', text: prompt, cache_control: { type: 'ephemeral' } }],
       messages: [
         {
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: imageMediaType, data: imageB64 } },
-            { type: 'text', text: prompt },
+            { type: 'text', text: 'Analyze the image and return the JSON object described.' },
           ],
         },
       ],

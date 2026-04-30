@@ -193,7 +193,7 @@ ${RESPONSE_SCHEMA_DOC}`;
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001", // default Haiku per $30 budget rule
     max_tokens: 3000,
-    system: lang === "es" ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT_EN,
+    system: [{ type: "text", text: lang === "es" ? SYSTEM_PROMPT_ES : SYSTEM_PROMPT_EN, cache_control: { type: "ephemeral" } }],
     messages: [{ role: "user", content: userMessage }],
   });
 

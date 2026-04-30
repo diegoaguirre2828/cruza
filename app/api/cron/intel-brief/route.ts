@@ -91,7 +91,7 @@ async function runBrief() {
   const completion = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2200,
-    system: SYSTEM_PROMPT,
+    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
     messages: [{
       role: 'user',
       content: `Generate today's Cruzar Intelligence brief from these ${eventsForPrompt.length} events.\n\n${JSON.stringify(eventsForPrompt, null, 2)}`,

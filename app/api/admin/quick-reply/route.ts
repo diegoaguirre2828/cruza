@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 900,
-        system: SYSTEM_PROMPT,
+        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
         messages: [{
           role: 'user',
           content: `Post/comment from the FB group:\n"""\n${context}\n"""\n\nGenerate 3 variants.`,
