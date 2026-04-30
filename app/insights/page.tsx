@@ -388,8 +388,14 @@ export default function InsightsPage() {
               Read the backtest first
             </a>
             <a
+              href="/dispatch"
+              className="text-[14px] text-white/55 transition hover:text-amber-300"
+            >
+              ·  open the dispatcher console →
+            </a>
+            <a
               href="/insights/get-key"
-              className="text-[14px] text-white/45 transition hover:text-white/80"
+              className="text-[14px] text-white/40 transition hover:text-white/80"
             >
               ·  developer API access
             </a>
