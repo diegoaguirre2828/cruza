@@ -271,14 +271,22 @@ export default function InsightsPage() {
   };
 
   // Aggregate stats for the masthead
-  const decisionGradeCount = PORTS.filter((p) => p.status === "decision-grade").length;
-  const liftValues = PORTS.filter((p) => p.status === "decision-grade" && p.vsCbp !== null).map((p) => p.vsCbp!) as number[];
+  const decisionGradePorts = PORTS.filter((p) => p.status === "decision-grade");
+  const decisionGradeCount = decisionGradePorts.length;
+  const liftValues = decisionGradePorts.filter((p) => p.vsCbp !== null).map((p) => p.vsCbp!) as number[];
   const medianLift = (() => {
     const s = [...liftValues].sort((a, b) => a - b);
     const m = Math.floor(s.length / 2);
     return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
   })();
-  const maxLift = Math.max(...liftValues);
+  const maxLift = liftValues.length > 0 ? Math.max(...liftValues) : 0;
+  // Find the actual port at maxLift — the previous "Paso del Norte" caption was
+  // hardcoded and wrong (PDN is in drift-fallback, not decision-grade). Always
+  // compute from data.
+  const bestPort = decisionGradePorts.find((p) => p.vsCbp === maxLift) ?? null;
+  // Counts for honest disclosure
+  const selfBaselineCount = PORTS.filter((p) => p.status === "self-baseline").length;
+  const driftFallbackCount = PORTS.filter((p) => p.status === "drift-fallback").length;
 
   return (
     <div className="min-h-screen bg-[#0a1020] text-slate-100 selection:bg-amber-400/30 selection:text-amber-100">
@@ -319,52 +327,59 @@ export default function InsightsPage() {
               <div className="font-mono text-white/80">Brokers · Fleets · 3PL</div>
             </div>
             <div>
-              <div className="text-white/35">Distribution</div>
-              <div className="font-mono text-white/80">MCP · HTTPS · curl</div>
+              <div className="text-white/35">Delivery</div>
+              <div className="font-mono text-white/80">WhatsApp · email · SMS</div>
             </div>
           </div>
 
-          {/* Headline — editorial / data-journalism */}
-          <h1 className="font-serif text-[clamp(2.4rem,6.4vw,5.4rem)] font-medium leading-[0.98] tracking-[-0.02em] text-white">
-            We forecast the border<br />
-            <span className="text-amber-400">{fmtPct(maxLift).replace("+", "")}</span> better<br />
-            <span className="text-white/85">than the free CBP baseline.</span>
+          {/* Headline — honest version. The previous one led with the +52%
+              outlier (Laredo Colombia Solidarity). That's one port. Real
+              picture: 6 decision-grade, median +12.1%, range +9% to +52%. */}
+          <h1 className="font-serif text-[clamp(2.0rem,5.4vw,4.2rem)] font-medium leading-[1.02] tracking-[-0.02em] text-white">
+            We beat CBP at <span className="text-amber-400">{decisionGradeCount}</span> ports.<br />
+            <span className="text-white/85">Median lift: <span className="text-amber-400">+{medianLift.toFixed(1)}%</span>.</span><br />
+            <span className="text-white/55 text-[0.6em]">Honest about the rest.</span>
           </h1>
 
           {/* Subhead — bilingual, intentionally direct */}
           <div className="mt-7 grid max-w-3xl gap-4 sm:grid-cols-2 sm:gap-10">
             <p className="text-[15px] leading-[1.55] text-white/70">
-              Per-port machine-learning models for {PORTS.length} US-Mexico crossings. Backtested against CBP's
-              own free climatology widget — the smartest baseline a competent broker already uses.
-              Honest about where we degrade.
+              Per-port ML across {PORTS.length} US-Mexico crossings. {decisionGradeCount} ports
+              meaningfully beat CBP's free baseline (median +{medianLift.toFixed(1)}%, max +{maxLift.toFixed(1)}% at {bestPort?.name ?? "—"}).
+              {selfBaselineCount} more ports CBP doesn&apos;t even publish baselines for — we beat our own first-party climatology there.
+              {driftFallbackCount} ports we honestly defer to CBP. We tell you which is which.
             </p>
             <p className="text-[15px] leading-[1.55] text-white/55" lang="es">
-              Modelos ML por puerto para {PORTS.length} cruces US-México. Probado contra el widget público
-              de CBP — el baseline más fuerte que un buen broker ya usa. Transparentes con
-              dónde fallamos.
+              ML por puerto en {PORTS.length} cruces. {decisionGradeCount} puertos le ganamos
+              al baseline gratis de CBP (mediana +{medianLift.toFixed(1)}%, máx +{maxLift.toFixed(1)}% en {bestPort?.name ?? "—"}).
+              {selfBaselineCount} puertos donde CBP ni publica baseline — ahí le ganamos a nuestra propia climatología.
+              {driftFallbackCount} puertos nos rendimos a CBP, abierto. Te decimos cuál es cuál.
             </p>
           </div>
 
-          {/* Stat strip */}
+          {/* Stat strip — honest version. Median is the headline (not max),
+              max gets a smaller treatment + the actual port name (was hardcoded
+              wrong before). The two right-hand cells now show coverage breakdown
+              instead of fluff stats. */}
           <dl className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 border-y border-white/[0.07] py-8 sm:grid-cols-4 sm:gap-x-10">
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Best lift vs CBP</dt>
+              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Median lift vs CBP</dt>
               <dd className="mt-2 font-mono text-[2.2rem] leading-none tracking-tight text-amber-400">
-                +{maxLift.toFixed(1)}%
-              </dd>
-              <dd className="mt-1.5 text-[12px] text-white/45">Paso del Norte · 6h</dd>
-            </div>
-            <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Median lift</dt>
-              <dd className="mt-2 font-mono text-[2.2rem] leading-none tracking-tight text-white">
                 +{medianLift.toFixed(1)}%
               </dd>
-              <dd className="mt-1.5 text-[12px] text-white/45">{decisionGradeCount} decision-grade ports</dd>
+              <dd className="mt-1.5 text-[12px] text-white/45">across {decisionGradeCount} decision-grade ports</dd>
             </div>
             <div>
-              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Backbone</dt>
-              <dd className="mt-2 font-mono text-[2.2rem] leading-none tracking-tight text-white">230k+</dd>
-              <dd className="mt-1.5 text-[12px] text-white/45">15-min CBP readings, since Mar '26</dd>
+              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Best single port</dt>
+              <dd className="mt-2 font-mono text-[2.2rem] leading-none tracking-tight text-white">
+                +{maxLift.toFixed(1)}%
+              </dd>
+              <dd className="mt-1.5 text-[12px] text-white/45">{bestPort?.name ?? "—"} · one outlier, not a typical port</dd>
+            </div>
+            <div>
+              <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Coverage today</dt>
+              <dd className="mt-2 font-mono text-[2.2rem] leading-none tracking-tight text-white">{decisionGradeCount + selfBaselineCount}<span className="text-white/40">/{PORTS.length}</span></dd>
+              <dd className="mt-1.5 text-[12px] text-white/45">{decisionGradeCount} beat CBP · {selfBaselineCount} self-baseline · {driftFallbackCount} defer to CBP</dd>
             </div>
             <div>
               <dt className="text-[10.5px] uppercase tracking-[0.2em] text-white/45">Delivery</dt>
@@ -372,6 +387,30 @@ export default function InsightsPage() {
               <dd className="mt-1.5 text-[12px] text-white/45">+ email · driver SMS · API</dd>
             </div>
           </dl>
+
+          {/* Decision-grade ports — explicit list under the hero so buyers
+              can immediately check whether their lane is one we win at. */}
+          {decisionGradePorts.length > 0 && (
+            <div className="mt-7 rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-5">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200 mb-3">
+                Ports we beat CBP at (decision-grade today)
+              </div>
+              <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3 text-[13px]">
+                {decisionGradePorts
+                  .sort((a, b) => (b.vsCbp ?? 0) - (a.vsCbp ?? 0))
+                  .map((p) => (
+                    <li key={p.portId} className="flex items-baseline justify-between gap-3 border-b border-white/[0.05] pb-1.5">
+                      <span className="text-white">{p.name}</span>
+                      <span className="font-mono tabular-nums text-amber-300">+{(p.vsCbp ?? 0).toFixed(1)}%</span>
+                    </li>
+                  ))}
+              </ul>
+              <p className="mt-3 text-[11.5px] text-white/45 leading-[1.5]">
+                If your lanes cross these ports → real value today. Other lanes → we honestly defer to CBP&apos;s own number rather than fake one.
+                Use the &quot;Ask 3 experts&quot; panel below to get an unvarnished read on YOUR specific port.
+              </p>
+            </div>
+          )}
 
           {/* Primary CTA pair */}
           <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
