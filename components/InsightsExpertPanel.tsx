@@ -1,16 +1,14 @@
 "use client";
 
-// Insights "Ask 3 experts" — buyer-facing trust panel.
-// Pick a port → 3-persona panel (Skeptical buyer / Honest broker / Audit
-// critic) gives a 1-sentence honest read on whether THAT port's lift
-// numbers are worth paying for. Direct answer to Diego's complaint that
-// "+52% better than CBP" cherry-picks one outlier.
-//
-// Cost is real ($0.0005/run, Haiku). Cap at one panel per page-load
-// per port — no auto-fire.
+// Per-port read for the Insights B2B page.
+// Pick a port → server-side multi-persona critique runs internally → only the
+// synthesized one-line verdict ships to the user. The persona scaffolding
+// (skeptical buyer / honest broker / audit critic) lives in
+// lib/personaPanel.ts and /api/insights/drift-review — never on the page.
+// Cost gated by explicit click ($0.0005/run, Haiku).
 
 import { useState } from "react";
-import { PersonaPanelDisplay, type PanelResult } from "./PersonaPanelDisplay";
+import { type PanelResult } from "./PersonaPanelDisplay";
 
 interface PortOption {
   port_id: string;
@@ -57,26 +55,15 @@ export function InsightsExpertPanel({ ports }: InsightsExpertPanelProps) {
   const selected = ports.find((p) => p.port_id === portId);
 
   return (
-    <section className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12 border-y border-white/[0.07]">
-      <div className="mb-5">
-        <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-300/80">
-          Ask 3 experts
-        </div>
-        <h2 className="mt-2 text-[clamp(1.4rem,2.5vw,1.9rem)] font-serif italic font-normal text-white tracking-tight">
-          Pick a port. We&apos;ll run the lift number through 3 perspectives.
-        </h2>
-        <p className="mt-2 text-[13px] text-white/55 max-w-2xl">
-          Skeptical fleet buyer · Honest aduanal broker · Audit critic. They look at the same data
-          and tell you, in plain language, whether the lift number you see is something to pay for
-          or something we should be honest about. One quote got cherry-picked into the hero number
-          you saw — this is the unvarnished read on YOUR specific port.
-        </p>
-      </div>
-
+    <section className="mx-auto max-w-[1180px] px-5 sm:px-8 py-10 border-y border-white/[0.07]">
       <div className="flex flex-wrap items-center gap-3">
         <select
           value={portId}
-          onChange={(e) => setPortId(e.target.value)}
+          onChange={(e) => {
+            setPortId(e.target.value);
+            setPanel(null);
+            setError(null);
+          }}
           style={{ colorScheme: "dark" }}
           className="rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none min-w-[280px]"
         >
@@ -91,7 +78,7 @@ export function InsightsExpertPanel({ ports }: InsightsExpertPanelProps) {
           disabled={loading || !portId}
           className="rounded-lg bg-amber-400 px-4 py-2 text-[12.5px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
         >
-          {loading ? "Running 3-persona panel…" : panel ? "Re-run for this port" : "Run panel"}
+          {loading ? "Reading…" : panel ? "Re-run" : "Get the read"}
         </button>
         {selected && (
           <span className="text-[11.5px] text-white/45 font-mono tabular-nums">
@@ -99,7 +86,15 @@ export function InsightsExpertPanel({ ports }: InsightsExpertPanelProps) {
             {selected.lift_vs_cbp !== null && (
               <>
                 {" · lift vs CBP: "}
-                <span className={selected.lift_vs_cbp >= 5 ? "text-emerald-300" : selected.lift_vs_cbp >= 0 ? "text-amber-300" : "text-rose-300"}>
+                <span
+                  className={
+                    selected.lift_vs_cbp >= 5
+                      ? "text-emerald-300"
+                      : selected.lift_vs_cbp >= 0
+                        ? "text-amber-300"
+                        : "text-rose-300"
+                  }
+                >
                   {selected.lift_vs_cbp.toFixed(1)}%
                 </span>
               </>
@@ -115,16 +110,8 @@ export function InsightsExpertPanel({ ports }: InsightsExpertPanelProps) {
       )}
 
       {panel && (
-        <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-5">
-          <PersonaPanelDisplay result={panel} hideCost />
-        </div>
-      )}
-
-      {!panel && !loading && !error && (
-        <p className="mt-5 text-[11px] text-white/35 italic">
-          Press <span className="text-amber-300/80">Run panel</span>. Single Haiku call,
-          ~$0.0005/run, ~3-6 seconds. Each panel result lives in the page only — not saved
-          anywhere.
+        <p className="mt-4 max-w-2xl text-[14px] leading-[1.55] text-white/85">
+          {panel.synthesis}
         </p>
       )}
     </section>

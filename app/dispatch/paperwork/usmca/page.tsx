@@ -4,7 +4,8 @@
 //
 // USMCA Article 5.2 prescribes 9 data elements but NO prescribed form.
 // v0 captures the 9 elements + renders a printable certificate.
-// v1 adds: 3-persona HS suggester (lib/personaPanel), pre-sign panel review,
+// v1 adds: HS subheading suggestion + pre-sign review (both backed by
+// lib/personaPanel internally — operator only sees the synthesized verdict),
 // history of saved drafts, and one-click PDF download (jsPDF + html2canvas).
 
 import { useEffect, useRef, useState } from "react";
@@ -105,12 +106,6 @@ const CRITERION_LABEL: Record<OriginCriterion, string> = {
   B: "B — Produced entirely using non-originating materials, but the goods satisfy the product-specific rules of origin in Annex 4-B",
   C: "C — Produced entirely in the territory exclusively from originating materials",
   D: "D — Produced in the territory but does NOT qualify as originating",
-};
-
-const CONFIDENCE_BADGE: Record<PersonaResponse["confidence"], { tone: string; label: string }> = {
-  high: { tone: "border-emerald-400/30 bg-emerald-500/10 text-emerald-200", label: "high confidence" },
-  medium: { tone: "border-amber-400/30 bg-amber-500/10 text-amber-200", label: "medium confidence" },
-  low: { tone: "border-rose-400/30 bg-rose-500/10 text-rose-200", label: "low confidence" },
 };
 
 function loadForm(): UsmcaForm {
@@ -353,8 +348,8 @@ export default function UsmcaGenerator() {
         <div>
           <h1 className="text-[1.4rem] font-semibold text-white">USMCA Certificate of Origin</h1>
           <p className="mt-1 text-[12.5px] text-white/55">
-            9 data elements per Article 5.2. We pre-fill, you verify, you sign. 3-persona panel
-            available for HS suggestions and pre-sign review.
+            9 data elements per Article 5.2. We pre-fill, you verify, you sign. HS suggestion and
+            pre-sign review available.
           </p>
         </div>
         <Link href="/dispatch/paperwork" className="text-[11.5px] text-white/45 hover:text-white">
@@ -489,9 +484,9 @@ export default function UsmcaGenerator() {
                           onClick={() => runHsPanel(i)}
                           disabled={hsPanelLoading && hsPanelFor === i}
                           className="text-[10.5px] text-amber-300 hover:text-amber-200 disabled:opacity-50"
-                          title="Run a 3-persona panel to suggest the HS subheading"
+                          title="Suggest the HS subheading"
                         >
-                          {hsPanelLoading && hsPanelFor === i ? "Reviewing…" : "✦ Suggest via 3-persona panel"}
+                          {hsPanelLoading && hsPanelFor === i ? "Suggesting…" : "✦ Suggest HS code"}
                         </button>
                       </div>
                       <input
@@ -527,7 +522,7 @@ export default function UsmcaGenerator() {
                     <div className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.03] p-3">
                       <div className="flex items-baseline justify-between mb-2">
                         <span className="text-[10.5px] uppercase tracking-[0.15em] text-amber-200">
-                          3-persona HS panel
+                          HS suggestion
                         </span>
                         <button
                           onClick={() => {
@@ -540,7 +535,7 @@ export default function UsmcaGenerator() {
                           ×
                         </button>
                       </div>
-                      {hsPanelLoading && <div className="text-[12px] text-white/55">Asking 3 customs experts…</div>}
+                      {hsPanelLoading && <div className="text-[12px] text-white/55">Reading the data…</div>}
                       {hsPanelError && (
                         <div className="text-[12px] text-rose-300">✗ {hsPanelError}</div>
                       )}
@@ -639,27 +634,21 @@ export default function UsmcaGenerator() {
 
       {step === "preview" && (
         <>
-          {/* Pre-sign expert review */}
+          {/* Pre-sign review */}
           <div className="mb-4 rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-4">
-            <div className="flex items-baseline justify-between mb-2">
-              <div>
-                <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
-                  Pre-sign expert review · 3-persona panel
-                </div>
-                <p className="mt-1 text-[12px] text-white/55">
-                  Run the draft through CBP Classifier · Aduanal Broker · Audit Reviewer before
-                  signing. Catches issues that cause border rejection or audit penalties.
-                </p>
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
+                Pre-sign review
               </div>
               <button
                 onClick={runPreSignReview}
                 disabled={reviewLoading}
                 className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
               >
-                {reviewLoading ? "Reviewing…" : reviewResult ? "Re-run review" : "Run expert panel"}
+                {reviewLoading ? "Reviewing…" : reviewResult ? "Re-run" : "Run review"}
               </button>
             </div>
-            {reviewError && <div className="text-[12px] text-rose-300">✗ {reviewError}</div>}
+            {reviewError && <div className="mt-2 text-[12px] text-rose-300">✗ {reviewError}</div>}
             {reviewResult && (
               <div className="mt-3">
                 <PanelDisplay result={reviewResult.panel} verdict={reviewResult.ready_to_sign ? "ready" : "fix-first"} />
@@ -703,7 +692,19 @@ export default function UsmcaGenerator() {
   );
 }
 
-// ─── PanelDisplay — renders 3-persona panel results ───────────────────
+// ─── PanelDisplay — single-line verdict (persona scaffolding internal-only) ───
+
+function pickBestHsCode(result: PanelResult): string | null {
+  const synthCode = result.synthesis.match(/\b(\d{4}\.\d{2})\b/)?.[1];
+  if (synthCode) return synthCode;
+  const order: PersonaResponse["confidence"][] = ["high", "medium", "low"];
+  for (const conf of order) {
+    const r = result.responses.find((x) => x.confidence === conf);
+    const code = r?.perspective.match(/\b(\d{4}\.\d{2})\b/)?.[1];
+    if (code) return code;
+  }
+  return null;
+}
 
 function PanelDisplay({
   result,
@@ -714,23 +715,11 @@ function PanelDisplay({
   verdict?: "ready" | "fix-first";
   onApplyCode?: (code: string) => void;
 }) {
+  const code = onApplyCode ? pickBestHsCode(result) : null;
   return (
-    <div>
-      {/* Synthesis headline */}
-      <div className="rounded-lg border border-white/[0.08] bg-[#040814] p-3 mb-3">
-        <div className="flex items-baseline gap-2 mb-1.5">
-          <span className="text-[10px] uppercase tracking-[0.15em] text-white/55">Synthesis</span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] border ${
-              result.agreement === "aligned"
-                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                : result.agreement === "split"
-                  ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
-                  : "border-rose-400/30 bg-rose-500/10 text-rose-200"
-            }`}
-          >
-            {result.agreement}
-          </span>
+    <div className="rounded-lg border border-white/[0.08] bg-[#040814] p-3">
+      {(verdict || (code && onApplyCode)) && (
+        <div className="flex items-baseline gap-2 mb-2">
           {verdict && (
             <span
               className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] border ${
@@ -742,49 +731,17 @@ function PanelDisplay({
               {verdict === "ready" ? "ready to sign" : "fix before signing"}
             </span>
           )}
+          {code && onApplyCode && (
+            <button
+              onClick={() => onApplyCode(code)}
+              className="ml-auto rounded-md border border-amber-300/40 bg-amber-300/[0.06] px-2 py-0.5 font-mono text-[11px] text-amber-200 hover:bg-amber-300/[0.12]"
+            >
+              use {code}
+            </button>
+          )}
         </div>
-        <p className="text-[13px] text-white/85 leading-[1.55]">{result.synthesis}</p>
-      </div>
-
-      {/* Per-persona */}
-      <ul className="space-y-2">
-        {result.responses.map((r) => {
-          const code = r.perspective.match(/\b(\d{4}\.\d{2})\b/)?.[1];
-          const conf = CONFIDENCE_BADGE[r.confidence];
-          return (
-            <li key={r.persona_id} className="rounded-lg border border-white/[0.06] bg-white/[0.015] p-3">
-              <div className="flex items-baseline justify-between gap-2 mb-1.5">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[12px] font-semibold text-white">{r.persona_label}</span>
-                  <span className={`rounded-full border px-2 py-0.5 text-[9.5px] uppercase tracking-[0.12em] ${conf.tone}`}>
-                    {conf.label}
-                  </span>
-                </div>
-                {code && onApplyCode && (
-                  <button
-                    onClick={() => onApplyCode(code)}
-                    className="rounded-md border border-amber-300/40 bg-amber-300/[0.06] px-2 py-0.5 font-mono text-[11px] text-amber-200 hover:bg-amber-300/[0.12]"
-                  >
-                    use {code}
-                  </button>
-                )}
-              </div>
-              <p className="text-[12.5px] text-white/75 leading-[1.55]">{r.perspective}</p>
-              {r.flags.length > 0 && (
-                <ul className="mt-1.5 list-disc list-inside text-[11.5px] text-amber-200/75 leading-[1.5]">
-                  {r.flags.map((f, i) => (
-                    <li key={i}>{f}</li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-
-      <div className="mt-2 text-[10px] text-white/30 font-mono">
-        cost ≈ ${result.cost_estimate_usd.toFixed(4)} · {result.ms}ms · highest_confidence={result.highest_confidence}
-      </div>
+      )}
+      <p className="text-[13px] text-white/85 leading-[1.55]">{result.synthesis}</p>
     </div>
   );
 }

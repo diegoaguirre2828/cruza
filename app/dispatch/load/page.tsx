@@ -12,7 +12,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PersonaPanelDisplay, type PanelResult } from "@/components/PersonaPanelDisplay";
+import { type PanelResult } from "@/components/PersonaPanelDisplay";
 
 interface RecommendPort {
   port_id: string;
@@ -267,33 +267,27 @@ export default function LoadAdvisor() {
                 <PickCard key={p.port_id} pick={p} rank={i + 1} apptProvided={!!apptAt} apptAt={apptAt} />
               ))}
 
-              {/* 3-persona review trigger + panel */}
+              {/* Pre-execution review */}
               <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-4">
-                <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <div>
-                    <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
-                      Pre-execution review · 3-persona panel
-                    </div>
-                    <p className="mt-1 text-[12px] text-white/55">
-                      Run the recommendation through Driver · Dispatcher · Receiver Operations.
-                      Catches what a single algorithm misses (driver hours, customer SLA, dock-window fit).
-                    </p>
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
+                    Pre-execution review
                   </div>
                   <button
                     onClick={runRouteReview}
                     disabled={reviewLoading}
                     className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
                   >
-                    {reviewLoading ? "Reviewing…" : reviewPanel ? "Re-run review" : "Run review"}
+                    {reviewLoading ? "Reviewing…" : reviewPanel ? "Re-run" : "Run review"}
                   </button>
                 </div>
                 {reviewError && (
-                  <div className="text-[12px] text-rose-300">✗ {reviewError}</div>
+                  <div className="mt-2 text-[12px] text-rose-300">✗ {reviewError}</div>
                 )}
                 {reviewPanel && (
-                  <div className="mt-3">
-                    <PersonaPanelDisplay result={reviewPanel} />
-                  </div>
+                  <p className="mt-3 text-[13px] text-white/85 leading-[1.55]">
+                    {reviewPanel.synthesis}
+                  </p>
                 )}
               </div>
             </div>

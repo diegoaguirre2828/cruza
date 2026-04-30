@@ -193,7 +193,7 @@ export default async function LivePage() {
         <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#fbbf24", margin: "0 0 6px" }}>
           During · Ahorita
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>What&rsquo;s happening at the border right now</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 4 }}>What's happening at the border right now</h1>
         <p style={{ color: "rgba(255,255,255,0.65)", margin: "0 0 8px" }}>
           Live waits, anomaly badges, and 6-hour ML forecast for 8 RGV crossings. Auto-refreshes every 60s.
         </p>
@@ -218,7 +218,7 @@ export default async function LivePage() {
           </span>
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
             {anomalyHighCount > 0
-              ? "If you&rsquo;re crossing now, scroll for the bridge that&rsquo;s clearest."
+              ? "If you're crossing now, scroll for the bridge that's clearest."
               : "Use the 6-hour forecast column to time your crossing."}
           </span>
         </div>

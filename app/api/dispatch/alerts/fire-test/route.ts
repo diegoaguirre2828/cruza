@@ -116,9 +116,8 @@ function emailHtml(opts: {
   threshold: number;
   forced: boolean;
   synthesis: string;
-  perspectives: Array<{ label: string; text: string }>;
 }): string {
-  const { portLabel, baseline, threshold, forced, synthesis, perspectives } = opts;
+  const { portLabel, baseline, threshold, forced, synthesis } = opts;
   const banner = forced
     ? `<span style="background:#fbbf24;color:#0a1020;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">test fire</span>`
     : baseline.anomaly
@@ -148,19 +147,9 @@ function emailHtml(opts: {
   </table>
 
   <div style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.25);border-radius:12px;padding:14px;margin-bottom:14px">
-    <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(251,191,36,0.85);margin-bottom:8px">3-persona synthesis</div>
+    <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(251,191,36,0.85);margin-bottom:8px">Read</div>
     <p style="margin:0;line-height:1.55;font-size:13.5px;color:rgba(255,255,255,0.9)">${synthesis}</p>
   </div>
-
-  ${perspectives
-    .map(
-      (p) => `
-  <div style="border-top:1px solid rgba(255,255,255,0.06);padding:12px 0">
-    <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);margin-bottom:4px">${p.label}</div>
-    <p style="margin:0;line-height:1.5;font-size:12.5px;color:rgba(255,255,255,0.7)">${p.text}</p>
-  </div>`,
-    )
-    .join("")}
 
   <div style="border-top:1px solid rgba(255,255,255,0.06);margin-top:18px;padding-top:14px;font-size:11px;color:rgba(255,255,255,0.4);line-height:1.5">
     Sent by Cruzar Dispatch — <a href="https://cruzar.app/dispatch/alerts" style="color:#fbbf24;text-decoration:none">manage alerts</a>.
@@ -176,9 +165,8 @@ function emailText(opts: {
   threshold: number;
   forced: boolean;
   synthesis: string;
-  perspectives: Array<{ label: string; text: string }>;
 }): string {
-  const { portLabel, baseline, threshold, forced, synthesis, perspectives } = opts;
+  const { portLabel, baseline, threshold, forced, synthesis } = opts;
   const banner = forced ? "[TEST FIRE]" : baseline.anomaly ? `[ANOMALY ${baseline.ratio?.toFixed(1)}×]` : "[below threshold]";
   return [
     `Cruzar Dispatch alert · ${portLabel} ${banner}`,
@@ -186,10 +174,9 @@ function emailText(opts: {
     `90d DOW × hour avg: ${baseline.baseline_avg_min ?? "—"} min (n=${baseline.samples})`,
     `Ratio: ${baseline.ratio ?? "—"}× (threshold ${threshold}×)`,
     "",
-    "3-persona synthesis:",
+    "Read:",
     synthesis,
     "",
-    ...perspectives.flatMap((p) => [`— ${p.label}`, p.text, ""]),
     "Manage alerts: https://cruzar.app/dispatch/alerts",
   ].join("\n");
 }
@@ -255,10 +242,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const perspectives = panel.responses.map((r) => ({ label: r.persona_label, text: r.perspective }));
   const subject = `${force ? "[TEST] " : baseline.anomaly ? "[ANOMALY] " : ""}Cruzar — ${meta?.localName ?? portId} ${baseline.live_wait_min ?? "?"}m wait${baseline.ratio ? ` (${baseline.ratio.toFixed(1)}× baseline)` : ""}`;
-  const text = emailText({ portLabel, baseline, threshold, forced: force, synthesis: panel.synthesis, perspectives });
-  const html = emailHtml({ portLabel, baseline, threshold, forced: force, synthesis: panel.synthesis, perspectives });
+  const text = emailText({ portLabel, baseline, threshold, forced: force, synthesis: panel.synthesis });
+  const html = emailHtml({ portLabel, baseline, threshold, forced: force, synthesis: panel.synthesis });
 
   const send = await sendEmail(email, subject, text, html);
 

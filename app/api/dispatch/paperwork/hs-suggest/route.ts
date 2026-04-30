@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       panel,
       recommended_subheading,
       disclaimer:
-        "Cruzar suggestion via 3-persona panel. The certifier (you) owns the final classification per USMCA Article 5.2 and 19 USC § 1592.",
+        "Cruzar suggestion. The certifier (you) owns the final classification per USMCA Article 5.2 and 19 USC § 1592.",
     });
   } catch (err) {
     return NextResponse.json(
