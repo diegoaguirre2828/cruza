@@ -56,9 +56,71 @@ function weightedAvg(items: { val: number; weight: number }[]): number {
   return Math.round(sum / totalW)
 }
 
+// CBP outage fallback. When fetchRgvWaitTimes() throws (AbortError on
+// hung CBP API, 5xx, etc.) the route used to return 502 and every port
+// page rendered the global-error boundary — full app-down experience.
+// Production hit this 2026-04-30 evening: CBP went unreachable around
+// 18:00 UTC, the cron-job.org scraper started failing too (matched
+// AbortError pattern in runtime logs), and from ~22:22 UTC every
+// /api/ports request was 502. Fix: serve the most recent
+// wait_time_readings row per port from the last 24h, mapped to the
+// PortWaitTime shape. recordedAt stays the original timestamp so the
+// downstream `cbpStaleMin` math correctly badges the row as stale —
+// users see real (if old) numbers + a clear "X minutes ago" badge
+// instead of a black error screen.
+async function fetchPortsFromCache(): Promise<PortWaitTime[]> {
+  const db = getServiceClient()
+  const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { data } = await db
+    .from('wait_time_readings')
+    .select(
+      'port_id, port_name, crossing_name, vehicle_wait, sentri_wait, pedestrian_wait, commercial_wait, lanes_vehicle_open, lanes_sentri_open, lanes_pedestrian_open, lanes_commercial_open, recorded_at',
+    )
+    .gte('recorded_at', sinceIso)
+    .order('recorded_at', { ascending: false })
+  if (!data || data.length === 0) return []
+  const seen = new Set<string>()
+  const out: PortWaitTime[] = []
+  for (const r of data) {
+    if (seen.has(r.port_id)) continue
+    seen.add(r.port_id)
+    out.push({
+      portId: r.port_id,
+      portName: r.port_name ?? r.port_id,
+      crossingName: r.crossing_name ?? '',
+      city: r.port_name ?? '',
+      vehicle: r.vehicle_wait,
+      sentri: r.sentri_wait,
+      pedestrian: r.pedestrian_wait,
+      commercial: r.commercial_wait,
+      vehicleLanesOpen: r.lanes_vehicle_open ?? null,
+      sentriLanesOpen: r.lanes_sentri_open ?? null,
+      pedestrianLanesOpen: r.lanes_pedestrian_open ?? null,
+      commercialLanesOpen: r.lanes_commercial_open ?? null,
+      isClosed: false,
+      noData: false,
+      vehicleClosed: false,
+      pedestrianClosed: false,
+      commercialClosed: false,
+      recordedAt: r.recorded_at,
+    })
+  }
+  return out
+}
+
 export async function GET() {
   try {
-    const ports = await fetchRgvWaitTimes()
+    let ports: PortWaitTime[]
+    try {
+      ports = await fetchRgvWaitTimes()
+    } catch (cbpErr) {
+      console.warn(
+        '[ports] CBP fetch failed, falling back to wait_time_readings cache:',
+        cbpErr instanceof Error ? cbpErr.message : String(cbpErr),
+      )
+      ports = await fetchPortsFromCache()
+      if (ports.length === 0) throw cbpErr
+    }
     const cbpUpdatedAt = ports[0]?.recordedAt ?? null
 
     const db = getServiceClient()
