@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/supabase'
 import Anthropic from '@anthropic-ai/sdk'
+import { callNemotron, NemotronError, nemotronModelLabel } from '@/lib/models/nemotron'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -75,7 +76,6 @@ async function runBrief() {
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'AI not configured.' }, { status: 500 })
-  const client = new Anthropic({ apiKey })
 
   const eventsForPrompt = (events || []).map((e) => ({
     src: e.source,
@@ -88,21 +88,80 @@ async function runBrief() {
     url: e.source_url,
   }))
 
-  const completion = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2200,
-    system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-    messages: [{
-      role: 'user',
-      content: `Generate today's Cruzar Intelligence brief from these ${eventsForPrompt.length} events.\n\n${JSON.stringify(eventsForPrompt, null, 2)}`,
-    }],
-  })
+  const userPrompt = `Generate today's Cruzar Intelligence brief from these ${eventsForPrompt.length} events.\n\n${JSON.stringify(eventsForPrompt, null, 2)}`
 
-  const md = completion.content
-    .filter((c): c is Anthropic.TextBlock => c.type === 'text')
-    .map((c) => c.text)
-    .join('\n')
-    .trim()
+  // ─── A/B switch ───────────────────────────────────────────────
+  // Per docs/superpowers/specs/cruzar-nemotron-experiment-spec.md.
+  // Fraction NEMOTRON_AB_PCT% of cron fires go to Nemotron via
+  // OpenRouter; the rest stay on Claude Sonnet. On Nemotron failure
+  // (rate-limit, 5xx, empty completion) we fall back to Anthropic so
+  // the cron always produces a brief.
+  const abEnabled = process.env.NEMOTRON_AB_ENABLED === 'true'
+  const abPct = Number(process.env.NEMOTRON_AB_PCT ?? 0)
+  const useNemotron = abEnabled && Math.random() * 100 < abPct
+
+  const callStart = Date.now()
+  let md = ''
+  let usedModel = 'claude-sonnet-4-6'
+  let tokensIn = 0
+  let tokensOut = 0
+  let latencyMs = 0
+
+  if (useNemotron) {
+    try {
+      const r = await callNemotron(SYSTEM_PROMPT, userPrompt)
+      md = r.text.trim()
+      usedModel = nemotronModelLabel()
+      tokensIn = r.tokensIn
+      tokensOut = r.tokensOut
+      latencyMs = r.latencyMs
+    } catch (err) {
+      const reason = err instanceof NemotronError ? err.message : 'unknown'
+      console.warn('[intel-brief] nemotron failed, falling back to anthropic:', reason)
+      // Log the failure separately so we know how often the free tier
+      // bails. Decision tree in the spec uses this rate.
+      await db.from('model_ab_log').insert({
+        call_site: 'intel-brief',
+        model: 'nemotron-failed-fallback',
+        latency_ms: Date.now() - callStart,
+        tokens_in: 0,
+        tokens_out: 0,
+        output_chars: 0,
+      }).then(() => {}, () => {})
+      // Fall through to Anthropic path below.
+    }
+  }
+
+  if (!md) {
+    const client = new Anthropic({ apiKey })
+    const claudeStart = Date.now()
+    const completion = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2200,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+    md = completion.content
+      .filter((c): c is Anthropic.TextBlock => c.type === 'text')
+      .map((c) => c.text)
+      .join('\n')
+      .trim()
+    usedModel = 'claude-sonnet-4-6'
+    tokensIn = completion.usage?.input_tokens ?? 0
+    tokensOut = completion.usage?.output_tokens ?? 0
+    latencyMs = Date.now() - claudeStart
+  }
+
+  // Log the actual model used (won't include the failed-fallback row
+  // — that's already inserted above).
+  await db.from('model_ab_log').insert({
+    call_site: 'intel-brief',
+    model: usedModel,
+    latency_ms: latencyMs,
+    tokens_in: tokensIn,
+    tokens_out: tokensOut,
+    output_chars: md.length,
+  }).then(() => {}, () => {})
 
   // Title = first sentence under the "Today's Headline" section.
   // Summary = same content, capped. Falls back to the first
@@ -119,7 +178,7 @@ async function runBrief() {
     summary,
     body_md: md,
     events_used: eventsForPrompt.slice(0, 30),
-    ai_model: 'claude-sonnet-4-6',
+    ai_model: usedModel,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
