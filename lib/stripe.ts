@@ -13,6 +13,9 @@ const STRIPE_OPERATOR_PRICE_ID = process.env.STRIPE_OPERATOR_PRICE_ID?.trim()
 const STRIPE_EXPRESS_CERT_PRICE_ID = process.env.STRIPE_EXPRESS_CERT_PRICE_ID?.trim()
 const STRIPE_INTELLIGENCE_PRICE_ID = process.env.STRIPE_INTELLIGENCE_PRICE_ID?.trim()
 const STRIPE_INTELLIGENCE_ENTERPRISE_PRICE_ID = process.env.STRIPE_INTELLIGENCE_ENTERPRISE_PRICE_ID?.trim()
+const STRIPE_INSIGHTS_STARTER_PRICE_ID = process.env.STRIPE_INSIGHTS_STARTER_PRICE_ID?.trim()
+const STRIPE_INSIGHTS_PRO_PRICE_ID = process.env.STRIPE_INSIGHTS_PRO_PRICE_ID?.trim()
+const STRIPE_INSIGHTS_FLEET_PRICE_ID = process.env.STRIPE_INSIGHTS_FLEET_PRICE_ID?.trim()
 
 // Intentionally do NOT pin apiVersion — mismatched pins cause fake
 // "connection" errors on every request. Let the SDK use its own default.
@@ -100,6 +103,43 @@ export const PLANS = {
       'Custom corridor reports on demand',
       'SLA on alert latency',
       'Bespoke onboarding + integration support',
+    ],
+  },
+  insights_starter: {
+    name: 'Insights Starter',
+    priceId: STRIPE_INSIGHTS_STARTER_PRICE_ID!,
+    mode: 'subscription' as const,
+    features: [
+      '5 watched ports',
+      '5am morning border read to your inbox',
+      'Anomaly push by SMS + email',
+      'Bilingual (EN/ES)',
+      'Live calibration receipts on YOUR lanes',
+    ],
+  },
+  insights_pro: {
+    name: 'Insights Pro',
+    priceId: STRIPE_INSIGHTS_PRO_PRICE_ID!,
+    mode: 'subscription' as const,
+    features: [
+      'Everything in Starter',
+      '20 watched ports',
+      'WhatsApp push (when available)',
+      'Custom anomaly thresholds per port',
+      'Up to 2 email recipients',
+    ],
+  },
+  insights_fleet: {
+    name: 'Insights Fleet',
+    priceId: STRIPE_INSIGHTS_FLEET_PRICE_ID!,
+    mode: 'subscription' as const,
+    features: [
+      'Everything in Pro',
+      '50 watched ports',
+      'Multi-recipient (up to 10 phones + 10 emails)',
+      'Per-port custom thresholds',
+      'In-office demo route',
+      'Direct line to Diego + Raul',
     ],
   },
 }
