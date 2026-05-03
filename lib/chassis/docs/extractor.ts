@@ -23,7 +23,7 @@ function extractCommercialInvoice(text: string): CommercialInvoiceFields {
     invoice_number: match(text, /(?:invoice\s*(?:no|number|#)|factura\s*(?:no|num))[\s.:]*([\w-]+)/i),
     invoice_date: match(text, /(?:date|fecha)[\s.:]*([0-9]{1,4}[-/.][0-9]{1,2}[-/.][0-9]{1,4})/i),
     currency: match(text, /\b(USD|MXN|CAD|EUR)\b/),
-    total_value: parseNumber(match(text, /(?:total|gran\s*total|amount\s*due)[\s.:$]*([\d,]+\.?\d*)/i)),
+    total_value: parseNumber(match(text, /(?:total|gran\s*total|amount\s*due)[\s.:$]*(?:USD|MXN|CAD|EUR)?\s*([\d,]+\.?\d*)/i)),
     incoterms: match(text, /\b(EXW|FCA|CPT|CIP|DAP|DDP|FOB|CFR|CIF)\b/),
     country_of_origin: match(text, /(?:country\s*of\s*origin|pais\s*de\s*origen)[\s.:]*([A-Za-z]{2,30})/i),
     line_items: [],
