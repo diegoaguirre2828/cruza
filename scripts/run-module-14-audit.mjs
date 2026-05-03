@@ -64,6 +64,7 @@ runOrFail('npm run verify:cape-validator', 'M14-CAPE-VAL-1', 'M14 CAPE validator
 runOrFail('npm run verify:form19-composer', 'M14-FORM19-1', 'M14 Form 19 composer 100%');
 runOrFail('npm run verify:fee-calculator', 'M14-FEE-1', 'M14 fee calculator 100%');
 runOrFail('npm run verify:refunds-orchestrator', 'M14-ORCHESTRATOR-1', 'M14 refunds orchestrator end-to-end');
+runOrFail('npm run verify:ofac-sdn', 'M9-OFAC-1', 'M9 OFAC SDN screening 8/8 (4 known-bad blocked, 4 known-good clear)');
 
 // ── Chassis files present ───────────────────────────────────────────────────
 const m14ChassisFiles = [
@@ -122,6 +123,48 @@ record('M14-MIGRATION-1', 'v80 refund-claims migration file present', existsSync
 // ── Calibration logger + Stripe billing ─────────────────────────────────────
 record('M14-CALIB-1', 'lib/calibration-refunds.ts present', existsSync(resolve(ROOT, 'lib/calibration-refunds.ts')));
 record('M14-BILLING-1', 'lib/refunds-billing.ts present', existsSync(resolve(ROOT, 'lib/refunds-billing.ts')));
+
+// ── M9 RPS chassis present ──────────────────────────────────────────────────
+const rpsFiles = [
+  'lib/chassis/screening/types.ts',
+  'lib/chassis/screening/ofac-sdn.ts',
+  'data/refunds/test-fixtures/ofac-sdn-mini.csv',
+  'scripts/verify-ofac-sdn.mjs',
+];
+const rpsMissing = rpsFiles.filter((f) => !existsSync(resolve(ROOT, f)));
+record('M9-RPS-1', 'M9 OFAC SDN screening chassis files present', rpsMissing.length === 0, rpsMissing.length ? `missing: ${rpsMissing.join(', ')}` : `${rpsFiles.length} files`);
+
+// ── MS hardening (broker-of-record + IOR attestation + v81 migration) ──────
+record('MS-2-MIGRATION', 'v81 broker-of-record + IOR attestation migration present', existsSync(resolve(ROOT, 'supabase/migrations/v81-broker-of-record-and-ior-attestation.sql')));
+try {
+  const markSubmitted = execSync('cat app/api/refunds/claims/[id]/mark-submitted/route.ts', { cwd: ROOT, stdio: 'pipe', shell: true }).toString();
+  const hasBrokerGate = /broker_of_record_required/.test(markSubmitted);
+  const hasIorGate = /ior_attestation_required/.test(markSubmitted);
+  record('MS-2-GATES', 'mark-submitted hard-gates on broker-of-record + IOR attestation', hasBrokerGate && hasIorGate, `broker=${hasBrokerGate}, ior=${hasIorGate}`);
+} catch {
+  record('MS-2-GATES', 'mark-submitted gate check', false, 'could not read');
+}
+
+// ── MS-1 pricing locked at flat 8% ──────────────────────────────────────────
+try {
+  const fee = execSync('cat lib/chassis/refunds/fee-calculator.ts', { cwd: ROOT, stdio: 'pipe', shell: true }).toString();
+  const isFlat8 = /PLATFORM_FEE_RATE\s*=\s*0\.08/.test(fee);
+  const hasFloor = /PLATFORM_FEE_FLOOR_USD\s*=\s*99/.test(fee);
+  record('MS-1-PRICING', 'fee-calculator locked at flat 8% + $99 floor', isFlat8 && hasFloor, `rate=${isFlat8}, floor=${hasFloor}`);
+} catch {
+  record('MS-1-PRICING', 'pricing lock check', false, 'could not read');
+}
+
+// ── MS-3 disclaimer treatment ───────────────────────────────────────────────
+try {
+  const en = execSync('cat lib/copy/refunds-en.ts', { cwd: ROOT, stdio: 'pipe', shell: true }).toString();
+  const es = execSync('cat lib/copy/refunds-es.ts', { cwd: ROOT, stdio: 'pipe', shell: true }).toString();
+  const enDisclaimer = /legal_disclaimer:.*Cruzar is software for preparing CBP refund documentation/.test(en);
+  const esDisclaimer = /legal_disclaimer:.*Cruzar es software para preparar/.test(es);
+  record('MS-3-DISCLAIMER', 'DeWalt-frame disclaimer present in EN + ES copy bundles', enDisclaimer && esDisclaimer, `en=${enDisclaimer}, es=${esDisclaimer}`);
+} catch {
+  record('MS-3-DISCLAIMER', 'disclaimer presence check', false, 'could not read');
+}
 
 // ── Ticket refunds extension ────────────────────────────────────────────────
 try {

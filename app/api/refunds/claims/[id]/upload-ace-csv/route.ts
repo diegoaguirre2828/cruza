@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { put } from '@vercel/blob';
 import { parseAceCsv } from '@/lib/chassis/refunds/ace-parser';
 import { composeRefund } from '@/lib/chassis/refunds/composer';
+import { ScreeningBlockedError } from '@/lib/chassis/refunds/types';
 import { getServiceClient } from '@/lib/supabase';
 import { logRefundComposition } from '@/lib/calibration-refunds';
 
@@ -59,12 +60,34 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: 'parse_failed', detail: parseErrors }, { status: 400 });
   }
 
-  const composition = await composeRefund(entries, {
-    ior_name: claim.ior_name,
-    ior_id_number: claim.ior_id_number,
-    filer_code: claim.filer_code ?? undefined,
-    language: (claim.language as 'en' | 'es') ?? 'en',
-  });
+  let composition;
+  try {
+    composition = await composeRefund(entries, {
+      ior_name: claim.ior_name,
+      ior_id_number: claim.ior_id_number,
+      filer_code: claim.filer_code ?? undefined,
+      language: (claim.language as 'en' | 'es') ?? 'en',
+    });
+  } catch (e) {
+    if (e instanceof ScreeningBlockedError) {
+      // OFAC SDN match — record the block on the claim but do not compose.
+      // 451 Unavailable For Legal Reasons (RFC 7725) is the precise status.
+      const service = getServiceClient();
+      await service
+        .from('refund_claims')
+        .update({
+          status: 'rejected',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', claimId);
+      return NextResponse.json({
+        error: 'sanctions_screening_block',
+        detail: 'The Importer of Record matched OFAC Specially Designated Nationals (SDN) list entries. Cruzar cannot prepare a CBP refund filing for this IOR. Contact OFAC compliance counsel.',
+        screening: { hits: e.hits, list_version: e.list_version, source: 'ofac_sdn' },
+      }, { status: 451 });
+    }
+    throw e;
+  }
 
   const blob = await put(
     `refunds/${user.id}/${claimId}/cape-${Date.now()}.csv`,

@@ -1,6 +1,6 @@
 // lib/chassis/refunds/composer.ts
 import crypto from 'crypto';
-import { Entry, IorProfile, RefundComposition } from './types';
+import { Entry, IorProfile, RefundComposition, ScreeningBlockedError } from './types';
 import { classifyEntries } from './ieepa-classifier';
 import { separateStacking } from './stacking-separator';
 import { computeInterest } from './interest-calculator';
@@ -10,13 +10,47 @@ import { validateCapeCsv } from './cape-validator';
 import { composeForm19Packet } from './form19-composer';
 import { calculateCruzarFee } from './fee-calculator';
 import { getIeepaRegistry } from './ieepa-registry';
+import { screenAgainstSdn } from '../screening/ofac-sdn';
+
+export interface ComposeRefundOptions {
+  /** Skip OFAC SDN screening — only used by tests / public scan with synthetic profile. */
+  skipScreening?: boolean;
+}
 
 export async function composeRefund(
   entries: Entry[],
   ior: IorProfile,
   today: Date = new Date(),
+  options: ComposeRefundOptions = {},
 ): Promise<RefundComposition> {
   const reg = getIeepaRegistry();
+
+  // OFAC SDN screening hard gate — UPL/sanctions defense per risk register MS-4.
+  // Throws ScreeningBlockedError if IOR matches a sanctioned party. Caller's
+  // responsibility to surface the block to the user (the API routes do this).
+  let screeningBlock: RefundComposition['screening'];
+  if (!options.skipScreening) {
+    const screen = await screenAgainstSdn({ name: ior.ior_name, id_number: ior.ior_id_number });
+    screeningBlock = {
+      blocked: screen.blocked,
+      source: screen.source,
+      list_version: screen.list_version,
+      hits: screen.hits.map((h) => ({
+        name_match: h.name_match,
+        match_score: h.match_score,
+        list_entry_uid: h.list_entry_uid,
+        list_entry_program: h.list_entry_program,
+      })),
+    };
+    if (screen.blocked) {
+      throw new ScreeningBlockedError(
+        `OFAC SDN screening blocked composition for IOR "${ior.ior_name}" — ${screen.hits.length} hit(s) above threshold ${screen.threshold}`,
+        screeningBlock.hits,
+        screen.list_version,
+      );
+    }
+  }
+
   const classifications = classifyEntries(entries);
   const eligibleClassifications = classifications.filter(c => c.is_ieepa_eligible);
   const eligibleEntries = entries.filter(e =>
@@ -89,5 +123,6 @@ export async function composeRefund(
     validation_errors: validation.errors,
     composed_at: todayIso,
     registry_version: reg.version,
+    screening: screeningBlock,
   };
 }

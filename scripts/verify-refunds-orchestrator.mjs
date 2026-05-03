@@ -28,7 +28,7 @@ const today = new Date('2026-05-03');
     fail++;
     console.log(`FAIL [fixture-001 parse]: expected 2 entries, got ${entries.length}`);
   } else {
-    const composition = await composeRefund(entries, ior, today);
+    const composition = await composeRefund(entries, ior, today, { skipScreening: true });
     const checks = {
       total_entries: composition.total_entries === 2,
       total_principal_positive: composition.total_principal_recoverable_usd > 0,
@@ -67,7 +67,7 @@ const today = new Date('2026-05-03');
 {
   const csv = readFileSync(resolve(fixturesDir, 'fixture-006-canada-only.csv'), 'utf-8');
   const { entries } = parseAceCsv(csv);
-  const composition = await composeRefund(entries, ior, today);
+  const composition = await composeRefund(entries, ior, today, { skipScreening: true });
   if (composition.total_entries !== entries.length) {
     fail++;
     console.log(`FAIL [fixture-006 total_entries]: expected ${entries.length}, got ${composition.total_entries}`);
@@ -79,7 +79,7 @@ const today = new Date('2026-05-03');
 
 // Test 3: fee floor — $0 recoverable should produce $0 fee, not $99 floor
 {
-  const composition = await composeRefund([], ior, today);
+  const composition = await composeRefund([], ior, today, { skipScreening: true });
   if (composition.total_recoverable_usd === 0 && composition.estimated_cruzar_fee_usd === 0) {
     pass++;
     console.log(`PASS: empty input — $0 recoverable, $0 fee (no $99 floor on zero)`);

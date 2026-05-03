@@ -115,6 +115,23 @@ export interface RefundComposition {
   validation_errors: CapeValidationError[];
   composed_at: string;
   registry_version: string;          // ieepa-chapter-99.json version used
+  screening?: {
+    blocked: boolean;
+    source: 'ofac_sdn';
+    list_version: string;
+    hits: Array<{ name_match: string; match_score: number; list_entry_uid: string; list_entry_program: string }>;
+  };
+}
+
+export class ScreeningBlockedError extends Error {
+  hits: Array<{ name_match: string; match_score: number; list_entry_uid: string; list_entry_program: string }>;
+  list_version: string;
+  constructor(message: string, hits: ScreeningBlockedError['hits'], list_version: string) {
+    super(message);
+    this.name = 'ScreeningBlockedError';
+    this.hits = hits;
+    this.list_version = list_version;
+  }
 }
 
 export interface IorProfile {

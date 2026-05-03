@@ -43,11 +43,14 @@ export async function POST(req: NextRequest) {
   if (parseErrors.length > 0) {
     return NextResponse.json({ error: 'parse_failed', detail: parseErrors }, { status: 400 });
   }
+  // Public scan uses synthetic profile name "PUBLIC_SCAN" — skip screening
+  // since there's no real IOR identity to screen on. The actual screen fires
+  // when the user signs up + creates a claim with their real IOR profile.
   const comp = await composeRefund(entries, {
     ior_name: 'PUBLIC_SCAN',
     ior_id_number: 'PUBLIC_SCAN',
     language: 'en',
-  });
+  }, undefined, { skipScreening: true });
   return NextResponse.json({
     total_entries: comp.total_entries,
     cape_eligible_count: comp.cape_eligible_count,

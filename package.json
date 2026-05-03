@@ -38,6 +38,7 @@
     "verify:form19-composer": "npx tsx scripts/verify-form19-composer.mjs",
     "verify:fee-calculator": "npx tsx scripts/verify-fee-calculator.mjs",
     "verify:refunds-orchestrator": "npx tsx scripts/verify-refunds-orchestrator.mjs",
+    "verify:ofac-sdn": "npx tsx scripts/verify-ofac-sdn.mjs",
     "audit:module-14": "node scripts/run-module-14-audit.mjs"
   },
   "dependencies": {
