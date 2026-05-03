@@ -21,18 +21,46 @@ export async function POST(req: NextRequest) {
   const subscription = await req.json()
   const db = getServiceClient()
 
-  // Conflict on endpoint, not user_id. Endpoint is globally unique per
-  // browser/device, so this lets a single user have multiple active
-  // subscriptions (iPhone + laptop + Android tablet, etc). Previously
-  // upserting on user_id capped each user at one device. See migration
-  // v38-push-subscriptions-multi-device.sql for the constraint swap.
-  await db.from('push_subscriptions').upsert({
+  const endpoint = typeof subscription?.endpoint === 'string' ? subscription.endpoint : null
+  const p256dh = subscription?.keys?.p256dh ?? null
+  const auth = subscription?.keys?.auth ?? null
+
+  // Validate the incoming payload — the table requires all three NOT NULL.
+  // 16 days of silent failures (2026-04-17 → 2026-05-03) traced to the
+  // server returning 200 here while the upsert errored on missing keys.
+  // Diego found this 2026-05-03 — push table had 4 rows, all from before
+  // the silent-fail window opened.
+  if (!endpoint || !p256dh || !auth) {
+    console.error('[push/subscribe] missing fields', {
+      user_id: user.id,
+      has_endpoint: !!endpoint,
+      has_p256dh: !!p256dh,
+      has_auth: !!auth,
+      payload_keys: Object.keys(subscription ?? {}),
+    })
+    return NextResponse.json({
+      error: 'missing required subscription fields',
+      missing: {
+        endpoint: !endpoint,
+        p256dh: !p256dh,
+        auth: !auth,
+      },
+    }, { status: 400 })
+  }
+
+  // Conflict on endpoint, not user_id (one user, many devices).
+  const { error: upsertErr } = await db.from('push_subscriptions').upsert({
     user_id: user.id,
-    endpoint: subscription.endpoint,
-    p256dh: subscription.keys?.p256dh,
-    auth: subscription.keys?.auth,
+    endpoint,
+    p256dh,
+    auth,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'endpoint' })
+
+  if (upsertErr) {
+    console.error('[push/subscribe] upsert failed', { user_id: user.id, error: upsertErr.message })
+    return NextResponse.json({ error: upsertErr.message }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }

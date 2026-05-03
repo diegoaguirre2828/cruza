@@ -39,12 +39,21 @@ export function usePushNotifications() {
         // migration) so this is idempotent — duplicate POSTs are
         // no-ops.
         if (sub) {
-          fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(sub),
-            credentials: 'include',
-          }).catch(() => { /* silent */ })
+          const payload = serializeSubscription(sub)
+          if (payload && payload.keys.p256dh && payload.keys.auth) {
+            fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+              credentials: 'include',
+            }).catch(() => { /* silent */ })
+          } else {
+            // Cached subscription is missing keys (pre-VAPID-rotation or
+            // partial Safari teardown). Force-unsubscribe so the next
+            // grant attempt regenerates a clean subscription.
+            sub.unsubscribe().catch(() => {})
+            setSubscribed(false)
+          }
         }
       })
     })
@@ -85,14 +94,20 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.ready
       const existing = await reg.pushManager.getSubscription()
       if (existing) {
-        // Make sure the server has this endpoint recorded (it may have
-        // been created before the user was logged in)
-        await fetch('/api/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(existing),
-        }).catch(() => {})
-        setSubscribed(true); setLoading(false); return
+        const payload = serializeSubscription(existing)
+        if (payload && payload.keys.p256dh && payload.keys.auth) {
+          // Server-side row may have been 410-cleaned. Re-POST to be safe.
+          const res = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+          if (res.ok) {
+            setSubscribed(true); setLoading(false); return
+          }
+          // 4xx/5xx = something's off. Tear down + regenerate below.
+        }
+        await existing.unsubscribe().catch(() => {})
       }
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
@@ -103,11 +118,19 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as ArrayBuffer,
       })
 
-      await fetch('/api/push/subscribe', {
+      const payload = serializeSubscription(sub)
+      if (!payload || !payload.keys.p256dh || !payload.keys.auth) {
+        throw new Error('Subscription missing required keys after fresh subscribe')
+      }
+      const res = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub),
+        body: JSON.stringify(payload),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(`subscribe POST failed: ${body.error ?? res.status}`)
+      }
 
       setSubscribed(true)
     } catch (err) {
@@ -141,4 +164,39 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64)
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
+// Serialize a PushSubscription so the keys are guaranteed-present in the
+// JSON payload. Diego 2026-05-03 root cause: 16 days of silent push
+// signup failures because some Safari/iOS PWA paths returned a sub
+// where JSON.stringify(sub) emitted `keys` as null/empty. Pulling the
+// keys explicitly via getKey() and url-base64-encoding them ourselves
+// guarantees the server gets non-null p256dh + auth.
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function serializeSubscription(sub: PushSubscription): { endpoint: string; keys: { p256dh: string | null; auth: string | null } } | null {
+  if (!sub?.endpoint) return null
+  let p256dh: string | null = null
+  let auth: string | null = null
+  try {
+    const p = sub.getKey?.('p256dh')
+    if (p) p256dh = arrayBufferToBase64Url(p)
+    const a = sub.getKey?.('auth')
+    if (a) auth = arrayBufferToBase64Url(a)
+  } catch { /* fall through */ }
+  if (!p256dh || !auth) {
+    // Last resort: try the toJSON path. Some browsers populate keys here
+    // even when getKey() returns null.
+    try {
+      const json = sub.toJSON?.() as { keys?: { p256dh?: string; auth?: string } } | undefined
+      if (!p256dh && json?.keys?.p256dh) p256dh = json.keys.p256dh
+      if (!auth && json?.keys?.auth) auth = json.keys.auth
+    } catch { /* ignore */ }
+  }
+  return { endpoint: sub.endpoint, keys: { p256dh, auth } }
 }
