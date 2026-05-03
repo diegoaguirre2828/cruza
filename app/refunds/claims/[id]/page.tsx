@@ -31,6 +31,16 @@ export default async function RefundsClaimDetailPage({
           />
         </div>
       </section>
+      <footer className="bg-[#070b18]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8 space-y-4">
+          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-white/45">
+            {c.shared.legal_disclaimer}
+          </p>
+          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-white/40">
+            {c.shared.powered_by}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

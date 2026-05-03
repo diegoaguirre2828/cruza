@@ -143,5 +143,6 @@ export const REFUNDS_EN = {
   shared: {
     nav_back: '← Back',
     powered_by: 'A Cruzar Ticket module · Built on the border, for the border',
+    legal_disclaimer: 'Cruzar is software for preparing CBP refund documentation. Cruzar does not transact CBP business and is not a licensed customs broker. Filings prepared via Cruzar must be reviewed and submitted by the licensed customs broker of record. Refunds are paid by CBP directly to the importer\'s ACH; Cruzar never custodies refund money.',
   },
 };

@@ -143,5 +143,6 @@ export const REFUNDS_ES = {
   shared: {
     nav_back: '← Volver',
     powered_by: 'Un módulo Cruzar Ticket · Construido en la frontera, para la frontera',
+    legal_disclaimer: 'Cruzar es software para preparar documentación de reembolsos CBP. Cruzar no realiza trámites ante CBP y no es un agente aduanal licenciado. Las presentaciones preparadas vía Cruzar deben ser revisadas y presentadas por el agente aduanal licenciado de récord. Los reembolsos los paga CBP directamente al ACH del importador; Cruzar nunca custodia el dinero del reembolso.',
   },
 };
