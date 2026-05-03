@@ -55,3 +55,34 @@ export async function logCalibrationPrediction(
     return { id: null, ok: false, error: msg };
   }
 }
+
+// ── Module 2 chassis call logging ───────────────────────────────────────────
+
+import { createClient } from '@supabase/supabase-js';
+import type { ChassisCallLog } from './chassis/customs/types';
+
+/**
+ * Log a Module 2 chassis call to public.customs_validations.
+ * Service-role only; called from API routes after a chassis function returns.
+ * Logging failures must not propagate (validation succeeded; only the audit
+ * trail write is impacted) — log to console and continue.
+ */
+export async function logChassisCall(call: ChassisCallLog): Promise<void> {
+  const supa = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+  const { error } = await supa.from('customs_validations').insert({
+    call_type: call.call_type,
+    shipment_ref: call.shipment_ref,
+    ticket_id: call.ticket_id,
+    input_payload: call.input_payload,
+    output_payload: call.output_payload,
+    confidence: call.confidence,
+    duration_ms: call.duration_ms,
+    caller: call.caller,
+  });
+  if (error) {
+    console.error('[calibration] logChassisCall insert failed:', error.message);
+  }
+}
