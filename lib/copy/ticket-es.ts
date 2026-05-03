@@ -31,4 +31,7 @@ export const TICKET_ES = {
   paperwork_section: 'Documentos extraidos',
   documents: 'Documentos',
   blocking: 'Problemas',
+  drivers_section: 'Cumplimiento del operador',
+  overall_status: 'Estado general',
+  checks_run: 'Verificaciones',
 };

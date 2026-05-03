@@ -31,4 +31,7 @@ export const TICKET_EN = {
   paperwork_section: 'Paperwork extracted',
   documents: 'Documents',
   blocking: 'Blocking issues',
+  drivers_section: 'Driver compliance',
+  overall_status: 'Overall status',
+  checks_run: 'Checks',
 };

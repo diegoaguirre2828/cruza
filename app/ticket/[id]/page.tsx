@@ -156,6 +156,31 @@ export default async function TicketViewerPage({ params }: Props) {
         </section>
       )}
 
+      {payload.drivers && (
+        <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_ES.drivers_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_ES.overall_status} value={payload.drivers.overall_status} />
+              <Row label={TICKET_ES.checks_run} value={String(payload.drivers.manifest.checks_run.length)} />
+              {payload.drivers.blocking_issues.length > 0 && (
+                <Row label={TICKET_ES.blocking} value={String(payload.drivers.blocking_issues.length)} />
+              )}
+            </dl>
+          </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_EN.drivers_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_EN.overall_status} value={payload.drivers.overall_status} />
+              <Row label={TICKET_EN.checks_run} value={String(payload.drivers.manifest.checks_run.length)} />
+              {payload.drivers.blocking_issues.length > 0 && (
+                <Row label={TICKET_EN.blocking} value={String(payload.drivers.blocking_issues.length)} />
+              )}
+            </dl>
+          </div>
+        </section>
+      )}
+
       <section className="mt-8 rounded border border-white/10 bg-white/5 p-4 text-xs text-white/60">
         <p className="mb-1">{TICKET_ES.disclaimer}</p>
         <p>{TICKET_EN.disclaimer}</p>

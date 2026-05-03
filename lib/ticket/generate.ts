@@ -11,7 +11,9 @@ import { logChassisCall } from '../calibration';
 import { buildSubmissionManifest } from '../chassis/regulatory/submitter';
 import { composePaperwork } from '../chassis/docs/composer';
 import type { VisionInput } from '../chassis/docs/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock } from './types';
+import { buildDriverComplianceManifest } from '../chassis/drivers/composer';
+import type { DriverComplianceInput } from '../chassis/drivers/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -25,6 +27,7 @@ interface GenerateOptions {
   paperworkInput?: {
     pages: VisionInput[];
   };
+  driversInput?: DriverComplianceInput;
 }
 
 function mintTicketId(): string {
@@ -114,6 +117,17 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module 5: drivers compliance manifest (optional — only when broker provides driver input)
+  let driversBlock: TicketDriversBlock | null = null;
+  if (opts.driversInput) {
+    const manifest = buildDriverComplianceManifest(opts.driversInput, null);
+    driversBlock = {
+      manifest,
+      overall_status: manifest.overall_status,
+      blocking_issues: manifest.blocking_issues,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -129,6 +143,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
+  if (driversBlock) modulesPresent.push('drivers');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -145,6 +160,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     },
     regulatory: regulatoryBlock ?? undefined,
     paperwork: paperworkBlock ?? undefined,
+    drivers: driversBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

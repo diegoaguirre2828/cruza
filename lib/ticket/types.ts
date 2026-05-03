@@ -2,6 +2,7 @@
 import type { HsClassificationResult, OriginValidationResult, RvcResult, UsmcaCertification } from '../chassis/customs/types';
 import type { SubmissionManifest, AgencyId } from '../chassis/regulatory/types';
 import type { PaperworkComposition } from '../chassis/docs/types';
+import type { DriverComplianceManifest, ComplianceStatus } from '../chassis/drivers/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -31,6 +32,12 @@ export interface TicketPaperworkBlock {
   blocking_issues: string[];
 }
 
+export interface TicketDriversBlock {
+  manifest: DriverComplianceManifest;
+  overall_status: ComplianceStatus;
+  blocking_issues: string[];
+}
+
 export interface TicketAuditShield {
   prior_disclosure_eligible: boolean;
   '19_USC_1592_basis': string;
@@ -51,7 +58,7 @@ export interface CruzarTicketV1 {
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
   paperwork?: TicketPaperworkBlock;
-  // drivers added in later modules
+  drivers?: TicketDriversBlock;
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;
