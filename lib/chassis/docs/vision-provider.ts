@@ -3,7 +3,11 @@
 // Opt-in: Claude Vision (Anthropic API), Nemotron Nano Omni (OpenRouter free tier).
 
 import { createWorker } from 'tesseract.js';
+import { homedir } from 'os';
+import { resolve as resolvePath } from 'path';
 import type { VisionInput, VisionResult, VisionProvider } from './types';
+
+const TESSERACT_CACHE_PATH = resolvePath(homedir(), '.cache/tesseract-cruzar');
 
 function selectedProvider(): VisionProvider {
   const p = (process.env.CRUZAR_VISION_PROVIDER ?? 'tesseract').toLowerCase();
@@ -15,12 +19,15 @@ function selectedProvider(): VisionProvider {
 async function tesseractExtract(input: VisionInput): Promise<VisionResult> {
   const t0 = Date.now();
   const lang = input.language_hint === 'es' ? 'spa' : input.language_hint === 'auto' ? 'eng+spa' : 'eng';
-  const worker = await createWorker(lang);
+  const worker = await createWorker(lang, undefined, {
+    cachePath: TESSERACT_CACHE_PATH,
+  });
   try {
-    const { data } = await worker.recognize(Buffer.from(input.bytes));
-    const dataWithWords = data as unknown as { words?: Array<{ confidence?: number }> };
-    const wordConfs: number[] = (dataWithWords.words ?? []).map((w) => (w.confidence ?? 0) / 100);
-    const docConf = wordConfs.length > 0 ? wordConfs.reduce((s: number, c: number) => s + c, 0) / wordConfs.length : 0;
+    // tesseract.js v7: data.confidence is page-level (0-100). data.words may not be populated by default.
+    const recognizeResult = await worker.recognize(Buffer.from(input.bytes));
+    const data = recognizeResult.data as { text: string; confidence: number; words?: Array<{ confidence?: number }> };
+    const wordConfs = (data.words ?? []).map(w => (w.confidence ?? 0) / 100);
+    const docConf = (data.confidence ?? 0) / 100;
     return {
       text: data.text,
       word_confidences: wordConfs,
