@@ -25,7 +25,7 @@ export function composeIsf10_2(input: RoutingInput): IsfComposition {
 
   // Trace origin from BOM — first BOM line is country_of_origin (broker can override)
   const firstBom = input.shipment.bom[0];
-  const hs6 = input.hs.hts_10.slice(0, 6).replace(/\./g, '');
+  const hs6 = input.hs.hts_10.replace(/\./g, '').slice(0, 6);
 
   return {
     required: true,
