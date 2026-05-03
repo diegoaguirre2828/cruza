@@ -5,11 +5,18 @@ import { createHash } from 'crypto';
 import type { CruzarTicketV1, SignedTicket } from './types';
 
 function canonicalize(obj: unknown): string {
-  // Deterministic JSON: sorted keys, no whitespace.
+  // Deterministic JSON: sorted keys, no whitespace, undefined values skipped
+  // (matching JSON.stringify behavior).
+  if (obj === undefined) return 'null';  // top-level undefined → null (matches JSON.stringify outside of object/array context where it returns undefined; here we surface a sentinel)
   if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
-  if (Array.isArray(obj)) return '[' + obj.map(canonicalize).join(',') + ']';
-  const keys = Object.keys(obj).sort();
-  return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize((obj as Record<string, unknown>)[k])).join(',') + '}';
+  if (Array.isArray(obj)) {
+    // In arrays, JSON.stringify converts undefined entries to null
+    return '[' + obj.map(v => v === undefined ? 'null' : canonicalize(v)).join(',') + ']';
+  }
+  const entries = Object.keys(obj).sort()
+    .map(k => [k, (obj as Record<string, unknown>)[k]] as const)
+    .filter(([, v]) => v !== undefined);
+  return '{' + entries.map(([k, v]) => JSON.stringify(k) + ':' + canonicalize(v)).join(',') + '}';
 }
 
 function b64ToBytes(b64: string): Uint8Array {
