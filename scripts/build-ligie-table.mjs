@@ -1,0 +1,61 @@
+// scripts/build-ligie-table.mjs
+// One-shot builder for data/customs/ligie-table.json.
+// Hand-curated initial v1 from DOF 5777376 + White & Case + Russell Bedford consolidations.
+// Re-run when DOF amends; bumps version + writes new file.
+
+import { writeFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const NON_FTA_ORIGINS = [
+  'CN', 'IN', 'KR', 'ID', 'TH', 'RU', 'TR', 'TW', 'BR', 'UA',
+];
+
+// v1 entries: tariff_line (Mexican TIGIE 8-digit), rate_pct, sector
+// Curated from DOF 5777376 high-impact lines. Expand as legal aggregators publish full tables.
+const ENTRIES = [
+  // Textiles (Ch 50-63) — concentrated 25-35%
+  { tariff_line: '50071000', rate_pct: 35, sector: 'textiles' },
+  { tariff_line: '52010000', rate_pct: 25, sector: 'textiles' },
+  { tariff_line: '60019100', rate_pct: 35, sector: 'textiles' },
+  { tariff_line: '61091001', rate_pct: 35, sector: 'apparel' },
+  { tariff_line: '61102001', rate_pct: 35, sector: 'apparel' },
+  { tariff_line: '62034201', rate_pct: 35, sector: 'apparel' },
+  // Footwear (Ch 64)
+  { tariff_line: '64031900', rate_pct: 35, sector: 'footwear' },
+  { tariff_line: '64041100', rate_pct: 35, sector: 'footwear' },
+  // Plastics (Ch 39-40)
+  { tariff_line: '39204200', rate_pct: 25, sector: 'plastics' },
+  { tariff_line: '40121200', rate_pct: 25, sector: 'rubber' },
+  // Steel (Ch 72-73)
+  { tariff_line: '72085100', rate_pct: 25, sector: 'steel' },
+  { tariff_line: '73089001', rate_pct: 25, sector: 'steel' },
+  // Automotive (Ch 87)
+  { tariff_line: '87082101', rate_pct: 35, sector: 'automotive' },
+  { tariff_line: '87083001', rate_pct: 35, sector: 'automotive' },
+  // Toys (Ch 95)
+  { tariff_line: '95030099', rate_pct: 35, sector: 'toys' },
+];
+
+const data = {
+  source: 'DOF nota 5777376',
+  decree_date: '2025-12-29',
+  effective: '2026-01-01',
+  version: 'v1.0',
+  generated_at: new Date().toISOString(),
+  non_fta_origins: NON_FTA_ORIGINS,
+  entries_count: ENTRIES.length,
+  entries: ENTRIES,
+  notes: [
+    'v1 covers the 6 highest-impact sectors per White & Case + Russell Bedford analysis.',
+    'Full 1,463-line table to be built incrementally; track via version field.',
+    'Tariff lines are Mexican TIGIE 8-digit. Match against destination_country=MX shipments.',
+    'A non-FTA origin in BOM with matching tariff_line triggers the LIGIE rate.',
+  ],
+};
+
+const outPath = resolve(__dirname, '../data/customs/ligie-table.json');
+writeFileSync(outPath, JSON.stringify(data, null, 2));
+console.log(`Wrote ${ENTRIES.length} entries to ${outPath}`);
