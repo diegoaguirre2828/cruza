@@ -1,5 +1,6 @@
 // lib/ticket/types.ts
 import type { HsClassificationResult, OriginValidationResult, RvcResult, UsmcaCertification } from '../chassis/customs/types';
+import type { SubmissionManifest, AgencyId } from '../chassis/regulatory/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -15,6 +16,12 @@ export interface TicketCustomsBlock {
   origin: OriginValidationResult;
   rvc: RvcResult;
   certificate: UsmcaCertification | null;
+}
+
+export interface TicketRegulatoryBlock {
+  manifest: SubmissionManifest;
+  earliest_deadline_iso: string | null;
+  agencies_required: AgencyId[];
 }
 
 export interface TicketAuditShield {
@@ -35,7 +42,8 @@ export interface CruzarTicketV1 {
   modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers'>;
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
-  // regulatory, paperwork, drivers added in later modules
+  regulatory?: TicketRegulatoryBlock;
+  // paperwork, drivers added in later modules
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

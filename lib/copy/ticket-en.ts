@@ -25,4 +25,7 @@ export const TICKET_EN = {
   not_originating: 'Not USMCA originating',
   ligie_affected: 'LIGIE-affected',
   ligie_clear: 'LIGIE clear',
+  regulatory_section: 'Regulatory submissions',
+  agencies_required: 'Agencies',
+  earliest_deadline: 'Earliest deadline',
 };

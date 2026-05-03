@@ -25,4 +25,7 @@ export const TICKET_ES = {
   not_originating: 'No originario T-MEC',
   ligie_affected: 'Afectado por LIGIE',
   ligie_clear: 'LIGIE despejado',
+  regulatory_section: 'Presentaciones regulatorias',
+  agencies_required: 'Agencias',
+  earliest_deadline: 'Plazo mas cercano',
 };

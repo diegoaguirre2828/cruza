@@ -8,12 +8,18 @@ import { validateOrigin } from '../chassis/customs/origin-validator';
 import { calculateRvc } from '../chassis/customs/rvc-calculator';
 import { signTicket } from './json-signer';
 import { logChassisCall } from '../calibration';
-import type { CruzarTicketV1, SignedTicket } from './types';
+import { buildSubmissionManifest } from '../chassis/regulatory/submitter';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
   caller?: string;
   created_by_user_id?: string | null;
+  regulatoryInput?: {
+    arrival_eta_iso: string;
+    vessel_load_iso?: string;
+    mode_of_transport: 'truck' | 'ocean' | 'air' | 'rail';
+  };
 }
 
 function mintTicketId(): string {
@@ -72,6 +78,26 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     caller,
   });
 
+  // Module 3: regulatory manifest (optional — only when broker provides ETA + mode)
+  const regulatoryBlock: TicketRegulatoryBlock | null = opts.regulatoryInput
+    ? (() => {
+        const manifest = buildSubmissionManifest({
+          shipment,
+          hs,
+          origin,
+          rvc,
+          arrival_eta_iso: opts.regulatoryInput.arrival_eta_iso,
+          vessel_load_iso: opts.regulatoryInput.vessel_load_iso,
+          mode_of_transport: opts.regulatoryInput.mode_of_transport,
+        }, null);
+        return {
+          manifest,
+          earliest_deadline_iso: manifest.earliest_deadline_iso,
+          agencies_required: manifest.agencies_required,
+        };
+      })()
+    : null;
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -89,7 +115,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     ticket_id: ticketId,
     issued_at: new Date().toISOString(),
     issuer: 'Cruzar Insights, Inc.',
-    modules_present: ['customs'],
+    modules_present: regulatoryBlock ? ['customs', 'regulatory'] : ['customs'],
     shipment: shipmentBlock,
     customs: {
       hs_classification: hs,
@@ -97,6 +123,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
       rvc,
       certificate: origin.certificate_origin_draft,
     },
+    regulatory: regulatoryBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

@@ -114,6 +114,25 @@ export default async function TicketViewerPage({ params }: Props) {
         </section>
       )}
 
+      {payload.regulatory && (
+        <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_ES.regulatory_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_ES.agencies_required} value={payload.regulatory.agencies_required.join(', ')} />
+              <Row label={TICKET_ES.earliest_deadline} value={payload.regulatory.earliest_deadline_iso ?? '—'} />
+            </dl>
+          </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_EN.regulatory_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_EN.agencies_required} value={payload.regulatory.agencies_required.join(', ')} />
+              <Row label={TICKET_EN.earliest_deadline} value={payload.regulatory.earliest_deadline_iso ?? '—'} />
+            </dl>
+          </div>
+        </section>
+      )}
+
       <section className="mt-8 rounded border border-white/10 bg-white/5 p-4 text-xs text-white/60">
         <p className="mb-1">{TICKET_ES.disclaimer}</p>
         <p>{TICKET_EN.disclaimer}</p>
