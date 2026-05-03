@@ -46,11 +46,20 @@ export function usePushNotifications() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload),
               credentials: 'include',
-            }).catch(() => { /* silent */ })
+            }).then(async res => {
+              if (!res.ok) {
+                const status = res.status
+                let detail = ''
+                try { detail = JSON.stringify(await res.json()) } catch { /* ignore */ }
+                trackPushEvent('push_resync_failed', { status, detail: detail.slice(0, 240) })
+              } else {
+                trackPushEvent('push_resync_ok', {})
+              }
+            }).catch(err => {
+              trackPushEvent('push_resync_threw', { detail: String(err?.message ?? err).slice(0, 240) })
+            })
           } else {
-            // Cached subscription is missing keys (pre-VAPID-rotation or
-            // partial Safari teardown). Force-unsubscribe so the next
-            // grant attempt regenerates a clean subscription.
+            trackPushEvent('push_resync_missing_keys', { has_p256dh: !!payload?.keys.p256dh, has_auth: !!payload?.keys.auth })
             sub.unsubscribe().catch(() => {})
             setSubscribed(false)
           }
@@ -177,6 +186,17 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
   let binary = ''
   for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function trackPushEvent(event_name: string, props: Record<string, unknown>): void {
+  try {
+    fetch('/api/events/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_name, props }),
+      keepalive: true,
+    }).catch(() => { /* telemetry must not throw */ })
+  } catch { /* ignore */ }
 }
 
 function serializeSubscription(sub: PushSubscription): { endpoint: string; keys: { p256dh: string | null; auth: string | null } } | null {
