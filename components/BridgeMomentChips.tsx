@@ -206,75 +206,10 @@ export function BridgeMomentChips({ portId, port }: Props) {
     ? (es ? 'Próximo sábado' : 'Next Saturday')
     : (es ? 'Este sábado' : 'This Saturday')
 
-  // Verdict for the Now card — comparison vs typical at this hour
-  const verdict = useMemo(() => {
-    if (liveMin == null || !todayHours) return null
-    const sameHour = todayHours.find(h => h.hour === currentHour)
-    const typical = sameHour?.todayAvg ?? sameHour?.avgWait ?? null
-    if (typical == null) return null
-    const diff = liveMin - typical
-    if (Math.abs(diff) <= 5) return { tone: 'neutral', text: es ? 'Como un día normal' : 'About average' }
-    if (diff < 0) return { tone: 'good', text: es ? `${Math.abs(diff)} min mejor que lo típico` : `${Math.abs(diff)} min better than typical` }
-    return { tone: 'bad', text: es ? `${diff} min más lento que lo típico` : `${diff} min slower than typical` }
-  }, [liveMin, todayHours, currentHour, es])
-
-  const updatedAgo = useMemo(() => {
-    if (!port.recordedAt) return null
-    const ms = Date.now() - new Date(port.recordedAt).getTime()
-    const min = Math.max(0, Math.round(ms / 60000))
-    if (min < 1) return es ? 'ahora' : 'just now'
-    if (min === 1) return es ? '1 min' : '1 min ago'
-    return es ? `${min} min` : `${min} min ago`
-  }, [port.recordedAt, es])
-
   const moments = useMemo<Moment[]>(() => {
     const list: Moment[] = []
 
-    // Card 1: Now (the actual live wait — replaces the old PortDetailHero)
-    list.push({
-      key: 'now',
-      label: es ? 'Ahora' : 'Right now',
-      badge: updatedAgo ? (es ? `actualizado ${updatedAgo}` : `updated ${updatedAgo}`) : 'CBP',
-      body: (
-        <div>
-          <div className="flex items-end gap-3 mb-1">
-            <p className="text-[64px] leading-none font-black font-display tabular-nums">
-              {liveMin != null ? liveMin : '—'}
-              <span className="text-2xl opacity-70 ml-1.5 font-bold">min</span>
-            </p>
-          </div>
-          {verdict && (
-            <p className={`mt-1 text-sm font-bold ${
-              verdict.tone === 'good' ? 'text-emerald-600 dark:text-emerald-400' :
-              verdict.tone === 'bad' ? 'text-red-600 dark:text-red-400' :
-              'text-gray-600 dark:text-gray-400'
-            }`}>
-              {verdict.text}
-            </p>
-          )}
-          <div className="grid grid-cols-4 gap-1.5 mt-3">
-            {([
-              { lane: es ? 'SENTRI' : 'SENTRI', value: port.sentri },
-              { lane: es ? 'Auto' : 'Car', value: port.vehicle },
-              { lane: es ? 'A pie' : 'Walk', value: port.pedestrian },
-              { lane: es ? 'Camión' : 'Truck', value: port.commercial },
-            ]).map((l) => (
-              <div
-                key={l.lane}
-                className="rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-1.5 text-center"
-              >
-                <p className="text-[9px] uppercase tracking-wider opacity-60 font-bold">{l.lane}</p>
-                <p className="text-[13px] font-black tabular-nums mt-0.5">
-                  {l.value != null ? `${l.value}m` : '—'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    })
-
-    // Card 2: Today's typical pattern
+    // Card 1: Today's typical pattern
     if (todayHours && todayHours.some(h => (h.todayAvg ?? h.avgWait) != null)) {
       list.push({
         key: 'today_pattern',
@@ -286,7 +221,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
       })
     }
 
-    // Card 3: 6h forecast
+    // 6h forecast
     if (forecast6h != null && liveMin != null) {
       const diff = forecast6h - liveMin
       const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→'
@@ -315,7 +250,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
       })
     }
 
-    // Card 4: This/Next Saturday
+    // This/Next Saturday
     if (satHours && satHours.some(h => (h.todayAvg ?? h.avgWait) != null)) {
       const sameHour = satHours.find(h => h.hour === currentHour)
       const sameHourValue = sameHour?.todayAvg ?? sameHour?.avgWait ?? null
@@ -330,7 +265,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
     }
 
     return list
-  }, [liveMin, port.sentri, port.pedestrian, port.commercial, port.vehicle, todayHours, todayBest, todayPeak, forecast6h, satHours, verdict, updatedAgo, todayDayName, satLabel, currentHour, es])
+  }, [liveMin, todayHours, todayBest, todayPeak, forecast6h, satHours, todayDayName, satLabel, currentHour, es])
 
   useEffect(() => {
     if (moments.length <= 1 || autoPaused) return
