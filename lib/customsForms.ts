@@ -213,3 +213,56 @@ function renderMarkdown(d: DeclarationInput, c: CalculatedTotals): string {
 function renderText(d: DeclarationInput, c: CalculatedTotals): string {
   return renderMarkdown(d, c).replace(/^#+\s*/gm, "").replace(/\*\*/g, "");
 }
+
+// ── Module 2 chassis wrapper ───────────────────────────────────────────────
+
+import { classifyHs } from './chassis/customs/hs-classifier';
+import { validateOrigin } from './chassis/customs/origin-validator';
+import { calculateRvc } from './chassis/customs/rvc-calculator';
+import type { ShipmentInput } from './chassis/customs/types';
+
+/**
+ * High-level helper: take a ShipmentInput, run the chassis, and produce a
+ * DeclarationOutput that includes chassis-validated HS / origin / RVC fields.
+ * This is what /api/ticket/generate and the MCP tool call.
+ */
+export function generateDeclarationFromChassis(
+  shipment: ShipmentInput,
+  baseInput: Omit<DeclarationInput, 'hs_codes'>,
+): DeclarationOutput & { chassis: { hs: ReturnType<typeof classifyHs>; origin: ReturnType<typeof validateOrigin>; rvc: ReturnType<typeof calculateRvc> } } {
+  const hs = classifyHs({
+    product_description: shipment.product_description,
+    declared_hs10: shipment.declared_hs10,
+  });
+  const productChapter = hs.hts_10.slice(0, 2);
+  const origin = validateOrigin(shipment, productChapter);
+  const vnm = shipment.bom
+    .filter(b => !['US','MX','CA'].includes(b.origin_country))
+    .reduce((s, b) => s + b.value_usd, 0);
+  const rvc = calculateRvc({
+    transaction_value_usd: shipment.transaction_value_usd,
+    vnm_total_usd: vnm,
+    net_cost_usd: shipment.net_cost_usd,
+  });
+
+  const lineItem: HsLineItem = {
+    hs_code: hs.hts_10,
+    description: shipment.product_description,
+    qty: 1,
+    unit: 'EA',
+    unit_value_usd: shipment.transaction_value_usd,
+    origin_country: shipment.origin_country,
+    fta_eligible: origin.usmca_originating,
+    fta_criterion: origin.usmca_originating ? 'B' : undefined,
+    rvc_method: rvc.recommended_method === 'tv' ? 'transaction' : 'net_cost',
+    rvc_pct: rvc.recommended_method === 'tv' ? rvc.transaction_value_pct ?? undefined : rvc.net_cost_pct ?? undefined,
+  };
+
+  const decl = generateDeclaration({
+    ...baseInput,
+    fta_claimed: origin.usmca_originating ? 'USMCA' : 'NONE',
+    hs_codes: [lineItem],
+  });
+
+  return { ...decl, chassis: { hs, origin, rvc } };
+}
