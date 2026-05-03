@@ -2,10 +2,34 @@ import { fetchRgvWaitTimes } from '@/lib/cbp'
 import { PortDetailClient } from '../../port/[portId]/PortDetailClient'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Map } from 'lucide-react'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { getPortMeta } from '@/lib/portMeta'
 import { portIdFromSlug, slugForPort, allSlugs } from '@/lib/portSlug'
+import type { PortWaitTime } from '@/types'
+
+// Fetch from /api/ports so the slug page sees the SAME blended values
+// (CBP + community reports + traffic + camera vision) the home PortList
+// renders. Diego 2026-05-02: "home page is saying one time and the
+// bridge page is saying another." Root cause was this server component
+// calling fetchRgvWaitTimes() directly (raw CBP only).
+async function fetchBlendedPorts(): Promise<PortWaitTime[] | null> {
+  try {
+    const h = await headers()
+    const host = h.get('host')
+    const proto = h.get('x-forwarded-proto') ?? 'https'
+    if (!host) return null
+    const res = await fetch(`${proto}://${host}/api/ports`, {
+      next: { revalidate: 30 },
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as { ports?: PortWaitTime[] }
+    return data.ports ?? null
+  } catch {
+    return null
+  }
+}
 
 // Human-readable port URLs for FB commenting + SEO.
 // Mirrors app/port/[portId]/page.tsx but keyed by slug. Canonical URL
@@ -24,7 +48,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const portId = portIdFromSlug(slug)
   if (!portId) return {}
-  const ports = await fetchRgvWaitTimes()
+  const blended = await fetchBlendedPorts()
+  const ports = blended ?? await fetchRgvWaitTimes()
   const port = ports.find((p) => p.portId === portId)
   if (!port) return {}
 
@@ -63,7 +88,8 @@ export default async function PortBySlug({ params }: Props) {
   const portId = portIdFromSlug(slug)
   if (!portId) notFound()
 
-  const ports = await fetchRgvWaitTimes()
+  const blended = await fetchBlendedPorts()
+  const ports = blended ?? await fetchRgvWaitTimes()
   const port = ports.find((p) => p.portId === portId)
   if (!port) notFound()
 
@@ -161,6 +187,21 @@ export default async function PortBySlug({ params }: Props) {
                 </div>
               ))}
             </div>
+            {/* Plan-your-crossing pill — slim row, hoisted from the buried
+                PriorityNudge that was way down the page. Single icon +
+                copy + arrow, doesn't compete with the action buttons. */}
+            <Link
+              href={`/smart-route?from=${encodeURIComponent(portId)}`}
+              className="mt-3 flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors group"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex-shrink-0">
+                  <Map className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                </span>
+                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">Planifica tu cruce <span className="font-medium text-gray-500 dark:text-gray-400 ml-1">· puentes cercanos + tiempo manejo</span></span>
+              </span>
+              <span className="text-xs font-black text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">→</span>
+            </Link>
           </div>
 
           <PortDetailClient port={port} portId={portId} />

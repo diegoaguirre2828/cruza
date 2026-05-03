@@ -82,21 +82,11 @@ const PORT_DETAIL_NUDGES: NudgeSpec[] = [
   // FirstAlertNudge (auto-fires on 2nd visit) + the bell icon in
   // header + the BridgeAlertSheet cover this. Stacking them was noise.
   // 'saved_bridge_invite_circle' removed — circles feature killed.
-  {
-    nudgeKey: 'try_route_optimizer',
-    emoji: '🗺️',
-    titleEs: 'Planifica tu cruce (Pro)',
-    titleEn: 'Plan your crossing (Pro)',
-    subEs: 'Decide cuándo salir y qué puente agarrar pa\' llegar más rápido',
-    subEn: 'Pick the best time to leave and which bridge to cross',
-    ctaEs: 'Abrir',
-    ctaEn: 'Open',
-    href: '/planner',
-    tone: 'purple',
-  },
-  // (placeholder — kept to avoid touching PORT_DETAIL_NUDGES consumers
-  // that expect ≥1 entry; renders only when the route_optimizer one is
-  // dismissed)
+  // 'try_route_optimizer' nudge promoted out of the buried
+  // PriorityNudge feed 2026-05-02 — now lives as a slim pill in the
+  // page header next to the lane chips. The PORT_DETAIL_NUDGES array
+  // is kept (some consumers depend on its truthy length) but rendered
+  // empty so the visible feed stays clean.
   {
     nudgeKey: '_placeholder_unused',
     emoji: '·',
