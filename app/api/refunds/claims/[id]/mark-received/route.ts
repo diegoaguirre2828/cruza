@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { recordRefundObserved } from '@/lib/calibration-refunds';
 import { calculateCruzarFee } from '@/lib/chassis/refunds/fee-calculator';
+import { chargeForRefund } from '@/lib/refunds-billing';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -57,13 +58,27 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const receivedAt = new Date().toISOString();
   const finalFee = calculateCruzarFee(parsed.data.refund_received_amount_usd);
 
+  let billing: Awaited<ReturnType<typeof chargeForRefund>> | null = null;
+  try {
+    billing = await chargeForRefund(user.id, claimId, parsed.data.refund_received_amount_usd);
+  } catch (e) {
+    // If Stripe billing throws, still record the refund — the fee is recoverable
+    // out-of-band. Surface the error in the response so the UI can warn.
+    return NextResponse.json({
+      error: 'billing_failed',
+      detail: e instanceof Error ? e.message : 'unknown',
+      fee_owed_usd: finalFee,
+    }, { status: 502 });
+  }
+
   const { data, error } = await sb
     .from('refund_claims')
     .update({
       status: 'refund_received',
       refund_received_amount_usd: parsed.data.refund_received_amount_usd,
       refund_received_at: receivedAt,
-      cruzar_fee_usd: finalFee,
+      cruzar_fee_usd: billing.fee_usd,
+      stripe_charge_id: billing.invoice_id,
       updated_at: receivedAt,
     })
     .eq('id', claimId)
@@ -74,10 +89,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   await recordRefundObserved(claimId, parsed.data.refund_received_amount_usd, receivedAt);
 
-  // Task 18 will wire chargeForRefund() here.
   return NextResponse.json({
     claim: data,
-    fee_owed_usd: finalFee,
-    billing_status: 'pending_stripe_wiring',
+    fee_owed_usd: billing.fee_usd,
+    billing_status: billing.status,
+    hosted_invoice_url: billing.hosted_invoice_url,
   });
 }
