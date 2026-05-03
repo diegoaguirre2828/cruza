@@ -321,8 +321,20 @@ export default function AdminPage() {
   const [cronCreating, setCronCreating] = useState(false)
   const [postedGroups, setPostedGroups] = useState<string[]>(() => {
     if (typeof window === 'undefined') return []
-    const saved = localStorage.getItem('cruzar_posted_groups')
-    return saved ? JSON.parse(saved) : []
+    // Unwrapped JSON.parse here was throwing the entire admin page into
+    // the root error boundary ("Algo falló · Something broke") whenever
+    // localStorage held corrupt JSON. Diego flagged 2026-05-03 night —
+    // page wouldn't load on any reload because the bad value persists
+    // until manually cleared. Wrap + clear-on-corruption fixes it.
+    try {
+      const saved = localStorage.getItem('cruzar_posted_groups')
+      if (!saved) return []
+      const parsed = JSON.parse(saved)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      try { localStorage.removeItem('cruzar_posted_groups') } catch { /* ignore */ }
+      return []
+    }
   })
 
   useEffect(() => {
