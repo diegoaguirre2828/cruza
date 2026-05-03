@@ -45,7 +45,7 @@ const MEX_CROSSINGS = [
 export function PortList() {
   const { t, lang } = useLang()
   const { tier } = useTier()
-  const { homeRegion } = useHomeRegion()
+  const { homeRegion, loading: regionLoading } = useHomeRegion()
   const { favorites, signedIn: hasAccount } = useFavorites()
   const isBusiness = tier === 'business'
   // Scope the visible list to the user's home mega region unless they
@@ -290,12 +290,28 @@ export function PortList() {
     ? new Date(cbpUpdatedAt).toLocaleTimeString(lang === 'es' ? 'es-MX' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Chicago' })
     : null
 
-  if (loading) {
+  // Wait for BOTH the port fetch AND the home-region resolution before
+  // showing cards. Without the regionLoading gate, the page shows ALL
+  // bridges for ~200-2000ms while geolocation/profile resolves, then
+  // snaps down to the user's home region. Diego 2026-05-02: flicker
+  // reads as broken — "i dont like how it shows everything loading."
+  if (loading || regionLoading) {
     return (
-      <div className="space-y-3">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-2xl h-28 animate-pulse" />
-        ))}
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <div className="relative w-16 h-16">
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 animate-pulse" />
+          <div className="absolute inset-2 rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
+            <span className="text-2xl">🌉</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+            {lang === 'es' ? 'Cargando puentes cerca de ti' : 'Loading bridges near you'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {lang === 'es' ? 'Datos en vivo del CBP' : 'Live CBP data'}
+          </p>
+        </div>
       </div>
     )
   }

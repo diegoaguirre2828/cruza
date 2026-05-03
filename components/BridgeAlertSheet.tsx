@@ -86,7 +86,7 @@ export function BridgeAlertSheet({ open, onClose, portId, portName }: Props) {
       aria-label={es ? 'Configurar alerta' : 'Configure alert'}
     >
       <div
-        className="w-full sm:max-w-sm bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:pb-5"
+        className="w-full sm:max-w-sm bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl p-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-5 sm:mb-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
