@@ -567,28 +567,19 @@ export function PortDetailClient({ port, portId }: Props) {
         {shareCopied ? (es ? '¡Copiado!' : 'Copied!') : (es ? 'Compartir tiempo' : 'Share wait time')}
       </button>
 
-      {/* Rotating moment chips — Now / In 6h / Saturday / Typical now.
-          Sits directly under the wait-time hero so users don't have to
-          dig for "patterns / forecast" to see the time context.
-          Auto-advances every ~4.5s; tap dots to jump. */}
-      <BridgeMomentChips portId={portId} liveMin={port.vehicle ?? null} />
+      {/* Primary hero — rotating, swipeable, double-tap → /advanced.
+          Replaced PortDetailHero + CrossingVerdict per Diego 2026-05-02:
+          "swap the data hero with the actual wait time hero." Card 1
+          ("Ahora") shows the live number + verdict + lane breakdown so
+          PortDetailHero became redundant. */}
+      <BridgeMomentChips portId={portId} port={port} />
 
-      {/* Border Times-style hero — lane tabs + card rail with Best /
-          Rush / Today / forward forecasts. Replaces the old stacked
-          "Current Wait Times" card. All the nerd stats (Sentri
-          breakeven, accident impact, lane stats, weather impact,
-          full hourly pattern) now live at /port/[id]/advanced which
-          redirects to /datos?port=X. See
-          memory/project_cruzar_port_detail_redesign.md */}
-      {/* Quick verdict — one-line recommendation so user knows immediately */}
-      <CrossingVerdict port={port} portId={portId} es={es} />
-
-      <PortDetailHero
-        port={port}
-        portId={portId}
-        preferredLane={null}
-        exchangeRate={null}
-      />
+      {/* PortDetailHero + CrossingVerdict removed 2026-05-02 — folded
+          into the BridgeMomentChips carousel above. Lane breakdown now
+          lives in the "Now" card; verdict ("faster than typical") is
+          inline on the same card; Best/Rush/Today rail is replaced by
+          the rotating Today/Saturday/6h cards. /port/[id]/advanced is
+          a double-tap away from any carousel card. */}
 
       {/* Live bridge camera — promoted 2026-04-28 to sit directly under
           the hero. Diego: "the live cameras in individual bridge pages
