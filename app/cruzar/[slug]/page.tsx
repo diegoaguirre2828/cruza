@@ -2,7 +2,8 @@ import { fetchRgvWaitTimes } from '@/lib/cbp'
 import { PortDetailClient } from '../../port/[portId]/PortDetailClient'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Map } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { BridgePageHeader } from '@/components/BridgePageHeader'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getPortMeta } from '@/lib/portMeta'
@@ -142,66 +143,12 @@ export default async function PortBySlug({ params }: Props) {
             <Link href="/" className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4">
               <ArrowLeft className="w-4 h-4" /> All crossings · Todos los cruces
             </Link>
-            {/* Compact header: name + crossing on the left, live wait on
-                the right. Replaces the prior 64px LiveWaitHero — Diego
-                2026-05-02: "since users can see wait times before
-                clicking on the main page, maybe instead of that big
-                hero we can fit it on here? make room for the other
-                features." */}
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight truncate font-display">{port.portName}</h1>
-                {port.crossingName && (
-                  <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{port.crossingName}</p>
-                )}
-              </div>
-              {port.vehicle != null && (
-                <div className="text-right flex-shrink-0">
-                  <p className="text-4xl font-black font-display tabular-nums leading-none text-gray-900 dark:text-gray-100">
-                    {port.vehicle}<span className="text-base opacity-70 ml-1 font-bold">m</span>
-                  </p>
-                  <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-gray-500 dark:text-gray-400 mt-1">
-                    Ahora · CBP
-                  </p>
-                </div>
-              )}
-            </div>
-            {/* 4-lane chip row — surfaces SENTRI / Auto / A pie / Camión
-                inline so the user doesn't need a separate hero card to
-                see lane breakdowns. */}
-            <div className="grid grid-cols-4 gap-1.5 mt-3">
-              {([
-                { lane: 'SENTRI', value: port.sentri },
-                { lane: 'Auto', value: port.vehicle },
-                { lane: 'A pie', value: port.pedestrian },
-                { lane: 'Camión', value: port.commercial },
-              ]).map((l) => (
-                <div
-                  key={l.lane}
-                  className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-2 py-1.5 text-center"
-                >
-                  <p className="text-[9px] uppercase tracking-wider opacity-60 font-bold text-gray-700 dark:text-gray-300">{l.lane}</p>
-                  <p className="text-[13px] font-black tabular-nums mt-0.5 text-gray-900 dark:text-gray-100">
-                    {l.value != null ? `${l.value}m` : '—'}
-                  </p>
-                </div>
-              ))}
-            </div>
-            {/* Plan-your-crossing pill — slim row, hoisted from the buried
-                PriorityNudge that was way down the page. Single icon +
-                copy + arrow, doesn't compete with the action buttons. */}
-            <Link
-              href={`/smart-route?from=${encodeURIComponent(portId)}`}
-              className="mt-3 flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-blue-400 dark:hover:border-blue-600 transition-colors group"
-            >
-              <span className="flex items-center gap-2.5 min-w-0">
-                <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex-shrink-0">
-                  <Map className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                </span>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">Planifica tu cruce <span className="font-medium text-gray-500 dark:text-gray-400 ml-1">· puentes cercanos + tiempo manejo</span></span>
-              </span>
-              <span className="text-xs font-black text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">→</span>
-            </Link>
+            {/* Compact header — extracted to a client component so we can
+                read useLang() for bilingual copy. Diego 2026-05-03: the
+                "Planifica tu cruce" pill was Spanish-only on English mode
+                because the parent page is server-rendered and couldn't
+                access the language context. */}
+            <BridgePageHeader port={port} portId={portId} />
           </div>
 
           <PortDetailClient port={port} portId={portId} />
