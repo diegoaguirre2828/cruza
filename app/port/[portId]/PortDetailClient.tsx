@@ -39,7 +39,6 @@ import { recordPortView } from '@/lib/recentPorts'
 import { Bell, Share2, Check, Megaphone } from 'lucide-react'
 import { BridgeReportSheet } from '@/components/BridgeReportSheet'
 import { BridgeMomentChips } from '@/components/BridgeMomentChips'
-import { LiveWaitHero } from '@/components/LiveWaitHero'
 import { FirstAlertNudge } from '@/components/FirstAlertNudge'
 import { useLang } from '@/lib/LangContext'
 import type { PortWaitTime, WaitTimeReading } from '@/types'
@@ -568,12 +567,9 @@ export function PortDetailClient({ port, portId }: Props) {
         {shareCopied ? (es ? '¡Copiado!' : 'Copied!') : (es ? 'Compartir tiempo' : 'Share wait time')}
       </button>
 
-      {/* Live wait hero — fixed, NOT rotating. Diego 2026-05-02: "the
-          actual wait times has to be separate and not rotating." */}
-      <LiveWaitHero port={port} portId={portId} />
-
-      {/* Patterns / forecast / Saturday — rotating, swipeable, double-
-          tap → /advanced. Sits below the live hero. */}
+      {/* Live wait now lives in the page header (app/cruzar/[slug]/page.tsx)
+          per Diego 2026-05-02 — frees up vertical space for the carousel
+          and cameras. Carousel below holds patterns / forecast / Saturday. */}
       <BridgeMomentChips portId={portId} port={port} />
 
       {/* PortDetailHero + CrossingVerdict removed 2026-05-02 — folded

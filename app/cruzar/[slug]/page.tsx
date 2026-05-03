@@ -116,8 +116,51 @@ export default async function PortBySlug({ params }: Props) {
             <Link href="/" className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-4">
               <ArrowLeft className="w-4 h-4" /> All crossings · Todos los cruces
             </Link>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{port.portName}</h1>
-            <p className="text-sm text-gray-400">{port.crossingName}</p>
+            {/* Compact header: name + crossing on the left, live wait on
+                the right. Replaces the prior 64px LiveWaitHero — Diego
+                2026-05-02: "since users can see wait times before
+                clicking on the main page, maybe instead of that big
+                hero we can fit it on here? make room for the other
+                features." */}
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 leading-tight truncate font-display">{port.portName}</h1>
+                {port.crossingName && (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{port.crossingName}</p>
+                )}
+              </div>
+              {port.vehicle != null && (
+                <div className="text-right flex-shrink-0">
+                  <p className="text-4xl font-black font-display tabular-nums leading-none text-gray-900 dark:text-gray-100">
+                    {port.vehicle}<span className="text-base opacity-70 ml-1 font-bold">m</span>
+                  </p>
+                  <p className="text-[9px] uppercase tracking-[0.18em] font-bold text-gray-500 dark:text-gray-400 mt-1">
+                    Ahora · CBP
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* 4-lane chip row — surfaces SENTRI / Auto / A pie / Camión
+                inline so the user doesn't need a separate hero card to
+                see lane breakdowns. */}
+            <div className="grid grid-cols-4 gap-1.5 mt-3">
+              {([
+                { lane: 'SENTRI', value: port.sentri },
+                { lane: 'Auto', value: port.vehicle },
+                { lane: 'A pie', value: port.pedestrian },
+                { lane: 'Camión', value: port.commercial },
+              ]).map((l) => (
+                <div
+                  key={l.lane}
+                  className="rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-2 py-1.5 text-center"
+                >
+                  <p className="text-[9px] uppercase tracking-wider opacity-60 font-bold text-gray-700 dark:text-gray-300">{l.lane}</p>
+                  <p className="text-[13px] font-black tabular-nums mt-0.5 text-gray-900 dark:text-gray-100">
+                    {l.value != null ? `${l.value}m` : '—'}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <PortDetailClient port={port} portId={portId} />
