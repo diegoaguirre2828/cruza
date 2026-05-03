@@ -26,6 +26,20 @@ const IOS_BLOCKED_ROUTE_PREFIXES = [
   '/paperwork',
   '/transload',
   '/operator',
+  // 2026-05-03 second pass — leaks Diego flagged. /business is the
+  // biggest one: /dashboard + /account both link to it, so a Fleet-tier
+  // demo reviewer lands on /dashboard, sees the link, taps through to a
+  // full B2B fleet portal with Stripe checkouts. /fleet is a public
+  // entry point that hands off to /business. /advertise + /intelligence
+  // + /express-cert + /customs are paid-tier or B2B-pitch surfaces that
+  // could trip a future 3.1.1 rejection even if the current 2.1(a/b)
+  // surfaces are now hidden.
+  '/business',
+  '/fleet',
+  '/advertise',
+  '/intelligence',
+  '/express-cert',
+  '/customs',
 ]
 
 function isIOSBlockedPath(path: string): boolean {
