@@ -29,6 +29,23 @@ export function usePushNotifications() {
     navigator.serviceWorker.register('/sw.js').then(reg => {
       reg.pushManager.getSubscription().then(sub => {
         setSubscribed(!!sub)
+        // Re-sync the existing browser subscription to the server on
+        // every mount. Without this, a stale browser subscription
+        // (cached from a prior install, pre-VAPID-rotation, or after a
+        // server-side row was 410-cleaned) silently desyncs: the
+        // browser thinks it's subscribed and hides the "Enable" prompt,
+        // but the server has no row so push never delivers. The
+        // /api/push/subscribe endpoint is upsert-by-endpoint (see v40
+        // migration) so this is idempotent — duplicate POSTs are
+        // no-ops.
+        if (sub) {
+          fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub),
+            credentials: 'include',
+          }).catch(() => { /* silent */ })
+        }
       })
     })
   }, [])

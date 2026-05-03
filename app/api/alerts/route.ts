@@ -42,18 +42,59 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Account required' }, { status: 403 })
   }
 
+  const { portId, laneType, thresholdMinutes, staffingDropEnabled } = await req.json()
+  if (!portId) return NextResponse.json({ error: 'portId required' }, { status: 400 })
+  if (!thresholdMinutes || thresholdMinutes < 5 || thresholdMinutes > 180) {
+    return NextResponse.json({ error: 'thresholdMinutes must be between 5 and 180' }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+  const normalizedLane = laneType || 'vehicle'
+
+  // Detect existing alert for the same (user, port, lane). If present,
+  // UPDATE threshold instead of inserting — re-tap = update, not new
+  // row. Runs BEFORE the cap-check so a free-tier user at their 1-alert
+  // limit can still tune the threshold of their existing alert. Bug
+  // fix 2026-05-02: Diego stacked 3 identical rows on port 535501
+  // without knowing. v73 migration enforces this at the DB layer too.
+  const { data: existing } = await db
+    .from('alert_preferences')
+    .select('id, threshold_minutes')
+    .eq('user_id', user.id)
+    .eq('port_id', portId)
+    .eq('lane_type', normalizedLane)
+    .maybeSingle()
+
+  if (existing) {
+    const sameThreshold = existing.threshold_minutes === thresholdMinutes
+    const { error: updErr } = await db
+      .from('alert_preferences')
+      .update({
+        threshold_minutes: thresholdMinutes,
+        staffing_drop_enabled: staffingDropEnabled === true,
+        active: true,
+      })
+      .eq('id', existing.id)
+    if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
+    return NextResponse.json({
+      success: true,
+      updated: true,
+      already_existed: true,
+      no_change: sameThreshold,
+      previous_threshold: existing.threshold_minutes,
+      threshold_minutes: thresholdMinutes,
+    })
+  }
+
   // Per-account alert caps. Defense-in-depth against Twilio/Resend
   // financial-DoS — replaces the install-age gate that was removed
-  // from claim-pwa-pro on 2026-04-26. Generous limits for legit users
-  // (most carry 1-3 alerts), tight enough that a malicious account
-  // can't fan out hundreds of phones.
+  // from claim-pwa-pro on 2026-04-26.
   //
-  //   free:     1   (existing)
+  //   free:     1
   //   pro:      20
   //   business: 100
   const ALERT_CAPS: Record<string, number> = { free: 1, pro: 20, business: 100 }
   const cap = ALERT_CAPS[tier] ?? 1
-  const db = getServiceClient()
   const { count } = await db
     .from('alert_preferences')
     .select('*', { count: 'exact', head: true })
@@ -65,21 +106,16 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { portId, laneType, thresholdMinutes, staffingDropEnabled } = await req.json()
-  if (!portId) return NextResponse.json({ error: 'portId required' }, { status: 400 })
-  if (!thresholdMinutes || thresholdMinutes < 5 || thresholdMinutes > 180) {
-    return NextResponse.json({ error: 'thresholdMinutes must be between 5 and 180' }, { status: 400 })
-  }
   const { error } = await supabase.from('alert_preferences').insert({
     user_id: user.id,
     port_id: portId,
-    lane_type: laneType || 'vehicle',
+    lane_type: normalizedLane,
     threshold_minutes: thresholdMinutes,
     staffing_drop_enabled: staffingDropEnabled === true,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, created: true })
 }
 
 export async function DELETE(req: NextRequest) {
