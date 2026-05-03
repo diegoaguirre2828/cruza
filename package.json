@@ -22,7 +22,7 @@
     "audit:module-3": "node scripts/run-module-3-audit.mjs",
     "verify:docs": "npx tsx scripts/verify-doc-classifier.mjs",
     "verify:mx-health": "npx tsx scripts/verify-mx-health-cert.mjs",
-    "verify:paperwork": "node scripts/verify-paperwork-roundtrip.mjs",
+    "verify:paperwork": "npx tsx scripts/verify-paperwork-roundtrip.mjs",
     "audit:module-4": "node scripts/run-module-4-audit.mjs"
   },
   "dependencies": {
