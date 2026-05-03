@@ -1409,18 +1409,18 @@ git commit -m "feat(module-2): generateDeclarationFromChassis wraps chassis outp
 - Create: `lib/ticket/types.ts`
 - Create: `lib/ticket/json-signer.ts`
 
-- [ ] **Step 1: Generate signing keypair (one-time, locally)**
+- [ ] **Step 1: Generate signing keypair (one-time, locally) — uses @noble/ed25519 v3 async API**
 
 ```bash
 cd ~/cruzar && node -e "
 const ed = require('@noble/ed25519');
-const { sha512 } = require('@noble/hashes/sha512');
-ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
-const priv = ed.utils.randomPrivateKey();
-const pub = ed.getPublicKey(priv);
-console.log('CRUZAR_TICKET_SIGNING_KEY=' + Buffer.from(priv).toString('base64'));
-console.log('CRUZAR_TICKET_PUBLIC_KEY=' + Buffer.from(pub).toString('base64'));
-console.log('CRUZAR_TICKET_KEY_ID=k1-' + Date.now());
+(async () => {
+  const priv = ed.utils.randomSecretKey();
+  const pub = await ed.getPublicKeyAsync(priv);
+  console.log('CRUZAR_TICKET_SIGNING_KEY=' + Buffer.from(priv).toString('base64'));
+  console.log('CRUZAR_TICKET_PUBLIC_KEY=' + Buffer.from(pub).toString('base64'));
+  console.log('CRUZAR_TICKET_KEY_ID=k1-' + Date.now());
+})();
 "
 ```
 
@@ -1486,12 +1486,10 @@ export interface SignedTicket {
 
 ```typescript
 // lib/ticket/json-signer.ts
+// Uses @noble/ed25519 v3 async API. SHA-256 via Node built-in crypto (no extra deps).
 import * as ed from '@noble/ed25519';
-import { sha512 } from '@noble/hashes/sha512';
-import { sha256 } from '@noble/hashes/sha256';
+import { createHash } from 'crypto';
 import type { CruzarTicketV1, SignedTicket } from './types';
-
-ed.etc.sha512Sync = (...m: Uint8Array[]) => sha512(ed.etc.concatBytes(...m));
 
 function canonicalize(obj: unknown): string {
   // Deterministic JSON: sorted keys, no whitespace.
@@ -1513,7 +1511,11 @@ function bytesToHex(b: Uint8Array): string {
   return Array.from(b).map(x => x.toString(16).padStart(2, '0')).join('');
 }
 
-export function signTicket(payload: CruzarTicketV1): SignedTicket {
+function sha256Bytes(input: Uint8Array): Uint8Array {
+  return new Uint8Array(createHash('sha256').update(input).digest());
+}
+
+export async function signTicket(payload: CruzarTicketV1): Promise<SignedTicket> {
   const privB64 = process.env.CRUZAR_TICKET_SIGNING_KEY;
   const keyId = process.env.CRUZAR_TICKET_KEY_ID;
   if (!privB64 || !keyId) {
@@ -1521,8 +1523,8 @@ export function signTicket(payload: CruzarTicketV1): SignedTicket {
   }
   const priv = b64ToBytes(privB64);
   const canonical = canonicalize(payload);
-  const hash = sha256(new TextEncoder().encode(canonical));
-  const sigBytes = ed.signSync ? ed.signSync(hash, priv) : (ed as { sign: (msg: Uint8Array, key: Uint8Array) => Uint8Array }).sign(hash, priv);
+  const hash = sha256Bytes(new TextEncoder().encode(canonical));
+  const sigBytes = await ed.signAsync(hash, priv);
 
   return {
     payload_canonical: canonical,
@@ -1533,7 +1535,7 @@ export function signTicket(payload: CruzarTicketV1): SignedTicket {
   };
 }
 
-export function verifyTicket(signed: SignedTicket, publicKeyB64?: string): { valid: boolean; reason?: string } {
+export async function verifyTicket(signed: SignedTicket, publicKeyB64?: string): Promise<{ valid: boolean; reason?: string }> {
   const pubB64 = publicKeyB64 ?? process.env.CRUZAR_TICKET_PUBLIC_KEY;
   if (!pubB64) return { valid: false, reason: 'no public key available' };
 
@@ -1541,15 +1543,13 @@ export function verifyTicket(signed: SignedTicket, publicKeyB64?: string): { val
   if (reCanonical !== signed.payload_canonical) {
     return { valid: false, reason: 'payload not in canonical form' };
   }
-  const hash = sha256(new TextEncoder().encode(reCanonical));
+  const hash = sha256Bytes(new TextEncoder().encode(reCanonical));
   const hashHex = bytesToHex(hash);
   if (hashHex !== signed.content_hash) {
     return { valid: false, reason: 'content_hash mismatch (payload tampered)' };
   }
   try {
-    const ok = ed.verifySync
-      ? ed.verifySync(b64ToBytes(signed.signature_b64), hash, b64ToBytes(pubB64))
-      : (ed as { verify: (sig: Uint8Array, msg: Uint8Array, key: Uint8Array) => boolean }).verify(b64ToBytes(signed.signature_b64), hash, b64ToBytes(pubB64));
+    const ok = await ed.verifyAsync(b64ToBytes(signed.signature_b64), hash, b64ToBytes(pubB64));
     return ok ? { valid: true } : { valid: false, reason: 'signature does not verify' };
   } catch (e) {
     return { valid: false, reason: `verify threw: ${(e as Error).message}` };
@@ -1841,7 +1841,7 @@ export async function fetchAndVerifyTicket(ticketId: string, baseUrl = 'https://
   const keyBody = await k.json() as { public_key_b64: string; key_id: string };
 
   // 3. Verify
-  const result = verifyTicket(body.signed, keyBody.public_key_b64);
+  const result = await verifyTicket(body.signed, keyBody.public_key_b64);
   return {
     valid: result.valid,
     reason: result.reason,
@@ -1980,7 +1980,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   };
 
   // 3. Sign
-  const signed = signTicket(payload);
+  const signed = await signTicket(payload);
 
   // 4. Persist
   const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -2396,7 +2396,7 @@ export async function GET(req: NextRequest) {
   };
 
   // Server-side verify — confirms the persisted Ticket is intact
-  const v = verifyTicket(signed);
+  const v = await verifyTicket(signed);
 
   return NextResponse.json({
     signed,
@@ -2475,7 +2475,7 @@ export default async function TicketViewerPage({ params }: Props) {
     signature_b64: data.signature_b64,
     signing_key_id: data.signing_key_id,
   };
-  const verify = verifyTicket(signed);
+  const verify = await verifyTicket(signed);
 
   return (
     <main className="mx-auto max-w-3xl p-6 text-white">
