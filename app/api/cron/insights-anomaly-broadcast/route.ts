@@ -25,26 +25,10 @@ function authed(req: NextRequest): boolean {
   return false;
 }
 
-async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY?.trim();
-  if (!key) return false;
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL ?? 'Cruzar Alerts <alerts@cruzar.app>',
-        to,
-        subject,
-        text: body,
-      }),
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('insights-anomaly email fail', err);
-    return false;
-  }
-}
+// Email channel removed 2026-05-03 — push + SMS only for time-critical
+// wait-anomaly alerts. Email arrives too late to act on and creates
+// inbox spam that tanks deliverability for the emails that DO matter
+// (digest, receipts, password reset).
 
 async function sendPush(userId: string, payload: PushPayload): Promise<boolean> {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return false;
@@ -108,7 +92,6 @@ export async function GET(req: NextRequest) {
 
   const result = await runAnomalyBroadcast({
     dryRun,
-    sendEmail,
     sendSms,
     sendPush,
   });

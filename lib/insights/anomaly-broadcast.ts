@@ -41,7 +41,6 @@ export interface PushPayload {
 export async function runAnomalyBroadcast(opts: {
   dryRun: boolean;
   sendSms: (to: string, body: string) => Promise<boolean>;
-  sendEmail: (to: string, subject: string, body: string) => Promise<boolean>;
   sendPush: (userId: string, payload: PushPayload) => Promise<boolean>;
 }): Promise<AnomalyCheckResult> {
   const db = getServiceClient();
@@ -109,19 +108,16 @@ export async function runAnomalyBroadcast(opts: {
       const meta = PORT_META[portId];
       const portName = meta?.localName ?? meta?.city ?? portId;
       const channelsFired: string[] = [];
-      const subject = `Cruzar: ${portName} ${ratio.toFixed(1)}× normal`;
       const body = sub.language === 'es'
-        ? `Cruzar: ${portName} ${ratio.toFixed(1)}× normal (${live} min). Configura: cruzar.app/dispatch`
-        : `Cruzar: ${portName} ${ratio.toFixed(1)}× normal (${live} min). Config: cruzar.app/dispatch`;
+        ? `${portName} ${ratio.toFixed(1)}× normal (${live} min)`
+        : `${portName} ${ratio.toFixed(1)}× normal (${live} min)`;
 
       let pushSent = false;
       try {
-        if (sub.channel_email) {
-          for (const email of sub.recipient_emails ?? []) {
-            if (!opts.dryRun) await opts.sendEmail(email, subject, body);
-            channelsFired.push(`email:${email}`);
-          }
-        }
+        // Email channel removed 2026-05-03 — Diego: time-critical wait
+        // alerts arrive via push + SMS only; email creates inbox spam +
+        // arrives too late to act on. Email stays alive for the weekly
+        // briefing cron + Stripe receipts + password reset, NOT here.
         if (sub.channel_sms) {
           for (const phone of sub.recipient_phones ?? []) {
             if (!opts.dryRun) await opts.sendSms(phone, body);
