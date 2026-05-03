@@ -76,6 +76,33 @@ export async function purchaseProMonthly(): Promise<{ purchased: boolean; error?
   }
 }
 
+// Preflight offerings check. Returns true ONLY if RevenueCat returns a
+// healthy offerings object with a `monthly` package — i.e. the IAP is
+// actually purchasable right now. Used by IOSSubscribeButton to hide
+// itself when offerings are empty so Apple Review can't trigger the
+// "products could not be fetched from App Store Connect" error that
+// got us rejected on build 1.0(21) review #2 (2026-05-03 10:54 UTC).
+//
+// Empty offerings = Diego still owes one of these App Store Connect
+// dashboard items:
+//   1. Paid Apps Agreement signed (Agreements, Tax, Banking)
+//   2. Banking + Tax filled in
+//   3. IAP `app.cruzar.ios.pro.monthly` status = "Ready to Submit"
+//   4. IAP attached to the binary submission
+//   5. RevenueCat offering linked to product ID
+// Once Diego completes those, this returns true and the button auto-shows.
+export async function isProAvailableForPurchase(): Promise<boolean> {
+  if (!isIOSAppClient()) return false
+  try {
+    const offerings = await Purchases.getOfferings()
+    return !!offerings.current?.monthly
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    logIapFailure('preflight_threw', msg)
+    return false
+  }
+}
+
 export async function isProActiveOnDevice(): Promise<boolean> {
   if (!isIOSAppClient()) return false
   try {
