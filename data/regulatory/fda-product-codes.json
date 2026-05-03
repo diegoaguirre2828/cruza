@@ -1,0 +1,27 @@
+{
+  "version": "v1.0",
+  "source": "FDA Industry Systems Product Codes (curated subset for v1)",
+  "generated_at": "2026-05-03",
+  "mapping": {
+    "02": { "fda_code": "02", "category": "meat-and-poultry", "fda_required": false, "note": "USDA FSIS jurisdiction primarily; FDA may require Prior Notice for game/exotic" },
+    "03": { "fda_code": "16", "category": "fish-seafood", "fda_required": true },
+    "04": { "fda_code": "09", "category": "dairy", "fda_required": true },
+    "07": { "fda_code": "20", "category": "fresh-vegetables", "fda_required": true },
+    "08": { "fda_code": "21", "category": "fresh-fruits", "fda_required": true },
+    "09": { "fda_code": "32", "category": "spices-flavors", "fda_required": true },
+    "10": { "fda_code": "27", "category": "cereals-grain", "fda_required": true },
+    "11": { "fda_code": "27", "category": "cereal-products", "fda_required": true },
+    "16": { "fda_code": "16", "category": "prepared-meat-fish", "fda_required": true },
+    "19": { "fda_code": "27", "category": "cereal-bakery", "fda_required": true },
+    "20": { "fda_code": "21", "category": "preserved-fruit-veg", "fda_required": true },
+    "21": { "fda_code": "30", "category": "food-preparations", "fda_required": true },
+    "22": { "fda_code": "31", "category": "beverages", "fda_required": true },
+    "30": { "fda_code": "63", "category": "pharmaceuticals-finished", "fda_required": true, "note": "PMA / 510(k) / NDA jurisdiction; Prior Notice still required for finished food-grade pharma imports" },
+    "90": { "fda_code": "73", "category": "medical-devices", "fda_required": false, "note": "FDA Industry Systems applies for some Class II/III; not pre-arrival Prior Notice in the food sense" }
+  },
+  "notes": [
+    "v1 mapping — broker reviews + adjusts per actual product. FDA codes are 2-7 char; the leading 2 chars (Industry Code) are what we map by HS chapter.",
+    "fda_required=false means Prior Notice is NOT required for that chapter even though FDA may have other jurisdiction.",
+    "When fda_required=true and arrival_eta is set, the chassis computes arrival_deadline_iso = arrival_eta - 2h."
+  ]
+}
