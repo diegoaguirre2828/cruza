@@ -19,7 +19,11 @@
     "verify:isf": "npx tsx scripts/verify-isf-10-2.mjs",
     "verify:cbp7501": "npx tsx scripts/verify-cbp-7501.mjs",
     "verify:manifest": "npx tsx scripts/verify-regulatory-manifest.mjs",
-    "audit:module-3": "node scripts/run-module-3-audit.mjs"
+    "audit:module-3": "node scripts/run-module-3-audit.mjs",
+    "verify:docs": "npx tsx scripts/verify-doc-classifier.mjs",
+    "verify:mx-health": "npx tsx scripts/verify-mx-health-cert.mjs",
+    "verify:paperwork": "node scripts/verify-paperwork-roundtrip.mjs",
+    "audit:module-4": "node scripts/run-module-4-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
@@ -65,6 +69,7 @@
     "sonner": "^2.0.7",
     "stripe": "^21.0.1",
     "swr": "^2.4.1",
+    "tesseract.js": "^7.0.0",
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
     "zustand": "^5.0.12"
