@@ -279,44 +279,48 @@ export function PortCard({ port, signal }: Props) {
                 )}
               </div>
             )}
-            <button
-              onClick={handleStar}
-              className={`cruzar-press-sm p-2 rounded-lg flex-shrink-0 bg-white dark:bg-gray-700 ${
-                starred
-                  ? 'text-yellow-500'
-                  : 'text-gray-400 hover:text-yellow-500'
-              }`}
-              title={lang === 'es' ? (starred ? 'Quitar de favoritos' : 'Guardar en favoritos') : (starred ? 'Remove from favorites' : 'Save to favorites')}
-              aria-pressed={starred}
-            >
-              <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
-            </button>
-            {/* Moments-of-want bell — inline alert CTA on every port card.
-                Guests get the SignupIntentModal w/ threshold picker; signed-in
-                users jump to the alert UI on the port detail page. */}
-            <button
-              onClick={handleAlertBell}
-              className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-blue-500 flex-shrink-0"
-              title={lang === 'es' ? 'Avísame cuando baje' : 'Alert me when wait drops'}
-            >
-              <Bell className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); tapLight(); setShowReportSheet(true) }}
-              className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-emerald-500 flex-shrink-0"
-              title={lang === 'es' ? 'Reportar estado' : 'Report status'}
-              aria-label={lang === 'es' ? 'Reportar estado' : 'Report status'}
-            >
-              <Megaphone className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleShare}
-              className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
-              title="Share wait times"
-            >
-              {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
-            </button>
           </div>
+        </div>
+
+        {/* Action button row — separated from the top wait-number cluster
+            2026-05-02 per Diego. Right-aligned, sits at the bottom of
+            the card, gives the wait number room to breathe and stops
+            the "<1 min" badge from overlapping the icon row. */}
+        <div className="flex items-center justify-end gap-1.5 mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/60">
+          <button
+            onClick={handleStar}
+            className={`cruzar-press-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-700/60 ${
+              starred
+                ? 'text-yellow-500'
+                : 'text-gray-400 hover:text-yellow-500'
+            }`}
+            title={lang === 'es' ? (starred ? 'Quitar de favoritos' : 'Guardar en favoritos') : (starred ? 'Remove from favorites' : 'Save to favorites')}
+            aria-pressed={starred}
+          >
+            <Star className={`w-4 h-4 ${starred ? 'fill-current' : ''}`} />
+          </button>
+          <button
+            onClick={handleAlertBell}
+            className="cruzar-press-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-700/60 text-gray-400 hover:text-blue-500"
+            title={lang === 'es' ? 'Avísame cuando baje' : 'Alert me when wait drops'}
+          >
+            <Bell className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); tapLight(); setShowReportSheet(true) }}
+            className="cruzar-press-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-700/60 text-gray-400 hover:text-emerald-500"
+            title={lang === 'es' ? 'Reportar estado' : 'Report status'}
+            aria-label={lang === 'es' ? 'Reportar estado' : 'Report status'}
+          >
+            <Megaphone className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleShare}
+            className="cruzar-press-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-700/60 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            title="Share wait times"
+          >
+            {shared ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+          </button>
         </div>
 
         {showToast && (
