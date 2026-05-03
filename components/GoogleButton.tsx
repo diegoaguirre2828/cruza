@@ -53,12 +53,21 @@ export function GoogleButton({
   // actual redirect URL Supabase generated when the flow stalls.
   // No devtools needed to debug OAuth failures from a phone.
   const [debugUrl, setDebugUrl] = useState<string | null>(null)
+  // Hidden on iOS app builds until SIWA is verified working at the App
+  // ID / provisioning-profile layer. Apple guideline 4.8 only mandates
+  // SIWA when ANOTHER 3rd-party provider is shown — so we have to hide
+  // Google in lockstep with AppleButton's iOS gate, otherwise the
+  // reviewer rejects under 4.8 the moment SIWA is gone.
+  const [hideOnIOS, setHideOnIOS] = useState(false)
 
   // Run detection on mount so guest users see the warning BEFORE
   // they tap the button and hit a broken OAuth flow.
   useEffect(() => {
     setInAppBrowser(detectInAppBrowser())
+    if (isIOSAppClient()) setHideOnIOS(true)
   }, [])
+
+  if (hideOnIOS) return null
 
   async function handleGoogle() {
     setError(null)

@@ -1,25 +1,27 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
 import { isIOSAppClient } from '@/lib/platform'
 import { signInWithAppleNative } from '@/lib/socialLogin'
 
-// Apple Sign-In button. Apple guideline 4.8 mandates Sign in with Apple
-// any time the app offers another third-party identity provider (we do
-// — Google).
+// Apple Sign-In button.
 //
-// On iOS app builds (Capacitor) → native Apple sheet via
-// @capgo/capacitor-social-login → Supabase signInWithIdToken. This was
-// the fix for build-1.0(19) Apple Review rejection (guideline 4.0 +
-// 2.1(a)) where the prior web-redirect flow pushed users to Safari and
-// broke on iPad.
+// iOS native path is currently DISABLED at the render layer (returns null
+// post-mount on iOS) pending Apple Developer Console fix. Telemetry from
+// build 1.0(21) shows the @capgo/capacitor-social-login call throws
+// AuthorizationError code 1000 (ASAuthorizationErrorUnknown) before any
+// identity token is produced — Supabase never enters the flow. Root cause
+// is upstream of all our code: App ID `app.cruzar.ios` SIWA capability +
+// provisioning profile. Hiding the button on iOS lets build 21 resubmit
+// cleanly under guideline 4.8 (which only requires SIWA when other
+// 3rd-party providers are shown — GoogleButton is also iOS-hidden until
+// SIWA is verified working).
 //
-// On web / PWA → existing Supabase OAuth redirect flow. Different code
-// path because the web has no native auth surface and the Apple Services
-// ID config is what backs that flow on the desktop browser.
+// Web/PWA path stays live — Services ID app.cruzar.web + Supabase Apple
+// provider were configured 2026-05-03 (commit 6bd4182).
 
 export function AppleButton({
   label,
@@ -31,6 +33,13 @@ export function AppleButton({
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hideOnIOS, setHideOnIOS] = useState(false)
+
+  useEffect(() => {
+    if (isIOSAppClient()) setHideOnIOS(true)
+  }, [])
+
+  if (hideOnIOS) return null
 
   async function handleApple() {
     setError(null)

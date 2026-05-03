@@ -12,6 +12,7 @@ import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
 import { getPortMeta } from '@/lib/portMeta'
 import { portIdFromSlug } from '@/lib/portSlug'
 import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
+import { isIOSAppClient } from '@/lib/platform'
 import { trackUserSignedUp, identifyUser } from '@/lib/tracking'
 import { parseIntentFromUrl, queueIntent, type PendingIntent } from '@/lib/signupIntent'
 
@@ -126,8 +127,14 @@ export default function SignupPage() {
   // they'll get the 3-tap walkthrough (the /ios-install page)
   // after signup. Evaluated client-side to avoid SSR mismatch.
   const [iosPersona, setIosPersona] = useState(false)
+  // iOS-app flag (Capacitor wrap). When true, AppleButton + GoogleButton
+  // self-hide and the email/magic-link section auto-opens so iOS-app
+  // users land on a working signup path immediately. SIWA is disabled
+  // there pending Apple Developer Console fix.
+  const [isIosApp, setIsIosApp] = useState(false)
   useEffect(() => {
     setIosPersona(isIosSafari() && !isPwaInstalled())
+    setIsIosApp(isIOSAppClient())
   }, [])
 
   // Contextual hero — if user came from a specific port page (via
@@ -464,7 +471,9 @@ export default function SignupPage() {
               </div>
             </div>
             <div className="mt-1 text-[11px] text-amber-700/80 dark:text-amber-300/70 ml-7">
-              {es ? 'Continúa con Google o Apple — un toque, sin contraseña.' : 'Continue with Google or Apple — one tap, no password.'}
+              {isIosApp
+                ? (es ? 'Crea tu cuenta abajo con correo o link mágico.' : 'Create your account below with email or magic link.')
+                : (es ? 'Continúa con Google o Apple — un toque, sin contraseña.' : 'Continue with Google or Apple — one tap, no password.')}
             </div>
           </div>
         )}
@@ -539,10 +548,10 @@ export default function SignupPage() {
             else lives behind a subtle disclosure. */}
         <details
           className="group mt-2"
-          open={iosPersona}
+          open={iosPersona || isIosApp}
           onToggle={(e) => {
             if ((e.currentTarget as HTMLDetailsElement).open) {
-              trackFunnel('signup_more_options_opened', { ios_default: iosPersona })
+              trackFunnel('signup_more_options_opened', { ios_default: iosPersona || isIosApp })
             }
           }}
         >
