@@ -6,7 +6,7 @@ import { REFUNDS_ES } from '@/lib/copy/refunds-es';
 export const metadata = {
   title: 'IEEPA Refunds — Cruzar',
   description:
-    'Recover IEEPA tariff refunds. Free eligibility scan. 5%/3%/1.5% sliding fee on confirmed recovery. Free if no recovery.',
+    'Recover IEEPA tariff refunds. Free eligibility scan. Platform fee: 8% of refund processed, $99 floor. No fee on rejected or expired filings.',
   alternates: { canonical: 'https://www.cruzar.app/refunds' },
 };
 
