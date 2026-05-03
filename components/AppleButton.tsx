@@ -9,19 +9,28 @@ import { signInWithAppleNative } from '@/lib/socialLogin'
 
 // Apple Sign-In button.
 //
-// iOS native path is currently DISABLED at the render layer (returns null
-// post-mount on iOS) pending Apple Developer Console fix. Telemetry from
-// build 1.0(21) shows the @capgo/capacitor-social-login call throws
-// AuthorizationError code 1000 (ASAuthorizationErrorUnknown) before any
-// identity token is produced — Supabase never enters the flow. Root cause
-// is upstream of all our code: App ID `app.cruzar.ios` SIWA capability +
-// provisioning profile. Hiding the button on iOS lets build 21 resubmit
-// cleanly under guideline 4.8 (which only requires SIWA when other
-// 3rd-party providers are shown — GoogleButton is also iOS-hidden until
-// SIWA is verified working).
+// CURRENTLY DISABLED on ALL surfaces (returns null post-mount).
 //
-// Web/PWA path stays live — Services ID app.cruzar.web + Supabase Apple
-// provider were configured 2026-05-03 (commit 6bd4182).
+// iOS native path: telemetry from build 1.0(21) shows the
+// @capgo/capacitor-social-login call throws AuthorizationError code 1000
+// (ASAuthorizationErrorUnknown) before any identity token is produced —
+// Supabase never enters the flow. Root cause is upstream of all our code:
+// App ID `app.cruzar.ios` SIWA capability + provisioning profile.
+//
+// Web/PWA path: Services ID app.cruzar.web + Supabase Apple provider were
+// wired 2026-05-03 (commit 6bd4182). Services ID config saved with domain
+// + Supabase callback as Return URL. Diego configured + saved 2026-05-03
+// evening. Despite the dashboard showing "(2 Website URLs)" saved,
+// Supabase auth logs at 22:03 UTC and 22:59 UTC show 4 attempts each ending
+// with `/authorize → 302 to Apple` but no `/token` exchange — meaning
+// Apple is rejecting before redirecting back. User sees "Sign up not
+// complete" on Apple's own page. Cause unknown without Apple Dev Support
+// (1-800-633-2152, Mon-Fri 6am-5pm Pacific) — could be edge-cache
+// propagation, missing Email Communication source config, or an
+// account-level quirk.
+//
+// Hide everywhere until Apple Support diagnoses + Services ID config is
+// repaired. Re-enable by removing the early-return below.
 
 export function AppleButton({
   label,
@@ -46,6 +55,9 @@ export function AppleButton({
   }, [])
 
   if (!ready || hideOnIOS) return null
+  // 2026-05-03 evening — pending Apple Dev Support diagnosis. Hide
+  // everywhere. Remove this line when Services ID config is repaired.
+  return null
 
   async function handleApple() {
     setError(null)
