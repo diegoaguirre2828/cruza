@@ -28,4 +28,7 @@ export const TICKET_EN = {
   regulatory_section: 'Regulatory submissions',
   agencies_required: 'Agencies',
   earliest_deadline: 'Earliest deadline',
+  paperwork_section: 'Paperwork extracted',
+  documents: 'Documents',
+  blocking: 'Blocking issues',
 };

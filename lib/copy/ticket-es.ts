@@ -28,4 +28,7 @@ export const TICKET_ES = {
   regulatory_section: 'Presentaciones regulatorias',
   agencies_required: 'Agencias',
   earliest_deadline: 'Plazo mas cercano',
+  paperwork_section: 'Documentos extraidos',
+  documents: 'Documentos',
+  blocking: 'Problemas',
 };

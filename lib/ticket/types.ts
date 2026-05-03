@@ -1,6 +1,7 @@
 // lib/ticket/types.ts
 import type { HsClassificationResult, OriginValidationResult, RvcResult, UsmcaCertification } from '../chassis/customs/types';
 import type { SubmissionManifest, AgencyId } from '../chassis/regulatory/types';
+import type { PaperworkComposition } from '../chassis/docs/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -24,6 +25,12 @@ export interface TicketRegulatoryBlock {
   agencies_required: AgencyId[];
 }
 
+export interface TicketPaperworkBlock {
+  composition: PaperworkComposition;
+  doc_count: number;
+  blocking_issues: string[];
+}
+
 export interface TicketAuditShield {
   prior_disclosure_eligible: boolean;
   '19_USC_1592_basis': string;
@@ -43,7 +50,8 @@ export interface CruzarTicketV1 {
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
-  // paperwork, drivers added in later modules
+  paperwork?: TicketPaperworkBlock;
+  // drivers added in later modules
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

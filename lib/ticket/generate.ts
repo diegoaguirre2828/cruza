@@ -9,7 +9,9 @@ import { calculateRvc } from '../chassis/customs/rvc-calculator';
 import { signTicket } from './json-signer';
 import { logChassisCall } from '../calibration';
 import { buildSubmissionManifest } from '../chassis/regulatory/submitter';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock } from './types';
+import { composePaperwork } from '../chassis/docs/composer';
+import type { VisionInput } from '../chassis/docs/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -19,6 +21,9 @@ interface GenerateOptions {
     arrival_eta_iso: string;
     vessel_load_iso?: string;
     mode_of_transport: 'truck' | 'ocean' | 'air' | 'rail';
+  };
+  paperworkInput?: {
+    pages: VisionInput[];
   };
 }
 
@@ -98,6 +103,17 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
       })()
     : null;
 
+  // Module 4: paperwork composition (optional — only when broker provides image bytes)
+  let paperworkBlock: TicketPaperworkBlock | null = null;
+  if (opts.paperworkInput && opts.paperworkInput.pages.length > 0) {
+    const { composition } = await composePaperwork({ pages: opts.paperworkInput.pages });
+    paperworkBlock = {
+      composition,
+      doc_count: composition.doc_count,
+      blocking_issues: composition.blocking_issues,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -110,12 +126,16 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers'> = ['customs'];
+  if (regulatoryBlock) modulesPresent.push('regulatory');
+  if (paperworkBlock) modulesPresent.push('paperwork');
+
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
     ticket_id: ticketId,
     issued_at: new Date().toISOString(),
     issuer: 'Cruzar Insights, Inc.',
-    modules_present: regulatoryBlock ? ['customs', 'regulatory'] : ['customs'],
+    modules_present: modulesPresent,
     shipment: shipmentBlock,
     customs: {
       hs_classification: hs,
@@ -124,6 +144,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
       certificate: origin.certificate_origin_draft,
     },
     regulatory: regulatoryBlock ?? undefined,
+    paperwork: paperworkBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

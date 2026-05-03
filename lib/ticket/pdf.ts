@@ -77,6 +77,15 @@ export async function renderTicketPdf(signed: SignedTicket, opts: RenderOptions 
     );
   }
 
+  if (payload.paperwork) {
+    yEs -= 6; yEn -= 6;
+    drawSection(TICKET_ES.paperwork_section, TICKET_EN.paperwork_section);
+    drawLine2(TICKET_ES.documents, TICKET_EN.documents, String(payload.paperwork.doc_count));
+    if (payload.paperwork.blocking_issues.length > 0) {
+      drawLine2(TICKET_ES.blocking, TICKET_EN.blocking, String(payload.paperwork.blocking_issues.length));
+    }
+  }
+
   yEs -= 6; yEn -= 6;
   drawSection(TICKET_ES.audit_shield, TICKET_EN.audit_shield);
   drawLine2(TICKET_ES.prior_disclosure, TICKET_EN.prior_disclosure, payload.audit_shield.prior_disclosure_eligible ? 'OK' : 'X');
