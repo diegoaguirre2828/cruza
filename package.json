@@ -23,7 +23,11 @@
     "verify:docs": "npx tsx scripts/verify-doc-classifier.mjs",
     "verify:mx-health": "npx tsx scripts/verify-mx-health-cert.mjs",
     "verify:paperwork": "npx tsx scripts/verify-paperwork-roundtrip.mjs",
-    "audit:module-4": "node scripts/run-module-4-audit.mjs"
+    "audit:module-4": "node scripts/run-module-4-audit.mjs",
+    "verify:hos": "npx tsx scripts/verify-hos-divergence.mjs",
+    "verify:drayage": "npx tsx scripts/verify-drayage-borello.mjs",
+    "verify:drivers": "npx tsx scripts/verify-drivers-manifest.mjs",
+    "audit:module-5": "node scripts/run-module-5-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
