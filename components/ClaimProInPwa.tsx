@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Gift } from 'lucide-react'
 import { useAuth } from '@/lib/useAuth'
+import { useTier } from '@/lib/useTier'
 import { useLang } from '@/lib/LangContext'
 import { trackEvent } from '@/lib/trackEvent'
 
@@ -36,6 +37,7 @@ const DISMISS_HOURS = 8
 
 export function ClaimProInPwa() {
   const { user, loading: authLoading } = useAuth()
+  const { tier } = useTier()
   const { lang } = useLang()
   const es = lang === 'es'
   const [visible, setVisible] = useState(false)
@@ -45,6 +47,14 @@ export function ClaimProInPwa() {
   useEffect(() => {
     if (authLoading || !user) return
     if (typeof window === 'undefined') return
+
+    // Tier gate — Pro / Business users already have what this card
+    // would grant. The localStorage dedupe key handles the
+    // "already-claimed-on-this-device" case but doesn't cover users
+    // who upgraded to paid Pro on another device. Diego flagged
+    // 2026-05-03 that the "Claim 3 months Pro" card kept popping up
+    // for users who already have Pro. Tier check is the canonical fix.
+    if (tier === 'pro' || tier === 'business') return
 
     // Must be standalone to render
     const standalone =
@@ -72,7 +82,7 @@ export function ClaimProInPwa() {
     // from another device, their first successful claim call will
     // just re-extend it harmlessly.
     setVisible(true)
-  }, [user, authLoading])
+  }, [user, authLoading, tier])
 
   async function claim() {
     setClaiming(true)

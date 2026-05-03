@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLang } from '@/lib/LangContext'
+import { useTier } from '@/lib/useTier'
 import { InstallGuide } from './InstallGuide'
 
 // Persistent nag banner for signed-in users who haven't installed the
@@ -17,6 +18,7 @@ const DISMISS_TTL_MS = 24 * 60 * 60 * 1000
 
 export function DashboardInstallBanner() {
   const { lang } = useLang()
+  const { tier } = useTier()
   const es = lang === 'es'
   const [show, setShow] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -28,13 +30,22 @@ export function DashboardInstallBanner() {
       (navigator as Navigator & { standalone?: boolean }).standalone === true
     if (isStandalone) return
 
+    // Tier gate — already-paid users see "Your alert is waiting · install
+    // so the alert can reach you" but they haven't even configured an
+    // alert yet, the copy is misleading. The install-for-push case is
+    // valid for any non-standalone user, but framing this as a Pro
+    // carrot doesn't apply — leave the InstallGuide accessible via /mas
+    // for Pro/Business users who actually want to install. Diego flagged
+    // this 2026-05-03.
+    if (tier === 'pro' || tier === 'business') return
+
     try {
       const dismissedAt = localStorage.getItem(DISMISS_KEY)
       if (dismissedAt && Date.now() - parseInt(dismissedAt, 10) < DISMISS_TTL_MS) return
     } catch { /* ignore */ }
 
     setShow(true)
-  }, [])
+  }, [tier])
 
   function dismiss() {
     try { localStorage.setItem(DISMISS_KEY, String(Date.now())) } catch { /* ignore */ }

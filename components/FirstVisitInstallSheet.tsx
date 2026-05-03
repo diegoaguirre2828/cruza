@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useLang } from '@/lib/LangContext'
 import { InstallGuide } from './InstallGuide'
 import { useFoundingSlots } from '@/lib/useFoundingSlots'
+import { useTier } from '@/lib/useTier'
 import { trackEvent } from '@/lib/trackEvent'
 
 // First-visit "Add to Home Screen" sheet. Rendered globally in
@@ -54,6 +55,7 @@ export function FirstVisitInstallSheet() {
   const { lang } = useLang()
   const pathname = usePathname()
   const { full: capFull } = useFoundingSlots()
+  const { tier } = useTier()
   const es = lang === 'es'
   const [show, setShow] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -61,6 +63,12 @@ export function FirstVisitInstallSheet() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Tier gate — already-paid users don't need the "🎁 unlock Pro free
+    // for 90 days" carrot. Diego flagged 2026-05-03 that the modal kept
+    // appearing for Pro users on every home visit. Free/guest still get
+    // the pitch (install grant is real value for them).
+    if (tier === 'pro' || tier === 'business') return
 
     // Route gate — only fire on home. Anywhere else, the page's own
     // content / CTA path takes priority.
@@ -110,7 +118,7 @@ export function FirstVisitInstallSheet() {
       trackEvent('install_sheet_shown')
     }, 1500)
     return () => clearTimeout(timer)
-  }, [pathname])
+  }, [pathname, tier])
 
   function dismiss() {
     setDismissed(true)

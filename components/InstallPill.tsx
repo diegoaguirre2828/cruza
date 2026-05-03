@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
 import { useFoundingSlots } from '@/lib/useFoundingSlots'
+import { useTier } from '@/lib/useTier'
+import { isIosSafari } from '@/lib/iosDetect'
 
 // Compact install CTA pill for the home header row. Shown whenever
 // the app is NOT running as an installed PWA. Replaces the bottom-
@@ -26,8 +28,16 @@ const DISMISS_KEY = 'cruzar_install_pill_dismissed_at'
 export function InstallPill() {
   const { lang } = useLang()
   const { full: capFull } = useFoundingSlots()
+  const { tier } = useTier()
   const es = lang === 'es'
   const [show, setShow] = useState(false)
+  // iOS Safari has no programmatic install path, so the pill targets
+  // /ios-install (the focused 3-tap walkthrough) instead of /mas (the
+  // kitchen-sink "more" page) — Diego flagged 2026-05-03 that iOS users
+  // tap the pill, get instructions, and bounce because it feels like a
+  // dead end. /mas remains the destination for Android (where the
+  // PWA install path is more complex than a single Share-menu tap).
+  const [iosWeb, setIosWeb] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -38,6 +48,15 @@ export function InstallPill() {
       setShow(false)
       return
     }
+    // Already-paid users don't need the "Install · Pro carrot" pitch.
+    // The pill is for Free/guest users where the install grant is the
+    // actual value-add. Pro/Business users are pestered with copy
+    // ("Install · 3mo Pro") that doesn't apply to them.
+    if (tier === 'pro' || tier === 'business') {
+      setShow(false)
+      return
+    }
+    setIosWeb(isIosSafari())
     try {
       const dismissedAt = localStorage.getItem(DISMISS_KEY)
       if (dismissedAt) {
@@ -49,7 +68,7 @@ export function InstallPill() {
       }
     } catch { /* ignore */ }
     setShow(true)
-  }, [])
+  }, [tier])
 
   function handleDismiss(e: React.MouseEvent) {
     e.preventDefault()
@@ -62,7 +81,7 @@ export function InstallPill() {
 
   return (
     <Link
-      href="/mas"
+      href={iosWeb ? "/ios-install" : "/mas"}
       className="cruzar-pill inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full pl-2 pr-1.5 py-1.5 max-w-full"
     >
       <span className="text-base leading-none">📲</span>
