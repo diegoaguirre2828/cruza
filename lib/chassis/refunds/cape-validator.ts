@@ -20,7 +20,7 @@ export function validateCapeCsv(csv: string): { valid: boolean; errors: CapeVali
     });
     return { valid: false, errors };
   }
-  if (lines[0].trim() !== 'Entry Number') {
+  if (lines[0] !== 'Entry Number') {
     errors.push({
       entry_number: '',
       rule_id: 'VAL-F-002',
@@ -47,13 +47,15 @@ export function validateCapeCsv(csv: string): { valid: boolean; errors: CapeVali
 
   const seen = new Set<string>();
   for (let i = 1; i < lines.length; i++) {
-    const entryNumber = lines[i].trim();
-    if (!ENTRY_NUMBER_PATTERN.test(entryNumber)) {
+    const rawLine = lines[i];
+    const hasComma = rawLine.includes(',');
+    const entryNumber = (hasComma ? rawLine.split(',')[0] : rawLine).trim();
+    if (!ENTRY_NUMBER_PATTERN.test(entryNumber) || /^0+$/.test(entryNumber)) {
       errors.push({
         entry_number: entryNumber,
         rule_id: 'VAL-E-014',
         severity: 'error',
-        message: `Entry number must be 14 alphanumeric characters; got "${entryNumber}"`,
+        message: `Entry number must be 14 alphanumeric characters and not all zeros; got "${entryNumber}"`,
       });
     }
     if (seen.has(entryNumber)) {
@@ -65,7 +67,7 @@ export function validateCapeCsv(csv: string): { valid: boolean; errors: CapeVali
       });
     }
     seen.add(entryNumber);
-    if (lines[i].includes(',')) {
+    if (hasComma) {
       errors.push({
         entry_number: entryNumber,
         rule_id: 'VAL-F-005',

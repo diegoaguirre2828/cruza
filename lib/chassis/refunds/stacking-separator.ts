@@ -24,12 +24,20 @@ export function separateStacking(entry: Entry, ieepaPrincipalUsd: number): Stack
   let section232 = 0;
   let section301 = 0;
   let unrelatedDuty = 0;
+  let ieepaCh99HasAmount = false;
 
   for (const line of entry.duty_lines) {
-    if (isIeepaCode(line.htsus_code)) continue;
+    if (isIeepaCode(line.htsus_code)) {
+      if (line.amount_usd > 0) ieepaCh99HasAmount = true;
+      continue;
+    }
     if (isSection232(line.htsus_code)) section232 += line.amount_usd;
     else if (isSection301(line.htsus_code)) section301 += line.amount_usd;
     else if (!line.is_chapter_99) unrelatedDuty += line.amount_usd;
+  }
+
+  if (!ieepaCh99HasAmount && ieepaPrincipalUsd > 0 && unrelatedDuty >= ieepaPrincipalUsd) {
+    unrelatedDuty -= ieepaPrincipalUsd;
   }
 
   return {

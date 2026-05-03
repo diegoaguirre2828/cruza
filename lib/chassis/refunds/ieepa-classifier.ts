@@ -12,7 +12,7 @@ export function classifyEntry(entry: Entry): IeepaClassification {
     const eo = findApplicableEo(entry.country_of_origin, entry.entry_date, code);
     if (eo) {
       matchedCodes.push(code);
-      applicableEo = eo.eo_number;
+      if (!applicableEo) applicableEo = eo.eo_number;
       const rate = getDutyRate(eo, entry.country_of_origin);
       ieepaPrincipal += entry.total_dutiable_value_usd * (rate / 100);
     }
