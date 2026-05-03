@@ -27,7 +27,7 @@ export function usePushNotifications() {
 
     setSupported(true)
     navigator.serviceWorker.register('/sw.js').then(reg => {
-      reg.pushManager.getSubscription().then(sub => {
+      reg.pushManager.getSubscription().then(async sub => {
         setSubscribed(!!sub)
         // Re-sync the existing browser subscription to the server on
         // every mount. Without this, a stale browser subscription
@@ -39,6 +39,28 @@ export function usePushNotifications() {
         // migration) so this is idempotent — duplicate POSTs are
         // no-ops.
         if (sub) {
+          // VAPID-mismatch detection. 2026-05-03 root cause: 4 dead
+          // push_subscriptions rows all returned 403/400 VapidPkHashMismatch
+          // because VAPID was rotated (likely 2026-04-23 security rotation)
+          // but cached browser subscriptions still hold the OLD public key.
+          // Browser thinks it's subscribed; both FCM and Apple reject our
+          // server's payloads silently. Detect by comparing the cached
+          // sub's applicationServerKey to the current env public key —
+          // mismatch = force unsubscribe, clear server row, set state to
+          // un-subscribed so the user can re-grant cleanly.
+          const expectedVapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+          if (expectedVapid && sub.options?.applicationServerKey) {
+            const actualVapid = arrayBufferToBase64Url(sub.options.applicationServerKey)
+            if (actualVapid !== expectedVapid) {
+              trackPushEvent('push_vapid_mismatch', { actual_prefix: actualVapid.slice(0, 16), expected_prefix: expectedVapid.slice(0, 16) })
+              await sub.unsubscribe().catch(() => {})
+              try {
+                await fetch('/api/push/subscribe', { method: 'DELETE', credentials: 'include' })
+              } catch { /* ignore */ }
+              setSubscribed(false)
+              return
+            }
+          }
           const payload = serializeSubscription(sub)
           if (payload && payload.keys.p256dh && payload.keys.auth) {
             fetch('/api/push/subscribe', {
@@ -103,18 +125,34 @@ export function usePushNotifications() {
       const reg = await navigator.serviceWorker.ready
       const existing = await reg.pushManager.getSubscription()
       if (existing) {
-        const payload = serializeSubscription(existing)
-        if (payload && payload.keys.p256dh && payload.keys.auth) {
-          // Server-side row may have been 410-cleaned. Re-POST to be safe.
-          const res = await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          })
-          if (res.ok) {
-            setSubscribed(true); setLoading(false); return
+        // Same VAPID-mismatch check as mount path. If the cached sub's
+        // applicationServerKey doesn't match current env, unsubscribe + fall
+        // through to fresh subscribe below. Skipping this check would re-POST
+        // a dead sub to the server (which would 200 since the keys are
+        // present) but the next push send would 403/400 VapidPkHashMismatch.
+        const expectedVapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        let vapidMatches = true
+        if (expectedVapid && existing.options?.applicationServerKey) {
+          const actualVapid = arrayBufferToBase64Url(existing.options.applicationServerKey)
+          if (actualVapid !== expectedVapid) {
+            vapidMatches = false
+            trackPushEvent('push_vapid_mismatch_on_grant', { actual_prefix: actualVapid.slice(0, 16) })
           }
-          // 4xx/5xx = something's off. Tear down + regenerate below.
+        }
+        if (vapidMatches) {
+          const payload = serializeSubscription(existing)
+          if (payload && payload.keys.p256dh && payload.keys.auth) {
+            // Server-side row may have been 410-cleaned. Re-POST to be safe.
+            const res = await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            })
+            if (res.ok) {
+              setSubscribed(true); setLoading(false); return
+            }
+            // 4xx/5xx = something's off. Tear down + regenerate below.
+          }
         }
         await existing.unsubscribe().catch(() => {})
       }
