@@ -9,6 +9,31 @@ import { NextResponse, type NextRequest } from 'next/server'
 // never runs for them — zero edge invocations, same auth behavior since
 // those routes never needed middleware session refresh anyway.
 
+// 2026-05-03 sister-site split: the iOS App Store build is a Capacitor
+// webview at cruzar.app. Apple Review will reject if it can navigate to
+// any surface that takes external (non-IAP) payment for digital goods —
+// guideline 3.1.1. The existing B2B pages (Insights, Dispatch, Paperwork,
+// Transload, Operator) all surface Stripe checkouts for paid tiers. Until
+// Diego signs the Paid Apps Agreement + IAP for Pro is verified working,
+// we keep iOS as a free-only consumer commuter app and rewrite all B2B
+// routes to /ios-not-available so the reviewer (and iOS users at large)
+// see a friendly "available on web" message instead. Web users are
+// unaffected — the rewrite only fires for User-Agent containing
+// `CruzarIOS` (set by capacitor.config.ts → ios.appendUserAgent).
+const IOS_BLOCKED_ROUTE_PREFIXES = [
+  '/insights',
+  '/dispatch',
+  '/paperwork',
+  '/transload',
+  '/operator',
+]
+
+function isIOSBlockedPath(path: string): boolean {
+  return IOS_BLOCKED_ROUTE_PREFIXES.some(
+    (p) => path === p || path.startsWith(p + '/')
+  )
+}
+
 // Routes that HARD-redirect to /signup when the visitor isn't
 // authenticated. Per Diego's 2026-04-14 late late directive, guests
 // only get the main page (/) — everything else bounces to signup
@@ -47,6 +72,21 @@ function isProtectedPath(path: string): boolean {
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname
+
+  // iOS-app B2B-route gate. Runs BEFORE the auth check + before the
+  // Supabase round-trip — purely a UA + path match. Cheap. If the
+  // request is from CruzarIOS and targets a B2B route, rewrite to the
+  // /ios-not-available page (which renders a friendly "available on
+  // web" message). Rewrite (not redirect) so the URL stays the same
+  // and the user can use the back button normally.
+  const ua = request.headers.get('user-agent') || ''
+  const isIosApp = ua.includes('CruzarIOS')
+  if (isIosApp && isIOSBlockedPath(path)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/ios-not-available'
+    url.searchParams.set('from', path)
+    return NextResponse.rewrite(url)
+  }
 
   // CPU-burn mitigation (2026-04-19): only call Supabase getUser() when the
   // path actually needs the auth check. Public pages (/, /city/[slug],
