@@ -367,7 +367,7 @@ export interface ChassisCallLog {
 
 - [ ] **Step 2: Verify TypeScript compiles**
 
-Run: `npx tsc --noEmit lib/chassis/customs/types.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
@@ -624,7 +624,7 @@ export function ligieTableMetadata() {
 
 - [ ] **Step 4: Verify TypeScript compiles**
 
-Run: `npx tsc --noEmit lib/chassis/customs/ligie-flag.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 5: Smoke-test the lookup**
@@ -1309,7 +1309,7 @@ export async function logChassisCall(call: ChassisCallLog): Promise<void> {
 
 - [ ] **Step 3: Verify TS compiles**
 
-Run: `npx tsc --noEmit lib/calibration.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 4: Commit**
@@ -1559,7 +1559,7 @@ export async function verifyTicket(signed: SignedTicket, publicKeyB64?: string):
 
 - [ ] **Step 4: Verify TS compiles**
 
-Run: `npx tsc --noEmit lib/ticket/json-signer.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 5: Commit**
@@ -1855,7 +1855,7 @@ export async function fetchAndVerifyTicket(ticketId: string, baseUrl = 'https://
 
 - [ ] **Step 2: Verify TS compiles**
 
-Run: `npx tsc --noEmit lib/ticket/verifier.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
@@ -2012,7 +2012,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
 
 - [ ] **Step 2: Verify TS compiles**
 
-Run: `npx tsc --noEmit lib/ticket/generate.ts`
+Run: `npx tsc --noEmit -p tsconfig.json`
 Expected: no errors.
 
 - [ ] **Step 3: Commit**
