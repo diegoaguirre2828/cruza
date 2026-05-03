@@ -5,26 +5,45 @@ import * as Sentry from '@sentry/nextjs'
 
 export const dynamic = 'force-dynamic'
 
-// Supabase OAuth (Google) PKCE callback.
-//
-// Without this route, Google signups fail silently in a couple of ways:
-//   1. The client-side SDK has to detect the ?code= param and exchange it,
-//      but by then Vercel has already served the /dashboard page with an
-//      unauthenticated middleware pass, and the user bounces back to login.
-//   2. Implicit-flow fallback loses the session on some browsers that
-//      strip URL fragments.
-//
-// This route runs server-side, exchanges the PKCE code for a session,
-// writes the cookie, and only then redirects to the final destination.
+// Supabase OAuth PKCE callback. Handles Google + Apple (and any future
+// OAuth provider). Runs server-side, exchanges the PKCE code for a
+// session, writes the cookie, then redirects to the final destination.
 // Official Supabase pattern for Next.js App Router.
+//
+// Provider-error capture (added 2026-05-03 evening for the Apple "Sign
+// up not complete" debugging): if the OAuth provider redirects here
+// with `error=...&error_description=...` instead of a code (Apple does
+// this when its Services ID is misconfigured, the user cancels, or the
+// nonce/state validation fails server-side), we surface the verbatim
+// provider error in Sentry + the user-facing /login page rather than
+// silently treating it as "missing_code". Without this, Apple
+// rejections were invisible — Apple POSTs the error to Supabase's
+// callback (not ours), Supabase logs nothing, and the user just sees
+// Apple's "Sign up not complete" page with no trail in our system.
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-  // New signups and first-time OAuth logins land on /welcome so they hit
-  // the mandatory alert-setup step. The /welcome page auto-redirects to
-  // /dashboard if the user already has an alert, so returning users
-  // bypass it transparently.
   const next = searchParams.get('next') || '/welcome'
+
+  // Provider-error short-circuit. Capture verbatim before code-presence
+  // logic so a `?error=...&error_description=...` redirect never falls
+  // through to the missing-code branch.
+  const oauthError = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+  if (oauthError) {
+    console.error('auth/callback: provider returned error', {
+      error: oauthError,
+      error_description: errorDescription,
+      url: req.url,
+    })
+    Sentry.captureMessage('OAuth provider returned error', {
+      level: 'error',
+      tags: { auth_path: 'oauth_provider_error', error: oauthError },
+      extra: { error: oauthError, error_description: errorDescription, full_url: req.url },
+    })
+    const friendly = errorDescription || oauthError
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(friendly)}`)
+  }
 
   if (code) {
     const cookieStore = await cookies()

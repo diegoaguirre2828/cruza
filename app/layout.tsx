@@ -13,7 +13,6 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { ChunkErrorReload } from "@/components/ChunkErrorReload";
 import { LazyGlobalOverlays } from "@/components/LazyGlobalOverlays";
 import { RevenueCatInit } from "@/components/RevenueCatInit";
-import { SocialLoginInit } from "@/components/SocialLoginInit";
 import { FirstOpenTracker } from "@/components/FirstOpenTracker";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -117,7 +116,6 @@ export default function RootLayout({
             {/* All non-critical overlays mount idle, after first paint */}
             <LazyGlobalOverlays />
             <RevenueCatInit />
-            <SocialLoginInit />
             <FirstOpenTracker />
             </FavoritesProvider>
           </SWRProvider>

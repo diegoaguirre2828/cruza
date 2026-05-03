@@ -1,51 +1,51 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/auth'
 import { useLang } from '@/lib/LangContext'
 import { isIOSAppClient } from '@/lib/platform'
-import { signInWithAppleNative } from '@/lib/socialLogin'
 
-// Apple Sign-In button.
+// Sign in with Apple — pure Supabase OAuth, web only.
 //
-// CURRENTLY DISABLED on ALL surfaces (returns null post-mount).
+// Rebuilt from scratch 2026-05-03 evening after multiple half-fixes.
+// Prior versions carried a Capacitor native SIWA path (@capgo/capacitor-
+// social-login) that we never use anymore: the iOS app hides the button
+// entirely (Apple Review prep — see proxy.ts sister-site split + the
+// isIOSAppClient self-hide below). Removing that dead path stripped 60
+// lines of plugin glue, the SocialLoginInit boot wrapper, the
+// /api/log/ios-siwa-failure logging route, and the
+// @capgo/capacitor-social-login dependency assumption. Single canonical
+// path now: web OAuth via Supabase.
 //
-// iOS native path: telemetry from build 1.0(21) shows the
-// @capgo/capacitor-social-login call throws AuthorizationError code 1000
-// (ASAuthorizationErrorUnknown) before any identity token is produced —
-// Supabase never enters the flow. Root cause is upstream of all our code:
-// App ID `app.cruzar.ios` SIWA capability + provisioning profile.
+// Web OAuth is wired against Apple Services ID `app.cruzar.web` (commit
+// 6bd4182, 2026-05-03 morning). Configuration on Apple's side:
+//   - Services ID `app.cruzar.web` grouped with primary App ID
+//     `7G5YNXPHWZ.app.cruzar.ios`
+//   - Domain: cruzar.app
+//   - Return URL: https://syxnylngrtogrnkfaxew.supabase.co/auth/v1/callback
+// Configuration on Supabase's side:
+//   - Apple provider enabled, Client IDs include `app.cruzar.web`
+//   - Apple JWT secret generated from Apple .p8 (Key ID 8P87RKFSB4)
 //
-// Web/PWA path: Services ID app.cruzar.web + Supabase Apple provider were
-// wired 2026-05-03 (commit 6bd4182). Services ID config saved with domain
-// + Supabase callback as Return URL. Diego configured + saved 2026-05-03
-// evening. Despite the dashboard showing "(2 Website URLs)" saved,
-// Supabase auth logs at 22:03 UTC and 22:59 UTC show 4 attempts each ending
-// with `/authorize → 302 to Apple` but no `/token` exchange — meaning
-// Apple is rejecting before redirecting back. User sees "Sign up not
-// complete" on Apple's own page. Cause unknown without Apple Dev Support
-// (1-800-633-2152, Mon-Fri 6am-5pm Pacific) — could be edge-cache
-// propagation, missing Email Communication source config, or an
-// account-level quirk.
-//
-// Hide everywhere until Apple Support diagnoses + Services ID config is
-// repaired. Re-enable by removing the early-return below.
+// If you're debugging "Sign up not complete" or any Apple-side error,
+// the failure is upstream — Apple's side rejects before redirecting the
+// code to Supabase, so neither the Supabase auth log nor our
+// /auth/callback ever sees it. Diagnose via Apple Developer Support
+// (1-800-633-2152). Apple-side configuration cannot be inspected via API.
 
 export function AppleButton({
   label,
   next = '/welcome',
 }: { label?: string; next?: string }) {
   const { lang } = useLang()
-  const router = useRouter()
   const es = lang === 'es'
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Defer ALL render until after mount + iOS check so the button never
-  // appears in SSR HTML on iOS — Apple Review's webview can't catch a
-  // 1-frame flash of an unclickable Apple button. Web/PWA users get a
-  // ~1-frame delay on first paint which is invisible at human latency.
+  // Defer render until post-mount so SSR HTML never includes the button
+  // on iOS app (Apple Review's webview can't catch a 1-frame flash of an
+  // unclickable Apple button). Web/PWA users get a ~1-frame delay on
+  // first paint which is invisible at human latency.
   const [ready, setReady] = useState(false)
   const [hideOnIOS, setHideOnIOS] = useState(false)
 
@@ -55,34 +55,10 @@ export function AppleButton({
   }, [])
 
   if (!ready || hideOnIOS) return null
-  // 2026-05-03 evening — pending Apple Dev Support diagnosis. Hide
-  // everywhere. Remove this line when Services ID config is repaired.
-  return null
 
   async function handleApple() {
     setError(null)
     setLoading(true)
-
-    // iOS native path — opens the Apple system sheet, exchanges the
-    // returned identity token with Supabase, and we navigate locally.
-    if (isIOSAppClient()) {
-      const result = await signInWithAppleNative()
-      if (!result.ok) {
-        // Apple Review flagged the raw error string ("apple_no_identity_token"
-        // or Supabase JWT decode messages) on build 1.0(21). Show a
-        // user-friendly message and let the caller fall back to email
-        // signup; never expose the diagnostic code to the reviewer.
-        setError(es
-          ? 'No pudimos completar el inicio con Apple. Intenta de nuevo o usa correo.'
-          : 'We couldn\'t complete Apple sign-in. Try again or use email.')
-        setLoading(false)
-        return
-      }
-      router.push(next)
-      return
-    }
-
-    // Web / PWA path — Supabase OAuth redirect.
     try {
       const supabase = createClient()
       const origin = typeof window !== 'undefined'
@@ -93,6 +69,10 @@ export function AppleButton({
         provider: 'apple',
         options: {
           redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+          // skipBrowserRedirect: true → Supabase returns the OAuth URL
+          // instead of navigating automatically. We assign manually with
+          // window.location.assign which is more reliable than the
+          // default href-set in PWA standalone mode.
           skipBrowserRedirect: true,
         },
       })
