@@ -39,6 +39,7 @@
     "verify:fee-calculator": "npx tsx scripts/verify-fee-calculator.mjs",
     "verify:refunds-orchestrator": "npx tsx scripts/verify-refunds-orchestrator.mjs",
     "verify:ofac-sdn": "npx tsx scripts/verify-ofac-sdn.mjs",
+    "verify:eudamed": "npx tsx scripts/verify-eudamed-composer.mjs",
     "audit:module-14": "node scripts/run-module-14-audit.mjs"
   },
   "dependencies": {

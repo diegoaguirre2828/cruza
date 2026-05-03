@@ -1,0 +1,160 @@
+[
+  {
+    "label": "Class III implant — German manufacturer with valid SRN + NB 0123",
+    "input": {
+      "actor": {
+        "legal_name": "Medtech GmbH",
+        "trade_name": "Medtech",
+        "role": "manufacturer",
+        "srn": "DE-MF-000012345",
+        "registration_country_iso": "DE",
+        "vat_or_tax_id": "DE123456789",
+        "address": { "street": "Musterstrasse 1", "city": "Berlin", "postal_code": "10115", "country_iso": "DE" },
+        "contact_email": "compliance@medtech.de"
+      },
+      "devices": [
+        {
+          "udi_di": { "issuing_agency": "GS1", "di_value": "00614141999996", "brand_name": "CardioFlex", "model_or_reference_number": "CF-3000" },
+          "udi_pi": { "serial_number": "SN-2026-A0001", "expiry_date": "2031-04-30", "manufacturing_date": "2026-04-15" },
+          "gmdn_code": "35291",
+          "gmdn_term": "Heart valve, mechanical",
+          "risk_class": "III",
+          "is_sterile": true,
+          "has_measuring_function": false,
+          "is_active_implantable": false,
+          "notified_body_id": "0123",
+          "ce_marking_status": "declared",
+          "manufacturer_catalogue_number": "CAT-CF-3000"
+        }
+      ]
+    },
+    "expected": { "actor_ready": true, "device_count": 1, "ready_count": 1, "blocked_count": 0 }
+  },
+  {
+    "label": "Non-EU manufacturer (Mexico) WITHOUT EU AR — should warn",
+    "input": {
+      "actor": {
+        "legal_name": "Reynosa Medtronic Maquila SA de CV",
+        "role": "manufacturer",
+        "srn": null,
+        "registration_country_iso": "MX",
+        "address": { "street": "Av. Industrial 123", "city": "Reynosa", "postal_code": "88500", "country_iso": "MX" },
+        "contact_email": "compliance@reynosa-mt.mx"
+      },
+      "devices": []
+    },
+    "expected": { "actor_ready": false, "device_count": 0, "ready_count": 0, "blocked_count": 0 }
+  },
+  {
+    "label": "Class I non-sterile bandage — no NB required, all OK",
+    "input": {
+      "actor": {
+        "legal_name": "Simple Bandage SRL",
+        "role": "manufacturer",
+        "srn": "IT-MF-000099999",
+        "registration_country_iso": "IT",
+        "address": { "street": "Via Roma 1", "city": "Milan", "postal_code": "20121", "country_iso": "IT" },
+        "contact_email": "ops@simplebandage.it"
+      },
+      "devices": [
+        {
+          "udi_di": { "issuing_agency": "GS1", "di_value": "00614141111114", "brand_name": "BandSimple", "model_or_reference_number": "BS-100" },
+          "udi_pi": { "lot_number": "LOT-2026-B" },
+          "gmdn_code": "12345",
+          "gmdn_term": "Adhesive bandage",
+          "risk_class": "I",
+          "is_sterile": false,
+          "has_measuring_function": false,
+          "is_active_implantable": false,
+          "notified_body_id": null,
+          "ce_marking_status": "declared"
+        }
+      ]
+    },
+    "expected": { "actor_ready": true, "device_count": 1, "ready_count": 1, "blocked_count": 0 }
+  },
+  {
+    "label": "Class IIb infusion pump WITHOUT NB — should fail device validation",
+    "input": {
+      "actor": {
+        "legal_name": "Pump Co GmbH",
+        "role": "manufacturer",
+        "srn": "DE-MF-000088888",
+        "registration_country_iso": "DE",
+        "address": { "street": "Hauptstr 5", "city": "Munich", "postal_code": "80331", "country_iso": "DE" },
+        "contact_email": "regs@pumpco.de"
+      },
+      "devices": [
+        {
+          "udi_di": { "issuing_agency": "GS1", "di_value": "00614141222229", "brand_name": "FlowMax", "model_or_reference_number": "FM-200" },
+          "udi_pi": { "lot_number": "LOT-A", "expiry_date": "2027-12-31" },
+          "gmdn_code": "47890",
+          "gmdn_term": "Infusion pump",
+          "risk_class": "IIb",
+          "is_sterile": false,
+          "has_measuring_function": true,
+          "is_active_implantable": false,
+          "notified_body_id": null,
+          "ce_marking_status": "declared"
+        }
+      ]
+    },
+    "expected": { "actor_ready": true, "device_count": 1, "ready_count": 0, "blocked_count": 1 }
+  },
+  {
+    "label": "GTIN with invalid check digit",
+    "input": {
+      "actor": {
+        "legal_name": "Test Co",
+        "role": "manufacturer",
+        "srn": "FR-MF-000000001",
+        "registration_country_iso": "FR",
+        "address": { "street": "Rue Test 1", "city": "Paris", "postal_code": "75001", "country_iso": "FR" },
+        "contact_email": "test@test.fr"
+      },
+      "devices": [
+        {
+          "udi_di": { "issuing_agency": "GS1", "di_value": "00614141999990", "brand_name": "BadGTIN", "model_or_reference_number": "BG-1" },
+          "udi_pi": { "lot_number": "LOT-X" },
+          "gmdn_code": "11111",
+          "gmdn_term": "Test device",
+          "risk_class": "I",
+          "is_sterile": false,
+          "has_measuring_function": false,
+          "is_active_implantable": false,
+          "notified_body_id": null,
+          "ce_marking_status": "declared"
+        }
+      ]
+    },
+    "expected": { "actor_ready": true, "device_count": 1, "ready_count": 0, "blocked_count": 1 }
+  },
+  {
+    "label": "CE marking expired — should fail",
+    "input": {
+      "actor": {
+        "legal_name": "ExpiredCert SRL",
+        "role": "manufacturer",
+        "srn": "ES-MF-000000077",
+        "registration_country_iso": "ES",
+        "address": { "street": "Calle 1", "city": "Madrid", "postal_code": "28001", "country_iso": "ES" },
+        "contact_email": "regs@expired.es"
+      },
+      "devices": [
+        {
+          "udi_di": { "issuing_agency": "GS1", "di_value": "00614141999996", "brand_name": "OldDevice", "model_or_reference_number": "OD-1" },
+          "udi_pi": { "lot_number": "LOT-Y" },
+          "gmdn_code": "22222",
+          "gmdn_term": "Old device",
+          "risk_class": "I",
+          "is_sterile": false,
+          "has_measuring_function": false,
+          "is_active_implantable": false,
+          "notified_body_id": null,
+          "ce_marking_status": "expired"
+        }
+      ]
+    },
+    "expected": { "actor_ready": true, "device_count": 1, "ready_count": 0, "blocked_count": 1 }
+  }
+]
