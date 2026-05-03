@@ -1,12 +1,15 @@
 // lib/chassis/refunds/fee-calculator.ts
-// Sliding scale: 5% on first $50K, 3% on $50K-$500K, 1.5% above. $99 floor.
-// Free if zero recovery.
+// Flat 8% platform fee on refunds processed through Cruzar's filing platform.
+// $99 floor on any successful refund. Free if recovery is zero (failed/expired
+// filings — same way payment processors don't bill on declined transactions).
+// This is a PLATFORM FEE on transaction value, not a contingency fee on outcome.
+
+const PLATFORM_FEE_RATE = 0.08;
+const PLATFORM_FEE_FLOOR_USD = 99;
 
 export function calculateCruzarFee(recoveryUsd: number): number {
   if (recoveryUsd <= 0) return 0;
-  let fee = 0;
-  fee += Math.min(recoveryUsd, 50_000) * 0.05;
-  fee += Math.min(Math.max(recoveryUsd - 50_000, 0), 450_000) * 0.03;
-  fee += Math.max(recoveryUsd - 500_000, 0) * 0.015;
-  return Math.max(Math.round(fee * 100) / 100, 99);
+  const raw = recoveryUsd * PLATFORM_FEE_RATE;
+  const rounded = Math.round(raw * 100) / 100;
+  return Math.max(rounded, PLATFORM_FEE_FLOOR_USD);
 }

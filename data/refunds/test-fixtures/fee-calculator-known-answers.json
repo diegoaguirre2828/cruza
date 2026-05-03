@@ -2,9 +2,11 @@
   { "recovery_usd": 0,       "expected_fee_usd": 0 },
   { "recovery_usd": -500,    "expected_fee_usd": 0 },
   { "recovery_usd": 500,     "expected_fee_usd": 99 },
-  { "recovery_usd": 1980,    "expected_fee_usd": 99 },
-  { "recovery_usd": 50000,   "expected_fee_usd": 2500 },
-  { "recovery_usd": 100000,  "expected_fee_usd": 4000 },
-  { "recovery_usd": 500000,  "expected_fee_usd": 16000 },
-  { "recovery_usd": 1000000, "expected_fee_usd": 23500 }
+  { "recovery_usd": 1237,    "expected_fee_usd": 99 },
+  { "recovery_usd": 1238,    "expected_fee_usd": 99.04 },
+  { "recovery_usd": 50000,   "expected_fee_usd": 4000 },
+  { "recovery_usd": 100000,  "expected_fee_usd": 8000 },
+  { "recovery_usd": 500000,  "expected_fee_usd": 40000 },
+  { "recovery_usd": 1000000, "expected_fee_usd": 80000 },
+  { "recovery_usd": 2500000, "expected_fee_usd": 200000 }
 ]

@@ -95,11 +95,10 @@ export default async function RefundsLandingPage({
             {c.landing.pricing.eyebrow}
           </div>
           <ul className="mt-6 max-w-2xl space-y-2 text-[15px] text-white/75">
-            <li>· {c.landing.pricing.tier1}</li>
-            <li>· {c.landing.pricing.tier2}</li>
-            <li>· {c.landing.pricing.tier3}</li>
+            <li>· {c.landing.pricing.rate}</li>
             <li>· {c.landing.pricing.floor}</li>
-            <li className="pt-2 text-amber-200">· {c.landing.pricing.free}</li>
+            <li>· {c.landing.pricing.no_fee}</li>
+            <li className="pt-2 text-amber-200">· {c.landing.pricing.no_retainer}</li>
           </ul>
           <div className="mt-8">
             <Link

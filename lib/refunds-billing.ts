@@ -55,7 +55,7 @@ export async function chargeForRefund(
     customer: customerId,
     amount: Math.round(feeUsd * 100),
     currency: 'usd',
-    description: `Cruzar IEEPA refund composer fee (claim #${claimId}) — sliding-scale on $${refundReceivedUsd.toFixed(2)} confirmed recovery`,
+    description: `Cruzar platform fee — 8% of refund processed through filing platform (claim #${claimId}, refund $${refundReceivedUsd.toFixed(2)})`,
     metadata: { claim_id: String(claimId), user_id: userId, recovery_usd: String(refundReceivedUsd) },
   });
 
