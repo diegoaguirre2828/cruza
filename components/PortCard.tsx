@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { Share2, Check, Star, Bell } from 'lucide-react'
+import { Share2, Check, Star, Bell, Megaphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { BridgeAlertSheet } from './BridgeAlertSheet'
+import { BridgeReportSheet } from './BridgeReportSheet'
 import { tapLight, tapSelection, tapSuccess } from '@/lib/haptics'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
@@ -59,6 +60,7 @@ export function PortCard({ port, signal }: Props) {
   const [shared, setShared] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [showAlertSheet, setShowAlertSheet] = useState(false)
+  const [showReportSheet, setShowReportSheet] = useState(false)
   // Moments-of-want signup modal — opens when guests tap the inline 🔔
   // (alert) or ⭐ (favorite) buttons. Replaces the redirect-to-/signup
   // pattern with an inline modal that captures the specific user gesture.
@@ -300,6 +302,14 @@ export function PortCard({ port, signal }: Props) {
               <Bell className="w-4 h-4" />
             </button>
             <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); tapLight(); setShowReportSheet(true) }}
+              className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-emerald-500 flex-shrink-0"
+              title={lang === 'es' ? 'Reportar estado' : 'Report status'}
+              aria-label={lang === 'es' ? 'Reportar estado' : 'Report status'}
+            >
+              <Megaphone className="w-4 h-4" />
+            </button>
+            <button
               onClick={handleShare}
               className="cruzar-press-sm p-2 rounded-lg bg-white dark:bg-gray-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
               title="Share wait times"
@@ -498,6 +508,12 @@ export function PortCard({ port, signal }: Props) {
       <BridgeAlertSheet
         open={showAlertSheet}
         onClose={() => setShowAlertSheet(false)}
+        portId={port.portId}
+        portName={port.portName}
+      />
+      <BridgeReportSheet
+        open={showReportSheet}
+        onClose={() => setShowReportSheet(false)}
         portId={port.portId}
         portName={port.portName}
       />

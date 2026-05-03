@@ -30,6 +30,7 @@ import { ConversionRibbon } from '@/components/ConversionRibbon'
 import { HomeSwipe, type SwipePanel } from '@/components/HomeSwipe'
 import { OneTapAlertCard } from '@/components/OneTapAlertCard'
 import { ReportBridgePrompt } from '@/components/ReportBridgePrompt'
+import { StreakImpactPill } from '@/components/StreakImpactPill'
 import { InsightsPill } from '@/components/InsightsPill'
 
 // PERF: below-the-fold + conditional surfaces split into their own
@@ -317,6 +318,9 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
   // wait app not a community thing."
   const cercaPanel = (
     <>
+      <div className="flex items-center justify-end mb-2">
+        <StreakImpactPill />
+      </div>
       <LiveActivityTicker initialReports={initialReports} />
       {/* Live cameras entry — pairs visually with LiveActivityTicker so
           'watch the line' + 'see what people are saying' sit together.
