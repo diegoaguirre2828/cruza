@@ -340,7 +340,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       <UrgentAlerts initialReports={initialReports} />
       <SavedCrossings initialPorts={initialPorts} />
       <div id="port-list" />
-      <PortList />
+      <PortList initialPorts={initialPorts} />
       <SocialProofStrip />
     </>
   )
@@ -523,7 +523,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
                 <ExchangeRatePill />
                 <WeatherHook variant="pill" />
               </div>
-              {/* Personal status pills — Guardian progress + Circles +
+              {/* Personal status pills — Guardian progress +
                   daily contribution + (Pro only) Insights shortcut.
                   Always-visible in the header so the user feels the
                   gamification loop on every screen, not buried inside

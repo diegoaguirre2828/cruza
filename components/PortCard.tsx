@@ -242,44 +242,42 @@ export function PortCard({ port, signal }: Props) {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {primaryWait !== null && (
-              <div className="text-right">
-                {primaryWait === 0 ? (
-                  <span className="text-base font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-xl">&lt;1 min</span>
-                ) : primaryWait >= 60 ? (
-                  <>
-                    <div>
-                      <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
-                        {Math.floor(primaryWait / 60)}
-                        <span className="text-lg text-gray-500 dark:text-gray-400">h</span>
-                        {primaryWait % 60 > 0 && (
-                          <>
-                            {' '}
-                            <span>{primaryWait % 60}</span>
-                            <span className="text-lg text-gray-500 dark:text-gray-400">m</span>
-                          </>
-                        )}
-                      </span>
-                    </div>
-                    {carsAhead !== null && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{t.carsAhead(carsAhead)}</p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{primaryWait}</span>
-                      <span className="text-sm text-gray-400 dark:text-gray-500 ml-1">min</span>
-                    </div>
-                    {carsAhead !== null && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{t.carsAhead(carsAhead)}</p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+          {primaryWait !== null && (
+            <div className="text-right">
+              {primaryWait === 0 ? (
+                <span className="text-base font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-xl">&lt;1 min</span>
+              ) : primaryWait >= 60 ? (
+                <>
+                  <div>
+                    <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">
+                      {Math.floor(primaryWait / 60)}
+                      <span className="text-lg text-gray-500 dark:text-gray-400">h</span>
+                      {primaryWait % 60 > 0 && (
+                        <>
+                          {' '}
+                          <span>{primaryWait % 60}</span>
+                          <span className="text-lg text-gray-500 dark:text-gray-400">m</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                  {carsAhead !== null && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{t.carsAhead(carsAhead)}</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-3xl font-bold text-gray-900 dark:text-gray-100 tabular-nums">{primaryWait}</span>
+                    <span className="text-sm text-gray-400 dark:text-gray-500 ml-1">min</span>
+                  </div>
+                  {carsAhead !== null && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 text-right">{t.carsAhead(carsAhead)}</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Action button row — separated from the top wait-number cluster

@@ -74,29 +74,11 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    titleEs: 'Con tu gente',
-    titleEn: 'With your people',
-    subtitleEs: 'Que tu familia sepa cuando cruzas — sin mandar mensajes',
-    subtitleEn: "Let your family know when you cross — without texting",
+    titleEs: 'Recompensas',
+    titleEn: 'Rewards',
+    subtitleEs: 'Tus reportes valen — canjea puntos por descuentos del lado mexicano',
+    subtitleEn: 'Your reports earn rewards — redeem points for deals on the Mexican side',
     features: [
-      {
-        href: '/dashboard?tab=circle',
-        emoji: '👥',
-        titleEs: 'Mi Gente (círculos)',
-        titleEn: 'My People (circles)',
-        lineEs: 'Invita a tu mamá, esposa, hijos — les llega alerta cuando cruzas',
-        lineEn: 'Invite mom, spouse, kids — they get an alert when you cross',
-        badge: 'free',
-      },
-      {
-        href: '/dashboard?tab=circle',
-        emoji: '📍',
-        titleEs: 'Avisa que estás en el puente',
-        titleEn: 'Ping that you\'re at the bridge',
-        lineEs: 'Un botón en el puente → tu gente sabe que ya llegaste',
-        lineEn: 'One tap at the bridge → your people know you made it',
-        badge: 'free',
-      },
       {
         href: '/rewards',
         emoji: '🎁',

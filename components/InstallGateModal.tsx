@@ -24,7 +24,7 @@ import { detectOs, detectInstallState } from '@/lib/detectClient'
 //   }
 //   return <>{gate}<Button onClick={enableAlerts}>...</Button></>
 
-export type InstallGateReason = 'alerts' | 'push' | 'favorites' | 'circle'
+export type InstallGateReason = 'alerts' | 'push' | 'favorites'
 
 interface Props {
   open: boolean
@@ -55,10 +55,6 @@ export function InstallGateModal({ open, reason, onClose }: Props) {
     favorites: {
       es: 'Pa\' guardar tus favoritos y acceder rápido',
       en: 'To save your favorites for quick access',
-    },
-    circle: {
-      es: 'Pa\' que tu círculo te avise cuando cruces',
-      en: 'To let your circle know when you cross',
     },
   }[reason]
 

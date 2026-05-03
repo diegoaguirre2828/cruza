@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Star } from 'lucide-react'
 import { PortCard } from '@/components/PortCard'
+import { BridgeLoader } from '@/components/BridgeLoader'
 import { useAuth } from '@/lib/useAuth'
 import { useFavorites } from '@/lib/useFavorites'
 import { useLang } from '@/lib/LangContext'
@@ -61,11 +62,7 @@ export default function FavoritesPage() {
 
       <main className="max-w-2xl mx-auto px-4 py-4 pb-24">
         {!isReady ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl h-28 animate-pulse" />
-            ))}
-          </div>
+          <BridgeLoader />
         ) : !signedIn ? (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-10">
             {lang === 'es' ? 'Inicia sesión para ver tus favoritos.' : 'Sign in to see your favorites.'}

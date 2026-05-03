@@ -20,6 +20,7 @@ const HIDDEN_PATHS = [
   '/checkin',
   '/admin',
   '/ios-install',
+  // '/onboarding' removed 2026-05-02 — page does not exist; was dead config.
 ]
 
 export function BottomNav() {

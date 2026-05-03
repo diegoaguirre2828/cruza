@@ -5,21 +5,19 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
 
-// 4-screen post-welcome tour. Fires exactly once on /dashboard when the
-// user arrives from /welcome (?welcomed=1). Purpose: surface the
-// features that are buried 2+ taps deep (circles, reports/guardian)
-// while the user is already in a "just finished setup, what's next"
-// mood.
+// 3-screen post-welcome tour. Fires exactly once on /dashboard when the
+// user arrives from /welcome (?welcomed=1). Surfaces buried features
+// while the user is in a "just finished setup, what's next" mood.
 //
 // Card order matches the natural retention ladder:
 //   1. Saved bridge     — celebrate the setup they just did
 //   2. Alerts           — remind them push is wired up
-//   3. Circles          — teach the Life360 feature (biggest surfacing gap)
-//   4. Reports          — recruit them into the Guardian loop
+//   3. Reports          — recruit them into the Guardian loop
+//
+// Circle card removed 2026-05-02 with the circles feature kill.
 //
 // Dismissible via X or "Skip." Once dismissed or completed, the
-// localStorage flag sticks and the tour never re-fires. Survives route
-// changes because it lives inside /dashboard.
+// localStorage flag sticks and the tour never re-fires.
 
 const STORAGE_KEY = 'cruzar_post_welcome_tour_v1'
 
@@ -52,16 +50,6 @@ const CARDS: Card[] = [
     bodyEn: "We'll ping your phone when the line drops — no more checking.",
     ctaEs: 'Siguiente',
     ctaEn: 'Next',
-  },
-  {
-    emoji: '👥',
-    titleEs: 'Invita a tu gente',
-    titleEn: 'Invite your people',
-    bodyEs: 'Crea un círculo y tu mamá, esposa e hijos saben cuando cruzas — sin mensajes.',
-    bodyEn: 'Create a circle and mom, spouse, and kids know when you cross — no texts.',
-    ctaEs: 'Crear círculo',
-    ctaEn: 'Create circle',
-    href: '/dashboard?tab=circle',
   },
   {
     emoji: '🏆',

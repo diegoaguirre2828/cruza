@@ -77,29 +77,11 @@ function formatHour(hour: number): string {
 //     view (the feature is paid-for; they need to find it)
 //   - saved_bridge_invite_circle: armed in HomeClient when a user
 //     saves their first bridge (reused from home)
-const PORT_DETAIL_NUDGES: NudgeSpec[] = [
-  // 'alerts_for_this_bridge' nudge removed 2026-05-02 per Diego —
-  // FirstAlertNudge (auto-fires on 2nd visit) + the bell icon in
-  // header + the BridgeAlertSheet cover this. Stacking them was noise.
-  // 'saved_bridge_invite_circle' removed — circles feature killed.
-  // 'try_route_optimizer' nudge promoted out of the buried
-  // PriorityNudge feed 2026-05-02 — now lives as a slim pill in the
-  // page header next to the lane chips. The PORT_DETAIL_NUDGES array
-  // is kept (some consumers depend on its truthy length) but rendered
-  // empty so the visible feed stays clean.
-  {
-    nudgeKey: '_placeholder_unused',
-    emoji: '·',
-    titleEs: '',
-    titleEn: '',
-    subEs: '',
-    subEn: '',
-    ctaEs: '',
-    ctaEn: '',
-    href: '/planner',
-    tone: 'green',
-  },
-]
+// PORT_DETAIL_NUDGES emptied 2026-05-02 — try_route_optimizer is now
+// a header pill, alerts_for_this_bridge is the FirstAlertNudge auto-
+// drawer, saved_bridge_invite_circle is gone with the circles kill.
+// Array intentionally empty so PriorityNudge renders nothing here.
+const PORT_DETAIL_NUDGES: NudgeSpec[] = []
 
 export function PortDetailClient({ port, portId }: Props) {
   const { user, loading: authLoading } = useAuth()
@@ -319,7 +301,7 @@ export function PortDetailClient({ port, portId }: Props) {
   }
 
   const chartData = history.map((r) => ({
-    time: new Date(r.recorded_at).toLocaleTimeString('en-US', {
+    time: new Date(r.recorded_at).toLocaleTimeString(lang === 'es' ? 'es-MX' : 'en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -436,7 +418,7 @@ export function PortDetailClient({ port, portId }: Props) {
   const predictionChartData = predictions
     .filter(p => p.predictedWait !== null)
     .map(p => ({
-      time: new Date(p.datetime).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+      time: new Date(p.datetime).toLocaleTimeString(lang === 'es' ? 'es-MX' : 'en-US', { hour: 'numeric', hour12: true }),
       predicted: p.predictedWait,
       confidence: p.confidence,
     }))

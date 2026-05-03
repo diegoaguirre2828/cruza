@@ -51,6 +51,20 @@ export function usePushNotifications() {
   }, [])
 
   async function subscribe() {
+    // 30s in-flight lock — guards against multiple grant prompts firing
+    // concurrently when the user taps the bell while FirstAlertNudge or
+    // PushPermissionPrompt is already mid-flight. iOS only ever shows
+    // one native prompt, but the JS layer was triggering 2-3 sheets
+    // back-to-back. Diego 2026-05-02 audit HIGH #4.
+    try {
+      const flag = typeof window !== 'undefined' ? localStorage.getItem('cruzar_push_grant_in_flight') : null
+      if (flag) {
+        const ts = parseInt(flag, 10)
+        if (Number.isFinite(ts) && Date.now() - ts < 30_000) return
+      }
+      if (typeof window !== 'undefined') localStorage.setItem('cruzar_push_grant_in_flight', String(Date.now()))
+    } catch { /* ignore */ }
+
     setLoading(true)
     try {
       // Ensure permission is granted (will prompt the user if default)
@@ -97,6 +111,7 @@ export function usePushNotifications() {
     } catch (err) {
       console.error('Push subscribe error:', err)
     }
+    try { if (typeof window !== 'undefined') localStorage.removeItem('cruzar_push_grant_in_flight') } catch { /* ignore */ }
     setLoading(false)
   }
 

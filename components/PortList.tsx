@@ -43,28 +43,33 @@ const MEX_CROSSINGS = [
   { portId: '250601', name: 'Otay Mesa' },
 ]
 
-export function PortList() {
+interface PortListProps {
+  initialPorts?: PortWaitTime[] | null
+}
+
+export function PortList({ initialPorts }: PortListProps = {}) {
   const { t, lang } = useLang()
   const { tier } = useTier()
   const { homeRegion, loading: regionLoading } = useHomeRegion()
   const { favorites, signedIn: hasAccount } = useFavorites()
   const isBusiness = tier === 'business'
-  // Scope the visible list to the user's home mega region unless they
-  // are business tier (fleets cross multiple regions and need the full
-  // picture). homeRegion === null means "show all", so no scoping.
-  // Per Diego 2026-04-14 late: the home page is ONLY the user's region.
-  // To browse other regions, users tap into /todos (read-only all bridges).
   const scopeActive = !isBusiness && homeRegion != null
-  // Hydrate from the localStorage cache on first render so even a
-  // cold-offline load shows data. The network fetch below still
-  // fires and replaces this with fresh data when possible.
+  // Hydration order: SSR-passed initialPorts > localStorage cache > [].
+  // Avoids the BridgeLoader flash on cold load when the server already
+  // had a fresh /api/ports response (Diego 2026-05-02 audit CRITICAL #3).
   const [ports, setPorts] = useState<PortWaitTime[]>(() => {
+    if (initialPorts && initialPorts.length > 0) return initialPorts
     if (typeof window === 'undefined') return []
     return loadCachedPorts()?.ports ?? []
   })
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [cbpUpdatedAt, setCbpUpdatedAt] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Skip the loader when SSR already gave us numbers — the SWR layer will
+  // refresh in the background, but the user sees data instantly.
+  const [loading, setLoading] = useState(() => {
+    if (initialPorts && initialPorts.length > 0) return false
+    return true
+  })
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
