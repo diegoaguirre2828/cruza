@@ -58,16 +58,20 @@ export function GoogleButton({
   // SIWA when ANOTHER 3rd-party provider is shown — so we have to hide
   // Google in lockstep with AppleButton's iOS gate, otherwise the
   // reviewer rejects under 4.8 the moment SIWA is gone.
+  // Defer all render until post-mount so iOS never sees the button in
+  // SSR HTML. Symmetric with AppleButton.
+  const [ready, setReady] = useState(false)
   const [hideOnIOS, setHideOnIOS] = useState(false)
 
   // Run detection on mount so guest users see the warning BEFORE
   // they tap the button and hit a broken OAuth flow.
   useEffect(() => {
     setInAppBrowser(detectInAppBrowser())
-    if (isIOSAppClient()) setHideOnIOS(true)
+    setHideOnIOS(isIOSAppClient())
+    setReady(true)
   }, [])
 
-  if (hideOnIOS) return null
+  if (!ready || hideOnIOS) return null
 
   async function handleGoogle() {
     setError(null)

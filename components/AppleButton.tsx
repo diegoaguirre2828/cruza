@@ -33,13 +33,19 @@ export function AppleButton({
   const effectiveLabel = label ?? (es ? 'Continuar con Apple' : 'Continue with Apple')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Defer ALL render until after mount + iOS check so the button never
+  // appears in SSR HTML on iOS — Apple Review's webview can't catch a
+  // 1-frame flash of an unclickable Apple button. Web/PWA users get a
+  // ~1-frame delay on first paint which is invisible at human latency.
+  const [ready, setReady] = useState(false)
   const [hideOnIOS, setHideOnIOS] = useState(false)
 
   useEffect(() => {
-    if (isIOSAppClient()) setHideOnIOS(true)
+    setHideOnIOS(isIOSAppClient())
+    setReady(true)
   }, [])
 
-  if (hideOnIOS) return null
+  if (!ready || hideOnIOS) return null
 
   async function handleApple() {
     setError(null)
