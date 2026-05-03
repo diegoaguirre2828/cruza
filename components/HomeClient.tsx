@@ -303,6 +303,14 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
   // top so reporting feels like the social contract, not a buried
   // side action — Diego 2026-04-26: "this feels like a check your
   // wait app not a community thing."
+  // Cerca panel — collapsed 2026-05-03 from 9 above-the-fold surfaces
+  // down to 4 per the consumer UX audit (MEDIUM #8). Killed in this
+  // pass: standalone Cameras CTA Link (cameras still reachable via
+  // BottomNav + PortDetail), HolidayOverlay (banner spam),
+  // ReciprocityCard (concept didn't land — superseded by
+  // StreakImpactPill), UrgentAlerts (folded into LiveActivityTicker
+  // which already shows urgent reports). Net: 4 surfaces above the
+  // first port card instead of 9.
   const cercaPanel = (
     <>
       <div className="flex items-center justify-end mb-2">
@@ -310,34 +318,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       </div>
       <SmartRouteAmbient />
       <LiveActivityTicker initialReports={initialReports} />
-      {/* Live cameras entry — pairs visually with LiveActivityTicker so
-          'watch the line' + 'see what people are saying' sit together.
-          Was buried inside PortList between the legend + region/favorites
-          banners; moved 2026-04-28 because the 3-stacked-banner cluster
-          there was misclick-prone. */}
-      <Link
-        href="/camaras"
-        className="mt-2 mb-1 flex items-center justify-between gap-3 rounded-xl px-4 py-3 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20 border border-red-200 dark:border-red-900/40 hover:border-red-300 dark:hover:border-red-700 transition-colors group"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="text-xl flex-shrink-0">📹</span>
-          <div className="min-w-0">
-            <div className="text-xs font-black text-red-900 dark:text-red-200 leading-tight">
-              {lang === 'es' ? 'Cámaras en vivo de los puentes' : 'Live bridge cameras'}
-            </div>
-            <div className="text-[11px] text-red-700/80 dark:text-red-300/70 leading-tight">
-              {lang === 'es' ? 'Mira las filas reales + el tiempo de espera' : 'See the real lines + wait times'}
-            </div>
-          </div>
-        </div>
-        <span className="shrink-0 text-[11px] font-bold text-red-700 dark:text-red-300 group-hover:translate-x-0.5 transition-transform">
-          {lang === 'es' ? 'Ver →' : 'Watch →'}
-        </span>
-      </Link>
       <ReportBridgePrompt favoritePortId={favoritePortId} />
-      <HolidayOverlay />
-      <ReciprocityCard />
-      <UrgentAlerts initialReports={initialReports} />
       <SavedCrossings initialPorts={initialPorts} />
       <div id="port-list" />
       <PortList initialPorts={initialPorts} />
