@@ -25,15 +25,24 @@ interface SubscriberLite {
   channel_email: boolean;
   channel_sms: boolean;
   channel_whatsapp: boolean;
+  channel_push: boolean;
   recipient_emails: string[];
   recipient_phones: string[];
   last_anomaly_fired_at: string | null;
+}
+
+export interface PushPayload {
+  title: string;
+  body: string;
+  tag: string;
+  url: string;
 }
 
 export async function runAnomalyBroadcast(opts: {
   dryRun: boolean;
   sendSms: (to: string, body: string) => Promise<boolean>;
   sendEmail: (to: string, subject: string, body: string) => Promise<boolean>;
+  sendPush: (userId: string, payload: PushPayload) => Promise<boolean>;
 }): Promise<AnomalyCheckResult> {
   const db = getServiceClient();
   const result: AnomalyCheckResult = {
@@ -45,7 +54,7 @@ export async function runAnomalyBroadcast(opts: {
 
   const { data: subs, error } = await db
     .from('insights_subscribers')
-    .select('id, user_id, language, watched_port_ids, port_thresholds, anomaly_threshold_default, channel_email, channel_sms, channel_whatsapp, recipient_emails, recipient_phones, last_anomaly_fired_at')
+    .select('id, user_id, language, watched_port_ids, port_thresholds, anomaly_threshold_default, channel_email, channel_sms, channel_whatsapp, channel_push, recipient_emails, recipient_phones, last_anomaly_fired_at')
     .eq('status', 'active');
   if (error) throw new Error(error.message);
 
@@ -105,6 +114,7 @@ export async function runAnomalyBroadcast(opts: {
         ? `Cruzar: ${portName} ${ratio.toFixed(1)}× normal (${live} min). Configura: cruzar.app/dispatch`
         : `Cruzar: ${portName} ${ratio.toFixed(1)}× normal (${live} min). Config: cruzar.app/dispatch`;
 
+      let pushSent = false;
       try {
         if (sub.channel_email) {
           for (const email of sub.recipient_emails ?? []) {
@@ -121,6 +131,19 @@ export async function runAnomalyBroadcast(opts: {
         if (sub.channel_whatsapp) {
           channelsFired.push('whatsapp:queued');
         }
+        if (sub.channel_push) {
+          if (!opts.dryRun) {
+            pushSent = await opts.sendPush(sub.user_id, {
+              title: `Cruzar: ${portName}`,
+              body: `${ratio.toFixed(1)}× normal · ${live} min`,
+              tag: `insights-anomaly-${portId}`,
+              url: '/dispatch',
+            });
+          } else {
+            pushSent = true;
+          }
+          channelsFired.push(pushSent ? 'push:delivered' : 'push:no_subscriptions');
+        }
 
         if (!opts.dryRun) {
           await db.from('insights_anomaly_fires').insert({
@@ -128,6 +151,7 @@ export async function runAnomalyBroadcast(opts: {
             port_id: portId,
             ratio,
             channels_fired: channelsFired,
+            push_sent: pushSent,
             payload: { live_min: live, hist_avg_min: histAvg, threshold, port_name: portName },
           });
           await db.from('insights_subscribers')

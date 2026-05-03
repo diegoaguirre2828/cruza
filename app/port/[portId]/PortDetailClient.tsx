@@ -391,10 +391,18 @@ export function PortDetailClient({ port, portId }: Props) {
         body: JSON.stringify({ portId }),
       })
       setSaved(true)
-      // Arm the circle-invite nudge the first time a user saves any
-      // bridge. PriorityNudge surfaces it on home or port detail
-      // whichever they hit next. Save-then-invite replaces the old
-      // post-save alert nudge (redundant with the big alert CTA).
+      // Best-effort: also create a default 30-min vehicle alert so the
+      // favorite ⭐ tap actually wires push for this bridge. Free tier
+      // caps at 1 alert — silently no-op if cap exceeded (OneTapAlertCard
+      // handles the upgrade nudge on the home Mi-puente panel). Reason
+      // this exists: 2026-05-02 Diego favorited a bridge, never got a
+      // push — favorite alone only writes saved_crossings, which no cron
+      // reads.
+      fetch('/api/alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portId, laneType: 'vehicle', thresholdMinutes: 30 }),
+      }).catch(() => { /* silent — cap or duplicate */ })
       armNudge('saved_bridge_invite_circle')
     }
     setSaving(false)
