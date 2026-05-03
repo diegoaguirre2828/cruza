@@ -18,6 +18,12 @@ interface DetailCopy {
   confirm: string; cancel: string;
   entry_col_number: string; entry_col_country: string; entry_col_eo: string;
   entry_col_principal: string; entry_col_interest: string; entry_col_cliff: string;
+  section_broker_of_record: string; broker_of_record_help: string;
+  broker_name_label: string; broker_license_label: string; broker_attest_label: string;
+  section_ior_attestation: string; ior_attest_help: string;
+  ior_attest_signer_label: string; ior_attest_label: string;
+  save_attestation: string; saved: string;
+  submission_blocked_broker: string; submission_blocked_ior: string;
 }
 
 interface ClaimsCopy {
@@ -43,6 +49,11 @@ interface Claim {
   cape_claim_number: string | null;
   refund_received_amount_usd: number | string | null;
   cruzar_fee_usd: number | string | null;
+  broker_of_record_name: string | null;
+  broker_of_record_license_number: string | null;
+  broker_of_record_attested_at: string | null;
+  ior_attested_signer_name: string | null;
+  ior_attested_at: string | null;
 }
 
 interface Entry {
@@ -69,6 +80,13 @@ export function ClaimDetailClient({
   const [claim, setClaim] = useState<Claim | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [savingAttestation, setSavingAttestation] = useState(false);
+  const [attestationSaved, setAttestationSaved] = useState(false);
+  const [brokerName, setBrokerName] = useState('');
+  const [brokerLicense, setBrokerLicense] = useState('');
+  const [brokerAttest, setBrokerAttest] = useState(false);
+  const [iorSigner, setIorSigner] = useState('');
+  const [iorAttest, setIorAttest] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [showReceivedModal, setShowReceivedModal] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -80,8 +98,39 @@ export function ClaimDetailClient({
     const j = await r.json();
     setClaim(j.claim);
     setEntries(j.entries ?? []);
+    if (j.claim) {
+      setBrokerName(j.claim.broker_of_record_name ?? '');
+      setBrokerLicense(j.claim.broker_of_record_license_number ?? '');
+      setBrokerAttest(!!j.claim.broker_of_record_attested_at);
+      setIorSigner(j.claim.ior_attested_signer_name ?? '');
+      setIorAttest(!!j.claim.ior_attested_at);
+    }
   }
   useEffect(() => { load(); }, [claimId]);
+
+  async function saveAttestation() {
+    setSavingAttestation(true);
+    setAttestationSaved(false);
+    try {
+      const r = await fetch(`/api/refunds/claims/${claimId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          broker_of_record_name: brokerName.trim() || undefined,
+          broker_of_record_license_number: brokerLicense.trim() || undefined,
+          broker_of_record_attested: brokerAttest && brokerName.trim() && brokerLicense.trim() ? true : false,
+          ior_attested_signer_name: iorSigner.trim() || undefined,
+          ior_attested: iorAttest && iorSigner.trim() ? true : false,
+        }),
+      });
+      if (r.ok) {
+        await load();
+        setAttestationSaved(true);
+      }
+    } finally {
+      setSavingAttestation(false);
+    }
+  }
 
   async function uploadCsv(file: File) {
     setBusy(true);
@@ -111,6 +160,9 @@ export function ClaimDetailClient({
 
   const recoverable =
     Number(claim.total_principal_owed_usd ?? 0) + Number(claim.total_interest_owed_usd ?? 0);
+  const brokerReady = !!(claim.broker_of_record_name && claim.broker_of_record_license_number && claim.broker_of_record_attested_at);
+  const iorReady = !!claim.ior_attested_at;
+  const showAttestationSection = claim.status === 'validated' || claim.status === 'submitted_to_ace' || (claim.status === 'draft' && claim.cape_csv_url);
 
   return (
     <div>
@@ -193,7 +245,9 @@ export function ClaimDetailClient({
           {claim.status === 'validated' && (
             <button
               onClick={() => setShowSubmitModal(true)}
-              className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+              disabled={!brokerReady || !iorReady}
+              className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
+              title={!brokerReady ? detailCopy.submission_blocked_broker : !iorReady ? detailCopy.submission_blocked_ior : undefined}
             >
               {detailCopy.mark_submitted}
             </button>
@@ -210,7 +264,101 @@ export function ClaimDetailClient({
         {(claim.status === 'draft' || claim.status === 'validated') && (
           <p className="mt-3 text-[12.5px] text-white/45">{detailCopy.upload_help}</p>
         )}
+        {claim.status === 'validated' && (!brokerReady || !iorReady) && (
+          <p className="mt-3 text-[12.5px] text-amber-300/80">
+            {!brokerReady ? detailCopy.submission_blocked_broker : detailCopy.submission_blocked_ior}
+          </p>
+        )}
       </section>
+
+      {showAttestationSection && (
+        <section className="mt-8">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {detailCopy.section_broker_of_record}
+          </div>
+          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
+            <p className="text-[13px] leading-[1.6] text-white/60">{detailCopy.broker_of_record_help}</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="block text-[12.5px] text-white/60">
+                <span>{detailCopy.broker_name_label}</span>
+                <input
+                  type="text"
+                  value={brokerName}
+                  onChange={(e) => setBrokerName(e.target.value)}
+                  disabled={claim.status !== 'validated'}
+                  className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+                />
+              </label>
+              <label className="block text-[12.5px] text-white/60">
+                <span>{detailCopy.broker_license_label}</span>
+                <input
+                  type="text"
+                  value={brokerLicense}
+                  onChange={(e) => setBrokerLicense(e.target.value)}
+                  disabled={claim.status !== 'validated'}
+                  className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 font-mono text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+                />
+              </label>
+            </div>
+            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-white/75">
+              <input
+                type="checkbox"
+                checked={brokerAttest}
+                onChange={(e) => setBrokerAttest(e.target.checked)}
+                disabled={claim.status !== 'validated'}
+                className="mt-1"
+              />
+              <span>{detailCopy.broker_attest_label}</span>
+            </label>
+          </div>
+
+          <div className="mt-6 font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {detailCopy.section_ior_attestation}
+          </div>
+          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
+            <p className="text-[13px] leading-[1.6] text-white/60">{detailCopy.ior_attest_help}</p>
+            <label className="mt-4 block text-[12.5px] text-white/60">
+              <span>{detailCopy.ior_attest_signer_label}</span>
+              <input
+                type="text"
+                value={iorSigner}
+                onChange={(e) => setIorSigner(e.target.value)}
+                disabled={claim.status !== 'validated'}
+                className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+              />
+            </label>
+            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-white/75">
+              <input
+                type="checkbox"
+                checked={iorAttest}
+                onChange={(e) => setIorAttest(e.target.checked)}
+                disabled={claim.status !== 'validated'}
+                className="mt-1"
+              />
+              <span>{detailCopy.ior_attest_label}</span>
+            </label>
+          </div>
+
+          {claim.status === 'validated' && (
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={saveAttestation}
+                disabled={savingAttestation}
+                className="rounded-lg border border-amber-300/60 bg-amber-300/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/20 disabled:opacity-50"
+              >
+                {savingAttestation ? '...' : detailCopy.save_attestation}
+              </button>
+              {attestationSaved && <span className="text-[12.5px] text-amber-200">{detailCopy.saved}</span>}
+              {brokerReady && (
+                <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-300">✓ broker</span>
+              )}
+              {iorReady && (
+                <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-300">✓ IOR</span>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {entries.length > 0 && (
         <section className="mt-10">

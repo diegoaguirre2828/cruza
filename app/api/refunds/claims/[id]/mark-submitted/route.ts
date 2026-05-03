@@ -41,13 +41,29 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
   const { data: existing } = await sb
     .from('refund_claims')
-    .select('status')
+    .select('status, broker_of_record_name, broker_of_record_license_number, broker_of_record_attested_at, ior_attested_at')
     .eq('id', claimId)
     .eq('user_id', user.id)
     .maybeSingle();
   if (!existing) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   if (existing.status !== 'validated' && existing.status !== 'submitted_to_ace') {
     return NextResponse.json({ error: 'wrong_status', detail: `cannot mark submitted from status=${existing.status}` }, { status: 409 });
+  }
+
+  // Hard gate: licensed broker of record required (UPL/19 USC 1641 defense).
+  if (!existing.broker_of_record_name || !existing.broker_of_record_license_number || !existing.broker_of_record_attested_at) {
+    return NextResponse.json({
+      error: 'broker_of_record_required',
+      detail: 'A licensed customs broker of record must be designated and attested before submission. Cruzar prepares; the licensed broker files.',
+    }, { status: 409 });
+  }
+
+  // Hard gate: IOR must have attested they reviewed the filing (False Claims Act defense).
+  if (!existing.ior_attested_at) {
+    return NextResponse.json({
+      error: 'ior_attestation_required',
+      detail: 'The Importer of Record must attest they reviewed the CAPE CSV / Form 19 packet and authorize submission before this claim can be marked submitted.',
+    }, { status: 409 });
   }
 
   const { data, error } = await sb
