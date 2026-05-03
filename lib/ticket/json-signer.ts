@@ -4,7 +4,7 @@ import * as ed from '@noble/ed25519';
 import { createHash } from 'crypto';
 import type { CruzarTicketV1, SignedTicket } from './types';
 
-function canonicalize(obj: unknown): string {
+export function canonicalize(obj: unknown): string {
   // Deterministic JSON: sorted keys, no whitespace, undefined values skipped
   // (matching JSON.stringify behavior).
   if (obj === undefined) return 'null';  // top-level undefined → null (matches JSON.stringify outside of object/array context where it returns undefined; here we surface a sentinel)
