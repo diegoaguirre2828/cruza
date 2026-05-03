@@ -1,30 +1,721 @@
 {
   "version": "v1.0",
   "cases": [
-    {"id":"drv-001","label":"Clean US-only driver, all checks pass","input":{"driver":{"driver_ref":"D-001","primary_jurisdiction":"US","cdl_class":"A","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","uses_own_truck":false,"sets_own_schedule":false,"works_for_other_carriers":false,"paid_hourly":true},"shipment_ref":"S-001","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"overall_status":"compliant","hos_compliant":"compliant","drayage_compliant":"compliant"}},
-    {"id":"drv-002","label":"US-only HOS violation (12h driving > 11h)","input":{"driver":{"driver_ref":"D-002","primary_jurisdiction":"US","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-002","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":12,"on_duty_hours":13,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":50}},"expected":{"hos_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-003","label":"Cross-border HOS divergence (US-clean 10h, MX-foul 10h>8h)","input":{"driver":{"driver_ref":"D-003","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"BOTH","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-003","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":10,"on_duty_hours":12,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":50}},"expected":{"hos_compliant":"flagged","hos_divergence_flag":true,"overall_status":"flagged"}},
-    {"id":"drv-004","label":"MX-only driver, IMSS lapsed >60d","input":{"driver":{"driver_ref":"D-004","primary_jurisdiction":"MX","imss_active":true,"imss_last_payment_iso":"2026-02-01","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"MX_SCT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-004","shipment_route":"MX_only","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":15,"cycle_hours_last_7_or_8_days":40}},"expected":{"imss_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-005","label":"Cross-border driver, drug test expired","input":{"driver":{"driver_ref":"D-005","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2024-04-15","last_drug_test_jurisdiction":"BOTH","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-005","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"drug_testing_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-006","label":"1099 driver with high Borello score (clean)","input":{"driver":{"driver_ref":"D-006","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"1099","uses_own_truck":true,"sets_own_schedule":true,"works_for_other_carriers":true,"carries_independent_business_expenses":true,"paid_per_mile":true,"has_own_dot_authority":true},"shipment_ref":"S-006","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"compliant","drayage_recommendation":"1099","overall_status":"compliant"}},
-    {"id":"drv-007","label":"1099 declared but Borello score low (misclassification)","input":{"driver":{"driver_ref":"D-007","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"1099","uses_own_truck":false,"sets_own_schedule":false,"works_for_other_carriers":false,"paid_hourly":true},"shipment_ref":"S-007","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"non_compliant","drayage_recommendation":"W2","overall_status":"non_compliant"}},
-    {"id":"drv-008","label":"Borderline Borello (3-4 factors)","input":{"driver":{"driver_ref":"D-008","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"1099","uses_own_truck":true,"sets_own_schedule":true,"paid_per_mile":true},"shipment_ref":"S-008","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"flagged","drayage_recommendation":"borderline_review"}},
-    {"id":"drv-009","label":"Cross-border with no facility attestation","input":{"driver":{"driver_ref":"D-009","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"BOTH","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":false},"shipment_ref":"S-009","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"usmca_compliant":"flagged","overall_status":"flagged"}},
-    {"id":"drv-010","label":"MX-only IMSS lapsed 30-60d (flagged)","input":{"driver":{"driver_ref":"D-010","primary_jurisdiction":"MX","imss_active":true,"imss_last_payment_iso":"2026-03-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"MX_SCT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-010","shipment_route":"MX_only","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"imss_compliant":"flagged","overall_status":"flagged"}},
-    {"id":"drv-011","label":"Drug test current but jurisdiction mismatch","input":{"driver":{"driver_ref":"D-011","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-011","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"drug_testing_compliant":"flagged","overall_status":"flagged"}},
-    {"id":"drv-012","label":"Drug test expiring soon (< 30d to expiry)","input":{"driver":{"driver_ref":"D-012","primary_jurisdiction":"US","last_drug_test_iso":"2025-05-25","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-012","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drug_testing_compliant":"flagged"}},
-    {"id":"drv-013","label":"No HOS log -> inconclusive","input":{"driver":{"driver_ref":"D-013","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-013","shipment_route":"US_only"},"expected":{"hos_compliant":"inconclusive","overall_status":"inconclusive"}},
-    {"id":"drv-014","label":"No drug-test date -> inconclusive","input":{"driver":{"driver_ref":"D-014","primary_jurisdiction":"US","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-014","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drug_testing_compliant":"inconclusive","overall_status":"inconclusive"}},
-    {"id":"drv-015","label":"Cycle hours over 70 (US 8-day cycle violation)","input":{"driver":{"driver_ref":"D-015","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-015","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":75}},"expected":{"hos_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-016","label":"MX driving over 8h (MX-only violation)","input":{"driver":{"driver_ref":"D-016","primary_jurisdiction":"MX","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"MX_SCT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-016","shipment_route":"MX_only","hos_log":{"date_iso":"2026-05-03","driving_hours":9,"on_duty_hours":10,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"hos_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-017","label":"Cross-border BOTH-clean","input":{"driver":{"driver_ref":"D-017","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"BOTH","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-017","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"hos_compliant":"compliant","overall_status":"compliant"}},
-    {"id":"drv-018","label":"IMSS active but no payment date (flagged)","input":{"driver":{"driver_ref":"D-018","primary_jurisdiction":"MX","imss_active":true,"last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"MX_SCT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-018","shipment_route":"MX_only","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"imss_compliant":"flagged","overall_status":"flagged"}},
-    {"id":"drv-019","label":"IMSS inactive (non_compliant)","input":{"driver":{"driver_ref":"D-019","primary_jurisdiction":"MX","imss_active":false,"last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"MX_SCT","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-019","shipment_route":"MX_only","hos_log":{"date_iso":"2026-05-03","driving_hours":7,"on_duty_hours":8,"rest_hours_prior":14,"cycle_hours_last_7_or_8_days":40}},"expected":{"imss_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-020","label":"Borello score 5 + declared 1099 (clean)","input":{"driver":{"driver_ref":"D-020","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"1099","uses_own_truck":true,"sets_own_schedule":true,"works_for_other_carriers":true,"paid_per_mile":true,"has_own_dot_authority":true},"shipment_ref":"S-020","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"compliant","drayage_recommendation":"1099"}},
-    {"id":"drv-021","label":"Borello score 1, declared W2 (clean)","input":{"driver":{"driver_ref":"D-021","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true,"sets_own_schedule":false,"uses_own_truck":false},"shipment_ref":"S-021","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"compliant","drayage_recommendation":"W2"}},
-    {"id":"drv-022","label":"Drayage classification unknown -> inconclusive","input":{"driver":{"driver_ref":"D-022","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","paid_hourly":true},"shipment_ref":"S-022","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":8,"on_duty_hours":12,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":40}},"expected":{"drayage_compliant":"inconclusive","overall_status":"inconclusive"}},
-    {"id":"drv-023","label":"Multi-fail (HOS + drug + drayage)","input":{"driver":{"driver_ref":"D-023","primary_jurisdiction":"US","last_drug_test_iso":"2024-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"1099","paid_hourly":true},"shipment_ref":"S-023","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":13,"on_duty_hours":15,"rest_hours_prior":8,"cycle_hours_last_7_or_8_days":75}},"expected":{"overall_status":"non_compliant"}},
-    {"id":"drv-024","label":"Cross-border BOTH-foul (US over 11h, MX over 8h)","input":{"driver":{"driver_ref":"D-024","primary_jurisdiction":"BOTH","imss_active":true,"imss_last_payment_iso":"2026-04-15","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"BOTH","employment_classification":"W2","paid_hourly":true,"facility_attestation_uploaded":true},"shipment_ref":"S-024","shipment_route":"cross_border","hos_log":{"date_iso":"2026-05-03","driving_hours":12,"on_duty_hours":14,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":50}},"expected":{"hos_compliant":"non_compliant","overall_status":"non_compliant"}},
-    {"id":"drv-025","label":"30-min break required flag (over 8h driving in US)","input":{"driver":{"driver_ref":"D-025","primary_jurisdiction":"US","last_drug_test_iso":"2026-04-15","last_drug_test_jurisdiction":"US_DOT","employment_classification":"W2","paid_hourly":true},"shipment_ref":"S-025","shipment_route":"US_only","hos_log":{"date_iso":"2026-05-03","driving_hours":10,"on_duty_hours":13,"rest_hours_prior":10,"cycle_hours_last_7_or_8_days":50}},"expected":{"hos_break_required":true,"hos_compliant":"compliant"}}
+    {
+      "id": "drv-001",
+      "label": "Clean US-only driver, all checks pass",
+      "input": {
+        "driver": {
+          "driver_ref": "D-001",
+          "primary_jurisdiction": "US",
+          "cdl_class": "A",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "uses_own_truck": false,
+          "sets_own_schedule": false,
+          "works_for_other_carriers": false,
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-001",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "overall_status": "compliant",
+        "hos_compliant": "compliant",
+        "drayage_compliant": "compliant"
+      }
+    },
+    {
+      "id": "drv-002",
+      "label": "US-only HOS violation (12h driving > 11h)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-002",
+          "primary_jurisdiction": "US",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-002",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 12,
+          "on_duty_hours": 13,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 50
+        }
+      },
+      "expected": {
+        "hos_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-003",
+      "label": "Cross-border HOS divergence (US-clean 10h, MX-foul 10h>8h)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-003",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "BOTH",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-003",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 10,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 50
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "hos_compliant": "flagged",
+        "hos_divergence_flag": true,
+        "overall_status": "flagged"
+      }
+    },
+    {
+      "id": "drv-004",
+      "label": "MX-only driver, IMSS lapsed >60d",
+      "input": {
+        "driver": {
+          "driver_ref": "D-004",
+          "primary_jurisdiction": "MX",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-02-01",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "MX_SCT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-004",
+        "shipment_route": "MX_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 15,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "imss_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-005",
+      "label": "Cross-border driver, drug test expired",
+      "input": {
+        "driver": {
+          "driver_ref": "D-005",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2024-04-15",
+          "last_drug_test_jurisdiction": "BOTH",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-005",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "drug_testing_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-006",
+      "label": "1099 driver with high Borello score (clean)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-006",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "1099",
+          "uses_own_truck": true,
+          "sets_own_schedule": true,
+          "works_for_other_carriers": true,
+          "carries_independent_business_expenses": true,
+          "paid_per_mile": true,
+          "has_own_dot_authority": true
+        },
+        "shipment_ref": "S-006",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "compliant",
+        "drayage_recommendation": "1099",
+        "overall_status": "compliant"
+      }
+    },
+    {
+      "id": "drv-007",
+      "label": "1099 declared but Borello score low (misclassification)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-007",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "1099",
+          "uses_own_truck": false,
+          "sets_own_schedule": false,
+          "works_for_other_carriers": false,
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-007",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "non_compliant",
+        "drayage_recommendation": "W2",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-008",
+      "label": "Borderline Borello (3-4 factors)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-008",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "1099",
+          "uses_own_truck": true,
+          "sets_own_schedule": true,
+          "paid_per_mile": true
+        },
+        "shipment_ref": "S-008",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "flagged",
+        "drayage_recommendation": "borderline_review"
+      }
+    },
+    {
+      "id": "drv-009",
+      "label": "Cross-border with no facility attestation",
+      "input": {
+        "driver": {
+          "driver_ref": "D-009",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "BOTH",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-009",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": false
+      },
+      "expected": {
+        "usmca_compliant": "flagged",
+        "overall_status": "flagged"
+      }
+    },
+    {
+      "id": "drv-010",
+      "label": "MX-only IMSS lapsed 30-60d (flagged)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-010",
+          "primary_jurisdiction": "MX",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-03-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "MX_SCT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-010",
+        "shipment_route": "MX_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "imss_compliant": "flagged",
+        "overall_status": "flagged"
+      }
+    },
+    {
+      "id": "drv-011",
+      "label": "Drug test current but jurisdiction mismatch",
+      "input": {
+        "driver": {
+          "driver_ref": "D-011",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-011",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "drug_testing_compliant": "flagged",
+        "overall_status": "flagged"
+      }
+    },
+    {
+      "id": "drv-012",
+      "label": "Drug test expiring soon (< 30d to expiry)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-012",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2025-05-25",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-012",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drug_testing_compliant": "flagged"
+      }
+    },
+    {
+      "id": "drv-013",
+      "label": "No HOS log -> inconclusive",
+      "input": {
+        "driver": {
+          "driver_ref": "D-013",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-013",
+        "shipment_route": "US_only"
+      },
+      "expected": {
+        "hos_compliant": "inconclusive",
+        "overall_status": "inconclusive"
+      }
+    },
+    {
+      "id": "drv-014",
+      "label": "No drug-test date -> inconclusive",
+      "input": {
+        "driver": {
+          "driver_ref": "D-014",
+          "primary_jurisdiction": "US",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-014",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drug_testing_compliant": "inconclusive",
+        "overall_status": "inconclusive"
+      }
+    },
+    {
+      "id": "drv-015",
+      "label": "Cycle hours over 70 (US 8-day cycle violation)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-015",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-015",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 75
+        }
+      },
+      "expected": {
+        "hos_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-016",
+      "label": "MX driving over 8h (MX-only violation)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-016",
+          "primary_jurisdiction": "MX",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "MX_SCT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-016",
+        "shipment_route": "MX_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 9,
+          "on_duty_hours": 10,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "hos_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-017",
+      "label": "Cross-border BOTH-clean",
+      "input": {
+        "driver": {
+          "driver_ref": "D-017",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "BOTH",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-017",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "hos_compliant": "compliant",
+        "overall_status": "compliant"
+      }
+    },
+    {
+      "id": "drv-018",
+      "label": "IMSS active but no payment date (flagged)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-018",
+          "primary_jurisdiction": "MX",
+          "imss_active": true,
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "MX_SCT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-018",
+        "shipment_route": "MX_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "imss_compliant": "flagged",
+        "overall_status": "flagged"
+      }
+    },
+    {
+      "id": "drv-019",
+      "label": "IMSS inactive (non_compliant)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-019",
+          "primary_jurisdiction": "MX",
+          "imss_active": false,
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "MX_SCT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-019",
+        "shipment_route": "MX_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 7,
+          "on_duty_hours": 8,
+          "rest_hours_prior": 14,
+          "cycle_hours_last_7_or_8_days": 40
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "imss_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-020",
+      "label": "Borello score 5 + declared 1099 (clean)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-020",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "1099",
+          "uses_own_truck": true,
+          "sets_own_schedule": true,
+          "works_for_other_carriers": true,
+          "paid_per_mile": true,
+          "has_own_dot_authority": true
+        },
+        "shipment_ref": "S-020",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "compliant",
+        "drayage_recommendation": "1099"
+      }
+    },
+    {
+      "id": "drv-021",
+      "label": "Borello score 1, declared W2 (clean)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-021",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true,
+          "sets_own_schedule": false,
+          "uses_own_truck": false
+        },
+        "shipment_ref": "S-021",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "compliant",
+        "drayage_recommendation": "W2"
+      }
+    },
+    {
+      "id": "drv-022",
+      "label": "Drayage classification unknown -> inconclusive",
+      "input": {
+        "driver": {
+          "driver_ref": "D-022",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-022",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 8,
+          "on_duty_hours": 12,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 40
+        }
+      },
+      "expected": {
+        "drayage_compliant": "inconclusive",
+        "overall_status": "inconclusive"
+      }
+    },
+    {
+      "id": "drv-023",
+      "label": "Multi-fail (HOS + drug + drayage)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-023",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2024-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "1099",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-023",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 13,
+          "on_duty_hours": 15,
+          "rest_hours_prior": 8,
+          "cycle_hours_last_7_or_8_days": 75
+        }
+      },
+      "expected": {
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-024",
+      "label": "Cross-border BOTH-foul (US over 11h, MX over 8h)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-024",
+          "primary_jurisdiction": "BOTH",
+          "imss_active": true,
+          "imss_last_payment_iso": "2026-04-15",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "BOTH",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-024",
+        "shipment_route": "cross_border",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 12,
+          "on_duty_hours": 14,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 50
+        },
+        "facility_attestation_uploaded": true
+      },
+      "expected": {
+        "hos_compliant": "non_compliant",
+        "overall_status": "non_compliant"
+      }
+    },
+    {
+      "id": "drv-025",
+      "label": "30-min break required flag (over 8h driving in US)",
+      "input": {
+        "driver": {
+          "driver_ref": "D-025",
+          "primary_jurisdiction": "US",
+          "last_drug_test_iso": "2026-04-15",
+          "last_drug_test_jurisdiction": "US_DOT",
+          "employment_classification": "W2",
+          "paid_hourly": true
+        },
+        "shipment_ref": "S-025",
+        "shipment_route": "US_only",
+        "hos_log": {
+          "date_iso": "2026-05-03",
+          "driving_hours": 10,
+          "on_duty_hours": 13,
+          "rest_hours_prior": 10,
+          "cycle_hours_last_7_or_8_days": 50
+        }
+      },
+      "expected": {
+        "hos_break_required": true,
+        "hos_compliant": "compliant"
+      }
+    }
   ]
 }
