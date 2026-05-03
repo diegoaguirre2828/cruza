@@ -37,7 +37,10 @@ import { useTier, canAccess } from '@/lib/useTier'
 import Link from 'next/link'
 import { SignupIntentModal, type SignupIntent } from '@/components/SignupIntentModal'
 import { recordPortView } from '@/lib/recentPorts'
-import { Bell, Share2, Check } from 'lucide-react'
+import { Bell, Share2, Check, Megaphone } from 'lucide-react'
+import { BridgeReportSheet } from '@/components/BridgeReportSheet'
+import { BridgeMomentChips } from '@/components/BridgeMomentChips'
+import { FirstAlertNudge } from '@/components/FirstAlertNudge'
 import { useLang } from '@/lib/LangContext'
 import type { PortWaitTime, WaitTimeReading } from '@/types'
 
@@ -147,6 +150,7 @@ export function PortDetailClient({ port, portId }: Props) {
   }, [])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showReportSheet, setShowReportSheet] = useState(false)
   const [alertThreshold, setAlertThreshold] = useState(20)
   const [alertSaved, setAlertSaved] = useState(false)
   const [alertSaving, setAlertSaving] = useState(false)
@@ -519,57 +523,61 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       )}
 
-      {/* Three primary actions collapsed into one row. Previously these
-          were three full-width stacked buttons that pushed the actual
-          wait-time hero below the fold. Now they sit as a compact
-          action cluster above the hero — same functionality, 2/3 the
-          vertical space, clear that they're peers of each other. */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Two primary actions: Reportar (megaphone — opens BridgeReportSheet
+          which folds in share-via-success-toast) + Guardar. Diego
+          2026-05-02: "share the view part of the individual bridge
+          page should be just part of the report part, they can do
+          either or." Standalone Compartir button removed; share now
+          lives inside the report sheet's success path + the small
+          share icon below the hero. */}
+      <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => setShowJustCrossed(true)}
-          className="flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-[11px] font-black shadow-sm active:scale-95 active:bg-green-100 dark:active:bg-green-900/40 transition-all"
+          onClick={() => setShowReportSheet(true)}
+          className="flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-500 to-green-600 text-white text-[12px] font-black shadow-lg shadow-emerald-600/25 active:scale-[0.97] transition-all"
         >
-          <span className="text-lg leading-none">✅</span>
-          <span className="leading-tight text-center truncate max-w-full">{es ? 'Crucé' : 'Crossed'}</span>
+          <Megaphone className="w-5 h-5" />
+          <span className="leading-tight text-center truncate max-w-full">{es ? 'Reportar' : 'Report'}</span>
         </button>
         {user ? (
           <button
             onClick={toggleSave}
             disabled={saving}
-            className={`flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 text-[11px] font-black shadow-sm active:scale-95 transition-all ${
+            className={`flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 text-[12px] font-black shadow-sm active:scale-[0.97] transition-all ${
               saved
                 ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 active:bg-yellow-100 dark:active:bg-yellow-900/40'
                 : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700'
             }`}
           >
-            <span className="text-lg leading-none">{saved ? '⭐' : '☆'}</span>
+            <span className="text-xl leading-none">{saved ? '⭐' : '☆'}</span>
             <span className="leading-tight text-center truncate max-w-full">{saved ? (es ? 'Guardado' : 'Saved') : (es ? 'Guardar' : 'Save')}</span>
           </button>
         ) : (
           <Link
             href="/signup"
-            className="flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-[11px] font-black shadow-sm active:scale-95 active:bg-gray-50 dark:active:bg-gray-700 transition-all"
+            className="flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-[12px] font-black shadow-sm active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-700 transition-all"
           >
-            <span className="text-lg leading-none">☆</span>
+            <span className="text-xl leading-none">☆</span>
             <span className="leading-tight text-center truncate max-w-full">{es ? 'Guardar' : 'Save'}</span>
           </Link>
         )}
-        <button
-          onClick={handleShare}
-          className={`flex flex-col items-center justify-center gap-1 py-3 px-1 rounded-xl border-2 text-[11px] font-black shadow-sm active:scale-95 transition-all ${
-            shareCopied
-              ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-              : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700'
-          }`}
-        >
-          <span className="text-lg leading-none">
-            {shareCopied ? <Check className="w-[18px] h-[18px]" /> : <Share2 className="w-[18px] h-[18px]" />}
-          </span>
-          <span className="leading-tight text-center truncate max-w-full">
-            {shareCopied ? (es ? 'Copiado' : 'Copied') : (es ? 'Compartir' : 'Share')}
-          </span>
-        </button>
       </div>
+
+      {/* Quick share affordance — collapsed below the primary report
+          CTA so "I just want to forward this number" stays a 1-tap
+          action without competing visually with the report flow. */}
+      <button
+        onClick={handleShare}
+        className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 active:scale-[0.99] transition-transform"
+      >
+        {shareCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
+        {shareCopied ? (es ? '¡Copiado!' : 'Copied!') : (es ? 'Compartir tiempo' : 'Share wait time')}
+      </button>
+
+      {/* Rotating moment chips — Now / In 6h / Saturday / Typical now.
+          Sits directly under the wait-time hero so users don't have to
+          dig for "patterns / forecast" to see the time context.
+          Auto-advances every ~4.5s; tap dots to jump. */}
+      <BridgeMomentChips portId={portId} liveMin={port.vehicle ?? null} />
 
       {/* Border Times-style hero — lane tabs + card rail with Best /
           Rush / Today / forward forecasts. Replaces the old stacked
@@ -1158,6 +1166,13 @@ export function PortDetailClient({ port, portId }: Props) {
       {/* Moments-of-want signup modal — opens when guests tap save/alert.
           Threshold inherited from the alert UI's slider so the user's
           intent flows through /signup → /welcome → /api/alerts cleanly. */}
+      <BridgeReportSheet
+        open={showReportSheet}
+        onClose={() => setShowReportSheet(false)}
+        portId={portId}
+        portName={port.portName}
+      />
+      <FirstAlertNudge portId={portId} portName={port.portName} />
       <SignupIntentModal
         open={signupModalIntent !== null}
         onClose={() => setSignupModalIntent(null)}

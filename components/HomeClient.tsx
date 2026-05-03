@@ -31,6 +31,7 @@ import { HomeSwipe, type SwipePanel } from '@/components/HomeSwipe'
 import { OneTapAlertCard } from '@/components/OneTapAlertCard'
 import { ReportBridgePrompt } from '@/components/ReportBridgePrompt'
 import { StreakImpactPill } from '@/components/StreakImpactPill'
+import { SmartRouteAmbient } from '@/components/SmartRouteAmbient'
 import { InsightsPill } from '@/components/InsightsPill'
 
 // PERF: below-the-fold + conditional surfaces split into their own
@@ -321,6 +322,7 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       <div className="flex items-center justify-end mb-2">
         <StreakImpactPill />
       </div>
+      <SmartRouteAmbient />
       <LiveActivityTicker initialReports={initialReports} />
       {/* Live cameras entry — pairs visually with LiveActivityTicker so
           'watch the line' + 'see what people are saying' sit together.
