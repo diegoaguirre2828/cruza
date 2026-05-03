@@ -181,6 +181,29 @@ export default async function TicketViewerPage({ params }: Props) {
         </section>
       )}
 
+      {payload.refunds && (
+        <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_ES.refunds_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_ES.refunds_total_recoverable} value={`$${payload.refunds.total_recoverable_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+              <Row label={TICKET_ES.refunds_cape_eligible} value={String(payload.refunds.cape_eligible_count)} />
+              <Row label={TICKET_ES.refunds_protest_required} value={String(payload.refunds.protest_required_count)} />
+              <Row label={TICKET_ES.refunds_registry_version} value={payload.refunds.registry_version} />
+            </dl>
+          </div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">{TICKET_EN.refunds_section}</h2>
+            <dl className="text-sm">
+              <Row label={TICKET_EN.refunds_total_recoverable} value={`$${payload.refunds.total_recoverable_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} />
+              <Row label={TICKET_EN.refunds_cape_eligible} value={String(payload.refunds.cape_eligible_count)} />
+              <Row label={TICKET_EN.refunds_protest_required} value={String(payload.refunds.protest_required_count)} />
+              <Row label={TICKET_EN.refunds_registry_version} value={payload.refunds.registry_version} />
+            </dl>
+          </div>
+        </section>
+      )}
+
       <section className="mt-8 rounded border border-white/10 bg-white/5 p-4 text-xs text-white/60">
         <p className="mb-1">{TICKET_ES.disclaimer}</p>
         <p>{TICKET_EN.disclaimer}</p>

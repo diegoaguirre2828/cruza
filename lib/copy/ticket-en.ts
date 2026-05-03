@@ -34,4 +34,9 @@ export const TICKET_EN = {
   drivers_section: 'Driver compliance',
   overall_status: 'Overall status',
   checks_run: 'Checks',
+  refunds_section: 'IEEPA refund composition',
+  refunds_total_recoverable: 'Total recoverable',
+  refunds_cape_eligible: 'CAPE-eligible entries',
+  refunds_protest_required: 'Form 19 protest required',
+  refunds_registry_version: 'Registry version',
 };

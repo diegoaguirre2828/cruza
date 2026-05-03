@@ -3,6 +3,7 @@ import type { HsClassificationResult, OriginValidationResult, RvcResult, UsmcaCe
 import type { SubmissionManifest, AgencyId } from '../chassis/regulatory/types';
 import type { PaperworkComposition } from '../chassis/docs/types';
 import type { DriverComplianceManifest, ComplianceStatus } from '../chassis/drivers/types';
+import type { RefundComposition } from '../chassis/refunds/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -38,6 +39,14 @@ export interface TicketDriversBlock {
   blocking_issues: string[];
 }
 
+export interface TicketRefundsBlock {
+  composition: RefundComposition;
+  total_recoverable_usd: number;
+  cape_eligible_count: number;
+  protest_required_count: number;
+  registry_version: string;
+}
+
 export interface TicketAuditShield {
   prior_disclosure_eligible: boolean;
   '19_USC_1592_basis': string;
@@ -53,12 +62,13 @@ export interface CruzarTicketV1 {
   ticket_id: string;
   issued_at: string;
   issuer: 'Cruzar Insights, Inc.';
-  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers'>;
+  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds'>;
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
   paperwork?: TicketPaperworkBlock;
   drivers?: TicketDriversBlock;
+  refunds?: TicketRefundsBlock;
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

@@ -13,7 +13,9 @@ import { composePaperwork } from '../chassis/docs/composer';
 import type { VisionInput } from '../chassis/docs/types';
 import { buildDriverComplianceManifest } from '../chassis/drivers/composer';
 import type { DriverComplianceInput } from '../chassis/drivers/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock } from './types';
+import { composeRefund } from '../chassis/refunds/composer';
+import type { Entry as RefundEntry, IorProfile } from '../chassis/refunds/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -28,6 +30,10 @@ interface GenerateOptions {
     pages: VisionInput[];
   };
   driversInput?: DriverComplianceInput;
+  refundsInput?: {
+    entries: RefundEntry[];
+    ior: IorProfile;
+  };
 }
 
 function mintTicketId(): string {
@@ -128,6 +134,23 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module 14: refunds composition (optional — only when broker provides IEEPA-paid entries)
+  // Strip form19_packet_pdf bytes from the ticket payload — keep only its signature
+  // hash so the PDF is referenced but not embedded (Uint8Array serializes as bloated
+  // numeric-key object otherwise).
+  let refundsBlock: TicketRefundsBlock | null = null;
+  if (opts.refundsInput && opts.refundsInput.entries.length > 0) {
+    const full = await composeRefund(opts.refundsInput.entries, opts.refundsInput.ior);
+    const { form19_packet_pdf: _omit, ...metadata } = full;
+    refundsBlock = {
+      composition: metadata,
+      total_recoverable_usd: full.total_recoverable_usd,
+      cape_eligible_count: full.cape_eligible_count,
+      protest_required_count: full.protest_required_count,
+      registry_version: full.registry_version,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -140,10 +163,11 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers'> = ['customs'];
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
+  if (refundsBlock) modulesPresent.push('refunds');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -161,6 +185,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     regulatory: regulatoryBlock ?? undefined,
     paperwork: paperworkBlock ?? undefined,
     drivers: driversBlock ?? undefined,
+    refunds: refundsBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

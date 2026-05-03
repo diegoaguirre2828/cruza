@@ -96,6 +96,19 @@ export async function renderTicketPdf(signed: SignedTicket, opts: RenderOptions 
     }
   }
 
+  if (payload.refunds) {
+    yEs -= 6; yEn -= 6;
+    drawSection(TICKET_ES.refunds_section, TICKET_EN.refunds_section);
+    drawLine2(
+      TICKET_ES.refunds_total_recoverable,
+      TICKET_EN.refunds_total_recoverable,
+      `$${payload.refunds.total_recoverable_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    );
+    drawLine2(TICKET_ES.refunds_cape_eligible, TICKET_EN.refunds_cape_eligible, String(payload.refunds.cape_eligible_count));
+    drawLine2(TICKET_ES.refunds_protest_required, TICKET_EN.refunds_protest_required, String(payload.refunds.protest_required_count));
+    drawLine2(TICKET_ES.refunds_registry_version, TICKET_EN.refunds_registry_version, payload.refunds.registry_version);
+  }
+
   yEs -= 6; yEn -= 6;
   drawSection(TICKET_ES.audit_shield, TICKET_EN.audit_shield);
   drawLine2(TICKET_ES.prior_disclosure, TICKET_EN.prior_disclosure, payload.audit_shield.prior_disclosure_eligible ? 'OK' : 'X');

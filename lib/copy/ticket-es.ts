@@ -34,4 +34,9 @@ export const TICKET_ES = {
   drivers_section: 'Cumplimiento del operador',
   overall_status: 'Estado general',
   checks_run: 'Verificaciones',
+  refunds_section: 'Composicion de reembolso IEEPA',
+  refunds_total_recoverable: 'Total recuperable',
+  refunds_cape_eligible: 'Entradas elegibles CAPE',
+  refunds_protest_required: 'Requiere protesta Form 19',
+  refunds_registry_version: 'Version del registro',
 };
