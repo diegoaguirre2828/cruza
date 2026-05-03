@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { Lock } from 'lucide-react'
 import { useLang } from '@/lib/LangContext'
+import { trackEvent } from '@/lib/trackEvent'
 
 // Reusable "feature locked" state for guest-blocked routes.
 //
@@ -60,6 +62,13 @@ export function LockedFeatureWall({
   ctaEn,
 }: Props) {
   const { lang } = useLang()
+
+  useEffect(() => {
+    trackEvent('pro_feature_blocked', {
+      feature: featureTitleEn || featureTitleEs,
+      next_path: nextPath,
+    })
+  }, [featureTitleEn, featureTitleEs, nextPath])
   const es = lang === 'es'
   const signupHref = `/signup?next=${encodeURIComponent(nextPath)}`
   const loginHref = `/login?next=${encodeURIComponent(nextPath)}`

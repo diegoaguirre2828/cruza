@@ -42,7 +42,10 @@ export function SmartRouteAmbient() {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setState('loading')
       },
-      () => setState('denied'),
+      (err) => {
+        setState('denied')
+        trackEvent('geo_denied', { source: 'smart_route_ambient', code: err.code })
+      },
       { maximumAge: 5 * 60 * 1000, timeout: 6000, enableHighAccuracy: false },
     )
   }, [])

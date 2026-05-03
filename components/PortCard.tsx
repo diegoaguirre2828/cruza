@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { BridgeAlertSheet } from './BridgeAlertSheet'
 import { BridgeReportSheet } from './BridgeReportSheet'
 import { tapLight, tapSelection, tapSuccess } from '@/lib/haptics'
+import { trackEvent } from '@/lib/trackEvent'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
 import { useLang } from '@/lib/LangContext'
@@ -151,6 +152,7 @@ export function PortCard({ port, signal }: Props) {
       try {
         await navigator.share({ title: 'Cruzar', text, url })
         shared = true
+        trackEvent('share_completed', { source: 'port_card', port_id: port.portId, channel: 'native' })
       } catch {
         // user cancelled or share failed — fall through to clipboard
       }

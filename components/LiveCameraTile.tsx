@@ -81,6 +81,15 @@ export function LiveCameraTile({ portId, portName, regionLabel, wait, vehicleClo
   const es = lang === 'es'
   const tone = levelTone(wait, isClosed, vehicleClosed, es)
   const isPaid = tier === 'pro' || tier === 'business'
+
+  useEffect(() => {
+    if (!isPaid) return
+    trackEvent('bridge_camera_viewed', {
+      port_id: portId,
+      feed_kind: feed.kind,
+    })
+  }, [isPaid, portId, feed.kind])
+
   // 2026-04-28: /camaras locked to Pro per Diego's pick. Free users see
   // a teaser tile (bridge name + region + wait time + locked-camera
   // overlay) instead of the live feed. Removes the "why is Laredo free
@@ -171,6 +180,7 @@ export function LiveCameraTile({ portId, portName, regionLabel, wait, vehicleClo
       try {
         await navigator.share({ title: 'Cruzar', text, url })
         shared = true
+        trackEvent('share_completed', { source: 'camera_tile', port_id: portId, channel: 'native' })
       } catch { /* cancelled */ }
     }
     if (!shared) {

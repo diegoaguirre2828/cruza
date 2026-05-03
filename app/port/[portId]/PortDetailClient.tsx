@@ -25,6 +25,7 @@ import { cityForPortId } from '@/lib/cityMeta'
 import { PortDetailHero } from '@/components/PortDetailHero'
 import { WaitConfirmStrip } from '@/components/WaitConfirmStrip'
 import { trackEvent } from '@/lib/trackEvent'
+import { getPortMeta } from '@/lib/portMeta'
 import { getAffiliate } from '@/lib/affiliates'
 import { AdBanner } from '@/components/AdBanner'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
@@ -94,6 +95,78 @@ export function PortDetailClient({ port, portId }: Props) {
   const [loadingHistory, setLoadingHistory] = useState(true)
   const [reportRefresh, setReportRefresh] = useState(0)
   const [reportPulse, setReportPulse] = useState(false)
+
+  // bridge_detail_viewed + at_port detection. Fires on mount with
+  // best-effort geo (no prompt). Tracks dwell time and fires
+  // bridge_detail_dwell on unmount. Diego 2026-05-03 audit: "are people
+  // checking from the line or from home?"
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mountedAt = Date.now()
+    const portMeta = getPortMeta(portId)
+    const meta = (portMeta?.lat != null && portMeta?.lng != null) ? { lat: portMeta.lat, lng: portMeta.lng } : null
+
+    function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+      const R = 6371
+      const dLat = (lat2 - lat1) * Math.PI / 180
+      const dLng = (lng2 - lng1) * Math.PI / 180
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    }
+
+    function fireView(at_port: boolean | null, distance_km: number | null) {
+      trackEvent('bridge_detail_viewed', {
+        port_id: portId,
+        port_name: port.portName,
+        at_port,
+        distance_km,
+      })
+      if (at_port) {
+        trackEvent('wait_checked_at_port', {
+          port_id: portId,
+          port_name: port.portName,
+          distance_km,
+          live_wait: port.vehicle ?? null,
+        })
+      }
+    }
+
+    let fired = false
+    if (meta && navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        .then(p => {
+          if (p.state === 'granted' && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                if (fired) return
+                fired = true
+                const km = haversineKm(pos.coords.latitude, pos.coords.longitude, meta.lat, meta.lng)
+                fireView(km <= 3, Math.round(km * 10) / 10)
+              },
+              () => { if (!fired) { fired = true; fireView(null, null) } },
+              { maximumAge: 5 * 60 * 1000, timeout: 4000, enableHighAccuracy: false },
+            )
+          } else if (!fired) {
+            fired = true
+            fireView(null, null)
+          }
+        })
+        .catch(() => { if (!fired) { fired = true; fireView(null, null) } })
+    } else {
+      fired = true
+      fireView(null, null)
+    }
+
+    return () => {
+      const dwell_ms = Date.now() - mountedAt
+      // Bounce signal: closed within 5s of seeing the wait number
+      trackEvent('bridge_detail_dwell', {
+        port_id: portId,
+        dwell_ms,
+        bounce: dwell_ms < 5000,
+      })
+    }
+  }, [portId, port.portName, port.vehicle])
 
   // When the user lands from the no-data 'Be the first to report' CTA
   // (?report=1 or #report), jump straight to the report form and
@@ -291,6 +364,7 @@ export function PortDetailClient({ port, portId }: Props) {
       try {
         trackShare('native', 'port_detail')
         await navigator.share({ title: port.portName, text, url })
+        trackEvent('share_completed', { source: 'port_detail', port_id: portId, channel: 'native' })
       } catch { /* cancelled */ }
     } else {
       trackShare('copy', 'port_detail')

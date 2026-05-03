@@ -250,7 +250,9 @@ export function BridgeReportSheet({ open, onClose, portId, portName }: Props) {
       ? `🌉 ${portName} ahorita: ${waitMinutes != null ? `${waitMinutes} min` : 'reportado'} · Cruzar`
       : `🌉 ${portName} right now: ${waitMinutes != null ? `${waitMinutes} min` : 'reported'} · Cruzar`
     if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({ title: 'Cruzar', text, url }).catch(() => {})
+      navigator.share({ title: 'Cruzar', text, url })
+        .then(() => trackEvent('share_completed', { source: 'report_sheet', port_id: portId, channel: 'native' }))
+        .catch(() => {})
     } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(`${text}\n${url}`).catch(() => {})
       toast.success(es ? 'Copiado' : 'Copied')

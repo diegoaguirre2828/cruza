@@ -71,11 +71,13 @@ export function usePushNotifications() {
       if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
         const result = await Notification.requestPermission()
         if (result !== 'granted') {
+          try { await fetch('/api/events/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_name: 'push_permission_denied', props: { result } }), keepalive: true }) } catch { /* ignore */ }
           setLoading(false)
           return
         }
       }
       if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+        try { await fetch('/api/events/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_name: 'push_permission_denied', props: { result: 'denied_pre_existing' } }), keepalive: true }) } catch { /* ignore */ }
         setLoading(false)
         return
       }
