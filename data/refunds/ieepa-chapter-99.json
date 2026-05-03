@@ -1,0 +1,64 @@
+{
+  "version": "v1.0.0-2026-05-03",
+  "source": "https://www.cbp.gov/trade/programs-administration/trade-remedies/ieepa-duty-refunds",
+  "scotus_invalidated_at": "2026-02-20",
+  "ieepa_collection_ended_at": "2026-02-24",
+  "executive_orders": [
+    {
+      "eo_number": "14193",
+      "title": "Imposing Duties to Address the Flow of Illicit Drugs Across Our Northern Border (Canada fentanyl)",
+      "country_codes": ["CA"],
+      "effective_from": "2025-03-04",
+      "effective_to": "2026-02-24",
+      "htsus_chapter_99_codes": ["9903.01.10", "9903.01.11"],
+      "duty_rate_pct": 25
+    },
+    {
+      "eo_number": "14194",
+      "title": "Imposing Duties to Address the Situation at Our Southern Border (Mexico fentanyl)",
+      "country_codes": ["MX"],
+      "effective_from": "2025-03-04",
+      "effective_to": "2026-02-24",
+      "htsus_chapter_99_codes": ["9903.01.20", "9903.01.21"],
+      "duty_rate_pct": 25
+    },
+    {
+      "eo_number": "14195",
+      "title": "Imposing Duties to Address the Synthetic Opioid Supply Chain in PRC (China fentanyl)",
+      "country_codes": ["CN"],
+      "effective_from": "2025-02-04",
+      "effective_to": "2026-02-24",
+      "htsus_chapter_99_codes": ["9903.01.30"],
+      "duty_rate_pct": 20
+    },
+    {
+      "eo_number": "14257",
+      "title": "Reciprocal Tariff",
+      "country_codes": ["*"],
+      "effective_from": "2025-04-05",
+      "effective_to": "2026-02-24",
+      "htsus_chapter_99_codes": ["9903.02.01"],
+      "duty_rate_pct_default": 10,
+      "duty_rate_pct_by_country": {
+        "CN": 34,
+        "VN": 46,
+        "TH": 36,
+        "ID": 32,
+        "MY": 24,
+        "JP": 24,
+        "KR": 25,
+        "TW": 32,
+        "EU": 20,
+        "IN": 26
+      }
+    }
+  ],
+  "interest_rate_table_19_cfr_24_3a": {
+    "2025-Q1": 8.0,
+    "2025-Q2": 7.5,
+    "2025-Q3": 7.0,
+    "2025-Q4": 7.0,
+    "2026-Q1": 7.5,
+    "2026-Q2": 8.0
+  }
+}
