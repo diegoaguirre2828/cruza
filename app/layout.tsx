@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Bricolage_Grotesque } from "next/font/google";
 import Script from "next/script";
+import { ViewTransitions } from "next-view-transitions";
+import { Toaster } from "sonner";
 import { LangProvider } from "@/lib/LangContext";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { Footer } from "@/components/Footer";
@@ -24,6 +26,15 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Display font for hero numbers + section headers. Bricolage Grotesque
+// has a confident operational feel that pairs with the transit-board
+// aesthetic — flip-board precision instead of corporate Inter.
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-display",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -68,10 +79,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    <ViewTransitions>
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
     >
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -109,6 +121,17 @@ export default function RootLayout({
           </SWRProvider>
           </LangProvider>
         </ThemeProvider>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              fontFamily: 'var(--font-geist-sans), -apple-system, BlinkMacSystemFont, sans-serif',
+              fontWeight: 600,
+            },
+          }}
+          richColors
+          closeButton={false}
+        />
         <Analytics />
         <SpeedInsights />
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
@@ -121,5 +144,6 @@ export default function RootLayout({
         )}
       </body>
     </html>
+    </ViewTransitions>
   );
 }

@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Share2, Check, Star, Bell } from 'lucide-react'
+import { toast } from 'sonner'
 import { BridgeAlertSheet } from './BridgeAlertSheet'
+import { tapLight, tapSelection, tapSuccess } from '@/lib/haptics'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
 import { useLang } from '@/lib/LangContext'
@@ -90,21 +92,27 @@ export function PortCard({ port, signal }: Props) {
     e.preventDefault()
     e.stopPropagation()
     if (!signedIn) {
-      // Moments-of-want — inline modal w/ favorite intent. Better conversion
-      // than the previous /signup redirect because the user keeps their
-      // visual context. /welcome executes the favorite save post-auth.
+      tapLight()
       setSignupModalIntent('favorite')
       return
     }
+    const wasStarred = starred
+    tapSelection()
     await toggleFavorite(port.portId, port.portName)
+    if (!wasStarred) {
+      tapSuccess()
+      toast.success(
+        lang === 'es' ? `Guardado · ${port.portName}` : `Saved · ${port.portName}`,
+        { duration: 2500 }
+      )
+    }
   }
 
   function handleAlertBell(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
+    tapLight()
     if (!signedIn) {
-      // Guests: open the modal w/ alert intent + threshold picker. The
-      // /signup flow queues the intent; /welcome creates the alert post-auth.
       setSignupModalIntent('alert')
       return
     }
@@ -114,6 +122,7 @@ export function PortCard({ port, signal }: Props) {
   async function handleShare(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
+    tapLight()
     trackShare('native', 'port_card')
 
     const fmt = (n: number) => n === 0 ? '<1 min' : `${n} min`
