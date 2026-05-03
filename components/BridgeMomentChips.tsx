@@ -10,53 +10,158 @@ interface Props {
   liveMin: number | null
 }
 
-interface Moment {
-  key: string
-  label: string
-  value: string
-  hint?: string
-  tone: 'live' | 'forecast' | 'pattern'
+interface HourBucket {
+  hour: number
+  avgWait: number | null
+  todayAvg: number | null
+  samples: number
 }
 
-const ROTATE_MS = 4500
+interface HourlyResponse {
+  hours: HourBucket[]
+  peak: { hour: number; avgWait: number } | null
+  best: { hour: number; avgWait: number } | null
+}
 
-function dayLabel(date: Date, es: boolean): string {
-  const todayKey = new Date().toISOString().slice(0, 10)
-  const targetKey = date.toISOString().slice(0, 10)
-  if (todayKey === targetKey) return es ? 'Hoy' : 'Today'
-  const diff = Math.round((date.getTime() - new Date(todayKey).getTime()) / (24 * 60 * 60 * 1000))
-  if (diff === 1) return es ? 'Mañana' : 'Tomorrow'
-  const dayNamesEs = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-  const dayNamesEn = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-  return (es ? dayNamesEs : dayNamesEn)[date.getUTCDay()]
+const ROTATE_MS = 5500
+const DAY_NAMES_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const DAY_NAMES_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+function fmtHour(h: number, es: boolean): string {
+  if (es) {
+    if (h === 0) return '12 AM'
+    if (h === 12) return '12 PM'
+    return h < 12 ? `${h} AM` : `${h - 12} PM`
+  }
+  return `${((h + 11) % 12) + 1}${h < 12 ? 'AM' : 'PM'}`
 }
 
 function nextSaturday(): Date {
   const d = new Date()
-  const day = d.getUTCDay()
+  const day = d.getDay()
   const delta = day === 6 ? 7 : (6 - day)
-  d.setUTCDate(d.getUTCDate() + delta)
+  d.setDate(d.getDate() + delta)
   return d
 }
 
-// Auto-rotating moment chip strip directly under the wait-time hero.
-// Replaces the buried "Patterns / Data" tab. 4 rotating cards: now,
-// next 6h trend, this Saturday, typical at this hour. Auto-advances
-// every 4.5s; tap the dots or swipe to jump. Apple-Wallet card-stack
-// energy. Diego 2026-05-02: "patterns and data tab can be higher up,
-// like where near the current data is, if users want to see historical
-// then boom, maybe in the same tab as the same day forecast 'this
-// saturday' make it like a rotating thing."
+function severityClass(wait: number | null): string {
+  if (wait == null) return 'bg-gray-300/30 dark:bg-gray-600/40'
+  if (wait <= 20) return 'bg-emerald-500'
+  if (wait <= 30) return 'bg-lime-500'
+  if (wait <= 45) return 'bg-amber-500'
+  if (wait <= 60) return 'bg-orange-500'
+  return 'bg-red-600'
+}
+
+// HourlyBarChart — inline 24-bar mini-chart used inside the moment cards.
+// Renders today/saturday hourly pattern, current hour highlighted with a
+// subtle pulsing ring. Heights normalized to maxWait. Tap to see hour
+// label inline. Matches the THIS SATURDAY pattern Diego flagged
+// 2026-05-02 as "what good looks like."
+function HourlyBars({
+  hours,
+  highlightHour,
+  liveMin,
+}: {
+  hours: HourBucket[]
+  highlightHour?: number | null
+  liveMin?: number | null
+}) {
+  const [hovered, setHovered] = useState<number | null>(null)
+  const maxWait = useMemo(
+    () => hours.reduce((m, h) => (h.todayAvg != null && h.todayAvg > m ? h.todayAvg : (h.avgWait != null && h.avgWait > m ? h.avgWait : m)), 0),
+    [hours],
+  )
+  const focus = hovered ?? highlightHour ?? null
+  const focusBucket = focus != null ? hours.find(h => h.hour === focus) : null
+  const focusValue = focusBucket?.todayAvg ?? focusBucket?.avgWait ?? null
+
+  return (
+    <div className="w-full">
+      <div className="flex items-end gap-[3px] h-[68px] mt-1">
+        {hours.map((h) => {
+          const v = h.todayAvg ?? h.avgWait ?? null
+          const heightPct = v != null && maxWait > 0 ? Math.max(8, Math.round((v / maxWait) * 100)) : 6
+          const isFocus = h.hour === focus
+          return (
+            <button
+              key={h.hour}
+              type="button"
+              onClick={() => setHovered(h.hour)}
+              aria-label={`${fmtHour(h.hour, false)}: ${v ?? 'n/a'} min`}
+              className={`relative flex-1 rounded-sm ${severityClass(v)} ${isFocus ? 'ring-2 ring-white/80 dark:ring-white/60' : ''}`}
+              style={{ height: `${heightPct}%`, minHeight: 6 }}
+            />
+          )
+        })}
+      </div>
+      <div className="flex items-center justify-between mt-1.5 text-[10px] font-medium opacity-70 tabular-nums">
+        <span>6 AM</span>
+        <span>12 PM</span>
+        <span>6 PM</span>
+      </div>
+      {focus != null && focusValue != null && (
+        <p className="mt-1 text-[11px] font-semibold text-center opacity-80">
+          {fmtHour(focus, false)} · <span className="font-mono">{focusValue}m</span>
+          {liveMin != null && focusValue !== liveMin && (
+            <span className="ml-1.5 opacity-70">
+              ({focusValue > liveMin ? '+' : ''}{focusValue - liveMin}m vs ahora)
+            </span>
+          )}
+        </p>
+      )}
+    </div>
+  )
+}
+
+interface Moment {
+  key: string
+  label: string
+  badge: string | null
+  body: React.ReactNode
+}
+
+// Rotating moment carousel — the "patterns/data as carousel" Diego asked
+// for 2026-05-02. Replaces the buried Patterns & data details disclosure
+// + the early single-number chip strip. Each card renders rich visuals
+// (hourly sparkline bars, trend numbers) instead of plain text. Cards
+// rotate every ~5.5s; tap dots to jump.
 
 export function BridgeMomentChips({ portId, liveMin }: Props) {
   const { lang } = useLang()
   const es = lang === 'es'
+  const [todayHours, setTodayHours] = useState<HourBucket[] | null>(null)
+  const [todayBest, setTodayBest] = useState<{ hour: number; avgWait: number } | null>(null)
+  const [todayPeak, setTodayPeak] = useState<{ hour: number; avgWait: number } | null>(null)
+  const [satHours, setSatHours] = useState<HourBucket[] | null>(null)
   const [forecast6h, setForecast6h] = useState<number | null>(null)
-  const [satForecast, setSatForecast] = useState<number | null>(null)
-  const [typicalNow, setTypicalNow] = useState<number | null>(null)
   const [idx, setIdx] = useState(0)
 
-  // Forecast 6h ahead
+  // Today's pattern + best/peak
+  useEffect(() => {
+    fetchWithTimeout(`/api/ports/${encodeURIComponent(portId)}/hourly`, { cache: 'no-store' }, 6000)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: HourlyResponse | null) => {
+        if (!d?.hours) return
+        setTodayHours(d.hours)
+        setTodayBest(d.best)
+        setTodayPeak(d.peak)
+      })
+      .catch(() => {})
+  }, [portId])
+
+  // Saturday pattern (dow=6)
+  useEffect(() => {
+    fetchWithTimeout(`/api/ports/${encodeURIComponent(portId)}/hourly?dow=6`, { cache: 'no-store' }, 6000)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: HourlyResponse | null) => {
+        if (!d?.hours) return
+        setSatHours(d.hours)
+      })
+      .catch(() => {})
+  }, [portId])
+
+  // 6h forecast
   useEffect(() => {
     fetchWithTimeout(`/api/predictions?portId=${encodeURIComponent(portId)}&horizon=6`, { cache: 'no-store' }, 5000)
       .then(r => r.ok ? r.json() : null)
@@ -66,79 +171,75 @@ export function BridgeMomentChips({ portId, liveMin }: Props) {
       .catch(() => {})
   }, [portId])
 
-  // Saturday forecast at the same hour-of-day
-  useEffect(() => {
-    const sat = nextSaturday()
-    sat.setUTCHours(new Date().getUTCHours())
-    const horizon = Math.max(1, Math.round((sat.getTime() - Date.now()) / (60 * 60 * 1000)))
-    if (horizon > 168) return // beyond 7 days, skip
-    fetchWithTimeout(`/api/predictions?portId=${encodeURIComponent(portId)}&horizon=${horizon}`, { cache: 'no-store' }, 5000)
-      .then(r => r.ok ? r.json() : null)
-      .then((d: { prediction_min?: number } | null) => {
-        if (d?.prediction_min != null && Number.isFinite(d.prediction_min)) setSatForecast(Math.round(d.prediction_min))
-      })
-      .catch(() => {})
-  }, [portId])
-
-  // Typical at this hour-of-day for this port
-  useEffect(() => {
-    fetchWithTimeout(`/api/ports/${encodeURIComponent(portId)}/best-times`, { cache: 'no-store' }, 5000)
-      .then(r => r.ok ? r.json() : null)
-      .then((d: { hours?: { hour: number; avg: number; dow?: number }[] } | null) => {
-        const hours = d?.hours ?? []
-        const now = new Date()
-        const dow = now.getDay()
-        const hour = now.getHours()
-        const exact = hours.find(h => h.dow === dow && h.hour === hour)
-                  || hours.find(h => h.hour === hour)
-        if (exact?.avg != null) setTypicalNow(Math.round(exact.avg))
-      })
-      .catch(() => {})
-  }, [portId])
+  const currentHour = new Date().getHours()
+  const todayDow = new Date().getDay()
+  const todayDayName = es ? DAY_NAMES_ES[todayDow] : DAY_NAMES_EN[todayDow]
+  const sat = nextSaturday()
+  const isFridayOrSaturday = todayDow === 5 || todayDow === 6
+  const satLabel = isFridayOrSaturday
+    ? (es ? 'Próximo sábado' : 'Next Saturday')
+    : (es ? 'Este sábado' : 'This Saturday')
 
   const moments = useMemo<Moment[]>(() => {
     const list: Moment[] = []
-    if (liveMin != null) {
+
+    // Card: today's typical pattern
+    if (todayHours && todayHours.some(h => (h.todayAvg ?? h.avgWait) != null)) {
       list.push({
-        key: 'now',
-        label: es ? 'Ahora' : 'Right now',
-        value: `${liveMin} min`,
-        hint: es ? 'CBP en vivo' : 'Live CBP',
-        tone: 'live',
+        key: 'today_pattern',
+        label: es ? `Patrón típico · ${todayDayName.toLowerCase()}` : `Typical · ${todayDayName}`,
+        badge: todayBest && todayPeak
+          ? (es ? `mejor ${fmtHour(todayBest.hour, true)} · pico ${fmtHour(todayPeak.hour, true)}` : `best ${fmtHour(todayBest.hour, false)} · peak ${fmtHour(todayPeak.hour, false)}`)
+          : null,
+        body: <HourlyBars hours={todayHours} highlightHour={currentHour} liveMin={liveMin} />,
       })
     }
+
+    // Card: 6h forecast + delta
     if (forecast6h != null && liveMin != null) {
-      const arrow = forecast6h > liveMin ? '↑' : forecast6h < liveMin ? '↓' : '→'
+      const diff = forecast6h - liveMin
+      const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→'
+      const trend = diff > 0
+        ? (es ? 'Subiendo' : 'Trending up')
+        : diff < 0
+          ? (es ? 'Bajando' : 'Trending down')
+          : (es ? 'Estable' : 'Holding steady')
       list.push({
-        key: 'forecast6h',
+        key: 'forecast_6h',
         label: es ? 'En 6 horas' : 'In 6 hours',
-        value: `${forecast6h} min ${arrow}`,
-        hint: es
-          ? (forecast6h > liveMin ? 'Subiendo' : forecast6h < liveMin ? 'Bajando' : 'Estable')
-          : (forecast6h > liveMin ? 'Trending up' : forecast6h < liveMin ? 'Trending down' : 'Stable'),
-        tone: 'forecast',
+        badge: trend,
+        body: (
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-4xl font-black font-display tabular-nums leading-none">
+                {forecast6h}<span className="text-xl opacity-70 ml-1">min</span>
+              </p>
+              <p className="text-[11px] opacity-70 mt-1.5">
+                {es ? `Ahorita ${liveMin} min · ${arrow} ${Math.abs(diff)} min` : `Now ${liveMin} min · ${arrow} ${Math.abs(diff)} min`}
+              </p>
+            </div>
+            <div className="text-5xl opacity-40">{arrow}</div>
+          </div>
+        ),
       })
     }
-    if (satForecast != null) {
+
+    // Card: this/next Saturday
+    if (satHours && satHours.some(h => (h.todayAvg ?? h.avgWait) != null)) {
+      const sameHour = satHours.find(h => h.hour === currentHour)
+      const sameHourValue = sameHour?.todayAvg ?? sameHour?.avgWait ?? null
       list.push({
         key: 'saturday',
-        label: es ? `Este ${dayLabel(nextSaturday(), true).toLowerCase()}` : `This ${dayLabel(nextSaturday(), false)}`,
-        value: `${satForecast} min`,
-        hint: es ? 'A esta misma hora' : 'Same hour of day',
-        tone: 'forecast',
+        label: satLabel,
+        badge: sameHourValue != null
+          ? (es ? `${fmtHour(currentHour, true)}: ~${sameHourValue} min` : `${fmtHour(currentHour, false)}: ~${sameHourValue} min`)
+          : (sat.toLocaleDateString(es ? 'es-MX' : 'en-US', { month: 'short', day: 'numeric' })),
+        body: <HourlyBars hours={satHours} highlightHour={currentHour} liveMin={liveMin} />,
       })
     }
-    if (typicalNow != null) {
-      list.push({
-        key: 'typical',
-        label: es ? 'Típico ahora' : 'Typical now',
-        value: `${typicalNow} min`,
-        hint: es ? 'Promedio últimos 30 días' : '30-day average',
-        tone: 'pattern',
-      })
-    }
+
     return list
-  }, [liveMin, forecast6h, satForecast, typicalNow, es])
+  }, [todayHours, todayBest, todayPeak, forecast6h, satHours, liveMin, currentHour, todayDayName, satLabel, es])
 
   useEffect(() => {
     if (moments.length <= 1) return
@@ -149,56 +250,47 @@ export function BridgeMomentChips({ portId, liveMin }: Props) {
   if (moments.length === 0) return null
 
   const current = moments[idx % moments.length]
-  const toneClass =
-    current.tone === 'live'      ? 'bg-blue-600 text-white border-blue-700' :
-    current.tone === 'forecast'  ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100 border-indigo-200 dark:border-indigo-800' :
-                                   'bg-amber-50 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 border-amber-200 dark:border-amber-800'
-  const labelClass =
-    current.tone === 'live' ? 'text-blue-200' :
-    current.tone === 'forecast' ? 'text-indigo-600 dark:text-indigo-400' :
-                                  'text-amber-600 dark:text-amber-400'
 
   return (
-    <div className="mt-2 mb-3">
-      <div className={`relative rounded-2xl border px-4 py-3.5 overflow-hidden ${toneClass}`}>
+    <div className="mt-3 mb-4">
+      <div className="relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 px-4 py-3.5 overflow-hidden text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-gray-500 dark:text-gray-400">
+            {current.label}
+          </p>
+          {current.badge && (
+            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[55%] tabular-nums">
+              {current.badge}
+            </span>
+          )}
+        </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={current.key}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.25 }}
-            className="flex items-center justify-between gap-3"
           >
-            <div className="min-w-0">
-              <p className={`text-[10px] uppercase tracking-[0.18em] font-bold ${labelClass}`}>
-                {current.label}
-              </p>
-              <p className="text-2xl font-black font-display leading-tight tabular-nums mt-0.5">
-                {current.value}
-              </p>
-              {current.hint && (
-                <p className="text-[11px] opacity-80 mt-0.5">{current.hint}</p>
-              )}
-            </div>
-            {moments.length > 1 && (
-              <div className="flex flex-col gap-1.5 flex-shrink-0">
-                {moments.map((m, i) => (
-                  <button
-                    key={m.key}
-                    onClick={() => setIdx(i)}
-                    aria-label={m.label}
-                    className={`w-1.5 rounded-full transition-all ${
-                      i === idx
-                        ? (current.tone === 'live' ? 'bg-white h-4' : 'bg-current h-4')
-                        : (current.tone === 'live' ? 'bg-white/40 h-1.5' : 'bg-current/30 h-1.5')
-                    }`}
-                  />
-                ))}
-              </div>
-            )}
+            {current.body}
           </motion.div>
         </AnimatePresence>
+        {moments.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            {moments.map((m, i) => (
+              <button
+                key={m.key}
+                onClick={() => setIdx(i)}
+                aria-label={m.label}
+                className={`rounded-full transition-all ${
+                  i === idx
+                    ? 'bg-blue-600 dark:bg-blue-400 w-6 h-1.5'
+                    : 'bg-gray-300 dark:bg-gray-600 w-1.5 h-1.5'
+                }`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

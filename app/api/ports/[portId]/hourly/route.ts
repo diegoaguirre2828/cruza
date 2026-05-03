@@ -7,10 +7,17 @@ import { getSupabase } from '@/lib/supabase'
 export const revalidate = 600
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ portId: string }> }
 ) {
   const { portId } = await params
+  const url = new URL(req.url)
+  const dowParam = url.searchParams.get('dow')
+  const todayDow = new Date().getDay()
+  // dowFilter: when ?dow=N is passed, filter the typical-day pattern to that
+  // weekday (used by BridgeMomentChips to render "This Saturday" etc).
+  // Defaults to todayDow so the legacy todayAvg field behavior is preserved.
+  const dowFilter = dowParam != null && /^[0-6]$/.test(dowParam) ? Number(dowParam) : todayDow
 
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -24,7 +31,6 @@ export async function GET(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const hourBuckets: { sum: number; count: number }[] = Array.from({ length: 24 }, () => ({ sum: 0, count: 0 }))
-  const todayDow = new Date().getDay()
   const todayBuckets: { sum: number; count: number }[] = Array.from({ length: 24 }, () => ({ sum: 0, count: 0 }))
 
   for (const row of data || []) {
@@ -33,7 +39,7 @@ export async function GET(
     const w = row.vehicle_wait as number
     hourBuckets[h].sum += w
     hourBuckets[h].count += 1
-    if (row.day_of_week === todayDow) {
+    if (row.day_of_week === dowFilter) {
       todayBuckets[h].sum += w
       todayBuckets[h].count += 1
     }
