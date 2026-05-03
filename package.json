@@ -13,7 +13,13 @@
     "verify:origin": "npx tsx scripts/verify-origin-validator.mjs",
     "verify:rvc": "npx tsx scripts/verify-rvc-calculator.mjs",
     "verify:ticket": "node scripts/verify-ticket-roundtrip.mjs",
-    "audit:module-2": "node scripts/run-module-2-audit.mjs"
+    "audit:module-2": "node scripts/run-module-2-audit.mjs",
+    "verify:fda": "npx tsx scripts/verify-fda-prior-notice.mjs",
+    "verify:usda": "npx tsx scripts/verify-usda-aphis.mjs",
+    "verify:isf": "npx tsx scripts/verify-isf-10-2.mjs",
+    "verify:cbp7501": "npx tsx scripts/verify-cbp-7501.mjs",
+    "verify:manifest": "npx tsx scripts/verify-regulatory-manifest.mjs",
+    "audit:module-3": "node scripts/run-module-3-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
