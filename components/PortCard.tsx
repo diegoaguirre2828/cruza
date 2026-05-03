@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Share2, Check, Star, Bell } from 'lucide-react'
+import { BridgeAlertSheet } from './BridgeAlertSheet'
 import { getWaitLevel, waitLevelDot } from '@/lib/cbp'
 import { WaitBadge } from './WaitBadge'
 import { useLang } from '@/lib/LangContext'
@@ -55,6 +56,7 @@ export function PortCard({ port, signal }: Props) {
   const primaryWait = port.vehicle ?? port.pedestrian
   const [shared, setShared] = useState(false)
   const [showToast, setShowToast] = useState(false)
+  const [showAlertSheet, setShowAlertSheet] = useState(false)
   // Moments-of-want signup modal — opens when guests tap the inline 🔔
   // (alert) or ⭐ (favorite) buttons. Replaces the redirect-to-/signup
   // pattern with an inline modal that captures the specific user gesture.
@@ -106,9 +108,7 @@ export function PortCard({ port, signal }: Props) {
       setSignupModalIntent('alert')
       return
     }
-    // Signed-in users go straight to the port detail page where the alert
-    // UI lives — anchor `#alert-card` jumps to the existing alert section.
-    router.push(`/cruzar/${slugForPort(port.portId)}#alert-card`)
+    setShowAlertSheet(true)
   }
 
   async function handleShare(e: React.MouseEvent) {
@@ -485,6 +485,12 @@ export function PortCard({ port, signal }: Props) {
         portId={port.portId}
         portName={port.portName}
         nextPath={`/cruzar/${slugForPort(port.portId)}`}
+      />
+      <BridgeAlertSheet
+        open={showAlertSheet}
+        onClose={() => setShowAlertSheet(false)}
+        portId={port.portId}
+        portName={port.portName}
       />
     </Link>
   )
