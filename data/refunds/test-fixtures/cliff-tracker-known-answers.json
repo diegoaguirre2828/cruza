@@ -1,0 +1,512 @@
+[
+  {
+    "label": "Unliquidated — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000001",
+      "entry_date": "2025-06-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 500.00,
+      "total_dutiable_value_usd": 2000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Liquidated 20 days ago — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000002",
+      "entry_date": "2025-04-15",
+      "liquidation_date": "2026-04-13",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1250.00,
+      "total_dutiable_value_usd": 5000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-10-10"
+  },
+  {
+    "label": "Liquidated 50 days ago — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000003",
+      "entry_date": "2025-03-10",
+      "liquidation_date": "2026-03-14",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 2000.00,
+      "total_dutiable_value_usd": 10000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-09-10"
+  },
+  {
+    "label": "Liquidated exactly 80 days ago — still cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000004",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2026-02-12",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 800.00,
+      "total_dutiable_value_usd": 3200.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-08-11"
+  },
+  {
+    "label": "Liquidated exactly 81 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000005",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2026-02-11",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1100.00,
+      "total_dutiable_value_usd": 4400.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-08-10"
+  },
+  {
+    "label": "Liquidated 100 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000006",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2026-01-23",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 3000.00,
+      "total_dutiable_value_usd": 15000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-07-22"
+  },
+  {
+    "label": "Liquidated 150 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000007",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2025-12-04",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 500.00,
+      "total_dutiable_value_usd": 2000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-06-02"
+  },
+  {
+    "label": "Liquidated exactly 180 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000008",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2025-11-04",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1800.00,
+      "total_dutiable_value_usd": 7200.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-05-03"
+  },
+  {
+    "label": "Liquidated exactly 181 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000009",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2025-11-03",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 2200.00,
+      "total_dutiable_value_usd": 8800.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2026-05-02"
+  },
+  {
+    "label": "Liquidated 200 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000010",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2025-10-15",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 3500.00,
+      "total_dutiable_value_usd": 17500.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2026-04-13"
+  },
+  {
+    "label": "Liquidated 244 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000011",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2025-09-01",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 890.00,
+      "total_dutiable_value_usd": 3560.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2026-02-28"
+  },
+  {
+    "label": "Liquidated 367 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000012",
+      "entry_date": "2025-01-01",
+      "liquidation_date": "2025-05-01",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1750.00,
+      "total_dutiable_value_usd": 7000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2025-10-28"
+  },
+  {
+    "label": "Extended status — ineligible",
+    "entry": {
+      "entry_number": "ENT2025CT000013",
+      "entry_date": "2025-03-20",
+      "liquidation_date": "2026-01-10",
+      "liquidation_status": "extended",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 2200.00,
+      "total_dutiable_value_usd": 8800.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "ineligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Suspended status — ineligible",
+    "entry": {
+      "entry_number": "ENT2025CT000014",
+      "entry_date": "2025-04-05",
+      "liquidation_date": "2026-01-20",
+      "liquidation_status": "suspended",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 3400.00,
+      "total_dutiable_value_usd": 17000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "ineligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Extended status with no liquidation date — ineligible",
+    "entry": {
+      "entry_number": "ENT2025CT000015",
+      "entry_date": "2025-05-01",
+      "liquidation_date": null,
+      "liquidation_status": "extended",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 780.00,
+      "total_dutiable_value_usd": 3120.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "ineligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Suspended with past liq date — still ineligible (status takes priority)",
+    "entry": {
+      "entry_number": "ENT2025CT000016",
+      "entry_date": "2025-04-01",
+      "liquidation_date": "2026-02-01",
+      "liquidation_status": "suspended",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1100.00,
+      "total_dutiable_value_usd": 4400.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "ineligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Unliquidated with null liquidation_date — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000017",
+      "entry_date": "2025-05-10",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1200.00,
+      "total_dutiable_value_usd": 6000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Final status liquidated 30 days ago — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000018",
+      "entry_date": "2025-04-01",
+      "liquidation_date": "2026-04-03",
+      "liquidation_status": "final",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 950.00,
+      "total_dutiable_value_usd": 3800.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-09-30"
+  },
+  {
+    "label": "CN EO14257 unliquidated — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000019",
+      "entry_date": "2025-04-10",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 3400.00,
+      "total_dutiable_value_usd": 10000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Liquidated 5 days ago — firmly cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000020",
+      "entry_date": "2025-06-01",
+      "liquidation_date": "2026-04-28",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 680.00,
+      "total_dutiable_value_usd": 2720.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-10-25"
+  },
+  {
+    "label": "Liquidated 90 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000021",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2026-02-01",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "VN",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 2300.00,
+      "total_dutiable_value_usd": 5000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-07-31"
+  },
+  {
+    "label": "Liquidated 170 days ago — protest_required (near deadline)",
+    "entry": {
+      "entry_number": "ENT2025CT000022",
+      "entry_date": "2025-03-01",
+      "liquidation_date": "2025-11-14",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "JP",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1440.00,
+      "total_dutiable_value_usd": 6000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-05-13"
+  },
+  {
+    "label": "Liquidated 250 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000023",
+      "entry_date": "2025-01-01",
+      "liquidation_date": "2025-08-26",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "KR",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 3750.00,
+      "total_dutiable_value_usd": 15000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2026-02-22"
+  },
+  {
+    "label": "Liquidated 1 year ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2024CT000024",
+      "entry_date": "2024-12-01",
+      "liquidation_date": "2025-05-03",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "EU",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 2000.00,
+      "total_dutiable_value_usd": 10000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2025-10-30"
+  },
+  {
+    "label": "Unliquidated high-value — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000025",
+      "entry_date": "2025-03-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 50000.00,
+      "total_dutiable_value_usd": 200000.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Liquidated 79 days ago — still cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000026",
+      "entry_date": "2025-04-01",
+      "liquidation_date": "2026-02-13",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 420.00,
+      "total_dutiable_value_usd": 1680.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": "2026-08-12"
+  },
+  {
+    "label": "Extended status with recent date — still ineligible",
+    "entry": {
+      "entry_number": "ENT2025CT000027",
+      "entry_date": "2025-05-01",
+      "liquidation_date": "2026-04-20",
+      "liquidation_status": "extended",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.01.30"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 890.00,
+      "total_dutiable_value_usd": 4450.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "ineligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Liquidated 120 days ago — protest_required",
+    "entry": {
+      "entry_number": "ENT2025CT000028",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2026-01-03",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["9903.01.20"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1540.00,
+      "total_dutiable_value_usd": 6160.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "protest_required",
+    "expected_protest_deadline": "2026-07-02"
+  },
+  {
+    "label": "Unliquidated CA — cape_eligible",
+    "entry": {
+      "entry_number": "ENT2025CT000029",
+      "entry_date": "2025-04-20",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["9903.01.10"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 560.00,
+      "total_dutiable_value_usd": 2240.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "cape_eligible",
+    "expected_protest_deadline": null
+  },
+  {
+    "label": "Liquidated 190 days ago — past_protest_window",
+    "entry": {
+      "entry_number": "ENT2025CT000030",
+      "entry_date": "2025-02-01",
+      "liquidation_date": "2025-10-25",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["9903.02.01"],
+      "duty_lines": [],
+      "total_duty_paid_usd": 1890.00,
+      "total_dutiable_value_usd": 9450.00
+    },
+    "today": "2026-05-03",
+    "expected_cliff_status": "past_protest_window",
+    "expected_protest_deadline": "2026-04-23"
+  }
+]

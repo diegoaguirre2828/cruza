@@ -1,0 +1,127 @@
+[
+  {
+    "label": "Empty string — VAL-F-001",
+    "csv": "",
+    "expected_error_rule_ids": ["VAL-F-001"]
+  },
+  {
+    "label": "Whitespace-only — VAL-F-001",
+    "csv": "   \n   ",
+    "expected_error_rule_ids": ["VAL-F-001"]
+  },
+  {
+    "label": "Wrong header — VAL-F-002",
+    "csv": "entry_number\nENT2025001234567",
+    "expected_error_rule_ids": ["VAL-F-002"]
+  },
+  {
+    "label": "Wrong header lowercase — VAL-F-002",
+    "csv": "entry number\nENT2025001234567",
+    "expected_error_rule_ids": ["VAL-F-002"]
+  },
+  {
+    "label": "Wrong header extra spaces — VAL-F-002",
+    "csv": " Entry Number \nENT2025001234567",
+    "expected_error_rule_ids": ["VAL-F-002"]
+  },
+  {
+    "label": "Header only no data rows — VAL-F-003",
+    "csv": "Entry Number",
+    "expected_error_rule_ids": ["VAL-F-003"]
+  },
+  {
+    "label": "Header only with trailing newline — VAL-F-003",
+    "csv": "Entry Number\n",
+    "expected_error_rule_ids": ["VAL-F-003"]
+  },
+  {
+    "label": "Bad entry number too short 13 chars — VAL-E-014",
+    "csv": "Entry Number\nENT202500123456",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Bad entry number too long 15 chars — VAL-E-014",
+    "csv": "Entry Number\nENT202500123456789",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Bad entry number with hyphen — VAL-E-014",
+    "csv": "Entry Number\nENT2025-01234567",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Bad entry number lowercase letters — VAL-E-014",
+    "csv": "Entry Number\nEnt2025001234567",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Bad entry number with special chars — VAL-E-014",
+    "csv": "Entry Number\nENT202500123456!",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Duplicate entry numbers — VAL-E-022",
+    "csv": "Entry Number\nENT2025001234567\nENT2025001234568\nENT2025001234567",
+    "expected_error_rule_ids": ["VAL-E-022"]
+  },
+  {
+    "label": "Multiple duplicates — VAL-E-022",
+    "csv": "Entry Number\nENT2025001234567\nENT2025001234567\nENT2025001234568\nENT2025001234568",
+    "expected_error_rule_ids": ["VAL-E-022"]
+  },
+  {
+    "label": "Row with commas extra columns — VAL-F-005",
+    "csv": "Entry Number\nENT2025001234567,2025-04-15,liquidated",
+    "expected_error_rule_ids": ["VAL-F-005"]
+  },
+  {
+    "label": "Row with comma at end — VAL-F-005",
+    "csv": "Entry Number\nENT2025001234567,",
+    "expected_error_rule_ids": ["VAL-F-005"]
+  },
+  {
+    "label": "Mixed: wrong header and bad entry — VAL-F-002",
+    "csv": "EntryNumber\nENT202500123456",
+    "expected_error_rule_ids": ["VAL-F-002"]
+  },
+  {
+    "label": "Empty entry number line — VAL-E-014",
+    "csv": "Entry Number\n",
+    "expected_error_rule_ids": ["VAL-F-003"]
+  },
+  {
+    "label": "Entry number with space inside — VAL-E-014",
+    "csv": "Entry Number\nENT 20250012345",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Two bad entries both wrong format — VAL-E-014 twice",
+    "csv": "Entry Number\nBAD000000000000\nENT2025001234567\n123456789012345",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Duplicate plus bad format — both VAL-E-022 and VAL-E-014",
+    "csv": "Entry Number\nENT2025001234567\nENT2025001234567\nBADENTRY12345",
+    "expected_error_rule_ids": ["VAL-E-022", "VAL-E-014"]
+  },
+  {
+    "label": "Wrong header with header-only — VAL-F-002 (not VAL-F-003, wrong header takes priority)",
+    "csv": "Entries\n",
+    "expected_error_rule_ids": ["VAL-F-002"]
+  },
+  {
+    "label": "Comma in good entry — VAL-F-005",
+    "csv": "Entry Number\nENT2025001234567\nENT2025001234568,extra\nENT2025001234569",
+    "expected_error_rule_ids": ["VAL-F-005"]
+  },
+  {
+    "label": "All zeros entry number — VAL-E-014",
+    "csv": "Entry Number\n00000000000000",
+    "expected_error_rule_ids": ["VAL-E-014"]
+  },
+  {
+    "label": "Mixed duplicate and comma — VAL-E-022 and VAL-F-005",
+    "csv": "Entry Number\nENT2025001234567\nENT2025001234567,extra\nENT2025001234568",
+    "expected_error_rule_ids": ["VAL-E-022", "VAL-F-005"]
+  }
+]

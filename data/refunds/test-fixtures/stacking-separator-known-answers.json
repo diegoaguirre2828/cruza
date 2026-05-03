@@ -1,0 +1,387 @@
+[
+  {
+    "label": "Pure IEEPA only — MX",
+    "entry": {
+      "entry_number": "ENT2025ST000001",
+      "entry_date": "2025-04-15",
+      "liquidation_date": "2026-01-10",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["8703.23.0150", "9903.01.20"],
+      "duty_lines": [
+        {"htsus_code": "8703.23.0150", "rate_pct": null, "amount_usd": 4250.00, "is_chapter_99": false},
+        {"htsus_code": "9903.01.20", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 4250.00,
+      "total_dutiable_value_usd": 17000.00
+    },
+    "ieepa_principal": 4250.00,
+    "expected": {
+      "entry_number": "ENT2025ST000001",
+      "ieepa_portion_usd": 4250.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "IEEPA + Section 301 stacked",
+    "entry": {
+      "entry_number": "ENT2025ST000002",
+      "entry_date": "2025-04-10",
+      "liquidation_date": "2026-01-20",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["8517.13.0000", "9903.01.30", "9903.88.01"],
+      "duty_lines": [
+        {"htsus_code": "8517.13.0000", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.30", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.88.01", "rate_pct": null, "amount_usd": 630.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 1830.00,
+      "total_dutiable_value_usd": 8500.00
+    },
+    "ieepa_principal": 1700.00,
+    "expected": {
+      "entry_number": "ENT2025ST000002",
+      "ieepa_portion_usd": 1700.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 630.00,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "IEEPA + Section 232 stacked",
+    "entry": {
+      "entry_number": "ENT2025ST000003",
+      "entry_date": "2025-04-01",
+      "liquidation_date": "2026-01-05",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["7208.51.0060", "9903.01.10", "9903.80.01"],
+      "duty_lines": [
+        {"htsus_code": "7208.51.0060", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.10", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.80.01", "rate_pct": null, "amount_usd": 750.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 1650.00,
+      "total_dutiable_value_usd": 3600.00
+    },
+    "ieepa_principal": 900.00,
+    "expected": {
+      "entry_number": "ENT2025ST000003",
+      "ieepa_portion_usd": 900.00,
+      "section_232_portion_usd": 750.00,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "IEEPA + Section 232 + Section 301 triple stack",
+    "entry": {
+      "entry_number": "ENT2025ST000004",
+      "entry_date": "2025-04-10",
+      "liquidation_date": "2026-01-15",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["7304.31.6050", "9903.01.30", "9903.80.01", "9903.88.01"],
+      "duty_lines": [
+        {"htsus_code": "7304.31.6050", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.30", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.80.01", "rate_pct": null, "amount_usd": 900.00, "is_chapter_99": true},
+        {"htsus_code": "9903.88.01", "rate_pct": null, "amount_usd": 500.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 3400.00,
+      "total_dutiable_value_usd": 10000.00
+    },
+    "ieepa_principal": 2000.00,
+    "expected": {
+      "entry_number": "ENT2025ST000004",
+      "ieepa_portion_usd": 2000.00,
+      "section_232_portion_usd": 900.00,
+      "section_301_portion_usd": 500.00,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "All unrelated duty — no stackable codes",
+    "entry": {
+      "entry_number": "ENT2025ST000005",
+      "entry_date": "2025-05-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["8703.23.0150"],
+      "duty_lines": [
+        {"htsus_code": "8703.23.0150", "rate_pct": null, "amount_usd": 1000.00, "is_chapter_99": false}
+      ],
+      "total_duty_paid_usd": 1000.00,
+      "total_dutiable_value_usd": 5000.00
+    },
+    "ieepa_principal": 0,
+    "expected": {
+      "entry_number": "ENT2025ST000005",
+      "ieepa_portion_usd": 0,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 1000.00
+    }
+  },
+  {
+    "label": "Section 232 aluminum code 9903.85.01",
+    "entry": {
+      "entry_number": "ENT2025ST000006",
+      "entry_date": "2025-05-10",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["7601.10.6000", "9903.01.10", "9903.85.01"],
+      "duty_lines": [
+        {"htsus_code": "7601.10.6000", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.10", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.85.01", "rate_pct": null, "amount_usd": 400.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 900.00,
+      "total_dutiable_value_usd": 2000.00
+    },
+    "ieepa_principal": 500.00,
+    "expected": {
+      "entry_number": "ENT2025ST000006",
+      "ieepa_portion_usd": 500.00,
+      "section_232_portion_usd": 400.00,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "Section 232 steel code 9903.81.01",
+    "entry": {
+      "entry_number": "ENT2025ST000007",
+      "entry_date": "2025-04-15",
+      "liquidation_date": "2026-01-20",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["7208.51.0060", "9903.01.20", "9903.81.01"],
+      "duty_lines": [
+        {"htsus_code": "7208.51.0060", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.20", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.81.01", "rate_pct": null, "amount_usd": 600.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 2100.00,
+      "total_dutiable_value_usd": 6000.00
+    },
+    "ieepa_principal": 1500.00,
+    "expected": {
+      "entry_number": "ENT2025ST000007",
+      "ieepa_portion_usd": 1500.00,
+      "section_232_portion_usd": 600.00,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "Pure reciprocal IEEPA EO14257",
+    "entry": {
+      "entry_number": "ENT2025ST000008",
+      "entry_date": "2025-04-10",
+      "liquidation_date": "2026-01-20",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "VN",
+      "htsus_codes": ["6109.10.0060", "9903.02.01"],
+      "duty_lines": [
+        {"htsus_code": "6109.10.0060", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.02.01", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 2300.00,
+      "total_dutiable_value_usd": 5000.00
+    },
+    "ieepa_principal": 2300.00,
+    "expected": {
+      "entry_number": "ENT2025ST000008",
+      "ieepa_portion_usd": 2300.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "IEEPA + unrelated MFN duty",
+    "entry": {
+      "entry_number": "ENT2025ST000009",
+      "entry_date": "2025-05-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["6204.62.4010", "9903.01.20"],
+      "duty_lines": [
+        {"htsus_code": "6204.62.4010", "rate_pct": null, "amount_usd": 120.00, "is_chapter_99": false},
+        {"htsus_code": "9903.01.20", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 620.00,
+      "total_dutiable_value_usd": 2000.00
+    },
+    "ieepa_principal": 500.00,
+    "expected": {
+      "entry_number": "ENT2025ST000009",
+      "ieepa_portion_usd": 500.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 120.00
+    }
+  },
+  {
+    "label": "IEEPA + Section 232 + unrelated MFN",
+    "entry": {
+      "entry_number": "ENT2025ST000010",
+      "entry_date": "2025-04-01",
+      "liquidation_date": "2025-12-20",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CA",
+      "htsus_codes": ["0406.90.9400", "9903.01.10", "9903.80.01"],
+      "duty_lines": [
+        {"htsus_code": "0406.90.9400", "rate_pct": null, "amount_usd": 200.00, "is_chapter_99": false},
+        {"htsus_code": "9903.01.10", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.80.01", "rate_pct": null, "amount_usd": 300.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 920.00,
+      "total_dutiable_value_usd": 1680.00
+    },
+    "ieepa_principal": 420.00,
+    "expected": {
+      "entry_number": "ENT2025ST000010",
+      "ieepa_portion_usd": 420.00,
+      "section_232_portion_usd": 300.00,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 200.00
+    }
+  },
+  {
+    "label": "Section 301 large amount",
+    "entry": {
+      "entry_number": "ENT2025ST000011",
+      "entry_date": "2025-04-10",
+      "liquidation_date": "2026-02-10",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["8504.40.9530", "9903.01.30", "9903.88.01"],
+      "duty_lines": [
+        {"htsus_code": "8504.40.9530", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.30", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.88.01", "rate_pct": null, "amount_usd": 2500.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 6400.00,
+      "total_dutiable_value_usd": 19000.00
+    },
+    "ieepa_principal": 3800.00,
+    "expected": {
+      "entry_number": "ENT2025ST000011",
+      "ieepa_portion_usd": 3800.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 2500.00,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "Zero IEEPA principal — stacking still separates",
+    "entry": {
+      "entry_number": "ENT2025ST000012",
+      "entry_date": "2025-05-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "CN",
+      "htsus_codes": ["8471.30.0100", "9903.80.01", "9903.88.01"],
+      "duty_lines": [
+        {"htsus_code": "8471.30.0100", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.80.01", "rate_pct": null, "amount_usd": 600.00, "is_chapter_99": true},
+        {"htsus_code": "9903.88.01", "rate_pct": null, "amount_usd": 400.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 1000.00,
+      "total_dutiable_value_usd": 5000.00
+    },
+    "ieepa_principal": 0,
+    "expected": {
+      "entry_number": "ENT2025ST000012",
+      "ieepa_portion_usd": 0,
+      "section_232_portion_usd": 600.00,
+      "section_301_portion_usd": 400.00,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "IEEPA + large unrelated MFN",
+    "entry": {
+      "entry_number": "ENT2025ST000013",
+      "entry_date": "2025-04-20",
+      "liquidation_date": "2026-02-01",
+      "liquidation_status": "liquidated",
+      "country_of_origin": "JP",
+      "htsus_codes": ["8708.99.8180", "9903.02.01"],
+      "duty_lines": [
+        {"htsus_code": "8708.99.8180", "rate_pct": null, "amount_usd": 500.00, "is_chapter_99": false},
+        {"htsus_code": "9903.02.01", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 1940.00,
+      "total_dutiable_value_usd": 6000.00
+    },
+    "ieepa_principal": 1440.00,
+    "expected": {
+      "entry_number": "ENT2025ST000013",
+      "ieepa_portion_usd": 1440.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 500.00
+    }
+  },
+  {
+    "label": "Section 232 code 9903.86.01 aluminum derivatives",
+    "entry": {
+      "entry_number": "ENT2025ST000014",
+      "entry_date": "2025-05-05",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["7616.99.5190", "9903.01.20", "9903.86.01"],
+      "duty_lines": [
+        {"htsus_code": "7616.99.5190", "rate_pct": null, "amount_usd": 0, "is_chapter_99": false},
+        {"htsus_code": "9903.01.20", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true},
+        {"htsus_code": "9903.86.01", "rate_pct": null, "amount_usd": 350.00, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 850.00,
+      "total_dutiable_value_usd": 2000.00
+    },
+    "ieepa_principal": 500.00,
+    "expected": {
+      "entry_number": "ENT2025ST000014",
+      "ieepa_portion_usd": 500.00,
+      "section_232_portion_usd": 350.00,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 0
+    }
+  },
+  {
+    "label": "Multiple unrelated duty lines",
+    "entry": {
+      "entry_number": "ENT2025ST000015",
+      "entry_date": "2025-06-01",
+      "liquidation_date": null,
+      "liquidation_status": "unliquidated",
+      "country_of_origin": "MX",
+      "htsus_codes": ["6203.42.4011", "2403.99.2120", "9903.01.20"],
+      "duty_lines": [
+        {"htsus_code": "6203.42.4011", "rate_pct": null, "amount_usd": 300.00, "is_chapter_99": false},
+        {"htsus_code": "2403.99.2120", "rate_pct": null, "amount_usd": 150.00, "is_chapter_99": false},
+        {"htsus_code": "9903.01.20", "rate_pct": null, "amount_usd": 0, "is_chapter_99": true}
+      ],
+      "total_duty_paid_usd": 1100.00,
+      "total_dutiable_value_usd": 2560.00
+    },
+    "ieepa_principal": 640.00,
+    "expected": {
+      "entry_number": "ENT2025ST000015",
+      "ieepa_portion_usd": 640.00,
+      "section_232_portion_usd": 0,
+      "section_301_portion_usd": 0,
+      "unrelated_duty_usd": 450.00
+    }
+  }
+]
