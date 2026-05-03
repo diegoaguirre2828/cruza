@@ -27,7 +27,18 @@
     "verify:hos": "npx tsx scripts/verify-hos-divergence.mjs",
     "verify:drayage": "npx tsx scripts/verify-drayage-borello.mjs",
     "verify:drivers": "npx tsx scripts/verify-drivers-manifest.mjs",
-    "audit:module-5": "node scripts/run-module-5-audit.mjs"
+    "audit:module-5": "node scripts/run-module-5-audit.mjs",
+    "verify:ace-parser": "npx tsx scripts/verify-ace-parser.mjs",
+    "verify:ieepa-classifier": "npx tsx scripts/verify-ieepa-classifier.mjs",
+    "verify:stacking-separator": "npx tsx scripts/verify-stacking-separator.mjs",
+    "verify:interest-calculator": "npx tsx scripts/verify-interest-calculator.mjs",
+    "verify:cliff-tracker": "npx tsx scripts/verify-cliff-tracker.mjs",
+    "verify:cape-composer": "npx tsx scripts/verify-cape-composer.mjs",
+    "verify:cape-validator": "npx tsx scripts/verify-cape-validator.mjs",
+    "verify:form19-composer": "npx tsx scripts/verify-form19-composer.mjs",
+    "verify:fee-calculator": "npx tsx scripts/verify-fee-calculator.mjs",
+    "verify:refunds-orchestrator": "npx tsx scripts/verify-refunds-orchestrator.mjs",
+    "audit:module-14": "node scripts/run-module-14-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",
