@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 interface B2BNavProps {
-  current?: 'sales' | 'console' | 'account' | 'refunds';
+  current?: 'sales' | 'console' | 'account' | 'refunds' | 'eudamed';
   lang?: 'en' | 'es';
 }
 
@@ -12,13 +12,15 @@ export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
   const pathname = usePathname();
   const active =
     current ??
-    (pathname.startsWith('/refunds')
-      ? 'refunds'
-      : pathname.startsWith('/dispatch/account')
-        ? 'account'
-        : pathname.startsWith('/dispatch')
-          ? 'console'
-          : 'sales');
+    (pathname.startsWith('/eudamed')
+      ? 'eudamed'
+      : pathname.startsWith('/refunds')
+        ? 'refunds'
+        : pathname.startsWith('/dispatch/account')
+          ? 'account'
+          : pathname.startsWith('/dispatch')
+            ? 'console'
+            : 'sales');
   const es = lang === 'es';
   const linkClass = (on: boolean) =>
     on ? 'text-amber-300' : 'text-white/55 hover:text-amber-300 transition';
@@ -38,6 +40,9 @@ export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
         </Link>
         <Link href={`/refunds${langSuffix}`} className={linkClass(active === 'refunds')}>
           {es ? 'Reembolsos' : 'Refunds'}
+        </Link>
+        <Link href={`/eudamed${langSuffix}`} className={linkClass(active === 'eudamed')}>
+          {es ? 'EU MDR' : 'EU MDR'}
         </Link>
         <Link href={`/dispatch/account${langSuffix}`} className={linkClass(active === 'account')}>
           {es ? 'Cuenta' : 'Account'}

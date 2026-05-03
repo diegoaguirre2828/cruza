@@ -1,0 +1,141 @@
+import Link from 'next/link';
+import { B2BNav } from '@/components/B2BNav';
+import { EUDAMED_EN } from '@/lib/copy/eudamed-en';
+import { EUDAMED_ES } from '@/lib/copy/eudamed-es';
+
+export const metadata = {
+  title: 'EU MDR / EUDAMED actor + UDI feed — Cruzar',
+  description:
+    'EUDAMED is mandatory May 28, 2026. Cruzar captures actor + UDI/Device data during cross-border events for Reynosa medtech maquilas. We prepare; your OEM compliance team submits.',
+  alternates: { canonical: 'https://www.cruzar.app/eudamed' },
+};
+
+export default async function EudamedLandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const params = await searchParams;
+  const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
+  const c = lang === 'es' ? EUDAMED_ES : EUDAMED_EN;
+  const langSuffix = lang === 'es' ? '?lang=es' : '';
+
+  // EUDAMED mandatory date.
+  const deadline = new Date('2026-05-28T00:00:00Z');
+  const today = new Date();
+  const daysUntil = Math.max(0, Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+
+  return (
+    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+      <B2BNav lang={lang} />
+
+      <section className="border-b border-white/[0.07]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-20">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {c.landing.eyebrow}
+          </div>
+          <h1 className="font-serif text-[clamp(2.2rem,4.6vw,3.8rem)] font-medium text-white mt-3 leading-tight">
+            {c.landing.title}
+          </h1>
+          <p className="mt-5 max-w-3xl text-[17px] text-white/70">{c.landing.sub}</p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-6">
+            <div className="rounded-xl border border-amber-300/40 bg-amber-300/[0.06] px-6 py-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-300/80">
+                {c.landing.deadline_label}
+              </div>
+              <div className="font-mono text-[44px] font-medium text-amber-200 leading-none mt-1">
+                {daysUntil}
+              </div>
+            </div>
+            <Link
+              href={`/eudamed/scan${langSuffix}`}
+              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+            >
+              {c.landing.primary_cta}
+            </Link>
+            <a
+              href="#how"
+              className="rounded-lg border border-white/15 px-5 py-3 text-sm font-medium text-white/85 hover:border-amber-300 hover:text-amber-300"
+            >
+              {c.landing.secondary_cta}
+            </a>
+          </div>
+
+          <div className="mt-6 text-[12px] font-mono text-white/55">{c.landing.pricing_strip}</div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/[0.07] bg-[#070b18]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {c.landing.border_layer_eyebrow}
+          </div>
+          <h2 className="font-serif text-[clamp(1.6rem,3vw,2.4rem)] text-white mt-3 max-w-3xl">
+            {c.landing.border_layer_title}
+          </h2>
+          <p className="mt-5 max-w-3xl text-[15.5px] leading-[1.7] text-white/70">
+            {c.landing.border_layer_body}
+          </p>
+        </div>
+      </section>
+
+      <section id="how" className="border-b border-white/[0.07]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {c.landing.how.eyebrow}
+          </div>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {[
+              { title: c.landing.how.step1_title, body: c.landing.how.step1_body },
+              { title: c.landing.how.step2_title, body: c.landing.how.step2_body },
+              { title: c.landing.how.step3_title, body: c.landing.how.step3_body },
+              { title: c.landing.how.step4_title, body: c.landing.how.step4_body },
+            ].map((s, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-6"
+              >
+                <div className="font-serif text-[18px] text-white">{s.title}</div>
+                <p className="mt-2 text-[14.5px] leading-[1.65] text-white/65">{s.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-white/[0.07]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            {c.landing.pricing.eyebrow}
+          </div>
+          <ul className="mt-6 max-w-2xl space-y-2 text-[15px] text-white/75">
+            <li>· {c.landing.pricing.rate}</li>
+            <li>· {c.landing.pricing.floor}</li>
+            <li>· {c.landing.pricing.no_fee}</li>
+            <li className="pt-2 text-amber-200">· {c.landing.pricing.no_retainer}</li>
+          </ul>
+          <div className="mt-8">
+            <Link
+              href={`/eudamed/scan${langSuffix}`}
+              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+            >
+              {c.landing.primary_cta}
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-[#070b18]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8 space-y-4">
+          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-white/45">
+            {c.shared.legal_disclaimer}
+          </p>
+          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-white/40">
+            {c.shared.powered_by}
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
