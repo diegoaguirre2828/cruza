@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/auth'
 import { GoogleButton } from '@/components/GoogleButton'
 import { AppleButton } from '@/components/AppleButton'
-import { isIOSAppClient } from '@/lib/platform'
 import { PhoneAuthForm } from '@/components/PhoneAuthForm'
 import { useLang } from '@/lib/LangContext'
 import { PHONE_AUTH_ENABLED } from '@/lib/featureFlags'
@@ -521,12 +520,13 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* Apple Sign-In: iOS-app only (Apple guideline 4.8). */}
-        {isIOSAppClient() && (
-          <div className="mb-3" onClick={() => trackFunnel('signup_method_click', { method: 'apple' })}>
-            <AppleButton label={es ? 'Continuar con Apple' : 'Continue with Apple'} next="/welcome" />
-          </div>
-        )}
+        {/* Apple Sign-In: web + iOS. Web Services ID app.cruzar.web wired
+            to Supabase 2026-05-03 (JWT secret valid 180d, regenerate via
+            scripts/gen-apple-secret.mjs). The component routes natively
+            on iOS and via OAuth redirect on web. */}
+        <div className="mb-3" onClick={() => trackFunnel('signup_method_click', { method: 'apple' })}>
+          <AppleButton label={es ? 'Continuar con Apple' : 'Continue with Apple'} next="/welcome" />
+        </div>
 
         {/* Google — dominant fast path */}
         <div className="mb-4" onClick={() => trackFunnel('signup_method_click', { method: 'google' })}>
