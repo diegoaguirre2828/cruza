@@ -19,7 +19,6 @@ import { HeroCarousel } from '@/components/HeroCarousel'
 import { WeatherHook } from '@/components/WeatherHook'
 import { GuardianProgressCard } from '@/components/GuardianProgressCard'
 import { ContributionTodayPill } from '@/components/ContributionTodayPill'
-import { CirclesPill } from '@/components/CirclesPill'
 import { ReciprocityCard } from '@/components/ReciprocityCard'
 import { HeroTriad } from '@/components/HeroTriad'
 import { UserCrossingInsights } from '@/components/UserCrossingInsights'
@@ -94,18 +93,6 @@ const HOME_NUDGES: NudgeSpec[] = [
     ctaEn: 'See board',
     href: '/leaderboard',
     tone: 'amber',
-  },
-  {
-    nudgeKey: 'saved_bridge_invite_circle',
-    emoji: '👥',
-    titleEs: 'Invita a tu gente a tu círculo',
-    titleEn: 'Invite your people to your circle',
-    subEs: 'Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática',
-    subEn: 'When you cross, mom/spouse/kids get an automatic alert',
-    ctaEs: 'Invitar',
-    ctaEn: 'Invite',
-    href: '/dashboard?tab=circle',
-    tone: 'green',
   },
   {
     nudgeKey: 'home_discover_features',
@@ -242,7 +229,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
       const firstSaved = savedData?.saved?.[0]?.port_id || null
       setFavoritePortId(firstSaved)
 
-      if (firstSaved) armNudge('saved_bridge_invite_circle')
       const reportsCount: number = profileData?.profile?.reports_count ?? 0
       if (reportsCount >= 3) armNudge('reports_see_leaderboard')
       const userTier: string = profileData?.profile?.tier ?? 'free'
@@ -545,7 +531,6 @@ export function HomeClient({ initialPorts, initialReports }: Props) {
               {tier !== 'guest' && (
                 <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
                   <GuardianProgressCard variant="pill" />
-                  <CirclesPill />
                   <ContributionTodayPill />
                   {tier === 'pro' && <InsightsPill />}
                 </div>

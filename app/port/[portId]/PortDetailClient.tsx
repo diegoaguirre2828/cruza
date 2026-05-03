@@ -27,7 +27,6 @@ import { WaitConfirmStrip } from '@/components/WaitConfirmStrip'
 import { trackEvent } from '@/lib/trackEvent'
 import { getAffiliate } from '@/lib/affiliates'
 import { AdBanner } from '@/components/AdBanner'
-import { PingCircleButton } from '@/components/PingCircleButton'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
 import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
 import { armNudge } from '@/lib/useNudge'
@@ -79,18 +78,10 @@ function formatHour(hour: number): string {
 //   - saved_bridge_invite_circle: armed in HomeClient when a user
 //     saves their first bridge (reused from home)
 const PORT_DETAIL_NUDGES: NudgeSpec[] = [
-  {
-    nudgeKey: 'alerts_for_this_bridge',
-    emoji: '🔔',
-    titleEs: '¿Cruzas este puente seguido?',
-    titleEn: 'Cross this bridge often?',
-    subEs: 'Activa alertas y te avisamos cuando baje de 30 min — sin chequear',
-    subEn: "Turn on alerts and we'll ping you when it drops below 30 min — no checking",
-    ctaEs: 'Activar',
-    ctaEn: 'Turn on',
-    href: '/dashboard?tab=alerts',
-    tone: 'blue',
-  },
+  // 'alerts_for_this_bridge' nudge removed 2026-05-02 per Diego —
+  // FirstAlertNudge (auto-fires on 2nd visit) + the bell icon in
+  // header + the BridgeAlertSheet cover this. Stacking them was noise.
+  // 'saved_bridge_invite_circle' removed — circles feature killed.
   {
     nudgeKey: 'try_route_optimizer',
     emoji: '🗺️',
@@ -103,16 +94,19 @@ const PORT_DETAIL_NUDGES: NudgeSpec[] = [
     href: '/planner',
     tone: 'purple',
   },
+  // (placeholder — kept to avoid touching PORT_DETAIL_NUDGES consumers
+  // that expect ≥1 entry; renders only when the route_optimizer one is
+  // dismissed)
   {
-    nudgeKey: 'saved_bridge_invite_circle',
-    emoji: '👥',
-    titleEs: 'Invita a tu gente a tu círculo',
-    titleEn: 'Invite your people to your circle',
-    subEs: 'Cuando cruces, a tu mamá/esposa/hijos les llega una alerta automática',
-    subEn: 'When you cross, mom/spouse/kids get an automatic alert',
-    ctaEs: 'Invitar',
-    ctaEn: 'Invite',
-    href: '/dashboard?tab=circle',
+    nudgeKey: '_placeholder_unused',
+    emoji: '·',
+    titleEs: '',
+    titleEn: '',
+    subEs: '',
+    subEn: '',
+    ctaEs: '',
+    ctaEn: '',
+    href: '/planner',
     tone: 'green',
   },
 ]
@@ -798,7 +792,6 @@ export function PortDetailClient({ port, portId }: Props) {
       </div>
 
       {/* Proactive circle ping — only visible to logged-in users with circles */}
-      <PingCircleButton portId={portId} waitMinutes={port?.vehicle ?? null} />
 
       {/* ═══════════════════════════════════════════════════════════════
           SECONDARY LAYER — cameras, community photos, affiliates, ad.
@@ -828,308 +821,29 @@ export function PortDetailClient({ port, portId }: Props) {
           user isn't scrolling past 4 charts, but the data nerd / Pro
           user can still reach it.
           ═══════════════════════════════════════════════════════════════ */}
-      <details className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <summary className="list-none cursor-pointer select-none px-5 py-4 flex items-center justify-between gap-3 active:bg-gray-50 dark:active:bg-gray-700/40 transition-colors">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-lg leading-none">📊</span>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
-                {es ? 'Patrones y datos' : 'Patterns & data'}
-              </p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
-                {es
-                  ? 'Últimas 24 h · patrón histórico · mejores horarios · alerta detallada'
-                  : 'Last 24 h · historical pattern · best times · detailed alert'}
-              </p>
-            </div>
-          </div>
-          <span className="flex-shrink-0 text-xs font-bold text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 group-open:hidden">
-            {es ? 'Ver ▾' : 'Show ▾'}
-          </span>
-          <span className="flex-shrink-0 text-xs font-bold text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 hidden group-open:inline-flex items-center">
-            {es ? 'Ocultar ▴' : 'Hide ▴'}
-          </span>
-        </summary>
-        <div className="px-5 pb-5 pt-1 space-y-4 border-t border-gray-100 dark:border-gray-700">
-
-      {/* Quick Alert card */}
-      {user && canAccess(tier, 'alerts') ? (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <Bell className="w-4 h-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {es ? 'Avísame cuando baje la espera' : 'Notify me when wait drops'}
+      {/* Patterns & data link — content moved into BridgeMomentChips
+          carousel above + the existing /port/[id]/advanced page. Diego
+          2026-05-02: "insight and data, shouldnt that be a part of
+          advanced?" Yes — the deep-data details disclosure that lived
+          here is replaced by this one-tap link. Reduces the duplicated
+          surface and keeps the page short. */}
+      <a
+        href={`/port/${encodeURIComponent(portId)}/advanced`}
+        className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm active:scale-[0.99] transition-transform"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-lg leading-none">📊</span>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight">
+              {es ? 'Datos detallados' : 'Deep data'}
+            </p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug">
+              {es ? 'Patrón 30 días · breakeven SENTRI · clima · accidentes' : '30-day pattern · SENTRI breakeven · weather · accidents'}
             </p>
           </div>
-          {alertSaved ? (
-            <p className="text-sm text-green-600 font-medium">
-              {es ? `✓ Alerta activada — te avisamos cuando baje de ${alertThreshold} min` : `✓ Alert set — we'll notify you when it drops below ${alertThreshold} min`}
-            </p>
-          ) : (
-            <>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                {es ? 'Notificarme cuando la espera de vehículos baje de:' : 'Notify me when vehicle wait drops below:'}
-              </p>
-              {/* Typical-wait hint — 2026-04-20 audit M3: alert thresholds
-                  were universally below typical waits (20-30 min vs 40-120
-                  actual) so no alert ever fired. Show the 24h average so
-                  users pick a threshold that will actually trigger. */}
-              {avgVehicleWait != null && (
-                <p className="text-[11px] text-amber-700 dark:text-amber-400 mb-3">
-                  {es
-                    ? `Promedio aquí hoy: ${avgVehicleWait} min. Tu alerta solo dispara cuando baja del valor que elijas.`
-                    : `Typical today: ${avgVehicleWait} min. Your alert only fires when wait drops below your pick.`}
-                </p>
-              )}
-              <div className="flex gap-2 mb-3">
-                {[10, 20, 30, 45, 60].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setAlertThreshold(t)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                      alertThreshold === t
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <PushToggle />
-                <button
-                  onClick={saveAlert}
-                  disabled={alertSaving}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  {alertSaving ? '...' : es ? 'Activar alerta →' : 'Enable alert →'}
-                </button>
-              </div>
-            </>
-          )}
         </div>
-      ) : user ? (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-              {es ? '🔔 Avísame cuando baje la espera' : '🔔 Get notified when wait drops'}
-            </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
-              {es ? 'Actualiza a Pro por $2.99/mes' : 'Upgrade to Pro for $2.99/mo'}
-            </p>
-          </div>
-          <Link href="/pricing" className="flex-shrink-0 ml-3 text-xs font-semibold text-white bg-blue-600 px-3 py-1.5 rounded-xl hover:bg-blue-700 transition-colors">
-            Pro →
-          </Link>
-        </div>
-      ) : null}
-
-      {/* 24-hour history chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-            {es ? 'Últimas 24 horas' : 'Last 24 Hours'}
-          </h2>
-          {!loadingHistory && chartData.length > 0 && avgVehicleWait !== null && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {es ? `promedio: ${avgVehicleWait} min` : `avg: ${avgVehicleWait} min`}
-            </span>
-          )}
-        </div>
-        {loadingHistory ? (
-          <div className="h-44 bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse" />
-        ) : chartData.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">
-            {es ? 'No hay datos aún. Vuelve en unas horas.' : 'Not enough data yet. Check back after a few hours.'}
-          </p>
-        ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="gradVehicle" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradPedestrian" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                interval="preserveStartEnd"
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: '#9ca3af' }}
-                unit=" min"
-                width={48}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                formatter={(value, name) => [`${value} min`, name === 'vehicle' ? (es ? 'Vehículo' : 'Vehicle') : (es ? 'Peatón' : 'Pedestrian')]}
-                contentStyle={{ fontSize: 12, borderRadius: 10, border: '1px solid #e5e7eb', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
-                cursor={{ stroke: '#e5e7eb', strokeWidth: 1 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="vehicle"
-                stroke="#3b82f6"
-                strokeWidth={2.5}
-                fill="url(#gradVehicle)"
-                dot={false}
-                name="vehicle"
-              />
-              <Area
-                type="monotone"
-                dataKey="pedestrian"
-                stroke="#10b981"
-                strokeWidth={2}
-                fill="url(#gradPedestrian)"
-                dot={false}
-                name="pedestrian"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-        <div className="flex gap-4 mt-1 text-xs text-gray-400">
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-1 bg-blue-500 rounded-full inline-block" />
-            {es ? 'Vehículo' : 'Vehicle'}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-3 h-1 bg-emerald-500 rounded-full inline-block" />
-            {es ? 'Peatón' : 'Pedestrian'}
-          </span>
-        </div>
-      </div>
-
-      {/* HourlyWaitChart + AI Predictions moved to /port/[id]/advanced
-          (which redirects to /datos?port=X) as part of the 2026-04-14
-          port detail redesign. Link is on PortDetailHero's "Deep stats →". */}
-
-      {/* AI Predictions — Pro+ only */}
-      {canAccess(tier, 'ai_predictions') ? (
-        predictionChartData.length > 0 && (() => {
-          const nowLabel = predictionChartData[0]?.time
-          // Show the LIVE CBP number as the "now" reference, and the
-          // historical average for the current hour as the "typical"
-          // comparison underneath. Previously this card pulled
-          // predictionChartData[0].predicted (historical average) and
-          // labeled it "Estimated wait now" — which diverged from the
-          // hero's live `port.vehicle` and made users distrust both
-          // numbers. Live is authoritative; the pattern is context.
-          const liveWait = port.vehicle
-          const typicalNow = predictionChartData[0]?.predicted as number | null
-          const liveColor = liveWait == null ? '#6b7280' : liveWait <= 20 ? '#22c55e' : liveWait <= 45 ? '#f59e0b' : '#ef4444'
-          const diff = liveWait != null && typicalNow != null ? liveWait - typicalNow : null
-          return (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{es ? 'Patrones históricos — próximas 24 horas' : 'Historical Patterns – Next 24 Hours'}</h2>
-                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Beta</span>
-              </div>
-
-              {/* Live now + typical-for-this-hour comparison. Same
-                  `port.vehicle` that powers the hero — single source
-                  of truth for "now." */}
-              {liveWait != null && (
-                <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ backgroundColor: `${liveColor}18`, border: `1px solid ${liveColor}40` }}>
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: liveColor }} />
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                    {es ? 'En vivo ahora: ' : 'Live now: '}<span className="font-bold" style={{ color: liveColor }}>{liveWait} min</span>
-                    {typicalNow != null && (
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {' · '}
-                        {es ? `típico a esta hora: ${typicalNow} min` : `typical for this hour: ${typicalNow} min`}
-                        {diff != null && Math.abs(diff) >= 5 && (
-                          <span className={`ml-1 font-bold ${diff > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
-                            ({diff > 0 ? '+' : ''}{diff})
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </span>
-                </div>
-              )}
-
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={predictionChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="time" tick={{ fontSize: 10 }} interval={3} />
-                  <YAxis tick={{ fontSize: 10 }} unit=" min" width={50} domain={[0, 'auto']} />
-                  <Tooltip
-                    formatter={(value) => [`${value} min`, es ? 'Típico' : 'Typical']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                  />
-                  {nowLabel && (
-                    <ReferenceLine x={nowLabel} stroke="#94a3b8" strokeDasharray="4 2" label={{ value: es ? 'Ahora' : 'Now', fontSize: 9, fill: '#94a3b8', position: 'insideTopRight' }} />
-                  )}
-                  <Line type="monotone" dataKey="predicted" stroke="#8b5cf6" strokeWidth={2.5} dot={false} name={es ? 'Típico' : 'Typical'} />
-                </LineChart>
-              </ResponsiveContainer>
-              <p className="text-xs text-gray-400 mt-2">
-                {es ? 'La línea muestra el promedio histórico por hora. La espera real en vivo está arriba.' : 'The line shows historical average by hour. Live actual wait is shown above.'}
-              </p>
-            </div>
-          )
-        })()
-      ) : (
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 text-center">
-          <p className="text-sm font-semibold text-purple-800">{es ? '📊 Patrones históricos de espera' : '📊 Historical Wait Patterns'}</p>
-          <p className="text-xs text-purple-600 mt-1 mb-3">{es ? 'Ve los tiempos estimados para las próximas 24 horas. Función Pro.' : 'See estimated wait times for the next 24 hours. Pro feature.'}</p>
-          <Link href="/pricing" className="inline-block bg-purple-600 text-white text-xs font-medium px-4 py-2 rounded-full hover:bg-purple-700 transition-colors">
-            {es ? 'Actualizar a Pro →' : 'Upgrade to Pro →'}
-          </Link>
-        </div>
-      )}
-
-      {/* Best times today — Pro+ only */}
-      {canAccess(tier, 'ai_predictions') && bestTimes.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            {es ? 'Mejores horarios hoy' : 'Best Times Today'} <span className="text-gray-400 font-normal">{es ? '(basado en historial)' : '(based on history)'}</span>
-          </h2>
-
-          {leaveRecommendation && (
-            <div className="mb-4 flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-              <span className="text-lg mt-0.5">🚀</span>
-              <div>
-                <p className="text-sm font-semibold text-green-800">
-                  {es
-                    ? `Sale a las ${formatHour(leaveRecommendation.hour - 1) || formatHour(leaveRecommendation.hour)} — espera ~${leaveRecommendation.avgWait} min`
-                    : `Leave around ${formatHour(leaveRecommendation.hour)} — expect ~${leaveRecommendation.avgWait} min wait`}
-                </p>
-                <p className="text-xs text-green-600 mt-0.5">
-                  {es ? 'Mejor ventana de cruce próximas horas' : 'Best crossing window in the next few hours'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            {bestTimes.map((bt, i) => (
-              <div key={bt.hour} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
-                  <span className="text-sm font-medium text-gray-800">{formatHour(bt.hour)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-green-600 font-semibold">~{bt.avgWait} min avg</span>
-                  <span className="text-xs text-gray-400">({bt.samples} readings)</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-        </div>
-      </details>
+        <span className="flex-shrink-0 text-xs font-bold text-blue-600 dark:text-blue-400">→</span>
+      </a>
 
       {/* Port-specific contextual discovery. Priority-ordered: alerts
           for this bridge (if visited 2+ times), route optimizer (Pro

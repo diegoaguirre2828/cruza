@@ -82,15 +82,10 @@ export default function CopilotPage() {
       setCoords({ lat: p.coords.latitude, lng: p.coords.longitude })
     }, () => {}, { maximumAge: 60000, timeout: 10000 })
 
-    fetch('/api/circles').then((r) => r.json()).then((j) => {
-      setCircles((j.circles ?? []).map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })))
-    }).catch(() => {})
-
     fetch('/api/profile').then((r) => r.json()).then((j) => {
       const p = j?.profile ?? {}
       if (typeof p.copilot_voice_opt_in === 'boolean') setVoiceOptIn(p.copilot_voice_opt_in)
       if (typeof p.copilot_live_activity_opt_in === 'boolean') setLiveActivityOptIn(p.copilot_live_activity_opt_in)
-      if (p.copilot_auto_text_circle_id) setAutoTextCircleId(p.copilot_auto_text_circle_id)
       if (typeof p.whatsapp_optin === 'boolean') setWhatsappOptIn(p.whatsapp_optin)
       if (typeof p.whatsapp_phone_e164 === 'string') setWhatsappPhone(p.whatsapp_phone_e164)
       if (p.whatsapp_template_lang === 'es' || p.whatsapp_template_lang === 'en') setWhatsappLang(p.whatsapp_template_lang)
@@ -144,10 +139,9 @@ export default function CopilotPage() {
                 lat: pos.lat,
                 lng: pos.lng,
                 port_id: tripTargetPort.port_id,
-                circle_id: autoTextCircleId || null,
               }),
             }).catch(() => {})
-            speak(lang === 'es' ? 'Cruce detectado. Avisé a tu círculo.' : 'Crossing detected. I notified your circle.')
+            speak(lang === 'es' ? 'Cruce detectado.' : 'Crossing detected.')
           }
         }
       },

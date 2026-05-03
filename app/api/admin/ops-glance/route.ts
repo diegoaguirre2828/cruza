@@ -74,10 +74,6 @@ export async function GET() {
     socialGroup24h,
     latestPagePost,
     latestGroupPost,
-    circlesTotal,
-    memberships,
-    invitesTotal,
-    invitesAccepted,
     alertsActive,
     alertsFiredToday,
   ] = await Promise.all([
@@ -99,10 +95,6 @@ export async function GET() {
     db.from('social_posts').select('id', { count: 'exact', head: true }).eq('platform', 'facebook_group').gte('posted_at', iso24h),
     db.from('social_posts').select('posted_at').eq('platform', 'facebook_page').order('posted_at', { ascending: false }).limit(1).maybeSingle(),
     db.from('social_posts').select('posted_at').eq('platform', 'facebook_group').order('posted_at', { ascending: false }).limit(1).maybeSingle(),
-    db.from('circles').select('id', { count: 'exact', head: true }),
-    db.from('circle_members').select('id', { count: 'exact', head: true }),
-    db.from('circle_invites').select('token', { count: 'exact', head: true }),
-    db.from('circle_invites').select('token', { count: 'exact', head: true }).not('accepted_at', 'is', null),
     db.from('alert_preferences').select('id', { count: 'exact', head: true }).eq('active', true),
     db.from('alert_preferences').select('id', { count: 'exact', head: true }).gte('last_triggered_at', isoToday),
   ])
@@ -137,12 +129,6 @@ export async function GET() {
       group24h: socialGroup24h.count ?? 0,
       lastPagePostAt: latestPagePost.data?.posted_at ?? null,
       lastGroupPostAt: latestGroupPost.data?.posted_at ?? null,
-    },
-    circles: {
-      total: circlesTotal.count ?? 0,
-      memberships: memberships.count ?? 0,
-      invitesOpen: (invitesTotal.count ?? 0) - (invitesAccepted.count ?? 0),
-      invitesAccepted: invitesAccepted.count ?? 0,
     },
     alerts: {
       activePrefs: alertsActive.count ?? 0,
