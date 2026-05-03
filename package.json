@@ -9,9 +9,9 @@
     "lint": "eslint",
     "apply-migration": "node scripts/apply-migration.mjs",
     "verify:ligie": "node scripts/verify-ligie-table.mjs",
-    "verify:hs": "node scripts/verify-hs-classifier.mjs",
-    "verify:origin": "node scripts/verify-origin-validator.mjs",
-    "verify:rvc": "node scripts/verify-rvc-calculator.mjs",
+    "verify:hs": "npx tsx scripts/verify-hs-classifier.mjs",
+    "verify:origin": "npx tsx scripts/verify-origin-validator.mjs",
+    "verify:rvc": "npx tsx scripts/verify-rvc-calculator.mjs",
     "verify:ticket": "node scripts/verify-ticket-roundtrip.mjs",
     "audit:module-2": "node scripts/run-module-2-audit.mjs"
   },

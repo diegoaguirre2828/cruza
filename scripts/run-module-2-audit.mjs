@@ -105,7 +105,7 @@ record(
 // 8. Round-trip (only if dev server running — optional)
 let devRunning = false;
 try {
-  execSync('curl -fsS http://localhost:3000/api/ports > /dev/null', { stdio: 'pipe', shell: true });
+  execSync('curl -fsS http://localhost:3000/api/ports', { stdio: 'pipe', shell: true });
   devRunning = true;
 } catch { devRunning = false; }
 
@@ -118,7 +118,7 @@ if (devRunning) {
 // 9. Live regression — /api/ports still returns 50+ ports (only if a host is reachable)
 const apiPortsHost = process.env.CRUZAR_AUDIT_HOST ?? (devRunning ? 'http://localhost:3000' : 'https://cruzar.app');
 try {
-  const cmd = `curl -fsS '${apiPortsHost}/api/ports'`;
+  const cmd = `curl -fsS "${apiPortsHost}/api/ports"`;
   const out = execSync(cmd, { cwd: ROOT, stdio: 'pipe', shell: true }).toString();
   const j = JSON.parse(out);
   const n = Array.isArray(j) ? j.length : Array.isArray(j.ports) ? j.ports.length : 0;
