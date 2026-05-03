@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
+import { useAuth } from '@/lib/useAuth'
 import { ArrowLeft, AlertOctagon, Phone, UserPlus, Trash2 } from 'lucide-react'
 import { SAFETY_SCRIPTS, type EmergencyKind } from '@/lib/safetyScripts'
 
@@ -22,6 +23,7 @@ const KINDS: EmergencyKind[] = [
 
 export default function SosPage() {
   const { lang } = useLang()
+  const { user, loading: authLoading } = useAuth()
   const [kind, setKind] = useState<EmergencyKind>('secondary_inspection')
   const [contacts, setContacts] = useState<Contact[]>([])
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -55,13 +57,16 @@ export default function SosPage() {
   }
 
   async function loadContacts() {
+    if (!user) return
     const j = await fetch('/api/safety/contacts').then((r) => r.json()).catch(() => ({ contacts: [] }))
     setContacts(j.contacts ?? [])
   }
   useEffect(() => {
+    if (!user) return
     loadContacts()
     navigator.geolocation?.getCurrentPosition((p) => setCoords({ lat: p.coords.latitude, lng: p.coords.longitude }), () => {}, { maximumAge: 60000, timeout: 10000 })
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   async function addContact() {
     if (!cName) return
@@ -107,6 +112,39 @@ export default function SosPage() {
   }
 
   const script = SAFETY_SCRIPTS[kind]
+
+  // Auth gate — SOS broadcast requires emergency_contacts which require
+  // a signed-in user. Without this, guests landed on a working-looking
+  // page that silently no-op'd on fire (POST returned 401, UI gave no
+  // signal). Audit MEDIUM 2026-05-03.
+  if (authLoading) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+        <p className="text-sm text-gray-400">{lang === 'es' ? 'Cargando…' : 'Loading…'}</p>
+      </main>
+    )
+  }
+  if (!user) {
+    return (
+      <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="max-w-lg mx-auto px-4 pb-16 pt-6">
+          <Link href="/" className="flex items-center gap-1 text-xs text-gray-400 mb-3"><ArrowLeft className="w-3 h-3" /> {t.back}</Link>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">{t.title}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+            {lang === 'es'
+              ? 'Necesitas iniciar sesión pa\' usar SOS — guardamos tus contactos de emergencia y los avisamos cuando lo actives.'
+              : 'You need to sign in to use SOS — we store your emergency contacts and notify them when you activate it.'}
+          </p>
+          <Link
+            href={`/signup?intent=sos&next=${encodeURIComponent('/sos')}`}
+            className="block w-full bg-red-600 hover:bg-red-700 text-white text-center font-bold py-3 rounded-xl"
+          >
+            {lang === 'es' ? 'Iniciar sesión gratis' : 'Sign in (free)'}
+          </Link>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-950">

@@ -81,7 +81,10 @@ export default async function PortDetailPage({ params }: Props) {
     '@type': 'WebPage',
     name: `${port.portName} — ${waitText} | Cruzar`,
     description: `Live US-Mexico border crossing wait time at ${port.portName}. ${waitText}. Updated every 15 min from CBP + community reports.`,
-    url: `https://cruzar.app/port/${decodedId}`,
+    // SEO consolidation: emit the canonical /cruzar/[slug] URL in
+    // JSON-LD so both /port/[id] and /cruzar/[slug] funnel into one
+    // search result. Audit MEDIUM 2026-05-03.
+    url: `https://cruzar.app/cruzar/${slugForPort(decodedId)}`,
     inLanguage: ['en', 'es'],
     mainEntity: {
       '@type': 'Place',

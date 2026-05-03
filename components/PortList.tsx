@@ -606,7 +606,7 @@ export function PortList({ initialPorts }: PortListProps = {}) {
           </div>
 
           {filteredPorts.length === 0 && !loading && (
-            <p className="text-center text-gray-600 mt-10">No port data available.</p>
+            <p className="text-center text-gray-600 mt-10">{lang === 'es' ? 'No hay datos de puentes ahorita.' : 'No port data available.'}</p>
           )}
 
           {/* Insurance banner — footer of the bridge list, below the

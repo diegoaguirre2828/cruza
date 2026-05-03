@@ -244,7 +244,7 @@ export function PortCard({ port, signal }: Props) {
               </div>
             )}
           </div>
-          {primaryWait !== null && (
+          {primaryWait !== null && !port.isClosed && (
             <div className="text-right">
               {primaryWait === 0 ? (
                 <span className="text-base font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-xl">&lt;1 min</span>
@@ -456,10 +456,12 @@ export function PortCard({ port, signal }: Props) {
             </span>
           </div>
         ) : hasCamera(port.portId) ? (
-          // Bridge has a camera but no live data or history — show camera CTA
+          // Bridge has a camera but no live data or history — show camera CTA.
+          // No onClick needed: parent <Link> already routes to the same URL
+          // (/cruzar/[slug]). Removed redundant inner click handler 2026-05-03
+          // per consumer UX audit MEDIUM #1.
           <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/cruzar/${slugForPort(port.portId)}` }}
-            className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+            className="mt-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
