@@ -20,13 +20,13 @@ export function DualLockup({ en, es, primary = 'en', size = 'lg', className = ''
   const sizeClass = size === 'lg'
     ? 'text-[clamp(1.9rem,3.6vw,2.8rem)]'
     : 'text-[clamp(1.4rem,2.4vw,1.9rem)]';
-  const primaryClass = 'font-serif font-medium leading-[1.1] text-white tracking-[-0.01em]';
-  const secondaryClass = 'font-serif font-medium leading-[1.1] text-white/45 tracking-[-0.01em] italic';
+  const primaryClass = 'font-serif font-medium leading-[1.1] text-foreground tracking-[-0.01em]';
+  const secondaryClass = 'font-serif font-medium leading-[1.1] text-muted-foreground/70 tracking-[-0.01em] italic';
 
   return (
     <div className={`relative pl-4 ${className}`}>
       {/* Vertical bar like a customs-form left-margin marker */}
-      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-amber-300/60" />
+      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-foreground/70" />
       <div className="space-y-1">
         <h1 className={`${sizeClass} ${primary === 'en' ? primaryClass : secondaryClass}`}>
           {en}

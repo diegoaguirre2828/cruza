@@ -36,7 +36,7 @@ export function BorderSpine({ intensity = 'low', variant = 'both', className = '
         className="h-full w-full"
       >
         {variant === 'contour' || variant === 'both' ? (
-          <g stroke="#9b3924" strokeWidth="1" fill="none">
+          <g stroke="currentColor" strokeWidth="1" fill="none" style={{ color: 'oklch(0.9842 0.0034 247.8575)' }}>
             {/* Topographic-style horizontal contours, irregular */}
             <path d="M -20 80 Q 200 60 400 90 Q 700 120 1000 95 Q 1100 85 1200 100" />
             <path d="M -20 140 Q 200 120 380 145 Q 690 170 990 150 Q 1100 145 1200 158" />
@@ -50,15 +50,15 @@ export function BorderSpine({ intensity = 'low', variant = 'both', className = '
         ) : null}
 
         {variant === 'border' || variant === 'both' ? (
-          <g>
+          <g style={{ color: 'oklch(0.9842 0.0034 247.8575)' }}>
             {/* Schematic US-MX border line */}
             <path
               d="M 50 320 L 200 300 L 250 295 L 320 280 L 380 275 L 450 290 L 520 285 L 580 275 L 640 295 L 720 305 L 790 295 L 850 285 L 920 295 L 980 305 L 1040 295 L 1130 285"
-              stroke="#1d3557"
+              stroke="currentColor"
               strokeWidth="1.5"
               fill="none"
               strokeDasharray="4 6"
-              opacity="0.85"
+              opacity="0.55"
             />
             {/* RGV port markers */}
             {[
@@ -71,16 +71,16 @@ export function BorderSpine({ intensity = 'low', variant = 'both', className = '
               { x: 1040, label: 'NOG' },  // Nogales
             ].map((p) => (
               <g key={p.label}>
-                <circle cx={p.x} cy={320} r="3" fill="#9b3924" opacity="0.9" />
+                <circle cx={p.x} cy={320} r="3" fill="currentColor" opacity="0.85" />
                 <text
                   x={p.x}
                   y={342}
                   textAnchor="middle"
-                  fill="#9b3924"
+                  fill="currentColor"
                   fontSize="8"
                   fontFamily="monospace"
                   letterSpacing="0.1em"
-                  opacity="0.75"
+                  opacity="0.6"
                 >
                   {p.label}
                 </text>

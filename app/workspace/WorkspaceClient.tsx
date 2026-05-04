@@ -63,11 +63,11 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
 
   if (error === 'unauthorized') {
     return (
-      <section className="border-b border-white/[0.07] relative">
+      <section className="border-b border-border relative">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
-          <p className="text-[14px] text-white/65">
+          <p className="text-[14px] text-muted-foreground">
             Sign in to see your workspace.{' '}
-            <Link href={`/login${langSuffix}`} className="text-amber-300 hover:text-amber-200">
+            <Link href={`/login${langSuffix}`} className="text-foreground hover:text-foreground/80 underline underline-offset-4">
               Log in
             </Link>
           </p>
@@ -120,25 +120,25 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
 
   return (
     <>
-      <section className="border-b border-white/[0.07] bg-[#070b18]/30">
+      <section className="border-b border-border bg-card/40">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8">
-          <Eyebrow tone="amber">{copy.quick_actions.eyebrow}</Eyebrow>
+          <Eyebrow>{copy.quick_actions.eyebrow}</Eyebrow>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href={`/refunds/scan${langSuffix}`}
-              className="rounded-md border border-amber-300/60 bg-amber-300/10 px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-amber-200 hover:bg-amber-300/20 transition"
+              className="border border-foreground bg-foreground px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-background hover:bg-foreground/85 transition"
             >
               {copy.quick_actions.new_refund_scan}
             </Link>
             <Link
               href={`/eudamed/scan${langSuffix}`}
-              className="rounded-md border border-[#1d3557]/60 bg-[#1d3557]/15 px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-[#7eaad8] hover:bg-[#1d3557]/30 transition"
+              className="border border-border px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-foreground hover:border-foreground transition"
             >
               {copy.quick_actions.new_eudamed_scan}
             </Link>
             <Link
               href={`/dispatch${langSuffix}`}
-              className="rounded-md border border-white/15 px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-white/75 hover:border-amber-300/60 hover:text-amber-300 transition"
+              className="border border-border px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-muted-foreground hover:border-foreground hover:text-foreground transition"
             >
               {copy.quick_actions.open_dispatch}
             </Link>
@@ -146,12 +146,12 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] relative">
+      <section className="border-b border-border relative">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12">
-          <Eyebrow tone="clay">{copy.modules.eyebrow}</Eyebrow>
+          <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <ModuleCard
-              accent="amber"
+              accent="primary"
               code="MOD · 14"
               title={copy.modules.refunds.title}
               sub={copy.modules.refunds.sub}
@@ -159,7 +159,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/refunds/claims${langSuffix}`, label: copy.modules.refunds.open_link }}
             />
             <ModuleCard
-              accent="cobalt"
+              accent="primary"
               code="MOD · EU MDR"
               title={copy.modules.eudamed.title}
               sub={copy.modules.eudamed.sub}
@@ -167,7 +167,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/eudamed${langSuffix}`, label: copy.modules.eudamed.open_link }}
             />
             <ModuleCard
-              accent="violet"
+              accent="primary"
               code="MOD · 04"
               title={copy.modules.paperwork.title}
               sub={copy.modules.paperwork.sub}
@@ -175,7 +175,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/paperwork${langSuffix}`, label: copy.modules.paperwork.open_link }}
             />
             <ModuleCard
-              accent="sage"
+              accent="primary"
               code="MOD · 05"
               title={copy.modules.drivers.title}
               sub={copy.modules.drivers.sub}
@@ -183,7 +183,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/insights/drivers${langSuffix}`, label: copy.modules.drivers.open_link }}
             />
             <ModuleCard
-              accent="rose"
+              accent="primary"
               code="MOD · 02"
               title={copy.modules.customs.title}
               sub={copy.modules.customs.sub}
@@ -191,7 +191,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/insights/customs${langSuffix}`, label: copy.modules.customs.open_link }}
             />
             <ModuleCard
-              accent="clay"
+              accent="primary"
               code="MOD · 03"
               title={copy.modules.regulatory.title}
               sub={copy.modules.regulatory.sub}
@@ -199,7 +199,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
             />
             <ModuleCard
-              accent="cobalt"
+              accent="primary"
               code="LIVE · WAIT"
               title={copy.modules.insights.title}
               sub={copy.modules.insights.sub}
@@ -211,7 +211,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               }
             />
             <ModuleCard
-              accent="amber"
+              accent="accent"
               code="SUBSTRATE"
               title={copy.modules.tickets.title}
               sub={copy.modules.tickets.sub}
@@ -221,31 +221,31 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12">
-          <Eyebrow tone="amber">{copy.activity.eyebrow}</Eyebrow>
+          <Eyebrow>{copy.activity.eyebrow}</Eyebrow>
           {data && data.activity_recent.length === 0 && (
-            <p className="mt-4 text-[13.5px] text-white/55">{copy.activity.empty}</p>
+            <p className="mt-4 text-[13.5px] text-muted-foreground">{copy.activity.empty}</p>
           )}
           {data && data.activity_recent.length > 0 && (
-            <ul className="mt-4 divide-y divide-white/[0.05] rounded-md border border-white/[0.07] bg-white/[0.015] overflow-hidden">
+            <ul className="mt-4 divide-y divide-border border border-border bg-card overflow-hidden">
               {data.activity_recent.map((item, i) => (
-                <li key={i} className="flex items-center justify-between gap-4 px-4 py-3 text-[13.5px] hover:bg-white/[0.02]">
+                <li key={i} className="flex items-center justify-between gap-4 px-4 py-3 text-[13.5px] hover:bg-card/60">
                   <div className="min-w-0 flex-1">
-                    <div className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/40">
+                    <div className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-muted-foreground">
                       {item.module}
                     </div>
-                    <div className="mt-1 text-white/85 truncate">{item.label}</div>
+                    <div className="mt-1 text-foreground/85 truncate">{item.label}</div>
                     {item.detail && (
-                      <div className="mt-0.5 font-mono text-[11px] text-white/50 truncate">{item.detail}</div>
+                      <div className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">{item.detail}</div>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-[10.5px] font-mono tabular-nums text-white/40">
+                  <div className="flex items-center gap-3 text-[10.5px] font-mono tabular-nums text-muted-foreground">
                     <span>{new Date(item.ts).toLocaleString()}</span>
                     {item.href && (
                       <Link
                         href={item.href + langSuffix}
-                        className="rounded border border-white/15 px-2 py-1 text-white/60 hover:border-amber-300/50 hover:text-amber-300 transition"
+                        className="border border-border px-2 py-1 text-muted-foreground hover:border-foreground hover:text-foreground transition"
                       >
                         →
                       </Link>

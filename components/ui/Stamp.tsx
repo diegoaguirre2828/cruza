@@ -17,10 +17,10 @@ interface StampProps {
 }
 
 const toneStyles: Record<NonNullable<StampProps['tone']>, string> = {
-  blue: 'text-[#1a3568] border-[#1a3568]/70 bg-[#0d2148]/[0.06]',
-  red: 'text-[#a01828] border-[#a01828]/70 bg-[#8a0e21]/[0.06]',
-  cream: 'text-[#e6dcc1] border-[#e6dcc1]/60 bg-[#f3ecd8]/[0.04]',
-  amber: 'text-amber-300 border-amber-300/60 bg-amber-300/[0.05]',
+  blue: 'text-foreground border-foreground/60 bg-foreground/[0.04]',
+  red: 'text-destructive border-destructive/60 bg-destructive/[0.04]',
+  cream: 'text-accent border-accent/60 bg-accent/[0.06]',
+  amber: 'text-accent border-accent/60 bg-accent/[0.06]',
 };
 
 const tiltClass: Record<NonNullable<StampProps['tilt']>, string> = {

@@ -37,7 +37,7 @@ export default async function WorkspacePage({
         <div className="relative mx-auto max-w-[1180px] px-5 sm:px-8 py-12 sm:py-16">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div className="flex-1 min-w-0">
-              <Eyebrow tone="amber">{c.hero.eyebrow}</Eyebrow>
+              <Eyebrow>{c.hero.eyebrow}</Eyebrow>
               <div className="mt-4">
                 <DualLockup
                   en={lang === 'en' ? c.hero.title : WORKSPACE_EN.hero.title}
