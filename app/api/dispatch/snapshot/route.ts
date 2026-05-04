@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { getServiceClient } from "@/lib/supabase";
 import { getPortMeta } from "@/lib/portMeta";
 import manifest from "@/data/insights-manifest.json";
+import { confidenceBand, loadForecastQuality, shouldShowForecast, type QualityTier } from "@/lib/forecastQuality";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,14 @@ interface DispatchPort {
     | "drift-fallback"
     | "untracked";
   has_forecast: boolean;
+  // Per-port live calibration quality (last 30d). Computed from the
+  // forecast_quality_30d view (v83). UI uses these to suppress unreliable
+  // forecasts and render confidence bands on borderline ones.
+  forecast_quality: QualityTier;
+  forecast_mae_min: number | null;        // measured mean absolute error (last 30d)
+  forecast_best_model: string | null;     // sim_version routed (RF vs climatology fallback)
+  predicted_6h_low_min: number | null;    // confidence band low (predicted - 1σ)
+  predicted_6h_high_min: number | null;   // confidence band high (predicted + 1σ)
 }
 
 const MODELS_6H = (manifest as { models: ManifestModel[] }).models.filter(
@@ -169,7 +178,10 @@ export async function GET(req: Request) {
   }
 
   const db = getServiceClient();
-  const liveMap = await fetchLive(portIds);
+  const [liveMap, qualityMap] = await Promise.all([
+    fetchLive(portIds),
+    loadForecastQuality(),
+  ]);
 
   const ports: DispatchPort[] = await Promise.all(
     portIds.map(async (portId) => {
@@ -177,10 +189,15 @@ export async function GET(req: Request) {
       const live = liveMap.get(portId) ?? { wait: null, recordedAt: null };
       const model = MODEL_LOOKUP.get(portId);
       const drift_status = deriveDriftStatus(model);
-      const [anomaly, predicted_6h_min] = await Promise.all([
+      const quality = qualityMap.get(portId);
+      const [anomaly, rawPredicted_6h_min] = await Promise.all([
         fetchAnomaly(db, portId, live.wait),
         fetchPredicted6h(portId),
       ]);
+      // Hide forecasts for ports where calibration MAE > 40min — would erode
+      // broker trust to display garbage. Per the 2026-05-03 honest audit.
+      const predicted_6h_min = shouldShowForecast(quality) ? rawPredicted_6h_min : null;
+      const band = confidenceBand(predicted_6h_min, quality);
       const live_stale_min = live.recordedAt
         ? Math.round((Date.now() - new Date(live.recordedAt).getTime()) / 60000)
         : null;
@@ -201,7 +218,12 @@ export async function GET(req: Request) {
         anomaly_high: anomaly.high,
         anomaly_ratio: anomaly.ratio,
         drift_status,
-        has_forecast: !!model,
+        has_forecast: !!model && shouldShowForecast(quality),
+        forecast_quality: quality?.tier ?? "unscored",
+        forecast_mae_min: quality?.mae_min ?? null,
+        forecast_best_model: quality?.best_model ?? null,
+        predicted_6h_low_min: band.low,
+        predicted_6h_high_min: band.high,
       };
     }),
   );
