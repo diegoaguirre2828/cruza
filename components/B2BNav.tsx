@@ -7,16 +7,22 @@ import { useState } from 'react';
 import { createClient } from '@/lib/auth';
 
 interface B2BNavProps {
-  current?: 'workspace' | 'sales' | 'console' | 'account' | 'refunds' | 'eudamed';
+  current?: 'workspace' | 'portal' | 'accuracy' | 'console' | 'account' | 'refunds' | 'eudamed';
   lang?: 'en' | 'es';
 }
 
-const ROUTES: Array<{ key: NonNullable<B2BNavProps['current']>; href: string; en: string; es: string }> = [
+// Tabs shown to authenticated operators
+const AUTH_ROUTES: Array<{ key: NonNullable<B2BNavProps['current']>; href: string; en: string; es: string }> = [
   { key: 'workspace', href: '/workspace', en: 'Workspace', es: 'Workspace' },
-  { key: 'sales',     href: '/insights',  en: 'Sales',     es: 'Ventas' },
   { key: 'console',   href: '/dispatch',  en: 'Console',   es: 'Consola' },
   { key: 'refunds',   href: '/refunds',   en: 'Refunds',   es: 'Reembolsos' },
   { key: 'eudamed',   href: '/eudamed',   en: 'EU MDR',    es: 'EU MDR' },
+];
+
+// Tabs shown to anonymous visitors
+const PUBLIC_ROUTES: Array<{ key: NonNullable<B2BNavProps['current']>; href: string; en: string; es: string }> = [
+  { key: 'portal',   href: '/b2b',               en: 'Portal',   es: 'Portal' },
+  { key: 'accuracy', href: '/insights/accuracy',  en: 'Accuracy', es: 'Precisión' },
 ];
 
 export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
@@ -62,9 +68,9 @@ export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
           <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground/70">/B2B</span>
         </Link>
 
-        {/* Tabs */}
+        {/* Tabs — public surface for anon, operator surface for authed */}
         <div className="flex items-stretch flex-1 overflow-x-auto">
-          {ROUTES.map((r) => {
+          {(user ? AUTH_ROUTES : PUBLIC_ROUTES).map((r) => {
             const isActive = active === r.key;
             return (
               <Link
@@ -135,10 +141,10 @@ export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
                 {lang === 'es' ? 'Entrar' : 'Sign in'}
               </Link>
               <Link
-                href={`/signup${langSuffix}`}
+                href={`/b2b/start${langSuffix}`}
                 className="flex items-center px-4 sm:px-5 bg-foreground hover:bg-foreground/85 transition font-mono text-[11px] uppercase tracking-[0.18em] text-background"
               >
-                {lang === 'es' ? 'Crear cuenta' : 'Sign up free'}
+                {lang === 'es' ? 'Empezar →' : 'Get started →'}
               </Link>
             </div>
           )
@@ -166,5 +172,7 @@ function deriveActive(pathname: string | null): NonNullable<B2BNavProps['current
   if (pathname.startsWith('/refunds')) return 'refunds';
   if (pathname.startsWith('/dispatch/account')) return 'account';
   if (pathname.startsWith('/dispatch')) return 'console';
-  return 'sales';
+  if (pathname.startsWith('/insights/accuracy')) return 'accuracy';
+  if (pathname.startsWith('/b2b')) return 'portal';
+  return 'portal';
 }

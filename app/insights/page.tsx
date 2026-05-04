@@ -11,6 +11,7 @@
 // Companion: /dispatch (the operator panel — config + watchlist + the actual
 // product). /insights itself is marketing.
 
+import { redirect } from 'next/navigation';
 import { B2BNav } from '@/components/B2BNav';
 import { InsightsHero } from '@/components/InsightsHero';
 import { DetentionMathCard } from '@/components/DetentionMathCard';
@@ -59,8 +60,9 @@ export default async function InsightsPage({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
-  const params = await searchParams;
-  const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
+  const { lang: rawLang } = await searchParams;
+  redirect(rawLang === 'es' ? '/b2b?lang=es' : '/b2b');
+  const lang: 'en' | 'es' = rawLang === 'es' ? 'es' : 'en';
   const c = lang === 'es' ? INSIGHTS_ES : INSIGHTS_EN;
 
   const m = manifest as Manifest;
@@ -81,38 +83,38 @@ export default async function InsightsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+    <div className="dark min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ldjson) }}
       />
-      <B2BNav current="sales" lang={lang} />
+      <B2BNav current="portal" lang={lang} />
       <InsightsHero lang={lang} decisionGradeCount={dg.length} medianLift={medianLift} />
 
       {/* Detention math anchor */}
-      <section className="border-b border-white/[0.07] bg-[#0a1020]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <DetentionMathCard lang={lang} />
         </div>
       </section>
 
       {/* Calibration scoreboard — the moat */}
-      <section id="scoreboard" className="border-b border-white/[0.07] bg-[#070b18]">
+      <section id="scoreboard" className="border-b border-border bg-card/20">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <div className="mb-8">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
               {c.scoreboard.kicker}
             </div>
-            <h2 className="font-serif text-[clamp(1.85rem,3.4vw,2.85rem)] font-medium text-white mt-2">
+            <h2 className="font-serif text-[clamp(1.85rem,3.4vw,2.85rem)] font-medium text-foreground mt-2">
               {c.scoreboard.title}
             </h2>
-            <p className="mt-3 max-w-2xl text-[15px] text-white/65">{c.scoreboard.sub}</p>
+            <p className="mt-3 max-w-2xl text-[15px] text-muted-foreground">{c.scoreboard.sub}</p>
           </div>
           <CalibrationScoreboard portIds={dgPortIds.length > 0 ? dgPortIds : undefined} lang={lang} />
           <div className="mt-4 text-[13px]">
             <a
               href="/insights/accuracy"
-              className="text-amber-300 hover:text-amber-200 underline decoration-amber-300/40"
+              className="text-accent hover:text-accent/80 underline decoration-accent/40 transition"
             >
               {lang === 'es'
                 ? 'Ver el remojo en vivo + backtest completo →'
@@ -123,20 +125,20 @@ export default async function InsightsPage({
       </section>
 
       {/* Delivery — how it shows up */}
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <div className="mb-8">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
               {c.delivery.kicker}
             </div>
           </div>
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.04] sm:grid-cols-3">
+          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
             {[c.delivery.morning, c.delivery.anomaly, c.delivery.whatsapp].map((d, i) => (
-              <div key={i} className="bg-[#0a1020] p-7">
-                <h3 className="font-serif text-[1.4rem] font-medium leading-[1.15] text-white">
+              <div key={i} className="bg-background p-7">
+                <h3 className="font-serif text-[1.4rem] font-medium leading-[1.15] text-foreground">
                   {d.title}
                 </h3>
-                <p className="mt-3 text-[13.5px] leading-[1.55] text-white/70">{d.body}</p>
+                <p className="mt-3 text-[13.5px] leading-[1.55] text-muted-foreground">{d.body}</p>
               </div>
             ))}
           </div>
@@ -144,15 +146,15 @@ export default async function InsightsPage({
       </section>
 
       {/* Decision-grade port list */}
-      <section className="border-b border-white/[0.07] bg-[#070b18]">
+      <section className="border-b border-border bg-card/20">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <div className="mb-8">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
               {lang === 'es' ? 'Puertos donde le ganamos a CBP' : 'Ports we beat CBP at'}
             </div>
           </div>
           {dg.length === 0 ? (
-            <p className="text-[13px] text-white/40">
+            <p className="text-[13px] text-muted-foreground/60">
               {lang === 'es' ? 'Sin datos publicables todavía.' : 'No publishable data yet.'}
             </p>
           ) : (
@@ -162,10 +164,10 @@ export default async function InsightsPage({
                 return (
                   <li
                     key={p.port_id}
-                    className="flex items-baseline justify-between border-b border-white/[0.05] pb-1.5"
+                    className="flex items-baseline justify-between border-b border-border/60 pb-1.5"
                   >
-                    <span className="text-white">{meta?.localName ?? p.port_name}</span>
-                    <span className="font-mono tabular-nums text-amber-300">
+                    <span className="text-foreground">{meta?.localName ?? p.port_name}</span>
+                    <span className="font-mono tabular-nums text-accent">
                       +{(p.lift_vs_cbp_climatology_pct ?? 0).toFixed(1)}%
                     </span>
                   </li>
@@ -177,33 +179,33 @@ export default async function InsightsPage({
       </section>
 
       {/* Pricing tiers */}
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <div className="grid gap-3 sm:grid-cols-3">
             {[c.pricing.starter, c.pricing.pro, c.pricing.fleet].map((p) => (
               <div
                 key={p.tier}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6"
+                className="border border-border bg-card/30 p-6"
               >
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
                   {p.tier}
                 </div>
-                <div className="font-serif text-[28px] text-white mt-2">{p.price}</div>
-                <p className="mt-2 text-[13px] text-white/65">{p.summary}</p>
+                <div className="font-serif text-[28px] text-foreground mt-2">{p.price}</div>
+                <p className="mt-2 text-[13px] text-muted-foreground">{p.summary}</p>
               </div>
             ))}
           </div>
           <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
             <a
               href="mailto:diegonaguirre@icloud.com?subject=Cruzar%20Insights%20trial"
-              className="inline-flex items-center gap-3 rounded-2xl bg-amber-400 px-6 py-3.5 text-[14px] font-semibold text-[#0a1020] transition hover:bg-amber-300"
+              className="inline-flex items-center gap-3 bg-foreground px-6 py-3.5 text-[14px] font-semibold text-background transition hover:bg-foreground/90"
             >
               <span>{c.cta.primary}</span>
               <span aria-hidden>→</span>
             </a>
             <a
               href="/dispatch"
-              className="text-[14px] text-white/55 transition hover:text-amber-300"
+              className="text-[14px] text-muted-foreground transition hover:text-foreground"
             >
               {lang === 'es' ? 'Abre la consola →' : 'Open the console →'}
             </a>
@@ -211,14 +213,14 @@ export default async function InsightsPage({
         </div>
       </section>
 
-      <footer className="bg-[#070b18]">
-        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-10 text-[12px] text-white/40">
+      <footer className="bg-card border-t border-border">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-10 text-[12px] text-muted-foreground/50">
           {c.notAffiliated} ·{' '}
-          <a href="?lang=en" className="hover:text-amber-300">
+          <a href="?lang=en" className="hover:text-foreground transition">
             EN
           </a>{' '}
           ·{' '}
-          <a href="?lang=es" className="hover:text-amber-300">
+          <a href="?lang=es" className="hover:text-foreground transition">
             ES
           </a>{' '}
           · {(manifest as Manifest).model_version}
