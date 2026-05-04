@@ -16,6 +16,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/advertise`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${base}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${base}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.3 },
+    // B2B surround — 12 modules + spec
+    { url: `${base}/workspace`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${base}/insights`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/refunds`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${base}/refunds/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/drawback`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/drawback/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.75 },
+    { url: `${base}/pedimento`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/pedimento/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.75 },
+    { url: `${base}/eudamed`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/eudamed/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.75 },
+    { url: `${base}/cbam`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/cbam/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.75 },
+    { url: `${base}/uflpa`, lastModified: now, changeFrequency: 'weekly', priority: 0.85 },
+    { url: `${base}/uflpa/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.75 },
+    { url: `${base}/driver-pass`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${base}/driver-pass/scan`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/paperwork`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${base}/regulatory`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${base}/transload`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    // Public spec — anchors the substrate identity
+    { url: `${base}/spec/ticket-v1`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
   ]
 
   // City rollup SEO landings — highest priority after home since

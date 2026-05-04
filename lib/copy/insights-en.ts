@@ -42,7 +42,7 @@ export const INSIGHTS_EN = {
     },
   },
   cta: {
-    primary: 'Start a trial — Raul will text you back today',
+    primary: 'Text us — we answer RGV brokers personally',
     secondary: 'Read the methodology',
   },
   pricing: {

@@ -39,7 +39,7 @@ export const INSIGHTS_ES = {
     },
   },
   cta: {
-    primary: 'Empieza prueba — Raul te marca hoy',
+    primary: 'Escríbenos — atendemos brokers del RGV personalmente',
     secondary: 'Lee la metodología',
   },
   pricing: {

@@ -16,8 +16,26 @@ export default async function TicketSpecPage({
   const params = await searchParams;
   const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
 
+  // Schema.org TechArticle markup — surfaces this as a technical specification
+  // to search engines + AI agents. Discovery layer for the substrate identity.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: 'Cruzar Ticket v1 — Public Specification',
+    description: 'Ed25519-signed JSON record format that carries every Cruzar module composition for a single cross-border shipment. Schema, signing, verification, sample.',
+    url: 'https://www.cruzar.app/spec/ticket-v1',
+    author: { '@type': 'Organization', name: 'Cruzar Insights, Inc.', url: 'https://www.cruzar.app' },
+    publisher: { '@type': 'Organization', name: 'Cruzar Insights, Inc.', url: 'https://www.cruzar.app' },
+    datePublished: '2026-05-04',
+    inLanguage: 'en',
+    keywords: 'cross-border, US-MX, customs, IEEPA, drawback, pedimento, CBAM, UFLPA, EUDAMED, audit-shield, Ed25519, signed-record',
+    proficiencyLevel: 'Expert',
+    dependencies: 'Ed25519 signature verification, JSON canonicalization, SHA-256 hashing',
+  };
+
   return (
     <div className="dark min-h-screen bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <B2BNav lang={lang} />
 
       <section className="border-b border-border">
