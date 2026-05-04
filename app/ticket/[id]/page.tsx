@@ -4,6 +4,7 @@
 // The substrate's value made visible.
 
 import { B2BNav } from '@/components/B2BNav';
+import { TicketShareButton } from '@/components/TicketShareButton';
 import { createClient } from '@supabase/supabase-js';
 import { verifyTicket, canonicalize } from '@/lib/ticket/json-signer';
 import type { CruzarTicketV1, SignedTicket } from '@/lib/ticket/types';
@@ -145,6 +146,11 @@ export default async function TicketViewerPage({ params, searchParams }: Props) 
             >
               {c.spec_link} →
             </a>
+            <TicketShareButton
+              ticket_id={payload.ticket_id}
+              modules_count={payload.modules_present?.length ?? 0}
+              lang={lang}
+            />
           </div>
 
           {data.superseded_by && (

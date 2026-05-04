@@ -313,38 +313,62 @@ export default function DispatchConsole() {
         )}
 
         {!isLoading && ports.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-border bg-foreground/[0.02]">
-            <table className="w-full text-[13px]">
-              <thead className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                <tr className="border-b border-border">
-                  <th className="px-4 py-3 text-left">Port</th>
-                  <th className="px-4 py-3 text-right">Now</th>
-                  <th className="px-4 py-3 text-right">+6h</th>
-                  <th className="px-4 py-3 text-right">Δ</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {ports.map((p) => (
-                  <DispatchRow
-                    key={p.port_id}
-                    p={p}
-                    subscriberChannels={
-                      subscriber
-                        ? {
-                            email: subscriber.channel_email,
-                            sms: subscriber.channel_sms,
-                            whatsapp: subscriber.channel_whatsapp,
-                          }
-                        : null
-                    }
-                    lastFired={subscriber?.last_anomaly_fired_at ?? null}
-                    lang={subscriber?.language ?? "en"}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* DESKTOP — table layout */}
+            <div className="hidden md:block overflow-hidden rounded-2xl border border-border bg-foreground/[0.02]">
+              <table className="w-full text-[13px]">
+                <thead className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-3 text-left">Port</th>
+                    <th className="px-4 py-3 text-right">Now</th>
+                    <th className="px-4 py-3 text-right">+6h</th>
+                    <th className="px-4 py-3 text-right">Δ</th>
+                    <th className="px-4 py-3 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {ports.map((p) => (
+                    <DispatchRow
+                      key={p.port_id}
+                      p={p}
+                      subscriberChannels={
+                        subscriber
+                          ? {
+                              email: subscriber.channel_email,
+                              sms: subscriber.channel_sms,
+                              whatsapp: subscriber.channel_whatsapp,
+                            }
+                          : null
+                      }
+                      lastFired={subscriber?.last_anomaly_fired_at ?? null}
+                      lang={subscriber?.language ?? "en"}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* MOBILE — card stack. Trucking is 24/7; operators not at workstations. */}
+            <div className="md:hidden space-y-3">
+              {ports.map((p) => (
+                <DispatchPortCard
+                  key={p.port_id}
+                  p={p}
+                  subscriberChannels={
+                    subscriber
+                      ? {
+                          email: subscriber.channel_email,
+                          sms: subscriber.channel_sms,
+                          whatsapp: subscriber.channel_whatsapp,
+                        }
+                      : null
+                  }
+                  lastFired={subscriber?.last_anomaly_fired_at ?? null}
+                  lang={subscriber?.language ?? "en"}
+                />
+              ))}
+            </div>
+          </>
         )}
 
         <p className="mt-4 text-[11px] text-muted-foreground/60 leading-[1.5]">
@@ -436,5 +460,98 @@ function DispatchRow({
         )}
       </td>
     </tr>
+  );
+}
+
+// Mobile dispatch card — thumb-friendly stacked layout with the live wait
+// number front-and-center. Phone is the primary operator surface in 24/7
+// trucking — desktop table is the secondary view for office shifts.
+function DispatchPortCard({
+  p,
+  subscriberChannels,
+  lastFired,
+  lang,
+}: {
+  p: DispatchPort;
+  subscriberChannels: { email: boolean; sms: boolean; whatsapp: boolean } | null;
+  lastFired: string | null;
+  lang: 'en' | 'es';
+}) {
+  const status = STATUS_LABEL[p.drift_status];
+  const liveText = typeof p.live_wait_min === 'number' ? `${p.live_wait_min}` : '—';
+  const predText = typeof p.predicted_6h_min === 'number' ? `${p.predicted_6h_min} min` : '—';
+  const deltaText =
+    typeof p.delta_min === 'number'
+      ? p.delta_min === 0
+        ? '·'
+        : `${p.delta_min > 0 ? '▲' : '▼'} ${Math.abs(p.delta_min)} min`
+      : '—';
+  const deltaTone =
+    typeof p.delta_min === 'number'
+      ? p.delta_min > 5
+        ? 'text-rose-300'
+        : p.delta_min < -5
+          ? 'text-emerald-300'
+          : 'text-muted-foreground/80'
+      : 'text-muted-foreground/50';
+  const liveTone = p.anomaly_high ? 'text-rose-300' : 'text-foreground';
+
+  return (
+    <div className="rounded-xl border border-border bg-foreground/[0.02] p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="font-medium text-foreground text-[15px]">{p.name}</span>
+            {p.anomaly_high && (
+              <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-rose-300 border border-rose-400/30">
+                anomaly{' '}
+                {typeof p.anomaly_ratio === 'number' && (
+                  <span className="font-mono">{p.anomaly_ratio.toFixed(1)}×</span>
+                )}
+              </span>
+            )}
+          </div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground/70">
+            {p.region} · <span className="font-mono">{p.port_id}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Big live number — the thing a 2am dispatcher needs to read at a glance */}
+      <div className="mt-3 flex items-baseline gap-3">
+        <span className={`font-mono text-[34px] tabular-nums leading-none ${liveTone}`}>
+          {liveText}
+        </span>
+        <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
+          min now
+        </span>
+        {typeof p.live_stale_min === 'number' && p.live_stale_min > 30 && (
+          <span className="ml-auto text-[10px] text-foreground/70">stale {p.live_stale_min}m</span>
+        )}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/70">
+            +6h
+          </div>
+          <div className="font-mono text-[14px] text-foreground/85">{predText}</div>
+        </div>
+        <div>
+          <div className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/70">
+            Δ
+          </div>
+          <div className={`font-mono text-[14px] ${deltaTone}`}>{deltaText}</div>
+        </div>
+      </div>
+
+      <div className={`mt-3 text-[11.5px] ${status.tone}`}>{status.en}</div>
+
+      {subscriberChannels && (
+        <div className="mt-3 pt-3 border-t border-border">
+          <AlertsRail channels={subscriberChannels} lastFiredAt={lastFired} lang={lang} />
+        </div>
+      )}
+    </div>
   );
 }

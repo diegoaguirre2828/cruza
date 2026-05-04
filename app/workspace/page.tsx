@@ -6,6 +6,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow';
 import { Stamp } from '@/components/ui/Stamp';
 import { BridgeHero } from '@/components/ui/BridgeHero';
 import { PortTicker } from '@/components/ui/PortTicker';
+import { OperatorInstallHint } from '@/components/OperatorInstallHint';
 
 export const metadata = {
   title: 'Workspace — Cruzar',
@@ -96,6 +97,8 @@ export default async function WorkspacePage({
           </div>
         </div>
       </footer>
+
+      <OperatorInstallHint lang={lang} />
     </div>
   );
 }
