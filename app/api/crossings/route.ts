@@ -26,14 +26,17 @@ export async function GET(req: NextRequest) {
 
   const limitRaw = parseInt(req.nextUrl.searchParams.get('limit') || '10', 10)
   const limit = Math.min(Math.max(limitRaw, 1), 50)
+  const portFilter = req.nextUrl.searchParams.get('port_id')?.trim() || null
 
   const db = getServiceClient()
-  const { data, error } = await db
+  let query = db
     .from('crossings')
     .select('id, port_id, direction, status, modules_present, started_at, ended_at, signature, signing_key_id')
     .eq('user_id', user.id)
     .order('started_at', { ascending: false })
     .limit(limit)
+  if (portFilter) query = query.eq('port_id', portFilter)
+  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ crossings: data ?? [] })

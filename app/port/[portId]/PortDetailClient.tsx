@@ -29,6 +29,7 @@ import { getPortMeta } from '@/lib/portMeta'
 import { getAffiliate } from '@/lib/affiliates'
 import { AdBanner } from '@/components/AdBanner'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
+import { PersonalWaitAtPort } from '@/components/PersonalWaitAtPort'
 import { AlertSnoozePrompt } from '@/components/AlertSnoozePrompt'
 import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
 import { armNudge } from '@/lib/useNudge'
@@ -645,6 +646,14 @@ export function PortDetailClient({ port, portId }: Props) {
           /api/cron/analyze-bridge-cameras + 230k wait_time_readings
           already deserve to surface. */}
       <WaitConfirmStrip portId={portId} cbpWait={port.vehicle ?? null} />
+
+      {/* Personal-wait widget — your average AT THIS port (computed
+          from your /api/crossings records) vs the current published
+          wait. Hidden until 3+ completed trips. Composes onto the
+          Cruzar Crossing substrate (v85). */}
+      {user && (
+        <PersonalWaitAtPort portId={portId} currentVehicleWait={port.vehicle ?? null} />
+      )}
 
       {/* One-tap alert CTA — fights the 89% one-and-done retention
           problem. Users who land here came for a wait time number;

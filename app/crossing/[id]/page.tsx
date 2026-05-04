@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getPortMeta } from '@/lib/portMeta'
 import { isIOSAppUserAgent } from '@/lib/platform'
+import { CrossingShareButton } from '@/components/CrossingShareButton'
 import type { CruzarCrossingV1 } from '@/lib/crossing/types'
 
 export const dynamic = 'force-dynamic'
@@ -125,10 +126,16 @@ export default async function CrossingPage({ params }: { params: Promise<{ id: s
   return (
     <main className={`min-h-screen ${isIosApp ? 'pt-safe' : ''} bg-gray-50 dark:bg-gray-950 px-4 py-6`}>
       <div className="max-w-md mx-auto">
-        <div className="mb-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <Link href="/dashboard" className="text-xs text-blue-600 hover:underline">
             {t.backToDashboard}
           </Link>
+          <CrossingShareButton
+            crossing_id={row.id}
+            port_name={portName}
+            duration_min={durationMin}
+            lang={lang}
+          />
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">

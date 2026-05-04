@@ -13,6 +13,7 @@ import { PushToggle } from '@/components/PushToggle'
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt'
 import { PortSearch } from '@/components/PortSearch'
 import { DashboardInstallBanner } from '@/components/DashboardInstallBanner'
+import { MyTripsList } from '@/components/MyTripsList'
 import { PostWelcomeTour } from '@/components/PostWelcomeTour'
 import { FoundingMemberBadge } from '@/components/FoundingMemberBadge'
 import { trackEvent } from '@/lib/trackEvent'
@@ -46,7 +47,7 @@ export default function DashboardPage() {
   const [ports, setPorts] = useState<PortWaitTime[]>([])
   const [saved, setSaved] = useState<SavedCrossing[]>([])
   const [alerts, setAlerts] = useState<AlertPref[]>([])
-  const [tab, setTab] = useState<'crossings' | 'alerts' | 'route'>('crossings')
+  const [tab, setTab] = useState<'crossings' | 'alerts' | 'route' | 'trips'>('crossings')
   const [newAlertPortId, setNewAlertPortId] = useState('')
   const [newAlertThreshold, setNewAlertThreshold] = useState(20)
   const [newAlertPhone, setNewAlertPhone] = useState('')
@@ -160,7 +161,7 @@ export default function DashboardPage() {
         if (portIdParam) setNewAlertPortId(portIdParam)
         if (thresholdParam) setNewAlertThreshold(Number(thresholdParam))
         window.history.replaceState({}, '', '/dashboard')
-      } else if (tabParam === 'route' || tabParam === 'crossings') {
+      } else if (tabParam === 'route' || tabParam === 'crossings' || tabParam === 'trips') {
         setTab(tabParam)
         window.history.replaceState({}, '', '/dashboard')
       }
@@ -441,6 +442,7 @@ export default function DashboardPage() {
           {[
             { key: 'crossings', label: t.savedTab },
             { key: 'alerts',    label: t.alertsTab },
+            { key: 'trips',     label: es ? 'Cruces' : 'Trips' },
             { key: 'route',     label: t.routeTab },
           ].map(t => (
             <button
@@ -513,6 +515,11 @@ export default function DashboardPage() {
               ))
             )}
           </div>
+        )}
+
+        {/* Trips Tab — Cruzar Crossing records (Phase 3 of substrate v85) */}
+        {tab === 'trips' && (
+          <MyTripsList />
         )}
 
         {/* Alerts Tab */}
