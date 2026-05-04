@@ -19,7 +19,11 @@ import { composeDrawback } from '../chassis/drawback/composer';
 import type { DrawbackEntry, DrawbackExport, DrawbackClaimantProfile } from '../chassis/drawback/types';
 import { composePedimento } from '../chassis/pedimento/composer';
 import type { OperacionInput as PedimentoInput } from '../chassis/pedimento/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock } from './types';
+import { composeCbam } from '../chassis/cbam/composer';
+import type { CbamGood, CbamDeclarantProfile } from '../chassis/cbam/types';
+import { evaluateUflpa } from '../chassis/uflpa/risk-flagger';
+import type { UflpaShipmentInput } from '../chassis/uflpa/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock, TicketCbamBlock, TicketUflpaBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -45,6 +49,11 @@ interface GenerateOptions {
     designations?: Array<{ entry_number: string; export_id: string }>;
   };
   pedimentoInput?: PedimentoInput;
+  cbamInput?: {
+    declarant: CbamDeclarantProfile;
+    goods: CbamGood[];
+  };
+  uflpaInput?: UflpaShipmentInput;
 }
 
 function mintTicketId(): string {
@@ -191,6 +200,33 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module CBAM: EU carbon border adjustment composition (optional — EU-bound shipments)
+  let cbamBlock: TicketCbamBlock | null = null;
+  if (opts.cbamInput && opts.cbamInput.goods.length > 0) {
+    const composition = composeCbam(opts.cbamInput);
+    cbamBlock = {
+      composition,
+      in_scope_count: composition.in_scope_count,
+      total_embedded_emissions_t_co2: composition.total_embedded_emissions_t_co2,
+      certificates_required: composition.certificates_required,
+      estimated_cbam_cost_eur: composition.estimated_cbam_cost_eur,
+      registry_version: composition.registry_version,
+    };
+  }
+
+  // Module UFLPA: forced-labor risk evaluation (optional — US-import shipments with supply chain map)
+  let uflpaBlock: TicketUflpaBlock | null = null;
+  if (opts.uflpaInput && opts.uflpaInput.supply_chain.length > 0) {
+    const composition = evaluateUflpa(opts.uflpaInput);
+    uflpaBlock = {
+      composition,
+      risk_level: composition.risk_level,
+      rebuttable_presumption_triggered: composition.rebuttable_presumption_triggered,
+      fatal_findings_count: composition.findings.filter((f) => f.severity === 'fatal').length,
+      registry_version: composition.registry_version,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -203,13 +239,15 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento'> = ['customs'];
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
   if (refundsBlock) modulesPresent.push('refunds');
   if (drawbackBlock) modulesPresent.push('drawback');
   if (pedimentoBlock) modulesPresent.push('pedimento');
+  if (cbamBlock) modulesPresent.push('cbam');
+  if (uflpaBlock) modulesPresent.push('uflpa');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -230,6 +268,8 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     refunds: refundsBlock ?? undefined,
     drawback: drawbackBlock ?? undefined,
     pedimento: pedimentoBlock ?? undefined,
+    cbam: cbamBlock ?? undefined,
+    uflpa: uflpaBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

@@ -42,9 +42,12 @@
     "verify:eudamed": "npx tsx scripts/verify-eudamed-composer.mjs",
     "verify:drawback": "npx tsx scripts/verify-drawback-composer.mjs",
     "verify:pedimento": "npx tsx scripts/verify-pedimento-composer.mjs",
+    "verify:cbam": "npx tsx scripts/verify-cbam-composer.mjs",
+    "verify:uflpa": "npx tsx scripts/verify-uflpa-evaluator.mjs",
     "audit:module-14": "node scripts/run-module-14-audit.mjs",
     "audit:module-7": "node scripts/run-module-7-audit.mjs",
-    "audit:module-11": "node scripts/run-module-11-audit.mjs"
+    "audit:module-11": "node scripts/run-module-11-audit.mjs",
+    "audit:module-cbam-uflpa": "node scripts/run-cbam-uflpa-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

@@ -36,6 +36,20 @@ export const WORKSPACE_EN = {
       stat_findings: 'fatal findings flagged',
       open_link: 'Open pedimento',
     },
+    cbam: {
+      title: 'EU CBAM',
+      sub: 'Carbon Border Adjustment quarterly report. Steel + aluminum + cement + fertilizers + electricity + hydrogen. Definitive phase from Jan 1, 2026.',
+      stat_certificates: 'certificates required',
+      stat_cost: 'estimated CBAM cost (EUR)',
+      open_link: 'Open CBAM',
+    },
+    uflpa: {
+      title: 'UFLPA risk',
+      sub: 'Forced-labor risk scanner. Maps your supply chain, flags Xinjiang exposure + Entity List matches before CBP detains the shipment.',
+      stat_scans: 'risk scans (30d)',
+      stat_high_risk: 'high-risk findings',
+      open_link: 'Open UFLPA',
+    },
     eudamed: {
       title: 'EU MDR / EUDAMED',
       sub: 'Actor + UDI/Device data feed for Reynosa medtech. Mandatory May 28, 2026.',

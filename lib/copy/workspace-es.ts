@@ -36,6 +36,20 @@ export const WORKSPACE_ES = {
       stat_findings: 'hallazgos fatales',
       open_link: 'Abrir pedimento',
     },
+    cbam: {
+      title: 'CBAM UE',
+      sub: 'Reporte trimestral del Mecanismo de Ajuste de Carbono UE. Acero + aluminio + cemento + fertilizantes + electricidad + hidrógeno. Fase definitiva desde 1 ene 2026.',
+      stat_certificates: 'certificados requeridos',
+      stat_cost: 'costo CBAM estimado (EUR)',
+      open_link: 'Abrir CBAM',
+    },
+    uflpa: {
+      title: 'Riesgo UFLPA',
+      sub: 'Escáner de riesgo de trabajo forzado. Mapea cadena de suministro, marca exposición Xinjiang + coincidencias Entity List antes de que CBP detenga el envío.',
+      stat_scans: 'escaneos (30d)',
+      stat_high_risk: 'hallazgos riesgo-alto',
+      open_link: 'Abrir UFLPA',
+    },
     eudamed: {
       title: 'EU MDR / EUDAMED',
       sub: 'Feed de actor + UDI/dispositivo para medtech Reynosa. Obligatorio 28 mayo 2026.',

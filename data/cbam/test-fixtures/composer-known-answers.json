@@ -1,0 +1,156 @@
+{
+  "today_iso": "2026-05-04",
+  "cases": [
+    {
+      "name": "iron_steel — actual verified emissions, authorized declarant, well-formed",
+      "input": {
+        "declarant": {
+          "declarant_name": "RGV Steel Imports Ltd",
+          "declarant_eori": "DE123456789",
+          "authorized_cbam_declarant": true,
+          "reporting_period": "2026-Q2",
+          "language": "en"
+        },
+        "goods": [
+          {
+            "cn_code": "72061000",
+            "description": "Hot-rolled coils, primary steel",
+            "category": "iron_steel",
+            "mass_tonnes": 100,
+            "installation": {
+              "installation_name": "Acerera Monterrey Norte",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": true,
+              "uses_carbon_price_in_origin": false
+            },
+            "direct_emissions_t_co2_per_t": 1.85,
+            "indirect_emissions_t_co2_per_t": 0.16,
+            "emissions_basis": "actual_verified"
+          }
+        ]
+      },
+      "expect": {
+        "in_scope_count": 1,
+        "out_of_scope_count": 0,
+        "total_mass_tonnes": 100,
+        "total_embedded_emissions_t_co2": 201.00,
+        "phase": "definitive",
+        "fatal_count": 0
+      }
+    },
+    {
+      "name": "aluminum — default factors, unauthorized declarant — must trigger CBAM-F-001",
+      "input": {
+        "declarant": {
+          "declarant_name": "Reynosa Aluminum Imports SA",
+          "declarant_eori": "FR987654321",
+          "authorized_cbam_declarant": false,
+          "reporting_period": "2026-Q2",
+          "language": "es"
+        },
+        "goods": [
+          {
+            "cn_code": "76011000",
+            "description": "Unwrought aluminum, not alloyed",
+            "category": "aluminum",
+            "mass_tonnes": 50,
+            "installation": {
+              "installation_name": "Aluminera del Norte",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": false,
+              "uses_carbon_price_in_origin": false
+            },
+            "emissions_basis": "default_value"
+          }
+        ]
+      },
+      "expect": {
+        "in_scope_count": 1,
+        "phase": "definitive",
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "CBAM-F-001"
+      }
+    },
+    {
+      "name": "out-of-scope CN — apparel does not trigger CBAM",
+      "input": {
+        "declarant": {
+          "declarant_name": "RGV Apparel Co",
+          "declarant_eori": "ES111222333",
+          "authorized_cbam_declarant": true,
+          "reporting_period": "2026-Q2",
+          "language": "en"
+        },
+        "goods": [
+          {
+            "cn_code": "61091000",
+            "description": "T-shirts, cotton",
+            "category": "out_of_scope",
+            "mass_tonnes": 5,
+            "installation": {
+              "installation_name": "RGV Garment Co",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": false,
+              "uses_carbon_price_in_origin": false
+            },
+            "emissions_basis": "actual_unverified"
+          }
+        ]
+      },
+      "expect": {
+        "in_scope_count": 0,
+        "out_of_scope_count": 1,
+        "total_embedded_emissions_t_co2": 0,
+        "certificates_required": 0,
+        "fatal_count": 0
+      }
+    },
+    {
+      "name": "cement — multiple goods, mixed",
+      "input": {
+        "declarant": {
+          "declarant_name": "Cemex Imports BV",
+          "declarant_eori": "NL444555666",
+          "authorized_cbam_declarant": true,
+          "reporting_period": "2026-Q2",
+          "language": "en"
+        },
+        "goods": [
+          {
+            "cn_code": "25232900",
+            "description": "Portland cement clinker",
+            "category": "cement",
+            "mass_tonnes": 200,
+            "installation": {
+              "installation_name": "Cemex MX-1",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": true,
+              "uses_carbon_price_in_origin": false
+            },
+            "direct_emissions_t_co2_per_t": 0.80,
+            "indirect_emissions_t_co2_per_t": 0.02,
+            "emissions_basis": "actual_verified"
+          },
+          {
+            "cn_code": "25231000",
+            "description": "Cement clinker",
+            "category": "cement",
+            "mass_tonnes": 50,
+            "installation": {
+              "installation_name": "Cemex MX-1",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": true,
+              "uses_carbon_price_in_origin": false
+            },
+            "emissions_basis": "default_value"
+          }
+        ]
+      },
+      "expect": {
+        "in_scope_count": 2,
+        "total_mass_tonnes": 250,
+        "fatal_count": 0
+      }
+    }
+  ]
+}

@@ -6,6 +6,8 @@ import type { DriverComplianceManifest, ComplianceStatus } from '../chassis/driv
 import type { RefundComposition } from '../chassis/refunds/types';
 import type { DrawbackComposition } from '../chassis/drawback/types';
 import type { PedimentoComposition } from '../chassis/pedimento/types';
+import type { CbamComposition } from '../chassis/cbam/types';
+import type { UflpaComposition } from '../chassis/uflpa/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -68,6 +70,23 @@ export interface TicketPedimentoBlock {
   registry_version: string;
 }
 
+export interface TicketCbamBlock {
+  composition: CbamComposition;
+  in_scope_count: number;
+  total_embedded_emissions_t_co2: number;
+  certificates_required: number;
+  estimated_cbam_cost_eur: number;
+  registry_version: string;
+}
+
+export interface TicketUflpaBlock {
+  composition: UflpaComposition;
+  risk_level: string;
+  rebuttable_presumption_triggered: boolean;
+  fatal_findings_count: number;
+  registry_version: string;
+}
+
 export interface TicketAuditShield {
   prior_disclosure_eligible: boolean;
   '19_USC_1592_basis': string;
@@ -83,7 +102,7 @@ export interface CruzarTicketV1 {
   ticket_id: string;
   issued_at: string;
   issuer: 'Cruzar Insights, Inc.';
-  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento'>;
+  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa'>;
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
@@ -92,6 +111,8 @@ export interface CruzarTicketV1 {
   refunds?: TicketRefundsBlock;
   drawback?: TicketDrawbackBlock;
   pedimento?: TicketPedimentoBlock;
+  cbam?: TicketCbamBlock;
+  uflpa?: TicketUflpaBlock;
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

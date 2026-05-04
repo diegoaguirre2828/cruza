@@ -130,6 +130,16 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
     { label: copy.modules.pedimento.stat_findings, value: '—' },
   ];
 
+  // CBAM + UFLPA stats — modules just shipped (sprint 3), no DB-backed stats yet.
+  const cbamStats: ModuleCardStat[] = [
+    { label: copy.modules.cbam.stat_certificates, value: '—', emphasis: true },
+    { label: copy.modules.cbam.stat_cost, value: '—' },
+  ];
+  const uflpaStats: ModuleCardStat[] = [
+    { label: copy.modules.uflpa.stat_scans, value: '—', emphasis: true },
+    { label: copy.modules.uflpa.stat_high_risk, value: '—' },
+  ];
+
   return (
     <>
       {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
@@ -190,7 +200,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           <div className="flex items-baseline justify-between gap-4 mb-6">
             <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-              10 MODULES · 1 SUBSTRATE
+              11 MODULES · 1 SUBSTRATE
             </span>
           </div>
 
@@ -216,8 +226,8 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Row 2 — Customs declaration (US / MX / EU walls): customs + pedimento + eudamed */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+          {/* Row 2 — Customs declaration (US / MX): symmetric pair */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
             <ModuleCard
               accent="primary"
               code="MOD · 02 · US"
@@ -234,13 +244,33 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               stats={pedimentoStats}
               link={{ href: `/pedimento${langSuffix}`, label: copy.modules.pedimento.open_link }}
             />
+          </div>
+
+          {/* Row 3 — Compliance regimes (EU MDR / EU CBAM / US UFLPA): regulator-gated walls */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
             <ModuleCard
               accent="primary"
-              code="MOD · EU MDR"
+              code="EU MDR"
               title={copy.modules.eudamed.title}
               sub={copy.modules.eudamed.sub}
               stats={eudamedStats}
               link={{ href: `/eudamed${langSuffix}`, label: copy.modules.eudamed.open_link }}
+            />
+            <ModuleCard
+              accent="primary"
+              code="EU CBAM"
+              title={copy.modules.cbam.title}
+              sub={copy.modules.cbam.sub}
+              stats={cbamStats}
+              link={{ href: `/cbam${langSuffix}`, label: copy.modules.cbam.open_link }}
+            />
+            <ModuleCard
+              accent="primary"
+              code="US UFLPA"
+              title={copy.modules.uflpa.title}
+              sub={copy.modules.uflpa.sub}
+              stats={uflpaStats}
+              link={{ href: `/uflpa${langSuffix}`, label: copy.modules.uflpa.open_link }}
             />
           </div>
 

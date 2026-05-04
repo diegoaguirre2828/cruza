@@ -58,6 +58,8 @@ const HIDDEN_PATHS = [
   '/eudamed',
   '/drawback',
   '/pedimento',
+  '/cbam',
+  '/uflpa',
   '/paperwork',
   '/regulatory',
   '/transload',

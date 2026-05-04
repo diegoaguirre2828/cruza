@@ -1,0 +1,117 @@
+{
+  "today_iso": "2026-05-04",
+  "cases": [
+    {
+      "name": "low risk — out-of-sector + clean supply chain",
+      "input": {
+        "importer_name": "Acme Toys Inc",
+        "importer_ein": "12-3456789",
+        "htsus_code": "9503000091",
+        "product_description": "Plastic toys",
+        "expected_arrival_iso": "2026-06-01",
+        "port_of_entry": "2304",
+        "declared_value_usd": 50000,
+        "supply_chain": [
+          { "tier": 0, "supplier_name": "Plastico Supplier MX SA", "country_iso": "MX", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": true, "affidavit_present": true }
+        ],
+        "total_supplier_traceability_tiers": 2
+      },
+      "expect": {
+        "risk_level": "low",
+        "rebuttable_presumption_triggered": false,
+        "fatal_count": 0
+      }
+    },
+    {
+      "name": "high risk — Xinjiang origin tier 1",
+      "input": {
+        "importer_name": "Solar Imports LLC",
+        "importer_ein": "98-7654321",
+        "htsus_code": "85414020",
+        "product_description": "Photovoltaic cells",
+        "expected_arrival_iso": "2026-06-01",
+        "port_of_entry": "2304",
+        "declared_value_usd": 500000,
+        "supply_chain": [
+          { "tier": 0, "supplier_name": "Generic Solar Co", "country_iso": "CN", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": false, "affidavit_present": false },
+          { "tier": 1, "supplier_name": "Xinjiang Polysilicon Plant", "country_iso": "CN", "province_or_state": "Xinjiang", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": true, "audit_evidence_present": false, "affidavit_present": false }
+        ],
+        "total_supplier_traceability_tiers": 2
+      },
+      "expect": {
+        "risk_level": "high",
+        "rebuttable_presumption_triggered": true,
+        "xinjiang_tier": 1,
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "UFLPA-F-001"
+      }
+    },
+    {
+      "name": "high risk — supplier on Entity List by alias",
+      "input": {
+        "importer_name": "Cotton Apparel USA",
+        "importer_ein": "55-1234567",
+        "htsus_code": "62034230",
+        "product_description": "Men's cotton trousers",
+        "expected_arrival_iso": "2026-06-01",
+        "port_of_entry": "2304",
+        "declared_value_usd": 200000,
+        "supply_chain": [
+          { "tier": 0, "supplier_name": "Hetian Taida Co Ltd", "country_iso": "CN", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": true, "affidavit_present": true }
+        ],
+        "total_supplier_traceability_tiers": 1
+      },
+      "expect": {
+        "rebuttable_presumption_triggered": true,
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "UFLPA-F-002"
+      }
+    },
+    {
+      "name": "medium risk — sector match (apparel) but no Xinjiang/Entity hit",
+      "input": {
+        "importer_name": "Clean Apparel LLC",
+        "importer_ein": "44-1234567",
+        "htsus_code": "62034230",
+        "product_description": "Men's cotton trousers",
+        "expected_arrival_iso": "2026-06-01",
+        "port_of_entry": "2304",
+        "declared_value_usd": 100000,
+        "supply_chain": [
+          { "tier": 0, "supplier_name": "Maquila Reynosa SA", "country_iso": "MX", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": true, "affidavit_present": true }
+        ],
+        "total_supplier_traceability_tiers": 3
+      },
+      "expect": {
+        "risk_level": "medium",
+        "rebuttable_presumption_triggered": false,
+        "high_risk_sectors_includes": "cotton_apparel"
+      }
+    },
+    {
+      "name": "high risk — Xinjiang tier 3 (deep upstream)",
+      "input": {
+        "importer_name": "Auto Parts Inc",
+        "importer_ein": "77-9988776",
+        "htsus_code": "87082950",
+        "product_description": "Vehicle body parts (aluminum)",
+        "expected_arrival_iso": "2026-06-01",
+        "port_of_entry": "2304",
+        "declared_value_usd": 800000,
+        "supply_chain": [
+          { "tier": 0, "supplier_name": "Tier1 Auto MX", "country_iso": "MX", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": true, "affidavit_present": true },
+          { "tier": 1, "supplier_name": "Aluminum Smelter A", "country_iso": "CN", "province_or_state": "Shandong", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": false, "affidavit_present": false },
+          { "tier": 2, "supplier_name": "Bauxite Trader B", "country_iso": "CN", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": false, "audit_evidence_present": false, "affidavit_present": false },
+          { "tier": 3, "supplier_name": "Xinjiang East Hope Aluminum", "country_iso": "CN", "province_or_state": "Xinjiang", "is_on_uflpa_entity_list": false, "produced_in_xinjiang": true, "audit_evidence_present": false, "affidavit_present": false }
+        ],
+        "total_supplier_traceability_tiers": 4
+      },
+      "expect": {
+        "risk_level": "high",
+        "rebuttable_presumption_triggered": true,
+        "xinjiang_tier": 3,
+        "fatal_count_at_least": 1
+      }
+    }
+  ]
+}
