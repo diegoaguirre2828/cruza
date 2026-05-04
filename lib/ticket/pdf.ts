@@ -117,7 +117,7 @@ export async function renderTicketPdf(signed: SignedTicket, opts: RenderOptions 
   const qrPng = await generateTicketQrPngBuffer(payload.ticket_id, content_hash, baseUrl);
   const qrImg = await doc.embedPng(qrPng);
   page.drawImage(qrImg, { x: 30, y: 30, width: 90, height: 90 });
-  page.drawText(`${TICKET_ES.verify_at} / ${TICKET_EN.verify_at}:`, { x: 130, y: 90, size: 9, font: bold });
+  page.drawText('Verificar / Verify:', { x: 130, y: 90, size: 9, font: bold });
   page.drawText(`${baseUrl}/ticket/${payload.ticket_id}`, { x: 130, y: 78, size: 8, font, color: rgb(0.15, 0.36, 0.72) });
   page.drawText(`${TICKET_ES.disclaimer}`, { x: 130, y: 60, size: 7, font, color: rgb(0.4, 0.4, 0.4), maxWidth: 440 });
   page.drawText(`${TICKET_EN.disclaimer}`, { x: 130, y: 42, size: 7, font, color: rgb(0.4, 0.4, 0.4), maxWidth: 440 });
