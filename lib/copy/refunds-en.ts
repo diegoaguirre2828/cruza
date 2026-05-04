@@ -15,7 +15,7 @@ export const REFUNDS_EN = {
       step1_title: '1. Free eligibility scan',
       step1_body: 'Drop your ACE Entry Summary CSV. We tell you what you\'re owed in under a minute. No signup required.',
       step2_title: '2. Sign up — get the filing',
-      step2_body: 'We compose the CAPE CSV (CBP\'s Phase 1 fast-lane refund template) plus a Form 19 protest packet for entries past the 80-day cliff. Both bilingual EN/ES. Both Ed25519-signed.',
+      step2_body: 'We compose the CAPE CSV (CBP\'s Phase 1 fast-lane refund template) plus a Form 19 protest packet for entries past the 80-day cliff. Both Ed25519-signed.',
       step3_title: '3. ACE / ACH onboarding',
       step3_body: 'You can\'t receive a refund without an ACE Portal account + ACH enrollment. We walk you through both — most filers haven\'t set this up.',
       step4_title: '4. Submit + track',

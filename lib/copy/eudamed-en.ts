@@ -16,7 +16,7 @@ export const EUDAMED_EN = {
       step1_title: '1. Free actor + UDI readiness check',
       step1_body: 'Tell us your actor role (manufacturer, AR, importer, distributor) and one device. We tell you what EUDAMED requires + what\'s missing. No signup.',
       step2_title: '2. Sign up — capture devices during cross-border events',
-      step2_body: 'Each Cruzar Ticket can carry an EUDAMED block: UDI-DI, UDI-PI, GMDN, risk class, NB ID, CE marking. Bilingual EN/ES.',
+      step2_body: 'Each Cruzar Ticket can carry an EUDAMED block: UDI-DI, UDI-PI, GMDN, risk class, NB ID, CE marking.',
       step3_title: '3. Export the EUDAMED feed',
       step3_body: 'JSON for actor registration. CSV for UDI/Device module. Your OEM compliance team uploads to EUDAMED — Cruzar never submits on your behalf.',
       step4_title: '4. Audit-ready archive',

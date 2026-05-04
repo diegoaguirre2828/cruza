@@ -16,7 +16,7 @@ export const EUDAMED_ES = {
       step1_title: '1. Verificación gratis de preparación actor + UDI',
       step1_body: 'Dinos tu rol de actor (fabricante, RA, importador, distribuidor) y un dispositivo. Te decimos qué requiere EUDAMED + qué falta. Sin registro.',
       step2_title: '2. Regístrate — captura dispositivos durante eventos transfronterizos',
-      step2_body: 'Cada Cruzar Ticket puede llevar un bloque EUDAMED: UDI-DI, UDI-PI, GMDN, clase de riesgo, ID de RA, marcado CE. Bilingüe EN/ES.',
+      step2_body: 'Cada Cruzar Ticket puede llevar un bloque EUDAMED: UDI-DI, UDI-PI, GMDN, clase de riesgo, ID de RA, marcado CE.',
       step3_title: '3. Exporta el feed EUDAMED',
       step3_body: 'JSON para registro de actor. CSV para módulo UDI/Dispositivo. El equipo de cumplimiento de tu OEM lo sube a EUDAMED — Cruzar nunca presenta en tu nombre.',
       step4_title: '4. Archivo listo para auditoría',

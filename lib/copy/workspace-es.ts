@@ -16,7 +16,7 @@ export const WORKSPACE_ES = {
     eyebrow: 'Módulos',
     refunds: {
       title: 'Reembolsos IEEPA',
-      sub: 'CAPE Fase 1 + paquetes de protesta Form 19. Bilingüe. Presentado por tu agente.',
+      sub: 'CAPE Fase 1 + paquetes de protesta Form 19. Presentado por tu agente.',
       stat_open_claims: 'reclamos abiertos',
       stat_pending: 'pendiente recuperable',
       stat_received: 'reembolsos recibidos',
@@ -31,7 +31,7 @@ export const WORKSPACE_ES = {
     },
     paperwork: {
       title: 'Escáner de papelería',
-      sub: 'Clasificación bilingüe EN/ES, validación de certificados sanitarios MX, extracción multi-página.',
+      sub: 'Clasificación de documentos, validación de certificados sanitarios MX, extracción multi-página.',
       stat_extractions: 'extracciones (30d)',
       stat_blocking: 'problemas bloqueantes',
       open_link: 'Abrir papelería',
@@ -57,7 +57,7 @@ export const WORKSPACE_ES = {
     },
     insights: {
       title: 'Insights y dispatch',
-      sub: 'Monitor de espera en vivo + alertas de anomalía + briefing matutino bilingüe.',
+      sub: 'Monitor de espera en vivo + alertas de anomalía + briefing matutino.',
       stat_tier: 'tier',
       stat_watched: 'puertos vigilados',
       stat_no_subscription: 'Sin suscripción activa',

@@ -15,7 +15,7 @@ export const REFUNDS_ES = {
       step1_title: '1. Escaneo gratis de elegibilidad',
       step1_body: 'Sube tu CSV de ACE Entry Summary. Te decimos cuánto te deben en menos de un minuto. Sin registro.',
       step2_title: '2. Regístrate — obtén la presentación',
-      step2_body: 'Componemos el CSV CAPE (la plantilla rápida Phase 1 de CBP) más un paquete de protesta Form 19 para entradas pasadas del precipicio de 80 días. Ambos bilingües EN/ES. Ambos firmados Ed25519.',
+      step2_body: 'Componemos el CSV CAPE (la plantilla rápida Phase 1 de CBP) más un paquete de protesta Form 19 para entradas pasadas del precipicio de 80 días. Ambos firmados Ed25519.',
       step3_title: '3. Onboarding ACE / ACH',
       step3_body: 'No puedes recibir un reembolso sin cuenta del Portal ACE + inscripción ACH. Te guiamos por los dos — la mayoría de los filers no tienen esto configurado.',
       step4_title: '4. Envía + rastrea',
