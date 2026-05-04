@@ -101,6 +101,30 @@ export interface TicketAuditShield {
   '19_USC_1592_basis': string;
 }
 
+// Driver-side consumer Crossing records linked back into a fleet
+// Ticket. Per the consumer-side brainstorm 2026-05-04 — when a fleet
+// trucker submits a personal Crossing record, the corresponding
+// Ticket can compose this block so dispatchers see the actual driver
+// trip embedded in the broker bundle. Each entry references a row
+// in public.crossings via crossing_id.
+export interface TicketDriverCrossingEntry {
+  crossing_id: string;
+  user_id: string;
+  port_id: string;
+  direction: 'us_to_mx' | 'mx_to_us';
+  started_at: string;
+  ended_at: string | null;
+  status: 'planning' | 'en_route' | 'in_line' | 'crossing' | 'completed' | 'abandoned';
+  modules_present: string[];
+  cohort_tags: string[];
+}
+
+export interface TicketDriverCrossingsBlock {
+  entries: TicketDriverCrossingEntry[];
+  total_drivers: number;
+  total_crossings: number;
+}
+
 export interface TicketCalibration {
   classifier_accuracy_30d?: number;
   origin_accuracy_30d?: number;
@@ -111,7 +135,7 @@ export interface CruzarTicketV1 {
   ticket_id: string;
   issued_at: string;
   issuer: 'Cruzar Insights, Inc.';
-  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa' | 'driver_pass'>;
+  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa' | 'driver_pass' | 'driver_crossings'>;
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
@@ -123,6 +147,7 @@ export interface CruzarTicketV1 {
   cbam?: TicketCbamBlock;
   uflpa?: TicketUflpaBlock;
   driver_pass?: TicketDriverPassBlock;
+  driver_crossings?: TicketDriverCrossingsBlock;
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

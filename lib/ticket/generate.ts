@@ -25,7 +25,7 @@ import { evaluateUflpa } from '../chassis/uflpa/risk-flagger';
 import type { UflpaShipmentInput } from '../chassis/uflpa/types';
 import { composeDriverPass } from '../chassis/driver-pass/composer';
 import type { DriverProfile, TripContext, DocRequirement } from '../chassis/driver-pass/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock, TicketCbamBlock, TicketUflpaBlock, TicketDriverPassBlock } from './types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock, TicketCbamBlock, TicketUflpaBlock, TicketDriverPassBlock, TicketDriverCrossingsBlock, TicketDriverCrossingEntry } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -60,6 +60,14 @@ interface GenerateOptions {
     driver: DriverProfile;
     trip: TripContext;
     docs: DocRequirement[];
+  };
+  // Driver-side consumer Crossings tied to this Ticket. Caller fetches
+  // from public.crossings (e.g., for fleet drivers: rows where
+  // user_id IN (fleet driver ids) AND port_id matches AND time window
+  // overlaps the trip ETA). Stays optional — fleets without consumer
+  // app coverage continue issuing Tickets without this block.
+  driverCrossingsInput?: {
+    entries: TicketDriverCrossingEntry[];
   };
 }
 
@@ -259,7 +267,22 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa' | 'driver_pass'> = ['customs'];
+  // Driver crossings — consumer-side Crossing records linked back into
+  // a fleet Ticket (per docs/cruzar-crossing-record-brainstorm.md
+  // Phase 5). Only attached when caller passed driverCrossingsInput.
+  // Pure projection — no DB read here; caller fetches the rows.
+  let driverCrossingsBlock: TicketDriverCrossingsBlock | null = null;
+  if (opts.driverCrossingsInput && opts.driverCrossingsInput.entries.length > 0) {
+    const entries = opts.driverCrossingsInput.entries;
+    const uniqUsers = new Set(entries.map(e => e.user_id));
+    driverCrossingsBlock = {
+      entries,
+      total_drivers: uniqUsers.size,
+      total_crossings: entries.length,
+    };
+  }
+
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa' | 'driver_pass' | 'driver_crossings'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
@@ -269,6 +292,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (cbamBlock) modulesPresent.push('cbam');
   if (uflpaBlock) modulesPresent.push('uflpa');
   if (driverPassBlock) modulesPresent.push('driver_pass');
+  if (driverCrossingsBlock) modulesPresent.push('driver_crossings');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -292,6 +316,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     cbam: cbamBlock ?? undefined,
     uflpa: uflpaBlock ?? undefined,
     driver_pass: driverPassBlock ?? undefined,
+    driver_crossings: driverCrossingsBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

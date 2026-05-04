@@ -107,51 +107,61 @@ export default function AccountPage() {
   }
 
   if (loading) return <main className="p-8 text-muted-foreground">Loading…</main>;
+
+  // First-time visitor — no insights_subscribers row yet. Show a welcoming
+  // onboarding instead of a sales pitch. Pricing lives at /pricing/business
+  // — there's no need to slam a 4-tier comparison on a logged-in operator.
   if (!sub)
     return (
-      <main className="mx-auto max-w-[860px] px-5 sm:px-8 py-12">
-        <h1 className="font-serif text-[28px] text-foreground mb-3">Pick your plan</h1>
-        <p className="text-muted-foreground mb-8">
-          Start free with 1 port + the morning brief. Upgrade anytime — billing kicks in only on paid tiers.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-          {(['free', 'starter', 'pro', 'fleet'] as InsightsTier[]).map((t) => {
-            const limits = TIER_LIMITS[t];
-            return (
-              <div
-                key={t}
-                className="rounded-2xl border border-border bg-foreground/[0.02] p-5 flex flex-col"
-              >
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
-                  {t}
-                </div>
-                <div className="font-serif text-[24px] text-foreground mt-2">
-                  {limits.monthlyUsd === 0 ? 'Free' : `$${limits.monthlyUsd}/mo`}
-                </div>
-                <ul className="mt-3 space-y-1 text-[12px] text-muted-foreground flex-1">
-                  <li>· {limits.maxWatchedPorts} watched port{limits.maxWatchedPorts === 1 ? '' : 's'}</li>
-                  <li>· {limits.channels.email && 'email'}{limits.channels.sms && ' + SMS'}{limits.channels.whatsapp && ' + WhatsApp'}</li>
-                  <li>
-                    · {limits.maxRecipientEmails} email{limits.maxRecipientEmails === 1 ? '' : 's'}
-                    {limits.maxRecipientPhones > 0 && `, ${limits.maxRecipientPhones} phone${limits.maxRecipientPhones === 1 ? '' : 's'}`}
-                  </li>
-                  {limits.perPortThresholds && <li>· Custom per-port thresholds</li>}
-                </ul>
-                <button
-                  onClick={() => startSubscribe(t)}
-                  disabled={saving}
-                  className="mt-4 rounded-xl bg-foreground hover:bg-foreground/85 text-background font-semibold py-2 text-[13px] disabled:opacity-50"
-                >
-                  {t === 'free' ? 'Start free' : `Subscribe · $${limits.monthlyUsd}/mo`}
-                </button>
-              </div>
-            );
-          })}
+      <main className="mx-auto max-w-[720px] px-5 sm:px-8 py-12">
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
+          Welcome to Cruzar Dispatch
         </div>
-        {msg && <p className="text-[12px] text-rose-300">{msg}</p>}
-        <p className="text-[12px] text-muted-foreground/70">
-          Prefer to talk first? <a href="mailto:diegonaguirre@icloud.com?subject=Cruzar%20Insights%20trial" className="text-foreground hover:text-accent">Email Diego</a>.
+        <h1 className="mt-3 font-serif text-[28px] text-foreground">
+          One free port. One morning briefing. No card.
+        </h1>
+        <p className="mt-4 text-[14.5px] leading-[1.6] text-muted-foreground">
+          Cruzar Dispatch is your live border-wait + anomaly + briefing console. Free
+          accounts include one watched port and a daily morning briefing by email — set
+          it up in 30 seconds. Need more ports, SMS or WhatsApp alerts, multi-user
+          access, or refund-composer access? Compare paid tiers anytime.
         </p>
+
+        <div className="mt-8 rounded-2xl border border-accent/40 bg-accent/[0.04] p-6">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground/80">
+            Get started — free
+          </div>
+          <ul className="mt-3 space-y-1.5 text-[13.5px] text-foreground/90">
+            <li>· 1 watched port (defaults to Pharr-Reynosa, change it in 1 click)</li>
+            <li>· Daily morning briefing by email</li>
+            <li>· Anomaly alerts when your port runs ≥1.5× its baseline</li>
+            <li>· Read-only access to the Cruzar Ticket spec + sample</li>
+          </ul>
+          <button
+            onClick={() => startSubscribe('free')}
+            disabled={saving}
+            className="mt-5 rounded-lg bg-foreground hover:bg-foreground/85 text-background font-medium py-2.5 px-5 text-[14px] disabled:opacity-50"
+          >
+            {saving ? 'Setting up…' : 'Start free →'}
+          </button>
+          {msg && <p className="mt-3 text-[12px] text-rose-300">{msg}</p>}
+        </div>
+
+        <div className="mt-6 flex items-center gap-4 flex-wrap">
+          <a
+            href="/pricing/business"
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+          >
+            Compare paid tiers →
+          </a>
+          <span className="h-3 w-px bg-border" />
+          <a
+            href="mailto:diego@cruzar.app?subject=Cruzar%20Dispatch%20trial"
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+          >
+            Email Diego
+          </a>
+        </div>
       </main>
     );
 
