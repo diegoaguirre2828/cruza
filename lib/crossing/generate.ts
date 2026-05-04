@@ -5,6 +5,7 @@
 // the API route layer; this just assembles + signs the payload.
 
 import { signCrossing } from './json-signer';
+import { computeCohortTags } from './cohort-tags';
 import type {
   CruzarCrossingV1,
   CrossingComposeInput,
@@ -33,6 +34,25 @@ export async function composeCrossing(
   if (input.context) { blocks.context = input.context; modules_present.push('context'); }
   if (input.commerce) { blocks.commerce = input.commerce; modules_present.push('commerce'); }
 
+  // Auto-compute cohort tags when caller didn't pass any. Tags drive
+  // ML training pipeline cohort-aware predictions (per-segment medians)
+  // and downstream analytics filters. Source order: prep block (most
+  // authoritative — user-supplied) → detection.lane_inferred (geofence
+  // guess) → none.
+  const detection_lane = input.detection?.lane_inferred
+  const inferred_vehicle_type =
+    detection_lane === 'sentri' || detection_lane === 'vehicle' ? 'sedan'
+      : detection_lane === 'commercial' ? 'commercial'
+      : detection_lane === 'pedestrian' ? 'pedestrian'
+      : null
+  const auto_cohort = computeCohortTags({
+    port_id: input.port_id,
+    direction: input.direction,
+    started_at,
+    has_sentri: input.prep?.has_sentri ?? (detection_lane === 'sentri' ? true : null),
+    vehicle_type: input.prep?.vehicle_type ?? inferred_vehicle_type,
+  });
+
   const payload: CruzarCrossingV1 = {
     schema: 'cruzar.crossing.v1',
     id,
@@ -42,7 +62,7 @@ export async function composeCrossing(
     direction: input.direction,
     status: input.status ?? (input.detection?.exit_at ? 'completed' : 'planning'),
     modules_present,
-    cohort_tags: input.cohort_tags ?? [],
+    cohort_tags: input.cohort_tags && input.cohort_tags.length > 0 ? input.cohort_tags : auto_cohort,
     started_at,
     ended_at,
     blocks,
@@ -74,11 +94,34 @@ export async function extendCrossing(
       }
     });
 
+  // Refresh cohort tags off the merged blocks — late-arriving lane info
+  // from detection or prep should land on cohort_tags too. Skip if the
+  // existing payload was given hand-curated tags (length > 0 AND no
+  // 'port:' marker means caller authored them deliberately).
+  const had_auto_tags = existing.cohort_tags.some(t => t.startsWith('port:'))
+  let next_cohort_tags = existing.cohort_tags
+  if (had_auto_tags || existing.cohort_tags.length === 0) {
+    const detection_lane = blocks.detection?.lane_inferred
+    const inferred_vehicle_type =
+      detection_lane === 'sentri' || detection_lane === 'vehicle' ? 'sedan'
+        : detection_lane === 'commercial' ? 'commercial'
+        : detection_lane === 'pedestrian' ? 'pedestrian'
+        : null
+    next_cohort_tags = computeCohortTags({
+      port_id: existing.port_id,
+      direction: existing.direction,
+      started_at: existing.started_at,
+      has_sentri: blocks.prep?.has_sentri ?? (detection_lane === 'sentri' ? true : null),
+      vehicle_type: blocks.prep?.vehicle_type ?? inferred_vehicle_type,
+    })
+  }
+
   const payload: CruzarCrossingV1 = {
     ...existing,
     status: opts?.status ?? existing.status,
     ended_at: opts?.ended_at !== undefined ? opts.ended_at : existing.ended_at,
     modules_present: Array.from(modules_present),
+    cohort_tags: next_cohort_tags,
     blocks,
   };
 
