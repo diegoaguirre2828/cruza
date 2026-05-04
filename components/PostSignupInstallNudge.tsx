@@ -35,6 +35,11 @@ const DISMISS_HOURS = 24
 // Routes that have their own install carrot or aren't a fit for a global
 // nudge. Stacking the nudge on /ios-install or /welcome step 1 obscures
 // the dedicated walkthrough.
+//
+// B2B routes are blocked because this is a consumer-funnel nudge (lifetime
+// Pro for first 1,000 to install the PWA). Operators browsing the B2B
+// suite are a different audience on a different funnel and shouldn't see
+// the consumer carrot.
 const HIDDEN_PATHS = [
   '/welcome',
   '/ios-install',
@@ -45,6 +50,17 @@ const HIDDEN_PATHS = [
   '/driver',
   '/checkin',
   '/business',
+  // B2B suite — operator audience, separate funnel
+  '/workspace',
+  '/insights',
+  '/dispatch',
+  '/refunds',
+  '/eudamed',
+  '/drawback',
+  '/pedimento',
+  '/paperwork',
+  '/regulatory',
+  '/transload',
 ]
 
 export function PostSignupInstallNudge() {

@@ -17,7 +17,9 @@ import { composeRefund } from '../chassis/refunds/composer';
 import type { Entry as RefundEntry, IorProfile } from '../chassis/refunds/types';
 import { composeDrawback } from '../chassis/drawback/composer';
 import type { DrawbackEntry, DrawbackExport, DrawbackClaimantProfile } from '../chassis/drawback/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock } from './types';
+import { composePedimento } from '../chassis/pedimento/composer';
+import type { OperacionInput as PedimentoInput } from '../chassis/pedimento/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -42,6 +44,7 @@ interface GenerateOptions {
     exports: DrawbackExport[];
     designations?: Array<{ entry_number: string; export_id: string }>;
   };
+  pedimentoInput?: PedimentoInput;
 }
 
 function mintTicketId(): string {
@@ -174,6 +177,20 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module 11: pedimento composition (optional — when broker provides VUCEM-side input)
+  let pedimentoBlock: TicketPedimentoBlock | null = null;
+  if (opts.pedimentoInput && opts.pedimentoInput.mercancias.length > 0) {
+    const composition = composePedimento(opts.pedimentoInput);
+    pedimentoBlock = {
+      composition,
+      clave: composition.clave,
+      regimen: composition.regimen,
+      total_contribuciones_usd: composition.impuestos.total_contribuciones_usd,
+      fatal_findings_count: composition.findings.filter((f) => f.severity === 'fatal').length,
+      registry_version: composition.registry_version,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -186,12 +203,13 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback'> = ['customs'];
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
   if (refundsBlock) modulesPresent.push('refunds');
   if (drawbackBlock) modulesPresent.push('drawback');
+  if (pedimentoBlock) modulesPresent.push('pedimento');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -211,6 +229,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     drivers: driversBlock ?? undefined,
     refunds: refundsBlock ?? undefined,
     drawback: drawbackBlock ?? undefined,
+    pedimento: pedimentoBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

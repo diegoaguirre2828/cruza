@@ -5,6 +5,7 @@ import type { PaperworkComposition } from '../chassis/docs/types';
 import type { DriverComplianceManifest, ComplianceStatus } from '../chassis/drivers/types';
 import type { RefundComposition } from '../chassis/refunds/types';
 import type { DrawbackComposition } from '../chassis/drawback/types';
+import type { PedimentoComposition } from '../chassis/pedimento/types';
 
 export interface TicketShipmentBlock {
   origin: { country: string; city?: string };
@@ -58,6 +59,15 @@ export interface TicketDrawbackBlock {
   registry_version: string;
 }
 
+export interface TicketPedimentoBlock {
+  composition: PedimentoComposition;
+  clave: string;
+  regimen: string;
+  total_contribuciones_usd: number;
+  fatal_findings_count: number;
+  registry_version: string;
+}
+
 export interface TicketAuditShield {
   prior_disclosure_eligible: boolean;
   '19_USC_1592_basis': string;
@@ -73,7 +83,7 @@ export interface CruzarTicketV1 {
   ticket_id: string;
   issued_at: string;
   issuer: 'Cruzar Insights, Inc.';
-  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback'>;
+  modules_present: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento'>;
   shipment: TicketShipmentBlock;
   customs?: TicketCustomsBlock;
   regulatory?: TicketRegulatoryBlock;
@@ -81,6 +91,7 @@ export interface CruzarTicketV1 {
   drivers?: TicketDriversBlock;
   refunds?: TicketRefundsBlock;
   drawback?: TicketDrawbackBlock;
+  pedimento?: TicketPedimentoBlock;
   audit_shield: TicketAuditShield;
   calibration: TicketCalibration;
   signing_key_id: string;

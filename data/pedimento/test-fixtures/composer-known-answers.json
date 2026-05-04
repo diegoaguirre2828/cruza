@@ -1,0 +1,293 @@
+{
+  "_comment": "Known-answer fixtures for the pedimento composer. today_iso = '2026-05-04' on every case.",
+  "today_iso": "2026-05-04",
+  "cases": [
+    {
+      "name": "A1 importación definitiva — McAllen-Reynosa, Padrón activo, frontera norte (IVA 8%)",
+      "input": {
+        "agente": {
+          "patente": "1234",
+          "nombre_o_razon_social": "Hernández y Asociados Agencia Aduanal",
+          "rfc": "HEA850120ABC"
+        },
+        "importador_exportador": {
+          "rfc": "ACME920315XYZ",
+          "razon_social": "Acme Industrial SA de CV",
+          "domicilio_fiscal_estado": "TAM",
+          "padron_importadores_activo": true,
+          "padron_sectorial": []
+        },
+        "operacion": "importacion",
+        "regimen": "definitivo",
+        "aduana_codigo": "880",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "85044010",
+            "nico": "01",
+            "descripcion": "Convertidores eléctricos estáticos",
+            "pais_origen": "CN",
+            "pais_vendedor": "US",
+            "cantidad": 100,
+            "unidad_medida_comercial": "PZA",
+            "valor_factura_usd": 50000,
+            "valor_dolares": 50000,
+            "ad_valorem_pct": 5.0,
+            "iva_pct": 8.0,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "transferencia"
+      },
+      "expect": {
+        "clave": "A1",
+        "regimen": "definitivo",
+        "rfc_validacion": "pendiente_verificacion",
+        "patente_validacion": "pendiente_verificacion",
+        "padron_status": "activo",
+        "fatal_count": 0,
+        "ad_valorem_usd": 2500.00,
+        "ieps_aplicable": false
+      }
+    },
+    {
+      "name": "V5 IMMEX import temporal — Reynosa maquila",
+      "input": {
+        "agente": {
+          "patente": "5678",
+          "nombre_o_razon_social": "García Brokers Internacionales",
+          "rfc": "GBI990618AAA"
+        },
+        "importador_exportador": {
+          "rfc": "MAQ800101DEF",
+          "razon_social": "Maquiladora Norte SA de CV",
+          "domicilio_fiscal_estado": "TAM",
+          "padron_importadores_activo": true,
+          "programa_immex": "IMMEX-12345"
+        },
+        "operacion": "importacion",
+        "regimen": "temporal",
+        "aduana_codigo": "880",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "39076110",
+            "nico": "00",
+            "descripcion": "Insumos plásticos para ensamble",
+            "pais_origen": "US",
+            "pais_vendedor": "US",
+            "cantidad": 5000,
+            "unidad_medida_comercial": "KG",
+            "valor_factura_usd": 25000,
+            "valor_dolares": 25000,
+            "ad_valorem_pct": 0,
+            "iva_pct": 0,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "transferencia"
+      },
+      "expect": {
+        "clave": "V5",
+        "regimen": "temporal",
+        "padron_status": "no_aplica",
+        "fatal_count": 0,
+        "ad_valorem_usd": 0
+      }
+    },
+    {
+      "name": "A3 exportación definitiva",
+      "input": {
+        "agente": { "patente": "2222", "nombre_o_razon_social": "ExpoBroker SC", "rfc": "EXB780303BBB" },
+        "importador_exportador": {
+          "rfc": "EXP750210GHI",
+          "razon_social": "Exportadora Mexicana SA",
+          "domicilio_fiscal_estado": "NLE",
+          "padron_importadores_activo": true
+        },
+        "operacion": "exportacion",
+        "regimen": "definitivo",
+        "aduana_codigo": "240",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "08071100",
+            "nico": "00",
+            "descripcion": "Sandías frescas",
+            "pais_origen": "MX",
+            "pais_vendedor": "MX",
+            "cantidad": 20000,
+            "unidad_medida_comercial": "KG",
+            "valor_factura_usd": 8000,
+            "valor_dolares": 8000,
+            "ad_valorem_pct": 0,
+            "iva_pct": 0,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "efectivo"
+      },
+      "expect": {
+        "clave": "A3",
+        "regimen": "definitivo",
+        "padron_status": "no_aplica",
+        "fatal_count": 0
+      }
+    },
+    {
+      "name": "A1 con RFC inválido — debe disparar PED-F-001",
+      "input": {
+        "agente": { "patente": "9999", "nombre_o_razon_social": "Test Broker", "rfc": "TES900101AAA" },
+        "importador_exportador": {
+          "rfc": "BAD",
+          "razon_social": "Bad RFC SA",
+          "domicilio_fiscal_estado": "NLE",
+          "padron_importadores_activo": true
+        },
+        "operacion": "importacion",
+        "regimen": "definitivo",
+        "aduana_codigo": "880",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "85044010",
+            "nico": "01",
+            "descripcion": "Test",
+            "pais_origen": "CN",
+            "pais_vendedor": "US",
+            "cantidad": 1,
+            "unidad_medida_comercial": "PZA",
+            "valor_factura_usd": 1000,
+            "valor_dolares": 1000,
+            "ad_valorem_pct": 5,
+            "iva_pct": 16,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "transferencia"
+      },
+      "expect": {
+        "clave": "A1",
+        "rfc_validacion": "formato_invalido",
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "PED-F-001"
+      }
+    },
+    {
+      "name": "A1 con patente inválido — debe disparar PED-F-002",
+      "input": {
+        "agente": { "patente": "12", "nombre_o_razon_social": "Bad Patente", "rfc": "BPA900101AAA" },
+        "importador_exportador": {
+          "rfc": "ACME920315XYZ",
+          "razon_social": "Acme",
+          "domicilio_fiscal_estado": "NLE",
+          "padron_importadores_activo": true
+        },
+        "operacion": "importacion",
+        "regimen": "definitivo",
+        "aduana_codigo": "880",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "85044010",
+            "nico": "01",
+            "descripcion": "Test",
+            "pais_origen": "US",
+            "pais_vendedor": "US",
+            "cantidad": 1,
+            "unidad_medida_comercial": "PZA",
+            "valor_factura_usd": 1000,
+            "valor_dolares": 1000,
+            "ad_valorem_pct": 0,
+            "iva_pct": 16,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "transferencia"
+      },
+      "expect": {
+        "patente_validacion": "formato_invalido",
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "PED-F-002"
+      }
+    },
+    {
+      "name": "A1 con padrón inactivo — debe disparar PED-F-005",
+      "input": {
+        "agente": { "patente": "3333", "nombre_o_razon_social": "OK Broker", "rfc": "OKB800101CCC" },
+        "importador_exportador": {
+          "rfc": "INA920315XYZ",
+          "razon_social": "Inactivo SA",
+          "domicilio_fiscal_estado": "TAM",
+          "padron_importadores_activo": false
+        },
+        "operacion": "importacion",
+        "regimen": "definitivo",
+        "aduana_codigo": "880",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "85044010",
+            "nico": "01",
+            "descripcion": "Test",
+            "pais_origen": "US",
+            "pais_vendedor": "US",
+            "cantidad": 1,
+            "unidad_medida_comercial": "PZA",
+            "valor_factura_usd": 1000,
+            "valor_dolares": 1000,
+            "ad_valorem_pct": 0,
+            "iva_pct": 8,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "transferencia"
+      },
+      "expect": {
+        "clave": "A1",
+        "padron_status": "inactivo",
+        "fatal_count_at_least": 1,
+        "has_finding_rule_id": "PED-F-005"
+      }
+    },
+    {
+      "name": "M3 tránsito internacional",
+      "input": {
+        "agente": { "patente": "4444", "nombre_o_razon_social": "Tránsito Broker", "rfc": "TRB820505DDD" },
+        "importador_exportador": {
+          "rfc": "TRA920315XYZ",
+          "razon_social": "Carrier MX",
+          "domicilio_fiscal_estado": "NLE",
+          "padron_importadores_activo": false
+        },
+        "operacion": "transito",
+        "regimen": "transito",
+        "aduana_codigo": "240",
+        "fecha_operacion": "2026-05-04",
+        "mercancias": [
+          {
+            "fraccion_arancelaria": "87042199",
+            "nico": "00",
+            "descripcion": "Camión en tránsito",
+            "pais_origen": "MX",
+            "pais_vendedor": "MX",
+            "cantidad": 1,
+            "unidad_medida_comercial": "PZA",
+            "valor_factura_usd": 50000,
+            "valor_dolares": 50000,
+            "ad_valorem_pct": 0,
+            "iva_pct": 0,
+            "ieps_aplicable": false
+          }
+        ],
+        "forma_pago": "fianza"
+      },
+      "expect": {
+        "clave": "M3",
+        "regimen": "transito",
+        "padron_status": "no_aplica",
+        "fatal_count": 0
+      }
+    }
+  ]
+}

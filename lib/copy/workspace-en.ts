@@ -29,6 +29,13 @@ export const WORKSPACE_EN = {
       stat_pending: 'designations pending',
       open_link: 'Open drawback',
     },
+    pedimento: {
+      title: 'VUCEM / Pedimento',
+      sub: 'Compose Mexican pedimentos that pass VUCEM the first time. Anexo 22 clave + RFC + patente + duty math.',
+      stat_pedimentos: 'pedimentos composed',
+      stat_findings: 'fatal findings flagged',
+      open_link: 'Open pedimento',
+    },
     eudamed: {
       title: 'EU MDR / EUDAMED',
       sub: 'Actor + UDI/Device data feed for Reynosa medtech. Mandatory May 28, 2026.',

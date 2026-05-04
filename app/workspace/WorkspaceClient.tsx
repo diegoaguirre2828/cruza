@@ -124,6 +124,12 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
     { label: copy.modules.drawback.stat_pending, value: '—' },
   ];
 
+  // Pedimento stats — module just shipped (M11), no DB-backed stats yet.
+  const pedimentoStats: ModuleCardStat[] = [
+    { label: copy.modules.pedimento.stat_pedimentos, value: '—', emphasis: true },
+    { label: copy.modules.pedimento.stat_findings, value: '—' },
+  ];
+
   return (
     <>
       {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
@@ -184,11 +190,11 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           <div className="flex items-baseline justify-between gap-4 mb-6">
             <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-              9 MODULES · 1 SUBSTRATE
+              10 MODULES · 1 SUBSTRATE
             </span>
           </div>
 
-          {/* Top row: featured refunds (2-col) + EU MDR (1-col) */}
+          {/* Row 1 — Refund recovery (US-side): refunds (featured 2-col) + drawback (1-col) */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
             <div className="md:col-span-2">
               <ModuleCard
@@ -202,6 +208,34 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             </div>
             <ModuleCard
               accent="primary"
+              code="MOD · 07"
+              title={copy.modules.drawback.title}
+              sub={copy.modules.drawback.sub}
+              stats={drawbackStats}
+              link={{ href: `/drawback${langSuffix}`, label: copy.modules.drawback.open_link }}
+            />
+          </div>
+
+          {/* Row 2 — Customs declaration (US / MX / EU walls): customs + pedimento + eudamed */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+            <ModuleCard
+              accent="primary"
+              code="MOD · 02 · US"
+              title={copy.modules.customs.title}
+              sub={copy.modules.customs.sub}
+              stats={customsStats}
+              link={{ href: `/insights/customs${langSuffix}`, label: copy.modules.customs.open_link }}
+            />
+            <ModuleCard
+              accent="primary"
+              code="MOD · 11 · MX"
+              title={copy.modules.pedimento.title}
+              sub={copy.modules.pedimento.sub}
+              stats={pedimentoStats}
+              link={{ href: `/pedimento${langSuffix}`, label: copy.modules.pedimento.open_link }}
+            />
+            <ModuleCard
+              accent="primary"
               code="MOD · EU MDR"
               title={copy.modules.eudamed.title}
               sub={copy.modules.eudamed.sub}
@@ -210,15 +244,15 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Mid row: chassis modules — 5-col compact (refunds chassis siblings + drawback) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 mb-4">
+          {/* Row 3 — Chassis support: regulatory + paperwork + drivers */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
             <ModuleCard
               accent="primary"
-              code="MOD · 07"
-              title={copy.modules.drawback.title}
-              sub={copy.modules.drawback.sub}
-              stats={drawbackStats}
-              link={{ href: `/drawback${langSuffix}`, label: copy.modules.drawback.open_link }}
+              code="MOD · 03"
+              title={copy.modules.regulatory.title}
+              sub={copy.modules.regulatory.sub}
+              stats={regulatoryStats}
+              link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
             />
             <ModuleCard
               accent="primary"
@@ -235,22 +269,6 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               sub={copy.modules.drivers.sub}
               stats={driversStats}
               link={{ href: `/insights/drivers${langSuffix}`, label: copy.modules.drivers.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 02"
-              title={copy.modules.customs.title}
-              sub={copy.modules.customs.sub}
-              stats={customsStats}
-              link={{ href: `/insights/customs${langSuffix}`, label: copy.modules.customs.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 03"
-              title={copy.modules.regulatory.title}
-              sub={copy.modules.regulatory.sub}
-              stats={regulatoryStats}
-              link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
             />
           </div>
 
