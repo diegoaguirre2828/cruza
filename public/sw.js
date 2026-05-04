@@ -19,8 +19,8 @@
 // fix landed in <1hr). Bump v8 → v9 to force every client to drop the
 // shell + API caches on next launch and re-hydrate against fresh
 // chunk hashes. Same recovery pattern as 1c41343 earlier today.
-const CACHE = 'cruzar-v11'
-const API_CACHE = 'cruzar-api-v11'
+const CACHE = 'cruzar-v12'
+const API_CACHE = 'cruzar-api-v12'
 // Intentionally NOT precaching '/' — the cached HTML shell from an old deploy
 // references Next.js chunk hashes that get deleted on every deploy. Serving
 // that stale shell on a slow-network fallback caused soft-navigations between
@@ -225,13 +225,34 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => {
   const action = e.action
   const url = e.notification.data?.url || '/'
-  const tag = e.notification.data?.tag || ''
+  const tag = e.notification.tag || e.notification.data?.tag || ''
+  const alertId = e.notification.data?.alert_id || null
 
   e.notification.close()
 
-  // Snooze: fire-and-forget POST that bumps the alert's last_triggered_at
-  // forward by 1 hour so the send-alerts cron skips this user for that
-  // window. Server pulls the alert id from the tag (urgent-alert-<portId>).
+  // "Ya crucé" action — added 2026-05-04 with the Cruzar Crossing
+  // substrate. POSTs to /api/alerts/[id]/snooze which:
+  //   1. Sets alert_preferences.snoozed_until = ~next-day-4am
+  //   2. Composes a Cruzar Crossing record with a closure block
+  //   3. send-alerts cron then skips this alert until the snooze expires
+  // The user gets one tap = "I'm done with this alert today."
+  if (action === 'ya_cruce') {
+    if (alertId) {
+      e.waitUntil(
+        fetch(`/api/alerts/${alertId}/snooze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'user_button_ya_cruce' }),
+          keepalive: true,
+          credentials: 'include',
+        }).catch(() => {})
+      )
+    }
+    return
+  }
+
+  // Legacy "snooze" action — kept for back-compat with any in-flight
+  // notifications composed by the previous cron template (1h cooldown).
   if (action === 'snooze') {
     const portId = tag.startsWith('urgent-alert-') ? tag.slice('urgent-alert-'.length) : null
     if (portId) {

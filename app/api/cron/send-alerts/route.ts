@@ -103,7 +103,7 @@ async function sendStaffingPush(
   }
 }
 
-async function sendPush(userId: string, portName: string, portId: string, wait: number, lang: Lang) {
+async function sendPush(userId: string, portName: string, portId: string, wait: number, lang: Lang, alertId?: string) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
   const db = getServiceClient()
   // Fetch EVERY subscription for this user — a single user may have
@@ -123,6 +123,7 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
     ? 'Bajó la espera — toca para ver en vivo.'
     : 'Wait dropped — tap to view live.'
   const viewLabel = es ? 'Ver' : 'View'
+  const yaCruceLabel = es ? 'Ya crucé' : 'Already crossed'
 
   let anyDelivered = false
   for (const sub of subs) {
@@ -136,9 +137,13 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
           url: `/port/${encodeURIComponent(portId)}`,
           tag: `urgent-alert-${portId}`,
           requireInteraction: true,
+          // alert_id passed in data so the SW can POST to the snooze
+          // endpoint when the user taps "Ya crucé". Without alert_id
+          // the SW falls back to no-op (button just dismisses).
+          data: { alert_id: alertId, action_kind: 'wait_drop_alert' },
           actions: [
             { action: 'view', title: viewLabel },
-            { action: 'snooze', title: 'Snooze 1h' },
+            { action: 'ya_cruce', title: yaCruceLabel },
           ],
         }),
         { urgency: 'high', TTL: 600 }
@@ -225,11 +230,17 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceClient()
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
 
+    // Skip alerts that have been snoozed (cross-detected or "ya crucé"
+    // tapped). snoozed_until is set by /api/alerts/[id]/snooze and by
+    // /api/copilot/cross-detected closure-block writer. Auto-clears at
+    // the timestamp — no cron needed to expire.
+    const nowIso = new Date().toISOString()
     const { data: alerts } = await supabase
       .from('alert_preferences')
       .select('*')
       .eq('active', true)
       .or(`last_triggered_at.is.null,last_triggered_at.lt.${oneHourAgo}`)
+      .or(`snoozed_until.is.null,snoozed_until.lt.${nowIso}`)
 
     if (!alerts?.length) return NextResponse.json({ sent: 0, checked: 0 })
 
@@ -272,7 +283,7 @@ export async function GET(req: NextRequest) {
 
       const lang = await getUserLanguage(alert.user_id)
       const results = await Promise.allSettled([
-        sendPush(alert.user_id, reading.port_name, alert.port_id, wait, lang),
+        sendPush(alert.user_id, reading.port_name, alert.port_id, wait, lang, alert.id),
         alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait, lang) : null,
       ])
       results.forEach((r, i) => {
