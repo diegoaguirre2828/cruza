@@ -293,20 +293,20 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
         </section>
       )}
 
-      {/* MODULE GRID — magazine layout. Featured (refunds, biggest revenue wedge) takes
-          a 2-col span. SUBSTRATE card spans the full bottom row as the connective tissue.
-          Other modules in compact 3-col rows. Differentiation via SIZE + position, not color. */}
+      {/* MODULE GRID — three visible rows by default. The 6 secondary modules
+          (compliance regimes + chassis support) live behind an expandable
+          "Show all 12 modules" so the default view stays focused. */}
       <section className="border-b border-border relative">
-        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12">
           <div className="flex items-baseline justify-between gap-4 mb-6">
             <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/60">
               12 MODULES · 1 SUBSTRATE
             </span>
           </div>
 
-          {/* Row 1 — Refund recovery (US-side): refunds (featured 2-col) + drawback (1-col) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+          {/* Row 1 — Refund recovery (the revenue lane) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5">
             <div className="md:col-span-2">
               <ModuleCard
                 accent="primary"
@@ -327,8 +327,8 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Row 2 — Customs declaration (US / MX): symmetric pair */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-4">
+          {/* Row 2 — Customs declaration (US / MX) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-5">
             <ModuleCard
               accent="primary"
               code="MOD · 02 · US"
@@ -347,72 +347,8 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Row 3 — Compliance regimes (EU MDR / EU CBAM / US UFLPA): regulator-gated walls */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
-            <ModuleCard
-              accent="primary"
-              code="EU MDR"
-              title={copy.modules.eudamed.title}
-              sub={copy.modules.eudamed.sub}
-              stats={eudamedStats}
-              link={{ href: `/eudamed${langSuffix}`, label: copy.modules.eudamed.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="EU CBAM"
-              title={copy.modules.cbam.title}
-              sub={copy.modules.cbam.sub}
-              stats={cbamStats}
-              link={{ href: `/cbam${langSuffix}`, label: copy.modules.cbam.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="US UFLPA"
-              title={copy.modules.uflpa.title}
-              sub={copy.modules.uflpa.sub}
-              stats={uflpaStats}
-              link={{ href: `/uflpa${langSuffix}`, label: copy.modules.uflpa.open_link }}
-            />
-          </div>
-
-          {/* Row 4 — Chassis support: regulatory + paperwork + drivers + driver-pass (4-col) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4">
-            <ModuleCard
-              accent="primary"
-              code="MOD · 03"
-              title={copy.modules.regulatory.title}
-              sub={copy.modules.regulatory.sub}
-              stats={regulatoryStats}
-              link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 04"
-              title={copy.modules.paperwork.title}
-              sub={copy.modules.paperwork.sub}
-              stats={paperworkStats}
-              link={{ href: `/paperwork${langSuffix}`, label: copy.modules.paperwork.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 05 · OPS"
-              title={copy.modules.drivers.title}
-              sub={copy.modules.drivers.sub}
-              stats={driversStats}
-              link={{ href: `/insights/drivers${langSuffix}`, label: copy.modules.drivers.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 05 · DRIVER"
-              title={copy.modules.driver_pass.title}
-              sub={copy.modules.driver_pass.sub}
-              stats={driverPassStats}
-              link={{ href: `/driver-pass${langSuffix}`, label: copy.modules.driver_pass.open_link }}
-            />
-          </div>
-
-          {/* Insights row — single mid-width card */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+          {/* Row 3 — Live + Substrate */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5">
             <div className="md:col-span-2">
               <ModuleCard
                 accent="primary"
@@ -427,7 +363,6 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
                 }
               />
             </div>
-            {/* Substrate card spans the right column on this row */}
             <ModuleCard
               accent="accent"
               code="SUBSTRATE"
@@ -436,6 +371,82 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               stats={ticketsStats}
             />
           </div>
+
+          {/* Secondary modules — collapsible to keep the default view tight */}
+          <details className="group rounded-xl border border-border bg-card/30">
+            <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3 hover:bg-foreground/[0.03] transition">
+              <div className="flex items-baseline gap-3">
+                <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-foreground/60">
+                  Compliance regimes + chassis support
+                </span>
+                <span className="font-mono text-[10px] text-foreground/45">
+                  6 modules
+                </span>
+              </div>
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-foreground/70 group-open:hidden">
+                Show all →
+              </span>
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-foreground/70 hidden group-open:inline">
+                Hide
+              </span>
+            </summary>
+            <div className="px-5 pb-5 pt-2 space-y-4">
+              {/* Compliance regimes */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <ModuleCard
+                  accent="primary"
+                  code="EU MDR"
+                  title={copy.modules.eudamed.title}
+                  sub={copy.modules.eudamed.sub}
+                  stats={eudamedStats}
+                  link={{ href: `/eudamed${langSuffix}`, label: copy.modules.eudamed.open_link }}
+                />
+                <ModuleCard
+                  accent="primary"
+                  code="EU CBAM"
+                  title={copy.modules.cbam.title}
+                  sub={copy.modules.cbam.sub}
+                  stats={cbamStats}
+                  link={{ href: `/cbam${langSuffix}`, label: copy.modules.cbam.open_link }}
+                />
+                <ModuleCard
+                  accent="primary"
+                  code="US UFLPA"
+                  title={copy.modules.uflpa.title}
+                  sub={copy.modules.uflpa.sub}
+                  stats={uflpaStats}
+                  link={{ href: `/uflpa${langSuffix}`, label: copy.modules.uflpa.open_link }}
+                />
+              </div>
+              {/* Chassis support */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <ModuleCard
+                  accent="primary"
+                  code="MOD · 03"
+                  title={copy.modules.regulatory.title}
+                  sub={copy.modules.regulatory.sub}
+                  stats={regulatoryStats}
+                  link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
+                />
+                <ModuleCard
+                  accent="primary"
+                  code="MOD · 04"
+                  title={copy.modules.paperwork.title}
+                  sub={copy.modules.paperwork.sub}
+                  stats={paperworkStats}
+                  link={{ href: `/paperwork${langSuffix}`, label: copy.modules.paperwork.open_link }}
+                />
+                <ModuleCard
+                  accent="primary"
+                  code="MOD · 05 · DRIVER"
+                  title={copy.modules.driver_pass.title}
+                  sub={copy.modules.driver_pass.sub}
+                  stats={driverPassStats}
+                  link={{ href: `/driver-pass${langSuffix}`, label: copy.modules.driver_pass.open_link }}
+                />
+              </div>
+            </div>
+          </details>
         </div>
       </section>
 

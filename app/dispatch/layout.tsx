@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 // /dispatch — operator console for B2B Insights subscribers.
-// This is the screen they OPEN every shift, not the marketing dossier
-// at /insights. Four sub-surfaces share this chrome:
+// Hard auth gate: anonymous visitors redirect to /login. This is paid-tier
+// territory; the marketing pitch lives at /insights.
+//
+// Four sub-surfaces share this chrome:
 //   /dispatch        — live console (watched ports auto-refresh)
 //   /dispatch/load   — load enrichment (paste origin+receiver+appt)
 //   /dispatch/alerts — alerts manager (anomaly thresholds + channels)
@@ -14,6 +19,8 @@ export const metadata = {
     "Live wait + forecast + anomaly across your watched ports. Built for dispatchers who keep one screen open all shift.",
 };
 
+export const dynamic = "force-dynamic";
+
 const NAV: Array<{ href: string; en: string; es: string }> = [
   { href: "/dispatch", en: "Console", es: "Consola" },
   { href: "/dispatch/load", en: "Load advisor", es: "Asesor de carga" },
@@ -23,7 +30,18 @@ const NAV: Array<{ href: string; en: string; es: string }> = [
   { href: "/dispatch/export", en: "Export", es: "Exportar" },
 ];
 
-export default function DispatchLayout({ children }: { children: React.ReactNode }) {
+export default async function DispatchLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const sb = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } },
+  );
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) {
+    redirect("/login?redirect=/dispatch");
+  }
+
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/70">

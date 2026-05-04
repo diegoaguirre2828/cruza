@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { B2BNav } from '@/components/B2BNav';
+import { PricingStrip } from '@/components/PricingStrip';
 import { DRAWBACK_EN } from '@/lib/copy/drawback-en';
 import { DRAWBACK_ES } from '@/lib/copy/drawback-es';
 
@@ -47,7 +48,7 @@ export default async function DrawbackLandingPage({
               {c.landing.secondary_cta}
             </a>
           </div>
-          <div className="mt-6 text-[12px] font-mono text-muted-foreground/80">{c.landing.pricing_strip}</div>
+          <div className="mt-6"><PricingStrip pitch={c.landing.pricing_strip} lang={lang} /></div>
         </div>
       </section>
 

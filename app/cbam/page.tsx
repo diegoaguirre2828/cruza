@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { B2BNav } from '@/components/B2BNav';
+import { PricingStrip } from '@/components/PricingStrip';
 import { CBAM_EN } from '@/lib/copy/cbam-en';
 import { CBAM_ES } from '@/lib/copy/cbam-es';
 
@@ -33,7 +34,7 @@ export default async function CbamLandingPage({
             <Link href={`/cbam/scan${langSuffix}`} className="bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85 transition">{c.landing.primary_cta}</Link>
             <a href="#how" className="border border-border px-5 py-3 text-sm font-medium text-foreground hover:border-foreground transition">{c.landing.secondary_cta}</a>
           </div>
-          <div className="mt-6 text-[12px] font-mono text-muted-foreground/80">{c.landing.pricing_strip}</div>
+          <div className="mt-6"><PricingStrip pitch={c.landing.pricing_strip} lang={lang} /></div>
         </div>
       </section>
 

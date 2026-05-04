@@ -55,27 +55,27 @@ export function ModuleCard({ accent = 'primary', code, title, sub, stats, link, 
 
       <div className="px-5 pl-6 py-5">
         {code && (
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+          <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-foreground/70">
             {code}
           </div>
         )}
         <div className="mt-1 font-serif text-[17px] font-medium text-foreground leading-tight">
           {title}
         </div>
-        <p className="mt-1.5 text-[12.5px] leading-[1.55] text-muted-foreground">{sub}</p>
+        <p className="mt-1.5 text-[13px] leading-[1.6] text-foreground/75">{sub}</p>
 
         {stats.length > 0 && (
           <div className="mt-5 grid gap-1.5">
             {stats.map((s, i) => (
               <div key={i} className="flex items-baseline justify-between gap-3 border-t border-border pt-1.5 first:border-t-0 first:pt-0">
-                <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-foreground/70">
                   {s.label}
                 </span>
                 <span
                   className={
                     s.emphasis
                       ? `font-mono tabular-nums text-[19px] font-medium ${emphasisClass[accent]}`
-                      : 'font-mono tabular-nums text-[13px] text-foreground/85'
+                      : 'font-mono tabular-nums text-[13.5px] text-foreground/90'
                   }
                 >
                   {s.value}
@@ -88,7 +88,7 @@ export function ModuleCard({ accent = 'primary', code, title, sub, stats, link, 
         {link && (
           <Link
             href={link.href}
-            className={`mt-5 inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.18em] ${linkClass[accent]}`}
+            className={`mt-5 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] ${linkClass[accent]}`}
           >
             {link.label} <span aria-hidden="true">→</span>
           </Link>

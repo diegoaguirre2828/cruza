@@ -2,6 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
+import { useState } from 'react';
+import { createClient } from '@/lib/auth';
 
 interface B2BNavProps {
   current?: 'workspace' | 'sales' | 'console' | 'account' | 'refunds' | 'eudamed';
@@ -14,23 +17,38 @@ const ROUTES: Array<{ key: NonNullable<B2BNavProps['current']>; href: string; en
   { key: 'console',   href: '/dispatch',  en: 'Console',   es: 'Consola' },
   { key: 'refunds',   href: '/refunds',   en: 'Refunds',   es: 'Reembolsos' },
   { key: 'eudamed',   href: '/eudamed',   en: 'EU MDR',    es: 'EU MDR' },
-  { key: 'account',   href: '/dispatch/account', en: 'Account', es: 'Cuenta' },
 ];
 
 export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user, loading: authLoading } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const active = current ?? deriveActive(pathname);
   const langSuffix = lang === 'es' ? '?lang=es' : '';
 
   // Build the current path string for lang-toggle links
   const currentPath = pathname || '/workspace';
   const otherLang: 'en' | 'es' = lang === 'es' ? 'en' : 'es';
-  const otherLangHref = otherLang === 'es' ? `${currentPath}?lang=es` : currentPath;
   // Preserve other query params if present
   const otherParams = searchParams ? new URLSearchParams(searchParams.toString()) : new URLSearchParams();
   if (otherLang === 'es') otherParams.set('lang', 'es'); else otherParams.delete('lang');
   const langToggleHref = otherParams.toString() ? `${currentPath}?${otherParams.toString()}` : currentPath;
+
+  async function signOut() {
+    try {
+      const sb = createClient();
+      await sb.auth.signOut();
+      try { localStorage.removeItem('cruzar_has_session'); } catch { /* noop */ }
+    } finally {
+      window.location.href = `/login${langSuffix}`;
+    }
+  }
+
+  // Email-derived display name (first part before @, capitalized)
+  const displayName = user?.email
+    ? user.email.split('@')[0].slice(0, 18)
+    : null;
 
   return (
     <nav className="border-b border-border bg-card sticky top-0 z-40">
@@ -65,6 +83,66 @@ export function B2BNav({ current, lang = 'en' }: B2BNavProps) {
             );
           })}
         </div>
+
+        {/* Auth state — anon sees Sign in / Sign up free; authed sees user menu */}
+        {!authLoading && (
+          user ? (
+            <div className="relative flex items-stretch border-l border-border">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center gap-2 px-4 sm:px-5 hover:bg-foreground/[0.04] transition font-mono text-[11px] uppercase tracking-[0.18em] text-foreground"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground/[0.10] text-[11px] tracking-[0.04em] text-foreground/85">
+                  {displayName?.charAt(0).toUpperCase() ?? '·'}
+                </span>
+                <span className="hidden sm:inline">{displayName}</span>
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 min-w-[200px] rounded-md border border-border bg-card shadow-lg z-50">
+                  <Link
+                    href={`/dispatch/account${langSuffix}`}
+                    className="block px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground border-b border-border"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {lang === 'es' ? 'Cuenta' : 'Account'}
+                  </Link>
+                  <Link
+                    href={`/pricing/business${langSuffix}`}
+                    className="block px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground border-b border-border"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {lang === 'es' ? 'Plan' : 'Plan'}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { setMenuOpen(false); signOut(); }}
+                    className="block w-full text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+                  >
+                    {lang === 'es' ? 'Cerrar sesión' : 'Sign out'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-stretch border-l border-border">
+              <Link
+                href={`/login${langSuffix}`}
+                className="hidden sm:flex items-center px-4 hover:bg-foreground/[0.04] transition font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
+              >
+                {lang === 'es' ? 'Entrar' : 'Sign in'}
+              </Link>
+              <Link
+                href={`/signup${langSuffix}`}
+                className="flex items-center px-4 sm:px-5 bg-foreground hover:bg-foreground/85 transition font-mono text-[11px] uppercase tracking-[0.18em] text-background"
+              >
+                {lang === 'es' ? 'Crear cuenta' : 'Sign up free'}
+              </Link>
+            </div>
+          )
+        )}
 
         {/* Language toggle on the right */}
         <Link

@@ -1,3 +1,6 @@
+import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 import { B2BNav } from '@/components/B2BNav';
 import { WORKSPACE_EN } from '@/lib/copy/workspace-en';
 import { WORKSPACE_ES } from '@/lib/copy/workspace-es';
@@ -13,6 +16,8 @@ export const metadata = {
   description: 'Cruzar B2B workspace — every module, live counts, recent activity. One substrate.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function WorkspacePage({
   searchParams,
 }: {
@@ -20,6 +25,20 @@ export default async function WorkspacePage({
 }) {
   const params = await searchParams;
   const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
+
+  // Hard auth gate — workspace is operator-only. Anonymous → /login.
+  const cookieStore = await cookies();
+  const sb = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } },
+  );
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) {
+    const langSuffix = lang === 'es' ? '&lang=es' : '';
+    redirect(`/login?redirect=/workspace${langSuffix}`);
+  }
+
   const c = lang === 'es' ? WORKSPACE_ES : WORKSPACE_EN;
 
   const today = new Date();
