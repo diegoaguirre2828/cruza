@@ -1,0 +1,191 @@
+{
+  "_comment": "Cross-module orchestrator fixtures. Each bundle drives multiple composers. The whole point is showing that one ShipmentBundle fires multiple modules and produces cross-references.",
+  "today_iso": "2026-05-04",
+  "cases": [
+    {
+      "name": "RGV import — refunds + drawback + customs eligible from one bundle",
+      "bundle": {
+        "bundle_id": "BUN-001",
+        "importer": {
+          "legal_name": "Acme Industries Inc.",
+          "ein": "12-3456789",
+          "cbp_filer_code": "ACM",
+          "language": "en"
+        },
+        "entries": [
+          {
+            "entry_number": "12345678901234",
+            "entry_date": "2025-03-15",
+            "liquidation_date": null,
+            "liquidation_status": "unliquidated",
+            "country_of_origin": "CN",
+            "htsus_codes": ["8536.41.0050", "9903.01.25"],
+            "duty_lines": [
+              { "htsus_code": "8536.41.0050", "rate_pct": 5.0, "amount_usd": 5000, "is_chapter_99": false },
+              { "htsus_code": "9903.01.25", "rate_pct": 25.0, "amount_usd": 25000, "is_chapter_99": true }
+            ],
+            "total_duty_paid_usd": 30000,
+            "total_taxes_paid_usd": 0,
+            "total_fees_paid_usd": 750,
+            "total_dutiable_value_usd": 200000,
+            "merchandise_description": "Industrial relays",
+            "unit_count": 1000
+          }
+        ],
+        "exports": [
+          {
+            "export_id": "AES-EXP-2025-001",
+            "export_date": "2025-09-01",
+            "destination_country": "DE",
+            "htsus_or_schedule_b": "8536.41.0050",
+            "description": "Relays integrated into final assemblies",
+            "unit_count": 1000,
+            "manufacturing_evidence": "bill_of_materials"
+          }
+        ]
+      },
+      "expect": {
+        "modules_fired_includes": ["refunds", "drawback"],
+        "modules_skipped_includes": ["pedimento", "cbam", "uflpa", "driver_pass"],
+        "cross_ref_for_entry_12345678901234_fires": ["refunds", "drawback"],
+        "totals_recoverable_above": 25000
+      }
+    },
+    {
+      "name": "UFLPA-flagged shipment — refunds + uflpa fire on same bundle",
+      "bundle": {
+        "bundle_id": "BUN-002",
+        "importer": {
+          "legal_name": "Solar Imports LLC",
+          "ein": "98-7654321",
+          "language": "en"
+        },
+        "entries": [
+          {
+            "entry_number": "23456789012345",
+            "entry_date": "2025-06-10",
+            "liquidation_date": null,
+            "liquidation_status": "unliquidated",
+            "country_of_origin": "CN",
+            "htsus_codes": ["8541.40.20"],
+            "duty_lines": [
+              { "htsus_code": "8541.40.20", "rate_pct": 0, "amount_usd": 0, "is_chapter_99": false },
+              { "htsus_code": "9903.01.25", "rate_pct": 25.0, "amount_usd": 50000, "is_chapter_99": true }
+            ],
+            "total_duty_paid_usd": 50000,
+            "total_taxes_paid_usd": 0,
+            "total_fees_paid_usd": 1200,
+            "total_dutiable_value_usd": 200000,
+            "merchandise_description": "Photovoltaic cells",
+            "unit_count": 5000
+          }
+        ],
+        "exports": [],
+        "supply_chain": [
+          {
+            "tier": 0,
+            "supplier_name": "Generic Solar Co",
+            "country_iso": "CN",
+            "is_on_uflpa_entity_list": false,
+            "produced_in_xinjiang": false,
+            "audit_evidence_present": false,
+            "affidavit_present": false
+          },
+          {
+            "tier": 1,
+            "supplier_name": "Xinjiang Polysilicon Plant",
+            "country_iso": "CN",
+            "province_or_state": "Xinjiang",
+            "is_on_uflpa_entity_list": false,
+            "produced_in_xinjiang": true,
+            "audit_evidence_present": false,
+            "affidavit_present": false
+          }
+        ],
+        "trip": {
+          "origin_country": "MX",
+          "destination_country": "US",
+          "crossing_port_code": "2304",
+          "hazmat": false,
+          "perishables": false,
+          "scheduled_eta_iso": "2026-06-01T08:00:00Z"
+        }
+      },
+      "expect": {
+        "modules_fired_includes": ["refunds", "uflpa"],
+        "modules_skipped_includes": ["drawback"],
+        "cross_ref_for_entry_23456789012345_fires": ["refunds", "uflpa"],
+        "uflpa_high_risk_count_at_least": 1,
+        "blocking_actions_required_at_least": 1
+      }
+    },
+    {
+      "name": "CBAM exporter to EU — refunds + cbam fire on same bundle",
+      "bundle": {
+        "bundle_id": "BUN-003",
+        "importer": {
+          "legal_name": "RGV Steel Imports Ltd",
+          "ein": "55-1234567",
+          "eori": "DE123456789",
+          "language": "en"
+        },
+        "entries": [
+          {
+            "entry_number": "34567890123456",
+            "entry_date": "2025-08-20",
+            "liquidation_date": null,
+            "liquidation_status": "unliquidated",
+            "country_of_origin": "CN",
+            "htsus_codes": ["7206.10.00"],
+            "duty_lines": [
+              { "htsus_code": "9903.01.25", "rate_pct": 25.0, "amount_usd": 12500, "is_chapter_99": true }
+            ],
+            "total_duty_paid_usd": 12500,
+            "total_taxes_paid_usd": 0,
+            "total_fees_paid_usd": 300,
+            "total_dutiable_value_usd": 50000,
+            "merchandise_description": "Hot-rolled steel coils",
+            "unit_count": 100
+          }
+        ],
+        "exports": [],
+        "cbam_goods": [
+          {
+            "cn_code": "72061000",
+            "description": "Hot-rolled coils, primary steel",
+            "category": "iron_steel",
+            "mass_tonnes": 100,
+            "installation": {
+              "installation_name": "Acerera Monterrey Norte",
+              "country_iso": "MX",
+              "has_emissions_monitoring_plan": true,
+              "uses_carbon_price_in_origin": false
+            },
+            "direct_emissions_t_co2_per_t": 1.85,
+            "indirect_emissions_t_co2_per_t": 0.16,
+            "emissions_basis": "actual_verified"
+          }
+        ]
+      },
+      "expect": {
+        "modules_fired_includes": ["refunds", "cbam"],
+        "cbam_cost_above": 10000,
+        "cross_ref_for_entry_34567890123456_at_risk_cbam": true
+      }
+    },
+    {
+      "name": "Empty bundle — no entries, no exports — every module skips",
+      "bundle": {
+        "bundle_id": "BUN-EMPTY",
+        "importer": { "legal_name": "Nothing Inc", "language": "en" },
+        "entries": [],
+        "exports": []
+      },
+      "expect": {
+        "modules_fired_count": 0,
+        "modules_skipped_count_at_least": 6,
+        "totals_recoverable": 0
+      }
+    }
+  ]
+}

@@ -153,6 +153,20 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
         <div className="mx-auto max-w-[1180px]">
           <div className="flex items-stretch divide-x divide-border">
             <Link
+              href={`/scan${langSuffix}`}
+              className="group flex-1 flex flex-col gap-1 px-5 sm:px-7 py-5 hover:bg-foreground/[0.04] transition relative bg-foreground/[0.03]"
+            >
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-accent">
+                ACTION · 00 · UNIVERSAL
+              </span>
+              <span className="font-serif text-[18px] text-foreground leading-tight">
+                {lang === 'es' ? 'Escaneo universal — todos los módulos' : 'Universal scan — every module fires'}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 group-hover:text-foreground transition">
+                Open →
+              </span>
+            </Link>
+            <Link
               href={`/refunds/scan${langSuffix}`}
               className="group flex-1 flex flex-col gap-1 px-5 sm:px-7 py-5 hover:bg-foreground/[0.04] transition relative"
             >
