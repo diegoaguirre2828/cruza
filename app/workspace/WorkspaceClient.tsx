@@ -38,9 +38,19 @@ interface ActivityItem {
   href?: string;
 }
 
+interface CrossModuleAggregate {
+  total_tickets: number;
+  multi_module_ticket_count: number;
+  total_recoverable_across_tickets_usd: number;
+  total_at_risk_count: number;
+  top_co_occurrences: Array<{ modules: string[]; count: number }>;
+  has_data: boolean;
+}
+
 interface SummaryResponse {
   summary: ModuleSummary;
   activity_recent: ActivityItem[];
+  cross_module?: CrossModuleAggregate;
 }
 
 const fmtUsd = (n: number) =>
@@ -211,6 +221,77 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           </div>
         </div>
       </section>
+
+      {/* CROSS-MODULE AGGREGATE — the substrate composing across all this user's tickets.
+          This is the visible answer to "are the modules actually talking to each other?"
+          When tickets exist, it shows multi-module count + total recoverable + at-risk;
+          when 0 tickets exist, it shows the empty-state with a clear path to /scan. */}
+      {data?.cross_module && (
+        <section className="border-b border-border bg-card/20">
+          <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8">
+            <div className="flex items-baseline justify-between gap-3 mb-4">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent">
+                Substrate · cross-module composition
+              </span>
+              {!data.cross_module.has_data && (
+                <Link
+                  href={`/scan${langSuffix}`}
+                  className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+                >
+                  Run a scan →
+                </Link>
+              )}
+            </div>
+            {data.cross_module.has_data ? (
+              <>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+                  <CrossStat label="Tickets composed" value={String(data.cross_module.total_tickets)} />
+                  <CrossStat
+                    label="Multi-module tickets"
+                    value={String(data.cross_module.multi_module_ticket_count)}
+                    emphasis={data.cross_module.multi_module_ticket_count > 0}
+                  />
+                  <CrossStat
+                    label="Recoverable across modules"
+                    value={fmtUsd(data.cross_module.total_recoverable_across_tickets_usd)}
+                    emphasis
+                  />
+                  <CrossStat
+                    label="At-risk (UFLPA / blocked)"
+                    value={String(data.cross_module.total_at_risk_count)}
+                    colorClass={data.cross_module.total_at_risk_count > 0 ? 'text-red-300' : 'text-emerald-300'}
+                  />
+                </div>
+                {data.cross_module.top_co_occurrences.length > 0 && (
+                  <div className="mt-5">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                      Most common compositions
+                    </span>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {data.cross_module.top_co_occurrences.map((co, i) => (
+                        <span key={i} className="rounded-md border border-border bg-background px-2.5 py-1 text-[11.5px] font-mono">
+                          {co.modules.join(' + ')}{' '}
+                          <span className="text-muted-foreground/70">×{co.count}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="font-serif text-[16px] text-foreground">
+                  No tickets composed yet.
+                </span>
+                <span className="text-[13px] text-muted-foreground">
+                  Run the universal scan to compose your first multi-module Cruzar Ticket. Cross-module
+                  aggregates surface here once the substrate has data.
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* MODULE GRID — magazine layout. Featured (refunds, biggest revenue wedge) takes
           a 2-col span. SUBSTRATE card spans the full bottom row as the connective tissue.
@@ -395,5 +476,32 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
         </div>
       </section>
     </>
+  );
+}
+
+function CrossStat({
+  label,
+  value,
+  emphasis = false,
+  colorClass,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+  colorClass?: string;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70">
+        {label}
+      </div>
+      <div
+        className={`mt-1 font-mono ${emphasis ? 'text-[20px]' : 'text-[16px]'} ${
+          colorClass ?? (emphasis ? 'text-accent' : 'text-foreground/85')
+        }`}
+      >
+        {value}
+      </div>
+    </div>
   );
 }

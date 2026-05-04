@@ -183,5 +183,52 @@ export async function GET() {
   activity.sort((a, b) => (b.ts ?? '').localeCompare(a.ts ?? ''));
   const activity_recent = activity.slice(0, 10);
 
-  return NextResponse.json({ summary, activity_recent });
+  // Cross-module aggregates — the substrate composing across this user's tickets.
+  // Counts how many of their tickets carry multi-module compositions (the "talking"
+  // surface at the operator dashboard level). Also sums recoverable across refunds
+  // + drawback blocks where present.
+  const ticketsWithModules = await sb
+    .from('tickets')
+    .select('ticket_id, modules_present, payload_canonical')
+    .eq('created_by_user_id', userId)
+    .order('issued_at', { ascending: false })
+    .limit(500);
+
+  let multi_module_ticket_count = 0;
+  let total_recoverable_across_tickets_usd = 0;
+  let total_at_risk_count = 0;
+  const module_co_occurrence: Record<string, number> = {};
+
+  for (const t of ticketsWithModules.data ?? []) {
+    const modules = Array.isArray(t.modules_present) ? (t.modules_present as string[]) : [];
+    if (modules.length >= 2) multi_module_ticket_count++;
+    // Sort + join for co-occurrence key (e.g. "drawback+refunds")
+    const key = [...modules].sort().join('+');
+    if (key) module_co_occurrence[key] = (module_co_occurrence[key] ?? 0) + 1;
+
+    const p = (t.payload_canonical as Record<string, unknown>) ?? {};
+    const refundsBlock = p.refunds as { total_recoverable_usd?: number } | undefined;
+    const drawbackBlock = p.drawback as { total_drawback_recoverable_usd?: number } | undefined;
+    const uflpaBlock = p.uflpa as { rebuttable_presumption_triggered?: boolean } | undefined;
+    if (refundsBlock?.total_recoverable_usd) total_recoverable_across_tickets_usd += refundsBlock.total_recoverable_usd;
+    if (drawbackBlock?.total_drawback_recoverable_usd) total_recoverable_across_tickets_usd += drawbackBlock.total_drawback_recoverable_usd;
+    if (uflpaBlock?.rebuttable_presumption_triggered) total_at_risk_count++;
+  }
+
+  // Top 5 module co-occurrences for the dashboard "patterns" surface
+  const top_co_occurrences = Object.entries(module_co_occurrence)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([key, count]) => ({ modules: key.split('+'), count }));
+
+  const cross_module = {
+    total_tickets: tickets.length,
+    multi_module_ticket_count,
+    total_recoverable_across_tickets_usd: Math.round(total_recoverable_across_tickets_usd * 100) / 100,
+    total_at_risk_count,
+    top_co_occurrences,
+    has_data: tickets.length > 0,
+  };
+
+  return NextResponse.json({ summary, activity_recent, cross_module });
 }
