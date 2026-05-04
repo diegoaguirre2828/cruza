@@ -75,10 +75,13 @@ export function AlertSnoozePrompt() {
 
   if (!alertId) return null
 
+  // Success / dismissed states — no backdrop, just a tight toast that
+  // auto-fades via the timeout in the handlers above. Slide-up entrance
+  // for parity with the prompt card.
   if (done === 'snoozed') {
     return (
       <div
-        className="fixed left-3 right-3 z-40 rounded-2xl bg-emerald-600 text-white px-4 py-3 shadow-2xl"
+        className="cruzar-prompt-card fixed left-3 right-3 z-50 rounded-2xl bg-emerald-600 text-white px-4 py-3 shadow-2xl"
         style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
         <p className="text-sm font-bold">
@@ -94,7 +97,7 @@ export function AlertSnoozePrompt() {
   if (done === 'kept') {
     return (
       <div
-        className="fixed left-3 right-3 z-40 rounded-2xl bg-gray-900 text-white px-4 py-3 shadow-2xl"
+        className="cruzar-prompt-card fixed left-3 right-3 z-50 rounded-2xl bg-gray-900 text-white px-4 py-3 shadow-2xl"
         style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
       >
         <p className="text-sm font-bold">
@@ -104,43 +107,65 @@ export function AlertSnoozePrompt() {
     )
   }
 
+  // Active prompt — full-screen backdrop blur + centered card with
+  // entrance animation + pulsing glow on the primary CTA. Diego
+  // 2026-05-04: "make the popup more noticeable…blur the background…
+  // pulsing…feel alive."
+  //
+  // Tap-on-backdrop is intentionally a no-op: this is a confirmation
+  // prompt that needs an explicit yes/no, not a dismiss-by-tapping-
+  // outside (which would silently keep the alert ringing all day).
   return (
     <div
-      className="fixed left-3 right-3 z-40 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl overflow-hidden"
-      style={{ bottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+      className="cruzar-prompt-enter fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-black/55 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0"
+      style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
       role="dialog"
+      aria-modal="true"
     >
-      <div className="p-4">
-        <p className="text-sm font-black leading-tight">
-          {es ? '¿Ya cruzaste?' : 'Already crossed?'}
-        </p>
-        <p className="text-[11px] text-blue-100 mt-0.5 leading-snug">
-          {es
-            ? 'Apaga la alerta hasta mañana — o que siga avisándote si todavía no.'
-            : "Mute the alert until tomorrow — or keep it on if you haven't crossed yet."}
-        </p>
-        {error && (
-          <p className="mt-2 text-[11px] text-red-200 bg-red-900/30 rounded px-2 py-1">{error}</p>
-        )}
-        <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={handleSnooze}
-            disabled={submitting}
-            className="flex-1 bg-white text-indigo-700 text-sm font-black py-2.5 rounded-xl shadow-lg active:scale-[0.98] disabled:opacity-60 transition-transform"
-          >
-            {submitting
-              ? (es ? 'Apagando…' : 'Muting…')
-              : (es ? 'Sí, apaga la alerta' : 'Yes, mute it')}
-          </button>
-          <button
-            type="button"
-            onClick={handleKeep}
-            disabled={submitting}
-            className="px-4 bg-white/15 hover:bg-white/25 text-white text-sm font-bold rounded-xl border border-white/25 disabled:opacity-50 transition-colors"
-          >
-            {es ? 'Aún no' : 'Not yet'}
-          </button>
+      <div
+        className="cruzar-prompt-card w-full max-w-sm rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white shadow-2xl overflow-hidden border border-white/15"
+      >
+        <div className="p-5">
+          <div className="flex items-start gap-3">
+            <span className="cruzar-soft-bob text-3xl leading-none flex-shrink-0">🌉</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-black leading-tight">
+                {es ? '¿Ya cruzaste?' : 'Already crossed?'}
+              </p>
+              <p className="text-[13px] text-blue-100 mt-1 leading-snug">
+                {es
+                  ? 'Apaga la alerta hasta mañana en la mañana — o sigue avisándote si todavía no cruzas.'
+                  : "Mute the alert until tomorrow morning — or keep it on if you haven't crossed yet."}
+              </p>
+            </div>
+          </div>
+
+          {error && (
+            <p className="mt-3 text-[11px] text-red-100 bg-red-900/40 rounded-lg px-3 py-2 border border-red-400/30">
+              {error}
+            </p>
+          )}
+
+          <div className="mt-5 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={handleSnooze}
+              disabled={submitting}
+              className="cruzar-glow-pulse w-full bg-white text-indigo-700 text-base font-black py-3.5 rounded-2xl active:scale-[0.97] disabled:opacity-60 disabled:animate-none transition-transform"
+            >
+              {submitting
+                ? (es ? 'Apagando…' : 'Muting…')
+                : (es ? 'Sí, apaga la alerta' : 'Yes, mute the alert')}
+            </button>
+            <button
+              type="button"
+              onClick={handleKeep}
+              disabled={submitting}
+              className="w-full bg-white/10 hover:bg-white/20 text-white text-sm font-bold py-3 rounded-2xl border border-white/20 active:scale-[0.97] disabled:opacity-50 transition-all"
+            >
+              {es ? 'Aún no — sigan avisándome' : "Not yet — keep alerting me"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
