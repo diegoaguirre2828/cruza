@@ -3,8 +3,8 @@
 export const B2B_ES = {
   hero: {
     eyebrow: 'Para brokers de carga transfronteriza US-MX · despachadores · flotillas',
-    title: 'Inteligencia fronteriza completa. Cada cruce. Un sustrato.',
-    sub: "Un briefing a las 5am. Un push cuando algo se rompe. Recibos de calibración que prueban que lo predijimos bien. Los operadores que saben van primero.",
+    title: '¿Esta carga cruza limpio y llega a tiempo a su cita?',
+    sub: 'Una respuesta. Cada embarque. Inteligencia de cruce, revisión de documentos, probabilidad de cita y rastreo para el receptor — todo en un solo registro firmado.',
     cta: 'Empieza gratis — 2 minutos',
     ctaSub: 'Ver precisión en vivo →',
   },
@@ -13,32 +13,42 @@ export const B2B_ES = {
     title: 'Publicamos cada falla.',
     sub: 'Cada predicción registrada, luego calificada contra lo que hizo el puente. Por puerto. La misma tabla que usamos internamente.',
   },
-  howItWorks: {
-    kicker: 'Cómo aparece',
-    title: 'Tres señales. Una decisión.',
-    steps: [
+  layers: {
+    kicker: 'Cómo funciona',
+    title: 'Cuatro capas. Una decisión de cruce.',
+    sub: 'Cada módulo corre en segundo plano. Tú recibes una respuesta.',
+    items: [
       {
         n: '01',
-        title: 'Brief de 5am',
-        body: 'El pronóstico por puerto llega antes de que tu equipo se briefee. Planea el día antes de que abra la frontera.',
+        label: 'Inteligencia de Cruce',
+        title: 'Qué puente. A qué hora. Si llegan a tiempo.',
+        body: 'Brief de las 5am + push de anomalía + ETA de carga con probabilidad de cita. Sabe antes de que tu chofer haga fila.',
       },
       {
         n: '02',
-        title: 'Push de anomalía',
-        body: 'Cuando un puerto sube 1.5× su línea base, tú sabes antes de que tus choferes hagan fila.',
+        label: 'Cumplimiento',
+        title: 'Si esta carga cruza sin problemas.',
+        body: 'Verificación USMCA, validación aduanal, escaneo de documentos, HOS del chofer. Señala banderas antes del puente, no en él.',
       },
       {
         n: '03',
-        title: 'Recibo de calibración',
-        body: 'Cada predicción registrada. Precisión publicada. Sin caja negra — lee los números tú mismo.',
+        label: 'Recuperación',
+        title: 'Dinero que ya te deben.',
+        body: 'Reembolsos IEEPA, drawback, recuperación de aranceles. La Suprema Corte anuló los aranceles — los reembolsos no son automáticos. Nosotros lo tramitamos.',
+      },
+      {
+        n: '04',
+        label: 'Rastreo para el Receptor',
+        title: 'Tu receptor ve el cruce en tiempo real.',
+        body: 'Comparte un link. El almacén, el taller, el distribuidor recibe confirmación de cruce sin necesidad de cuenta.',
       },
     ],
   },
   detentionMath: {
-    title: 'Por qué funciona la matemática',
-    body: '10 tráilers × 1 mala elección de puente/día × 30 min perdidos × $85/hr = ~$10,200/mes de pérdida. Insights Pro a $299/mes corta ~30% de eso. Ahorro neto: $2,800+/mes.',
+    title: 'La matemática es simple.',
+    body: '10 tráilers × 1 mala elección de puente/día × 30 min perdidos × $85/hr = ~$10,200/mes de pérdida. Suma los aranceles IEEPA que pagaste de más — la mayoría de los operadores tienen $15K–$80K sin reclamar en ACE del CBP. Cruzar recupera ambos.',
     footnote:
-      'A nivel industria: $3.6B/año en pérdidas directas por detención, $11.5B/año en productividad perdida (ATRI 2024). 39% de las paradas detenidas.',
+      'A nivel industria: $3.6B/año en pérdidas por detención (ATRI 2024). Aranceles IEEPA anulados el 24 Feb 2026 — los reembolsos requieren trámite activo en ACE.',
   },
   pricing: {
     kicker: 'Precios',

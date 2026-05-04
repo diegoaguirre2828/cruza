@@ -7,7 +7,7 @@ import { BridgePageHeader } from '@/components/BridgePageHeader'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { getPortMeta } from '@/lib/portMeta'
-import { portIdFromSlug, slugForPort, allSlugs } from '@/lib/portSlug'
+import { portIdFromSlug, slugForPort } from '@/lib/portSlug'
 import type { PortWaitTime } from '@/types'
 
 // Fetch from /api/ports so the slug page sees the SAME blended values
@@ -36,13 +36,14 @@ async function fetchBlendedPorts(): Promise<PortWaitTime[] | null> {
 // Mirrors app/port/[portId]/page.tsx but keyed by slug. Canonical URL
 // for each port is the slug variant; numeric /port/[portId] stays as
 // a working alias for backlinks + existing share URLs.
+//
+// force-dynamic: live wait time data changes every 15 min — static
+// pre-render at build time hits the CBP API for 40+ ports and breaks
+// whenever the API is slow or a port has no data.
+export const dynamic = 'force-dynamic'
 
 interface Props {
   params: Promise<{ slug: string }>
-}
-
-export async function generateStaticParams() {
-  return allSlugs().map(({ slug }) => ({ slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

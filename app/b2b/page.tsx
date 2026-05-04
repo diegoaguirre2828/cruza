@@ -4,9 +4,9 @@ import { B2B_EN } from '@/lib/copy/b2b-en';
 import { B2B_ES } from '@/lib/copy/b2b-es';
 
 export const metadata = {
-  title: 'Cruzar B2B — Border intelligence for RGV freight',
+  title: 'Cruzar — Will this load cross clean and make the appointment?',
   description:
-    'Per-port wait-time forecasts + calibration receipts for RGV cross-border freight brokers, dispatchers, and fleets. Morning email + anomaly push.',
+    'Crossing intelligence, compliance, IEEPA refund recovery, and receiver tracking for US-MX freight brokers, dispatchers, and fleets. One answer per shipment.',
   alternates: { canonical: 'https://www.cruzar.app/b2b' },
 };
 
@@ -80,29 +80,39 @@ export default async function B2BPortalPage({
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* FOUR LAYERS */}
       <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
           <div className="mb-10">
             <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
-              {c.howItWorks.kicker}
+              {c.layers.kicker}
             </div>
             <h2 className="font-serif text-[clamp(1.85rem,3.4vw,2.85rem)] font-medium text-foreground mt-2">
-              {c.howItWorks.title}
+              {c.layers.title}
             </h2>
+            <p className="mt-3 text-[14px] text-muted-foreground">{c.layers.sub}</p>
           </div>
-          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-3">
-            {c.howItWorks.steps.map((s) => (
+          <div className="grid gap-px overflow-hidden border border-border bg-border sm:grid-cols-2">
+            {c.layers.items.map((s) => (
               <div key={s.n} className="bg-background p-7">
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent mb-3">
-                  {s.n}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">{s.n}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground/60 border border-border/60 px-2 py-0.5">{s.label}</span>
                 </div>
-                <h3 className="font-serif text-[1.4rem] font-medium leading-[1.15] text-foreground">
+                <h3 className="font-serif text-[1.3rem] font-medium leading-[1.2] text-foreground">
                   {s.title}
                 </h3>
-                <p className="mt-3 text-[13.5px] leading-[1.55] text-muted-foreground">{s.body}</p>
+                <p className="mt-3 text-[13.5px] leading-[1.6] text-muted-foreground">{s.body}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-6 border border-border/60 bg-card/20 px-6 py-4">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-accent mb-1">Cruzar Ticket</div>
+            <p className="text-[13.5px] text-muted-foreground leading-[1.6]">
+              {es
+                ? 'Cada módulo escribe en un registro firmado y público. El broker lo comparte con el receptor. El receptor lo comparte con su cliente. Un URL. Toda la cadena.'
+                : 'Every module writes into one signed, public record. The broker shares it with the receiver. The receiver shares it with their customer. One URL. The whole chain.'}
+            </p>
           </div>
         </div>
       </section>

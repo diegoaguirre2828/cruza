@@ -25,6 +25,26 @@ export default async function RefundsLandingPage({
     <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav current="refunds" lang={lang} />
 
+      {/* IEEPA URGENCY BANNER */}
+      <div className="border-b border-amber-400/30 bg-amber-400/[0.06]">
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <p className="text-[13px] text-amber-200/90 leading-snug">
+              {lang === 'es'
+                ? 'La Suprema Corte anuló los aranceles IEEPA el 24 Feb 2026. Los reembolsos no son automáticos — tienes 80 días para tramitarlos en ACE antes de perderlos.'
+                : 'Supreme Court struck down IEEPA tariffs Feb 24, 2026. Refunds are not automatic — you have 80 days to file in ACE or forfeit them.'}
+            </p>
+          </div>
+          <Link
+            href={`/refunds/scan${langSuffix}`}
+            className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-amber-400 hover:text-amber-300 transition"
+          >
+            {lang === 'es' ? 'Escanea tu ACE →' : 'Scan your ACE →'}
+          </Link>
+        </div>
+      </div>
+
       <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-20">
           <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">

@@ -4,8 +4,8 @@
 export const B2B_EN = {
   hero: {
     eyebrow: 'For US-MX cross-border freight brokers · dispatchers · fleets',
-    title: 'Full-border intelligence. Every crossing. One substrate.',
-    sub: "One 5am briefing. A push when something breaks. Calibration receipts that prove we called it right. The operators who know go first.",
+    title: 'Will this load cross clean and make the appointment?',
+    sub: "One answer. Every shipment. Crossing intelligence, compliance check, appointment probability, and receiver tracking — composed into a single signed record.",
     cta: 'Start free — 2 minutes',
     ctaSub: 'See live accuracy →',
   },
@@ -14,32 +14,42 @@ export const B2B_EN = {
     title: 'We publish every miss.',
     sub: 'Every forecast logged, then scored against what the bridge actually did. Per port. Same chart we use internally.',
   },
-  howItWorks: {
-    kicker: 'How it shows up',
-    title: 'Three signals. One decision.',
-    steps: [
+  layers: {
+    kicker: 'How it works',
+    title: 'Four layers. One crossing decision.',
+    sub: 'Every module runs in the background. You get one answer.',
+    items: [
       {
         n: '01',
-        title: '5am brief',
-        body: 'Port-by-port wait forecast arrives before your team briefs. Plan the day before the border opens.',
+        label: 'Crossing Intelligence',
+        title: 'Which port. What time. Will they make it.',
+        body: '5am brief + live anomaly push + load ETA with appointment probability. Know before your driver queues.',
       },
       {
         n: '02',
-        title: 'Anomaly push',
-        body: 'When a port spikes 1.5× its baseline, you know before your drivers queue.',
+        label: 'Compliance',
+        title: 'Does this load cross clean.',
+        body: 'USMCA cert check, customs validation, paperwork scan, driver HOS. Flags before the bridge, not at it.',
       },
       {
         n: '03',
-        title: 'Calibration receipt',
-        body: 'Every call logged. Accuracy published. No black box — read the math yourself.',
+        label: 'Recovery',
+        title: 'Money you\'re already owed.',
+        body: 'IEEPA refunds, drawback, duty recovery. The Supreme Court struck down the tariffs — the refunds aren\'t automatic. We file it.',
+      },
+      {
+        n: '04',
+        label: 'Receiver Tracking',
+        title: 'Your receiver sees it cross.',
+        body: 'Share a status link. The warehouse, the repair shop, the parts distributor gets live crossing confirmation without a login.',
       },
     ],
   },
   detentionMath: {
-    title: 'Why the math works',
-    body: '10 trucks × 1 wrong-bridge-pick/day × 30 min wasted × $85/hr = ~$10,200/mo bleeding. Insights Pro at $299/mo cuts about 30% of that. Net save: $2,800+/mo.',
+    title: 'The math is simple.',
+    body: '10 trucks × 1 wrong-bridge-pick/day × 30 min wasted × $85/hr = ~$10,200/mo bleeding out. Add the IEEPA duties you overpaid on non-USMCA freight — most operators have $15K–$80K sitting in CBP\'s ACE system unclaimed. Cruzar gets both back.',
     footnote:
-      'Industry-wide: $3.6B/yr in direct detention losses, $11.5B/yr in lost productivity (ATRI 2024). 39% of stops detained.',
+      'Industry-wide: $3.6B/yr in direct detention losses, $11.5B/yr in lost productivity (ATRI 2024). IEEPA tariffs struck down Feb 24, 2026 — refunds require active filing in ACE.',
   },
   pricing: {
     kicker: 'Pricing',
