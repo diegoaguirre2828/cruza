@@ -23,7 +23,9 @@ import { composeCbam } from '../chassis/cbam/composer';
 import type { CbamGood, CbamDeclarantProfile } from '../chassis/cbam/types';
 import { evaluateUflpa } from '../chassis/uflpa/risk-flagger';
 import type { UflpaShipmentInput } from '../chassis/uflpa/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock, TicketCbamBlock, TicketUflpaBlock } from './types';
+import { composeDriverPass } from '../chassis/driver-pass/composer';
+import type { DriverProfile, TripContext, DocRequirement } from '../chassis/driver-pass/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock, TicketPedimentoBlock, TicketCbamBlock, TicketUflpaBlock, TicketDriverPassBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -54,6 +56,11 @@ interface GenerateOptions {
     goods: CbamGood[];
   };
   uflpaInput?: UflpaShipmentInput;
+  driverPassInput?: {
+    driver: DriverProfile;
+    trip: TripContext;
+    docs: DocRequirement[];
+  };
 }
 
 function mintTicketId(): string {
@@ -227,6 +234,19 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module Driver Pass: per-trip driver readiness composition (optional)
+  let driverPassBlock: TicketDriverPassBlock | null = null;
+  if (opts.driverPassInput && opts.driverPassInput.docs.length > 0) {
+    const composition = composeDriverPass(opts.driverPassInput);
+    driverPassBlock = {
+      composition,
+      readiness: composition.readiness,
+      blocking_doc_count: composition.blocking_doc_count,
+      expiring_soon_doc_count: composition.expiring_soon_doc_count,
+      registry_version: composition.registry_version,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -239,7 +259,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa'> = ['customs'];
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback' | 'pedimento' | 'cbam' | 'uflpa' | 'driver_pass'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
@@ -248,6 +268,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (pedimentoBlock) modulesPresent.push('pedimento');
   if (cbamBlock) modulesPresent.push('cbam');
   if (uflpaBlock) modulesPresent.push('uflpa');
+  if (driverPassBlock) modulesPresent.push('driver_pass');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -270,6 +291,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     pedimento: pedimentoBlock ?? undefined,
     cbam: cbamBlock ?? undefined,
     uflpa: uflpaBlock ?? undefined,
+    driver_pass: driverPassBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',

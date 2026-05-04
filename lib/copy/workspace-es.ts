@@ -71,6 +71,13 @@ export const WORKSPACE_ES = {
       stat_flagged: 'marcados',
       open_link: 'Abrir cumplimiento operadores',
     },
+    driver_pass: {
+      title: 'Driver Pass',
+      sub: 'Compositor de preparación del operador por viaje. CDL + médica DOT + TWIC + FAST + FMM. Pase Apple Wallet.',
+      stat_passes: 'pases emitidos (30d)',
+      stat_blocked: 'operadores bloqueados',
+      open_link: 'Abrir driver pass',
+    },
     customs: {
       title: 'Validación aduanal',
       sub: 'Clasificación HS + origen USMCA + VCR + bandera LIGIE — compone Cruzar Ticket.',

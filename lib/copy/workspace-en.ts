@@ -71,6 +71,13 @@ export const WORKSPACE_EN = {
       stat_flagged: 'flagged',
       open_link: 'Open driver compliance',
     },
+    driver_pass: {
+      title: 'Driver Pass',
+      sub: 'Per-trip driver-readiness composer. CDL + DOT medical + TWIC + FAST + FMM expiry tracking. Apple Wallet pass.',
+      stat_passes: 'passes issued (30d)',
+      stat_blocked: 'blocked drivers',
+      open_link: 'Open driver pass',
+    },
     customs: {
       title: 'Customs validation',
       sub: 'HS classification + USMCA origin + RVC + LIGIE flag — composes into Cruzar Ticket.',

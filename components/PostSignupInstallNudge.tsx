@@ -60,6 +60,7 @@ const HIDDEN_PATHS = [
   '/pedimento',
   '/cbam',
   '/uflpa',
+  '/driver-pass',
   '/paperwork',
   '/regulatory',
   '/transload',

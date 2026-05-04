@@ -1,0 +1,80 @@
+{
+  "today_iso": "2026-05-04",
+  "cases": [
+    {
+      "name": "ready — US entry, all required docs valid",
+      "input": {
+        "driver": { "driver_legal_name": "Juan Hernández", "cdl_number": "TX12345678", "cdl_state": "TX", "language": "es" },
+        "trip": { "origin_country": "MX", "destination_country": "US", "crossing_port_code": "2304", "hazmat": false, "perishables": false, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "Commercial Driver's License", "label_es": "Licencia comercial", "required_for": ["us_entry","commercial"], "expiry_date": "2027-08-15" },
+          { "doc_id": "medical", "category": "medical", "label_en": "DOT medical card", "label_es": "Tarjeta médica DOT", "required_for": ["us_entry","commercial"], "expiry_date": "2026-11-01" },
+          { "doc_id": "twic", "category": "security", "label_en": "TWIC card", "label_es": "Tarjeta TWIC", "required_for": ["us_entry"], "expiry_date": "2027-03-20" }
+        ]
+      },
+      "expect": { "readiness": "ready", "blocking_doc_count": 0, "expiring_soon_doc_count": 0 }
+    },
+    {
+      "name": "blocked — TWIC expired",
+      "input": {
+        "driver": { "driver_legal_name": "Roberto Martínez", "cdl_number": "TX87654321", "cdl_state": "TX", "language": "es" },
+        "trip": { "origin_country": "MX", "destination_country": "US", "crossing_port_code": "2304", "hazmat": false, "perishables": false, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "Commercial Driver's License", "label_es": "Licencia comercial", "required_for": ["us_entry"], "expiry_date": "2027-01-15" },
+          { "doc_id": "medical", "category": "medical", "label_en": "DOT medical card", "label_es": "Tarjeta médica DOT", "required_for": ["us_entry"], "expiry_date": "2026-09-01" },
+          { "doc_id": "twic", "category": "security", "label_en": "TWIC card", "label_es": "Tarjeta TWIC", "required_for": ["us_entry"], "expiry_date": "2026-03-15" }
+        ]
+      },
+      "expect": { "readiness": "blocked", "blocking_doc_count_at_least": 1 }
+    },
+    {
+      "name": "blocked — TWIC missing entirely",
+      "input": {
+        "driver": { "driver_legal_name": "Carlos Pérez", "cdl_number": "CA99999999", "cdl_state": "CA", "language": "en" },
+        "trip": { "origin_country": "MX", "destination_country": "US", "crossing_port_code": "2304", "hazmat": false, "perishables": false, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "Commercial Driver's License", "label_es": "Licencia comercial", "required_for": ["us_entry"], "expiry_date": "2027-01-15" },
+          { "doc_id": "medical", "category": "medical", "label_en": "DOT medical card", "label_es": "Tarjeta médica DOT", "required_for": ["us_entry"], "expiry_date": "2026-09-01" }
+        ]
+      },
+      "expect": { "readiness": "blocked", "blocking_doc_count_at_least": 1 }
+    },
+    {
+      "name": "partial — medical expiring within 30 days",
+      "input": {
+        "driver": { "driver_legal_name": "Maria López", "cdl_number": "TX11223344", "cdl_state": "TX", "language": "es" },
+        "trip": { "origin_country": "US", "destination_country": "MX", "crossing_port_code": "240", "hazmat": false, "perishables": true, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "Commercial Driver's License", "label_es": "Licencia comercial", "required_for": ["mx_entry","commercial"], "expiry_date": "2027-01-15" },
+          { "doc_id": "medical", "category": "medical", "label_en": "DOT medical card", "label_es": "Tarjeta médica DOT", "required_for": ["us_entry"], "expiry_date": "2026-05-20" },
+          { "doc_id": "fmm", "category": "mexican_entry", "label_en": "FMM permit", "label_es": "Permiso FMM", "required_for": ["mx_entry"], "expiry_date": "2026-08-01" }
+        ]
+      },
+      "expect": { "readiness": "partial", "expiring_soon_doc_count_at_least": 1 }
+    },
+    {
+      "name": "ready — MX entry, FMM and CDL both valid",
+      "input": {
+        "driver": { "driver_legal_name": "Pedro Sánchez", "cdl_number": "TX55667788", "cdl_state": "TX", "language": "es" },
+        "trip": { "origin_country": "US", "destination_country": "MX", "crossing_port_code": "240", "hazmat": false, "perishables": false, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "CDL", "label_es": "Licencia comercial", "required_for": ["mx_entry"], "expiry_date": "2027-12-31" },
+          { "doc_id": "fmm", "category": "mexican_entry", "label_en": "FMM permit", "label_es": "Permiso FMM", "required_for": ["mx_entry"], "expiry_date": "2026-12-01" }
+        ]
+      },
+      "expect": { "readiness": "ready", "blocking_doc_count": 0 }
+    },
+    {
+      "name": "blocked — hazmat trip missing TWIC and HAZMAT endorsement",
+      "input": {
+        "driver": { "driver_legal_name": "Diego Aguirre", "cdl_number": "TX99887766", "cdl_state": "TX", "language": "es" },
+        "trip": { "origin_country": "MX", "destination_country": "US", "crossing_port_code": "2304", "hazmat": true, "perishables": false, "scheduled_eta_iso": "2026-05-05T08:00:00Z" },
+        "docs": [
+          { "doc_id": "cdl", "category": "identity", "label_en": "CDL", "label_es": "Licencia comercial", "required_for": ["us_entry","hazmat"], "expiry_date": "2027-01-15" },
+          { "doc_id": "medical", "category": "medical", "label_en": "DOT medical card", "label_es": "Tarjeta médica DOT", "required_for": ["us_entry"], "expiry_date": "2026-09-01" }
+        ]
+      },
+      "expect": { "readiness": "blocked", "blocking_doc_count_at_least": 2 }
+    }
+  ]
+}

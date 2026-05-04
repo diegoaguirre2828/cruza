@@ -140,6 +140,12 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
     { label: copy.modules.uflpa.stat_high_risk, value: '—' },
   ];
 
+  // Driver pass stats — module just shipped (sprint 4)
+  const driverPassStats: ModuleCardStat[] = [
+    { label: copy.modules.driver_pass.stat_passes, value: '—', emphasis: true },
+    { label: copy.modules.driver_pass.stat_blocked, value: '—' },
+  ];
+
   return (
     <>
       {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
@@ -200,7 +206,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           <div className="flex items-baseline justify-between gap-4 mb-6">
             <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-              11 MODULES · 1 SUBSTRATE
+              12 MODULES · 1 SUBSTRATE
             </span>
           </div>
 
@@ -274,8 +280,8 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Row 3 — Chassis support: regulatory + paperwork + drivers */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+          {/* Row 4 — Chassis support: regulatory + paperwork + drivers + driver-pass (4-col) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4">
             <ModuleCard
               accent="primary"
               code="MOD · 03"
@@ -294,11 +300,19 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
             <ModuleCard
               accent="primary"
-              code="MOD · 05"
+              code="MOD · 05 · OPS"
               title={copy.modules.drivers.title}
               sub={copy.modules.drivers.sub}
               stats={driversStats}
               link={{ href: `/insights/drivers${langSuffix}`, label: copy.modules.drivers.open_link }}
+            />
+            <ModuleCard
+              accent="primary"
+              code="MOD · 05 · DRIVER"
+              title={copy.modules.driver_pass.title}
+              sub={copy.modules.driver_pass.sub}
+              stats={driverPassStats}
+              link={{ href: `/driver-pass${langSuffix}`, label: copy.modules.driver_pass.open_link }}
             />
           </div>
 
