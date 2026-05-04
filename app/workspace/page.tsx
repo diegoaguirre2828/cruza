@@ -45,7 +45,7 @@ export default async function WorkspacePage({
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
             {/* Left: meta + dual headline */}
             <div className="relative">
-              <div className="flex items-center gap-3">
+              <div className="ws-d0 flex items-center gap-3">
                 <Eyebrow tone="primary">{c.hero.eyebrow}</Eyebrow>
                 <span className="h-px flex-1 bg-border" />
                 <Stamp
@@ -58,16 +58,16 @@ export default async function WorkspacePage({
 
               {/* Single-language hero — bilingual is a TOGGLE in the nav, never both on one page.
                   Per feedback_bilingual_toggle_not_both_on_one_page_20260503. */}
-              <h1 className="mt-6 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-foreground tracking-[-0.02em]">
+              <h1 className="ws-d1 mt-6 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-foreground tracking-[-0.02em]">
                 {c.hero.title}
               </h1>
 
-              <p className="mt-7 max-w-xl text-[15px] leading-[1.65] text-muted-foreground">
+              <p className="ws-d2 mt-7 max-w-xl text-[15px] leading-[1.65] text-muted-foreground">
                 {c.hero.sub}
               </p>
 
               {/* Coordinate strip — under the headline, like a dossier header */}
-              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
+              <div className="ws-d3 mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
                 <span>26.18°N · 98.18°W</span>
                 <span className="h-3 w-px bg-border" />
                 <span>RGV CORRIDOR</span>
@@ -77,7 +77,7 @@ export default async function WorkspacePage({
             </div>
 
             {/* Right: bridge silhouette as hero visual */}
-            <div className="relative flex items-center justify-center">
+            <div className="ws-d2 relative flex items-center justify-center">
               <BridgeHero className="w-full max-w-[520px]" weight={1.1} />
             </div>
           </div>

@@ -41,25 +41,25 @@ export async function CalibrationScoreboard({ portIds, lang = 'en' }: Props) {
   const es = lang === 'es';
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 sm:p-7">
+    <div className="border border-border bg-card/30 p-6 sm:p-7">
       <div className="flex items-baseline justify-between gap-4 mb-4">
         <div>
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-accent">
             {es ? 'Recibos' : 'Receipts'}
           </div>
-          <h3 className="font-serif text-[22px] text-white mt-1">
+          <h3 className="font-serif text-[22px] text-foreground mt-1">
             {es ? 'Precisión por puerto · 30 días' : 'Accuracy by port · 30 days'}
           </h3>
         </div>
         <div className="text-right">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/45">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/70">
             {es ? 'Mediana' : 'Median'}
           </div>
-          <div className="font-mono text-[28px] tabular-nums text-amber-300">{median}%</div>
+          <div className="font-mono text-[28px] tabular-nums text-accent">{median}%</div>
         </div>
       </div>
       {rows.length === 0 ? (
-        <p className="text-[13px] text-white/40">
+        <p className="text-[13px] text-muted-foreground/60">
           {es ? 'Aún acumulando datos. Vuelve después.' : 'Still accumulating data. Check back soon.'}
         </p>
       ) : (
@@ -67,17 +67,17 @@ export async function CalibrationScoreboard({ portIds, lang = 'en' }: Props) {
           {rows.map((r) => (
             <li
               key={r.pid}
-              className="flex items-baseline justify-between border-b border-white/[0.05] pb-1.5"
+              className="flex items-baseline justify-between border-b border-border/60 pb-1.5"
             >
-              <span className="text-white">{r.name}</span>
-              <span className="font-mono tabular-nums text-amber-300">
-                {r.pct}%<span className="text-white/35 ml-1.5">/n={r.n}</span>
+              <span className="text-foreground">{r.name}</span>
+              <span className="font-mono tabular-nums text-accent">
+                {r.pct}%<span className="text-muted-foreground/50 ml-1.5">/n={r.n}</span>
               </span>
             </li>
           ))}
         </ul>
       )}
-      <p className="mt-4 text-[11px] text-white/40 leading-snug">
+      <p className="mt-4 text-[11px] text-muted-foreground/50 leading-snug">
         {es
           ? '"Acierto" = error ≤ 15 min vs lo observado. n = predicciones evaluadas.'
           : '"Hit" = within 15 min of observed. n = predictions evaluated.'}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import type { WORKSPACE_EN } from '@/lib/copy/workspace-en';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { ModuleCard, type ModuleCardStat } from '@/components/ui/ModuleCard';
@@ -156,10 +157,24 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
     { label: copy.modules.driver_pass.stat_blocked, value: '—' },
   ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.42, ease: 'easeOut' as const, delay: i * 0.06 },
+  }),
+};
+
   return (
     <>
       {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
-      <section className="border-b border-border bg-card/30">
+      <motion.section
+        className="border-b border-border bg-card/30"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
         <div className="mx-auto max-w-[1180px]">
           <div className="flex items-stretch divide-x divide-border">
             <Link
@@ -220,7 +235,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             </Link>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* CROSS-MODULE AGGREGATE — the substrate composing across all this user's tickets.
           This is the visible answer to "are the modules actually talking to each other?"
@@ -306,8 +321,13 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           </div>
 
           {/* Row 1 — Refund recovery (the revenue lane) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5">
-            <div className="md:col-span-2">
+          <motion.div
+            className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div className="md:col-span-2" variants={fadeUp} custom={0}>
               <ModuleCard
                 accent="primary"
                 code="MOD · 14 · FEATURED"
@@ -316,40 +336,56 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
                 stats={refundStats}
                 link={{ href: `/refunds/claims${langSuffix}`, label: copy.modules.refunds.open_link }}
               />
-            </div>
-            <ModuleCard
-              accent="primary"
-              code="MOD · 07"
-              title={copy.modules.drawback.title}
-              sub={copy.modules.drawback.sub}
-              stats={drawbackStats}
-              link={{ href: `/drawback${langSuffix}`, label: copy.modules.drawback.open_link }}
-            />
-          </div>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={1}>
+              <ModuleCard
+                accent="primary"
+                code="MOD · 07"
+                title={copy.modules.drawback.title}
+                sub={copy.modules.drawback.sub}
+                stats={drawbackStats}
+                link={{ href: `/drawback${langSuffix}`, label: copy.modules.drawback.open_link }}
+              />
+            </motion.div>
+          </motion.div>
 
           {/* Row 2 — Customs declaration (US / MX) */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-5">
-            <ModuleCard
-              accent="primary"
-              code="MOD · 02 · US"
-              title={copy.modules.customs.title}
-              sub={copy.modules.customs.sub}
-              stats={customsStats}
-              link={{ href: `/insights/customs${langSuffix}`, label: copy.modules.customs.open_link }}
-            />
-            <ModuleCard
-              accent="primary"
-              code="MOD · 11 · MX"
-              title={copy.modules.pedimento.title}
-              sub={copy.modules.pedimento.sub}
-              stats={pedimentoStats}
-              link={{ href: `/pedimento${langSuffix}`, label: copy.modules.pedimento.open_link }}
-            />
-          </div>
+          <motion.div
+            className="grid grid-cols-1 gap-4 md:grid-cols-2 mb-5"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div variants={fadeUp} custom={0}>
+              <ModuleCard
+                accent="primary"
+                code="MOD · 02 · US"
+                title={copy.modules.customs.title}
+                sub={copy.modules.customs.sub}
+                stats={customsStats}
+                link={{ href: `/insights/customs${langSuffix}`, label: copy.modules.customs.open_link }}
+              />
+            </motion.div>
+            <motion.div variants={fadeUp} custom={1}>
+              <ModuleCard
+                accent="primary"
+                code="MOD · 11 · MX"
+                title={copy.modules.pedimento.title}
+                sub={copy.modules.pedimento.sub}
+                stats={pedimentoStats}
+                link={{ href: `/pedimento${langSuffix}`, label: copy.modules.pedimento.open_link }}
+              />
+            </motion.div>
+          </motion.div>
 
           {/* Row 3 — Live + Substrate */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5">
-            <div className="md:col-span-2">
+          <motion.div
+            className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-5"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-60px' }}
+          >
+            <motion.div className="md:col-span-2" variants={fadeUp} custom={0}>
               <ModuleCard
                 accent="primary"
                 code="LIVE · WAIT"
@@ -362,15 +398,17 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
                     : { href: `/insights${langSuffix}`, label: copy.modules.insights.sales_link }
                 }
               />
-            </div>
-            <ModuleCard
-              accent="accent"
-              code="SUBSTRATE"
-              title={copy.modules.tickets.title}
-              sub={copy.modules.tickets.sub}
-              stats={ticketsStats}
-            />
-          </div>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={1}>
+              <ModuleCard
+                accent="accent"
+                code="SUBSTRATE"
+                title={copy.modules.tickets.title}
+                sub={copy.modules.tickets.sub}
+                stats={ticketsStats}
+              />
+            </motion.div>
+          </motion.div>
 
           {/* Secondary modules — collapsible to keep the default view tight */}
           <details className="group rounded-xl border border-border bg-card/30">
