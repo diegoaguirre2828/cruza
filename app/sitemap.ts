@@ -38,6 +38,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/transload`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     // Public spec — anchors the substrate identity
     { url: `${base}/spec/ticket-v1`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
+    // /open — public EDGAR-style data layer (no auth, Google-indexed)
+    { url: `${base}/open`, lastModified: now, changeFrequency: 'hourly', priority: 0.85 },
+    // /b2b portal
+    { url: `${base}/b2b`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
   ]
 
   // City rollup SEO landings — highest priority after home since
@@ -77,5 +81,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })
   }
 
-  return [...staticPages, ...cityPages, ...portPages, ...dailyReportPages]
+  // /open per-port pages — public data layer, Google-indexed
+  const openPortPages: MetadataRoute.Sitemap = Object.keys(PORT_META).map((portId) => ({
+    url: `${base}/open/${portId}`,
+    lastModified: now,
+    changeFrequency: 'hourly' as const,
+    priority: 0.75,
+  }))
+
+  return [...staticPages, ...cityPages, ...portPages, ...dailyReportPages, ...openPortPages]
 }

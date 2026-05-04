@@ -3,8 +3,8 @@
 
 export const B2B_EN = {
   hero: {
-    eyebrow: 'For RGV cross-border freight brokers · dispatchers · fleets',
-    title: 'The border intelligence layer for your freight operation.',
+    eyebrow: 'For US-MX cross-border freight brokers · dispatchers · fleets',
+    title: 'Full-border intelligence. Every crossing. One substrate.',
     sub: "One 5am briefing. A push when something breaks. Calibration receipts that prove we called it right. The operators who know go first.",
     cta: 'Start free — 2 minutes',
     ctaSub: 'See live accuracy →',

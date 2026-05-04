@@ -81,7 +81,7 @@ export default async function TicketViewerPage({ params, searchParams }: Props) 
   const supa = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const { data, error } = await supa
     .from('tickets')
-    .select('ticket_id,issued_at,modules_present,origin_country,destination_country,port_of_entry,payload_canonical,content_hash,signature_b64,signing_key_id,superseded_by')
+    .select('ticket_id,issued_at,modules_present,origin_country,destination_country,port_of_entry,payload_canonical,content_hash,signature_b64,signing_key_id,superseded_by,linked_products')
     .eq('ticket_id', id)
     .maybeSingle();
 
@@ -361,6 +361,29 @@ export default async function TicketViewerPage({ params, searchParams }: Props) 
             <Row label={c.uflpa_xinjiang_tier} value={`Tier ${payload.uflpa.composition.xinjiang_tier}`} colorClass="text-red-300" />
           )}
           <Row label={c.uflpa_evidence} value={payload.uflpa.composition.evidence_quality} />
+        </Section>
+      )}
+
+      {/* LINKED PRODUCTS — Sidera substrate composing */}
+      {data.linked_products && Object.keys(data.linked_products as object).length > 0 && (
+        <Section title="Linked Products" code="SIDERA · SUBSTRATE">
+          <div className="flex flex-wrap gap-2 mt-1">
+            {Object.entries(data.linked_products as Record<string, Record<string, string>>).map(([product, ctx]) => (
+              <div
+                key={product}
+                className="rounded-md border border-foreground/20 bg-foreground/[0.04] px-3 py-2"
+              >
+                <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/80">
+                  {product}
+                </div>
+                {ctx.linked_at ? (
+                  <div className="font-mono text-[10px] text-muted-foreground/50 mt-0.5">
+                    {new Date(ctx.linked_at).toLocaleString(dateLocale)}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
         </Section>
       )}
 

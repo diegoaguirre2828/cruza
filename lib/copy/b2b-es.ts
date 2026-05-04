@@ -2,8 +2,8 @@
 
 export const B2B_ES = {
   hero: {
-    eyebrow: 'Para brokers de carga cross-border del RGV · despachadores · flotillas',
-    title: 'La capa de inteligencia fronteriza para tu operación.',
+    eyebrow: 'Para brokers de carga transfronteriza US-MX · despachadores · flotillas',
+    title: 'Inteligencia fronteriza completa. Cada cruce. Un sustrato.',
     sub: "Un briefing a las 5am. Un push cuando algo se rompe. Recibos de calibración que prueban que lo predijimos bien. Los operadores que saben van primero.",
     cta: 'Empieza gratis — 2 minutos',
     ctaSub: 'Ver precisión en vivo →',
