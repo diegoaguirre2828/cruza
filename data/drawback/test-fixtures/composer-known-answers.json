@@ -1,0 +1,355 @@
+{
+  "_comment": "Known-answer fixtures for the drawback composer. today_iso = '2026-05-03' on every case.",
+  "today_iso": "2026-05-03",
+  "cases": [
+    {
+      "name": "manufacturing direct ID — same HTSUS, mfg evidence, well within window",
+      "claimant": {
+        "claimant_name": "Acme Industries Inc.",
+        "claimant_id_number": "12-3456789",
+        "filer_code": "ABC",
+        "language": "en",
+        "has_accelerated_payment_privilege": true,
+        "has_drawback_bond": true
+      },
+      "entries": [
+        {
+          "entry_number": "12345678901234",
+          "entry_date": "2024-01-15",
+          "importer_of_record": "Acme Industries Inc.",
+          "htsus_codes": ["8536.41.0050"],
+          "total_duty_paid_usd": 10000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 250.00,
+          "merchandise_description": "Industrial relays",
+          "unit_count": 1000
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2024-001",
+          "export_date": "2024-08-20",
+          "destination_country": "DE",
+          "htsus_or_schedule_b": "8536.41.0050",
+          "description": "Relays integrated into final assemblies",
+          "unit_count": 1000,
+          "manufacturing_evidence": "bill_of_materials"
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 1,
+        "unused_count": 0,
+        "rejected_count": 0,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 10250.00,
+        "total_drawback_recoverable_usd": 10147.50,
+        "first_designation_claim_type": "manufacturing_direct",
+        "accelerated_payment_eligible": true
+      }
+    },
+    {
+      "name": "manufacturing substitution — different HTSUS subheading",
+      "claimant": {
+        "claimant_name": "Beta Pharma LLC",
+        "claimant_id_number": "98-7654321",
+        "filer_code": "BTA",
+        "language": "en",
+        "has_accelerated_payment_privilege": false,
+        "has_drawback_bond": false
+      },
+      "entries": [
+        {
+          "entry_number": "23456789012345",
+          "entry_date": "2025-03-10",
+          "importer_of_record": "Beta Pharma LLC",
+          "htsus_codes": ["3004.90.9210"],
+          "total_duty_paid_usd": 50000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 1200.00,
+          "merchandise_description": "Bulk active pharmaceutical ingredient",
+          "unit_count": 500
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2025-007",
+          "export_date": "2025-09-22",
+          "destination_country": "MX",
+          "htsus_or_schedule_b": "3004.90.9220",
+          "description": "Finished pharmaceutical product",
+          "unit_count": 500,
+          "manufacturing_evidence": "manufacturing_record"
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 1,
+        "unused_count": 0,
+        "rejected_count": 0,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 51200.00,
+        "total_drawback_recoverable_usd": 50688.00,
+        "first_designation_claim_type": "manufacturing_substitution",
+        "accelerated_payment_eligible": false
+      }
+    },
+    {
+      "name": "unused direct ID — same HTSUS, no mfg evidence, re-exported in same condition",
+      "claimant": {
+        "claimant_name": "Gamma Trading Co.",
+        "claimant_id_number": "55-1234567",
+        "language": "en",
+        "has_accelerated_payment_privilege": true,
+        "has_drawback_bond": true
+      },
+      "entries": [
+        {
+          "entry_number": "34567890123456",
+          "entry_date": "2025-06-01",
+          "importer_of_record": "Gamma Trading Co.",
+          "htsus_codes": ["8471.30.0100"],
+          "total_duty_paid_usd": 5000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 125.00,
+          "merchandise_description": "Laptop computers",
+          "unit_count": 200
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2025-099",
+          "export_date": "2025-09-15",
+          "destination_country": "CA",
+          "htsus_or_schedule_b": "8471.30.0100",
+          "description": "Laptop computers — re-exported same condition",
+          "unit_count": 200
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 1,
+        "rejected_count": 0,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 5125.00,
+        "total_drawback_recoverable_usd": 5073.75,
+        "first_designation_claim_type": "unused_direct",
+        "accelerated_payment_eligible": true
+      }
+    },
+    {
+      "name": "unused substitution — different HTSUS subheading",
+      "claimant": {
+        "claimant_name": "Delta Foods",
+        "claimant_id_number": "11-2233445",
+        "language": "es",
+        "has_accelerated_payment_privilege": false,
+        "has_drawback_bond": false
+      },
+      "entries": [
+        {
+          "entry_number": "45678901234567",
+          "entry_date": "2025-08-12",
+          "importer_of_record": "Delta Foods",
+          "htsus_codes": ["1701.91.5800"],
+          "total_duty_paid_usd": 8000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 200.00,
+          "merchandise_description": "Refined cane sugar",
+          "unit_count": 1000
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2025-150",
+          "export_date": "2025-10-05",
+          "destination_country": "MX",
+          "htsus_or_schedule_b": "1701.99.1000",
+          "description": "Refined sugar — substituted, commercially interchangeable",
+          "unit_count": 1000
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 1,
+        "rejected_count": 0,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 8200.00,
+        "total_drawback_recoverable_usd": 8118.00,
+        "first_designation_claim_type": "unused_substitution",
+        "accelerated_payment_eligible": false
+      }
+    },
+    {
+      "name": "rejected merchandise — defective, customer returned",
+      "claimant": {
+        "claimant_name": "Epsilon Electronics",
+        "claimant_id_number": "33-9988776",
+        "language": "en",
+        "has_accelerated_payment_privilege": true,
+        "has_drawback_bond": true
+      },
+      "entries": [
+        {
+          "entry_number": "56789012345678",
+          "entry_date": "2026-01-20",
+          "importer_of_record": "Epsilon Electronics",
+          "htsus_codes": ["8517.62.0050"],
+          "total_duty_paid_usd": 12000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 300.00,
+          "merchandise_description": "Network switches",
+          "unit_count": 100
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "RTN-2026-014",
+          "export_date": "2026-04-15",
+          "destination_country": "TW",
+          "htsus_or_schedule_b": "8517.62.0050",
+          "description": "Network switches returned to vendor — failed inspection",
+          "unit_count": 100,
+          "rejection_evidence": "inspection_report"
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 0,
+        "rejected_count": 1,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 12300.00,
+        "total_drawback_recoverable_usd": 12177.00,
+        "first_designation_claim_type": "rejected",
+        "accelerated_payment_eligible": true
+      }
+    },
+    {
+      "name": "ineligible — past 5yr window",
+      "claimant": {
+        "claimant_name": "Zeta Industries",
+        "claimant_id_number": "44-5566778",
+        "language": "en",
+        "has_accelerated_payment_privilege": false,
+        "has_drawback_bond": false
+      },
+      "entries": [
+        {
+          "entry_number": "67890123456789",
+          "entry_date": "2020-01-15",
+          "importer_of_record": "Zeta Industries",
+          "htsus_codes": ["7308.90.9590"],
+          "total_duty_paid_usd": 25000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 500.00,
+          "merchandise_description": "Steel structural components",
+          "unit_count": 50
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-OLD-001",
+          "export_date": "2020-06-01",
+          "destination_country": "MX",
+          "htsus_or_schedule_b": "7308.90.9590",
+          "description": "Steel components",
+          "unit_count": 50
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 0,
+        "rejected_count": 0,
+        "ineligible_count": 1,
+        "total_refund_basis_usd": 0,
+        "total_drawback_recoverable_usd": 0,
+        "first_designation_claim_type": "ineligible",
+        "first_designation_ineligibility_reason": "past_5yr_window"
+      }
+    },
+    {
+      "name": "ineligible — zero duty paid",
+      "claimant": {
+        "claimant_name": "Eta Trading",
+        "claimant_id_number": "66-7788990",
+        "language": "en",
+        "has_accelerated_payment_privilege": false,
+        "has_drawback_bond": false
+      },
+      "entries": [
+        {
+          "entry_number": "78901234567890",
+          "entry_date": "2025-01-10",
+          "importer_of_record": "Eta Trading",
+          "htsus_codes": ["6403.59.6000"],
+          "total_duty_paid_usd": 0,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 0,
+          "merchandise_description": "Footwear (USMCA originating)",
+          "unit_count": 500
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2025-200",
+          "export_date": "2025-04-20",
+          "destination_country": "CA",
+          "htsus_or_schedule_b": "6403.59.6000",
+          "description": "Footwear",
+          "unit_count": 500
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 0,
+        "rejected_count": 0,
+        "ineligible_count": 1,
+        "total_refund_basis_usd": 0,
+        "total_drawback_recoverable_usd": 0,
+        "first_designation_claim_type": "ineligible",
+        "first_designation_ineligibility_reason": "duty_paid_zero"
+      }
+    },
+    {
+      "name": "pro-rata — partial export, half-units re-exported, half remain domestic",
+      "claimant": {
+        "claimant_name": "Theta Apparel",
+        "claimant_id_number": "77-1122334",
+        "language": "en",
+        "has_accelerated_payment_privilege": true,
+        "has_drawback_bond": true
+      },
+      "entries": [
+        {
+          "entry_number": "89012345678901",
+          "entry_date": "2025-02-14",
+          "importer_of_record": "Theta Apparel",
+          "htsus_codes": ["6203.42.4011"],
+          "total_duty_paid_usd": 20000.00,
+          "total_taxes_paid_usd": 0,
+          "total_fees_paid_usd": 500.00,
+          "merchandise_description": "Men's cotton trousers",
+          "unit_count": 2000
+        }
+      ],
+      "exports": [
+        {
+          "export_id": "AES-EXP-2025-555",
+          "export_date": "2025-07-10",
+          "destination_country": "MX",
+          "htsus_or_schedule_b": "6203.42.4011",
+          "description": "Men's trousers — partial re-export",
+          "unit_count": 1000
+        }
+      ],
+      "expect": {
+        "manufacturing_count": 0,
+        "unused_count": 1,
+        "rejected_count": 0,
+        "ineligible_count": 0,
+        "total_refund_basis_usd": 10250.00,
+        "total_drawback_recoverable_usd": 10147.50,
+        "first_designation_claim_type": "unused_direct",
+        "accelerated_payment_eligible": true
+      }
+    }
+  ]
+}

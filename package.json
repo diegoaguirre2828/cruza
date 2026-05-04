@@ -40,7 +40,9 @@
     "verify:refunds-orchestrator": "npx tsx scripts/verify-refunds-orchestrator.mjs",
     "verify:ofac-sdn": "npx tsx scripts/verify-ofac-sdn.mjs",
     "verify:eudamed": "npx tsx scripts/verify-eudamed-composer.mjs",
-    "audit:module-14": "node scripts/run-module-14-audit.mjs"
+    "verify:drawback": "npx tsx scripts/verify-drawback-composer.mjs",
+    "audit:module-14": "node scripts/run-module-14-audit.mjs",
+    "audit:module-7": "node scripts/run-module-7-audit.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.88.0",

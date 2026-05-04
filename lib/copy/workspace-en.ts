@@ -22,6 +22,13 @@ export const WORKSPACE_EN = {
       stat_received: 'refunds received',
       open_link: 'Open refunds',
     },
+    drawback: {
+      title: 'US Drawback (§1313)',
+      sub: '99% refund of duties + taxes + fees on imports that are exported, re-exported, or rejected. 5-year window.',
+      stat_recoverable: 'recoverable identified',
+      stat_pending: 'designations pending',
+      open_link: 'Open drawback',
+    },
     eudamed: {
       title: 'EU MDR / EUDAMED',
       sub: 'Actor + UDI/Device data feed for Reynosa medtech. Mandatory May 28, 2026.',

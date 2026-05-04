@@ -22,6 +22,13 @@ export const WORKSPACE_ES = {
       stat_received: 'reembolsos recibidos',
       open_link: 'Abrir reembolsos',
     },
+    drawback: {
+      title: 'Drawback US (§1313)',
+      sub: '99% de aranceles + impuestos + cargos sobre importaciones que se exportan, re-exportan o rechazan. Ventana de 5 años.',
+      stat_recoverable: 'recuperable identificado',
+      stat_pending: 'designaciones pendientes',
+      open_link: 'Abrir drawback',
+    },
     eudamed: {
       title: 'EU MDR / EUDAMED',
       sub: 'Feed de actor + UDI/dispositivo para medtech Reynosa. Obligatorio 28 mayo 2026.',

@@ -118,6 +118,12 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
     { label: copy.modules.tickets.stat_recent, value: data.summary.tickets.issued_last_30d },
   ] : [{ label: copy.modules.tickets.stat_total, value: '…', emphasis: true }];
 
+  // Drawback stats — module just shipped, no DB-backed stats yet. Show placeholder.
+  const drawbackStats: ModuleCardStat[] = [
+    { label: copy.modules.drawback.stat_recoverable, value: '—', emphasis: true },
+    { label: copy.modules.drawback.stat_pending, value: '—' },
+  ];
+
   return (
     <>
       {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
@@ -178,7 +184,7 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
           <div className="flex items-baseline justify-between gap-4 mb-6">
             <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
             <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
-              8 MODULES · 1 SUBSTRATE
+              9 MODULES · 1 SUBSTRATE
             </span>
           </div>
 
@@ -204,8 +210,16 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
             />
           </div>
 
-          {/* Mid row: chassis modules — 4-col compact */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4">
+          {/* Mid row: chassis modules — 5-col compact (refunds chassis siblings + drawback) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 mb-4">
+            <ModuleCard
+              accent="primary"
+              code="MOD · 07"
+              title={copy.modules.drawback.title}
+              sub={copy.modules.drawback.sub}
+              stats={drawbackStats}
+              link={{ href: `/drawback${langSuffix}`, label: copy.modules.drawback.open_link }}
+            />
             <ModuleCard
               accent="primary"
               code="MOD · 04"

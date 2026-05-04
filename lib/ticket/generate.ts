@@ -15,7 +15,9 @@ import { buildDriverComplianceManifest } from '../chassis/drivers/composer';
 import type { DriverComplianceInput } from '../chassis/drivers/types';
 import { composeRefund } from '../chassis/refunds/composer';
 import type { Entry as RefundEntry, IorProfile } from '../chassis/refunds/types';
-import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock } from './types';
+import { composeDrawback } from '../chassis/drawback/composer';
+import type { DrawbackEntry, DrawbackExport, DrawbackClaimantProfile } from '../chassis/drawback/types';
+import type { CruzarTicketV1, SignedTicket, TicketRegulatoryBlock, TicketPaperworkBlock, TicketDriversBlock, TicketRefundsBlock, TicketDrawbackBlock } from './types';
 
 interface GenerateOptions {
   shipment: ShipmentInput;
@@ -33,6 +35,12 @@ interface GenerateOptions {
   refundsInput?: {
     entries: RefundEntry[];
     ior: IorProfile;
+  };
+  drawbackInput?: {
+    claimant: DrawbackClaimantProfile;
+    entries: DrawbackEntry[];
+    exports: DrawbackExport[];
+    designations?: Array<{ entry_number: string; export_id: string }>;
   };
 }
 
@@ -151,6 +159,21 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     };
   }
 
+  // Module 7: drawback composition (optional — when claimant provides entries + exports)
+  let drawbackBlock: TicketDrawbackBlock | null = null;
+  if (opts.drawbackInput && opts.drawbackInput.entries.length > 0 && opts.drawbackInput.exports.length > 0) {
+    const composition = composeDrawback(opts.drawbackInput);
+    drawbackBlock = {
+      composition,
+      total_drawback_recoverable_usd: composition.total_drawback_recoverable_usd,
+      manufacturing_count: composition.manufacturing_count,
+      unused_count: composition.unused_count,
+      rejected_count: composition.rejected_count,
+      accelerated_payment_eligible: composition.accelerated_payment_eligible,
+      registry_version: composition.registry_version,
+    };
+  }
+
   // 2. Compose payload
   const ticketId = mintTicketId();
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://cruzar.app';
@@ -163,11 +186,12 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
   if (shipment.importer_name) shipmentBlock.importer_name = shipment.importer_name;
   if (shipment.bol_ref) shipmentBlock.bol_ref = shipment.bol_ref;
 
-  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds'> = ['customs'];
+  const modulesPresent: Array<'customs' | 'regulatory' | 'paperwork' | 'drivers' | 'refunds' | 'drawback'> = ['customs'];
   if (regulatoryBlock) modulesPresent.push('regulatory');
   if (paperworkBlock) modulesPresent.push('paperwork');
   if (driversBlock) modulesPresent.push('drivers');
   if (refundsBlock) modulesPresent.push('refunds');
+  if (drawbackBlock) modulesPresent.push('drawback');
 
   const payload: CruzarTicketV1 = {
     schema_version: 'v1',
@@ -186,6 +210,7 @@ export async function generateTicket(opts: GenerateOptions): Promise<{ signed: S
     paperwork: paperworkBlock ?? undefined,
     drivers: driversBlock ?? undefined,
     refunds: refundsBlock ?? undefined,
+    drawback: drawbackBlock ?? undefined,
     audit_shield: {
       prior_disclosure_eligible: true,
       '19_USC_1592_basis': 'Negligence threshold met if violation surfaces post-clearance; Ticket serves as contemporaneous record per 19 CFR § 162.74.',
