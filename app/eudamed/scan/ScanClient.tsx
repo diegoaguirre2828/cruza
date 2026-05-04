@@ -147,7 +147,7 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
       <button
         type="submit"
         disabled={busy || !legalName || !country || !email}
-        className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200 disabled:opacity-50"
+        className="rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85 disabled:opacity-50"
       >
         {busy ? copy.checking : copy.submit}
       </button>
@@ -159,25 +159,25 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
       )}
 
       {result && (
-        <div className="rounded-xl border border-amber-300/25 bg-amber-300/[0.05] p-6">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+        <div className="rounded-xl border border-accent/30 bg-accent/10 p-6">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
             {copy.summary_title}
           </div>
           <div className="mt-4 space-y-3">
             <div className="text-[14px]">
-              <span className={result.actor_ready ? 'text-emerald-300' : 'text-amber-300'}>
+              <span className={result.actor_ready ? 'text-emerald-300' : 'text-foreground'}>
                 {result.actor_ready ? '✓' : '✗'}
               </span>{' '}
               {result.actor_ready ? copy.actor_ready : copy.actor_blocked}
             </div>
             {result.actor_warnings.length > 0 && (
-              <ul className="ml-4 list-disc space-y-1 text-[13px] text-white/65">
+              <ul className="ml-4 list-disc space-y-1 text-[13px] text-muted-foreground">
                 {result.actor_warnings.map((w, i) => <li key={i}>{w}</li>)}
               </ul>
             )}
             {result.device_count > 0 && (
               <div className="text-[14px]">
-                <span className={result.ready_count > 0 ? 'text-emerald-300' : 'text-amber-300'}>
+                <span className={result.ready_count > 0 ? 'text-emerald-300' : 'text-foreground'}>
                   {result.ready_count > 0 ? '✓' : '✗'}
                 </span>{' '}
                 {result.ready_count > 0 ? copy.device_ready : copy.device_blocked}
@@ -185,7 +185,7 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
             )}
             {result.device_validation.map((dv, i) => (
               !dv.valid && dv.missing_fields.length > 0 && (
-                <ul key={i} className="ml-4 list-disc space-y-1 text-[13px] text-white/65">
+                <ul key={i} className="ml-4 list-disc space-y-1 text-[13px] text-muted-foreground">
                   {dv.missing_fields.map((f, j) => <li key={j}>{f}</li>)}
                 </ul>
               )
@@ -194,11 +194,11 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={`/signup${langSuffix}`}
-              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+              className="rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85"
             >
               {copy.cta_after}
             </Link>
-            <span className="text-[12px] text-white/55">{copy.cta_subnote}</span>
+            <span className="text-[12px] text-muted-foreground/80">{copy.cta_subnote}</span>
           </div>
         </div>
       )}
@@ -208,8 +208,8 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
-      <div className="font-serif text-[16px] text-white">{title}</div>
+    <div className="rounded-xl border border-border bg-card p-6">
+      <div className="font-serif text-[16px] text-foreground">{title}</div>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div>
     </div>
   );
@@ -222,14 +222,14 @@ function Field({
   required?: boolean; type?: string; mono?: boolean;
 }) {
   return (
-    <label className="block text-[12.5px] text-white/60">
-      <span>{label}{required && <span className="text-amber-300/80"> *</span>}</span>
+    <label className="block text-[12.5px] text-muted-foreground/80">
+      <span>{label}{required && <span className="text-foreground/80"> *</span>}</span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className={`mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60 ${mono ? 'font-mono' : ''}`}
+        className={`mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60 ${mono ? 'font-mono' : ''}`}
       />
     </label>
   );
@@ -241,12 +241,12 @@ function Select({
   label: string; value: string; onChange: (v: string) => void; options: string[];
 }) {
   return (
-    <label className="block text-[12.5px] text-white/60">
+    <label className="block text-[12.5px] text-muted-foreground/80">
       <span>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60"
+        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60"
       >
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>

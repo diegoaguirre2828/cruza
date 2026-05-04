@@ -156,7 +156,7 @@ export function ClaimDetailClient({
     }
   }
 
-  if (!claim) return <div className="text-[14px] text-white/45">…</div>;
+  if (!claim) return <div className="text-[14px] text-muted-foreground/70">…</div>;
 
   const recoverable =
     Number(claim.total_principal_owed_usd ?? 0) + Number(claim.total_interest_owed_usd ?? 0);
@@ -166,21 +166,21 @@ export function ClaimDetailClient({
 
   return (
     <div>
-      <Link href={`/refunds/claims${langSuffix}`} className="text-[12px] text-white/55 hover:text-amber-300">
+      <Link href={`/refunds/claims${langSuffix}`} className="text-[12px] text-muted-foreground/80 hover:text-foreground">
         {detailCopy.back}
       </Link>
       <div className="mt-3 flex items-center gap-3">
-        <h1 className="font-serif text-[28px] text-white">#{claim.id}</h1>
-        <span className="rounded-md border border-amber-300/30 bg-amber-300/10 px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.18em] text-amber-300">
+        <h1 className="font-serif text-[28px] text-foreground">#{claim.id}</h1>
+        <span className="rounded-md border border-accent/30 bg-foreground/5 px-2 py-0.5 font-mono text-[10.5px] uppercase tracking-[0.18em] text-foreground">
           {statusLabel(claim.status)}
         </span>
       </div>
 
       <section className="mt-8">
-        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
           {detailCopy.section_summary}
         </div>
-        <div className="mt-4 grid gap-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-6 sm:grid-cols-2">
+        <div className="mt-4 grid gap-4 rounded-xl border border-border bg-card p-6 sm:grid-cols-2">
           <Row label={detailCopy.label_ior} value={`${claim.ior_name} · ${claim.ior_id_number}`} />
           {claim.filer_code && <Row label={detailCopy.label_filer_code} value={claim.filer_code} />}
           <Row label={detailCopy.label_total_entries} value={String(claim.total_entries)} />
@@ -201,7 +201,7 @@ export function ClaimDetailClient({
       </section>
 
       <section className="mt-8">
-        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
           {detailCopy.section_actions}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -220,7 +220,7 @@ export function ClaimDetailClient({
               <button
                 onClick={() => fileRef.current?.click()}
                 disabled={busy}
-                className="rounded-lg border border-amber-300/60 bg-amber-300/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/20 disabled:opacity-50"
+                className="rounded-lg border border-foreground/60 bg-foreground/5 px-4 py-2 text-sm text-accent hover:bg-foreground/15 disabled:opacity-50"
               >
                 {busy ? detailCopy.uploading : detailCopy.upload_label}
               </button>
@@ -229,7 +229,7 @@ export function ClaimDetailClient({
           {claim.cape_csv_url && (
             <a
               href={`/api/refunds/claims/${claimId}/cape-csv`}
-              className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/85 hover:border-amber-300/60 hover:text-amber-300"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-foreground/85 hover:border-foreground/60 hover:text-foreground"
             >
               {detailCopy.download_cape}
             </a>
@@ -237,7 +237,7 @@ export function ClaimDetailClient({
           {claim.form19_packet_url && (
             <a
               href={`/api/refunds/claims/${claimId}/form19-packet`}
-              className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/85 hover:border-amber-300/60 hover:text-amber-300"
+              className="rounded-lg border border-border px-4 py-2 text-sm text-foreground/85 hover:border-foreground/60 hover:text-foreground"
             >
               {detailCopy.download_form19}
             </a>
@@ -246,7 +246,7 @@ export function ClaimDetailClient({
             <button
               onClick={() => setShowSubmitModal(true)}
               disabled={!brokerReady || !iorReady}
-              className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/85 disabled:cursor-not-allowed disabled:opacity-40"
               title={!brokerReady ? detailCopy.submission_blocked_broker : !iorReady ? detailCopy.submission_blocked_ior : undefined}
             >
               {detailCopy.mark_submitted}
@@ -255,17 +255,17 @@ export function ClaimDetailClient({
           {(claim.status === 'submitted_to_ace' || claim.status === 'refund_in_transit') && (
             <button
               onClick={() => setShowReceivedModal(true)}
-              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-emerald-300"
+              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-medium text-background hover:bg-emerald-300"
             >
               {detailCopy.mark_received}
             </button>
           )}
         </div>
         {(claim.status === 'draft' || claim.status === 'validated') && (
-          <p className="mt-3 text-[12.5px] text-white/45">{detailCopy.upload_help}</p>
+          <p className="mt-3 text-[12.5px] text-muted-foreground/70">{detailCopy.upload_help}</p>
         )}
         {claim.status === 'validated' && (!brokerReady || !iorReady) && (
-          <p className="mt-3 text-[12.5px] text-amber-300/80">
+          <p className="mt-3 text-[12.5px] text-foreground/80">
             {!brokerReady ? detailCopy.submission_blocked_broker : detailCopy.submission_blocked_ior}
           </p>
         )}
@@ -273,34 +273,34 @@ export function ClaimDetailClient({
 
       {showAttestationSection && (
         <section className="mt-8">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
             {detailCopy.section_broker_of_record}
           </div>
-          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
-            <p className="text-[13px] leading-[1.6] text-white/60">{detailCopy.broker_of_record_help}</p>
+          <div className="mt-4 rounded-xl border border-border bg-card p-6">
+            <p className="text-[13px] leading-[1.6] text-muted-foreground/80">{detailCopy.broker_of_record_help}</p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <label className="block text-[12.5px] text-white/60">
+              <label className="block text-[12.5px] text-muted-foreground/80">
                 <span>{detailCopy.broker_name_label}</span>
                 <input
                   type="text"
                   value={brokerName}
                   onChange={(e) => setBrokerName(e.target.value)}
                   disabled={claim.status !== 'validated'}
-                  className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60 disabled:opacity-50"
                 />
               </label>
-              <label className="block text-[12.5px] text-white/60">
+              <label className="block text-[12.5px] text-muted-foreground/80">
                 <span>{detailCopy.broker_license_label}</span>
                 <input
                   type="text"
                   value={brokerLicense}
                   onChange={(e) => setBrokerLicense(e.target.value)}
                   disabled={claim.status !== 'validated'}
-                  className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 font-mono text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[14px] text-foreground outline-none focus:border-foreground/60 disabled:opacity-50"
                 />
               </label>
             </div>
-            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-white/75">
+            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-muted-foreground">
               <input
                 type="checkbox"
                 checked={brokerAttest}
@@ -312,22 +312,22 @@ export function ClaimDetailClient({
             </label>
           </div>
 
-          <div className="mt-6 font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="mt-6 font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
             {detailCopy.section_ior_attestation}
           </div>
-          <div className="mt-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
-            <p className="text-[13px] leading-[1.6] text-white/60">{detailCopy.ior_attest_help}</p>
-            <label className="mt-4 block text-[12.5px] text-white/60">
+          <div className="mt-4 rounded-xl border border-border bg-card p-6">
+            <p className="text-[13px] leading-[1.6] text-muted-foreground/80">{detailCopy.ior_attest_help}</p>
+            <label className="mt-4 block text-[12.5px] text-muted-foreground/80">
               <span>{detailCopy.ior_attest_signer_label}</span>
               <input
                 type="text"
                 value={iorSigner}
                 onChange={(e) => setIorSigner(e.target.value)}
                 disabled={claim.status !== 'validated'}
-                className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60 disabled:opacity-50"
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60 disabled:opacity-50"
               />
             </label>
-            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-white/75">
+            <label className="mt-4 flex items-start gap-3 cursor-pointer text-[13px] text-muted-foreground">
               <input
                 type="checkbox"
                 checked={iorAttest}
@@ -344,11 +344,11 @@ export function ClaimDetailClient({
               <button
                 onClick={saveAttestation}
                 disabled={savingAttestation}
-                className="rounded-lg border border-amber-300/60 bg-amber-300/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/20 disabled:opacity-50"
+                className="rounded-lg border border-foreground/60 bg-foreground/5 px-4 py-2 text-sm text-accent hover:bg-foreground/15 disabled:opacity-50"
               >
                 {savingAttestation ? '...' : detailCopy.save_attestation}
               </button>
-              {attestationSaved && <span className="text-[12.5px] text-amber-200">{detailCopy.saved}</span>}
+              {attestationSaved && <span className="text-[12.5px] text-accent">{detailCopy.saved}</span>}
               {brokerReady && (
                 <span className="text-[11px] font-mono uppercase tracking-[0.18em] text-emerald-300">✓ broker</span>
               )}
@@ -362,13 +362,13 @@ export function ClaimDetailClient({
 
       {entries.length > 0 && (
         <section className="mt-10">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
             {detailCopy.section_entries}
           </div>
-          <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]">
+          <div className="mt-4 overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-[13px]">
               <thead className="bg-white/[0.03] text-left">
-                <tr className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-white/45">
+                <tr className="text-[10.5px] font-mono uppercase tracking-[0.18em] text-muted-foreground/70">
                   <th className="px-4 py-3">{detailCopy.entry_col_number}</th>
                   <th className="px-4 py-3">{detailCopy.entry_col_country}</th>
                   <th className="px-4 py-3">{detailCopy.entry_col_eo}</th>
@@ -379,13 +379,13 @@ export function ClaimDetailClient({
               </thead>
               <tbody>
                 {entries.map((e) => (
-                  <tr key={e.id} className="border-t border-white/[0.06] hover:bg-white/[0.02]">
-                    <td className="px-4 py-2 font-mono text-white/85">{e.entry_number}</td>
-                    <td className="px-4 py-2 text-white/65">{e.country_of_origin}</td>
-                    <td className="px-4 py-2 font-mono text-white/65">{e.applicable_eo ?? '—'}</td>
-                    <td className="px-4 py-2 font-mono text-white/85">{fmt(Number(e.ieepa_principal_paid_usd ?? 0))}</td>
-                    <td className="px-4 py-2 font-mono text-white/65">{fmt(Number(e.interest_accrued_usd ?? 0))}</td>
-                    <td className="px-4 py-2 text-white/65">{e.cliff_status}</td>
+                  <tr key={e.id} className="border-t border-border/70 hover:bg-card">
+                    <td className="px-4 py-2 font-mono text-foreground/85">{e.entry_number}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{e.country_of_origin}</td>
+                    <td className="px-4 py-2 font-mono text-muted-foreground">{e.applicable_eo ?? '—'}</td>
+                    <td className="px-4 py-2 font-mono text-foreground/85">{fmt(Number(e.ieepa_principal_paid_usd ?? 0))}</td>
+                    <td className="px-4 py-2 font-mono text-muted-foreground">{fmt(Number(e.interest_accrued_usd ?? 0))}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{e.cliff_status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -414,7 +414,7 @@ export function ClaimDetailClient({
             type="text"
             placeholder={detailCopy.mark_submitted_field}
             id="cape_claim_number_input"
-            className="mt-3 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60"
+            className="mt-3 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60"
           />
         </Modal>
       )}
@@ -443,7 +443,7 @@ export function ClaimDetailClient({
             step="0.01"
             placeholder={detailCopy.mark_received_field}
             id="received_amount_input"
-            className="mt-3 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 font-mono text-[14px] text-white outline-none focus:border-amber-300/60"
+            className="mt-3 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[14px] text-foreground outline-none focus:border-foreground/60"
           />
         </Modal>
       )}
@@ -454,12 +454,12 @@ export function ClaimDetailClient({
 function Row({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-white/[0.04] pb-2 last:border-0 last:pb-0">
-      <span className="text-[12.5px] text-white/55">{label}</span>
+      <span className="text-[12.5px] text-muted-foreground/80">{label}</span>
       <span
         className={
           emphasis
-            ? 'font-mono text-[15px] text-amber-200'
-            : 'font-mono text-[13.5px] text-white/85'
+            ? 'font-mono text-[15px] text-accent'
+            : 'font-mono text-[13.5px] text-foreground/85'
         }
       >
         {value}
@@ -482,13 +482,13 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="w-[min(420px,92vw)] rounded-xl border border-white/[0.1] bg-[#0a1020] p-6"
+        className="w-[min(420px,92vw)] rounded-xl border border-white/[0.1] bg-background p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="font-serif text-[18px] text-white">{title}</div>
+        <div className="font-serif text-[18px] text-foreground">{title}</div>
         {children}
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-white/15 px-3 py-1.5 text-[13px] text-white/65 hover:text-white">
+          <button onClick={onClose} className="rounded-md border border-border px-3 py-1.5 text-[13px] text-muted-foreground hover:text-foreground">
             {cancel}
           </button>
           <button
@@ -502,7 +502,7 @@ function Modal({
               await onConfirm(val);
               setPending(false);
             }}
-            className="rounded-md bg-amber-300 px-3 py-1.5 text-[13px] font-medium text-[#0a1020] hover:bg-amber-200 disabled:opacity-50"
+            className="rounded-md bg-foreground px-3 py-1.5 text-[13px] font-medium text-background hover:bg-foreground/85 disabled:opacity-50"
           >
             {confirm}
           </button>

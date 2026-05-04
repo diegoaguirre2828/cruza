@@ -20,28 +20,28 @@ export default async function EudamedScanPage({
   const c = lang === 'es' ? EUDAMED_ES : EUDAMED_EN;
 
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+    <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav lang={lang} />
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[820px] px-5 sm:px-8 py-16">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">
             {c.scan.eyebrow}
           </div>
-          <h1 className="font-serif text-[clamp(1.9rem,3.6vw,2.8rem)] text-white mt-3">
+          <h1 className="font-serif text-[clamp(1.9rem,3.6vw,2.8rem)] text-foreground mt-3">
             {c.scan.title}
           </h1>
-          <p className="mt-4 text-[16px] text-white/70">{c.scan.sub}</p>
+          <p className="mt-4 text-[16px] text-muted-foreground">{c.scan.sub}</p>
           <div className="mt-10">
             <ScanClient lang={lang} copy={c.scan} />
           </div>
         </div>
       </section>
-      <footer className="bg-[#070b18]">
+      <footer className="bg-card">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8 space-y-4">
-          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-white/45">
+          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-muted-foreground/70">
             {c.shared.legal_disclaimer}
           </p>
-          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-white/40">
+          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
             {c.shared.powered_by}
           </div>
         </div>

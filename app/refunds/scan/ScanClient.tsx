@@ -73,7 +73,7 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
   return (
     <div>
       <label
-        className="block cursor-pointer rounded-2xl border-2 border-dashed border-white/15 bg-white/[0.02] px-6 py-12 text-center text-[15px] text-white/65 hover:border-amber-300/60 hover:text-white"
+        className="block cursor-pointer rounded-2xl border-2 border-dashed border-border bg-card px-6 py-12 text-center text-[15px] text-muted-foreground hover:border-foreground/60 hover:text-foreground"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
@@ -101,8 +101,8 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
       )}
 
       {result && (
-        <div className="mt-8 rounded-xl border border-amber-300/25 bg-amber-300/[0.05] p-6">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+        <div className="mt-8 rounded-xl border border-accent/30 bg-accent/10 p-6">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
             {copy.summary_title}
           </div>
           <div className="mt-4 grid grid-cols-1 gap-y-3 sm:grid-cols-2 sm:gap-x-8">
@@ -118,11 +118,11 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={`/signup${langSuffix}`}
-              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+              className="rounded-lg bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85"
             >
               {copy.cta_after}
             </Link>
-            <span className="text-[12px] text-white/55">{copy.cta_subnote}</span>
+            <span className="text-[12px] text-muted-foreground/80">{copy.cta_subnote}</span>
           </div>
         </div>
       )}
@@ -133,12 +133,12 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
 function Row({ label, value, emphasis = false }: { label: string; value: string; emphasis?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className="text-[13px] text-white/65">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       <span
         className={
           emphasis
-            ? 'font-mono text-[16px] text-amber-200'
-            : 'font-mono text-[14px] text-white/85'
+            ? 'font-mono text-[16px] text-accent'
+            : 'font-mono text-[14px] text-foreground/85'
         }
       >
         {value}

@@ -73,13 +73,13 @@ export function ClaimsListClient({ lang, copy }: { lang: 'en' | 'es'; copy: Clai
     if (s === 'refund_received') return 'bg-emerald-400/15 text-emerald-300 border-emerald-400/30';
     if (s === 'rejected') return 'bg-red-400/15 text-red-300 border-red-400/30';
     if (s === 'submitted_to_ace' || s === 'refund_in_transit')
-      return 'bg-amber-300/15 text-amber-300 border-amber-300/30';
+      return 'bg-foreground/15 text-foreground border-accent/30';
     if (s === 'validated') return 'bg-sky-400/15 text-sky-300 border-sky-400/30';
-    return 'bg-white/[0.04] text-white/55 border-white/15';
+    return 'bg-card text-muted-foreground/80 border-border';
   }
 
   if (claims === null) {
-    return <div className="text-[14px] text-white/45">…</div>;
+    return <div className="text-[14px] text-muted-foreground/70">…</div>;
   }
 
   return (
@@ -87,7 +87,7 @@ export function ClaimsListClient({ lang, copy }: { lang: 'en' | 'es'; copy: Clai
       <div className="mb-6 flex justify-between gap-3">
         <button
           onClick={() => setShowNew((v) => !v)}
-          className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/85"
         >
           {copy.new_claim}
         </button>
@@ -96,12 +96,12 @@ export function ClaimsListClient({ lang, copy }: { lang: 'en' | 'es'; copy: Clai
       {showNew && <NewClaimForm copy={copy} onCreated={(c) => { setClaims((prev) => [c, ...(prev ?? [])]); setShowNew(false); }} />}
 
       {claims.length === 0 && !showNew && (
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-10 text-center">
-          <div className="font-serif text-[20px] text-white">{copy.empty_title}</div>
-          <p className="mt-3 text-[14.5px] text-white/65">{copy.empty_body}</p>
+        <div className="rounded-2xl border border-border bg-card p-10 text-center">
+          <div className="font-serif text-[20px] text-foreground">{copy.empty_title}</div>
+          <p className="mt-3 text-[14.5px] text-muted-foreground">{copy.empty_body}</p>
           <Link
             href={`/refunds/scan${langSuffix}`}
-            className="mt-6 inline-block rounded-lg border border-amber-300/60 bg-amber-300/10 px-4 py-2 text-sm text-amber-200 hover:bg-amber-300/20"
+            className="mt-6 inline-block rounded-lg border border-foreground/60 bg-foreground/5 px-4 py-2 text-sm text-accent hover:bg-foreground/15"
           >
             {copy.empty_cta}
           </Link>
@@ -109,10 +109,10 @@ export function ClaimsListClient({ lang, copy }: { lang: 'en' | 'es'; copy: Clai
       )}
 
       {claims.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <table className="w-full text-[13.5px]">
             <thead className="bg-white/[0.03] text-left">
-              <tr className="text-[11px] font-mono uppercase tracking-[0.18em] text-white/45">
+              <tr className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground/70">
                 <th className="px-4 py-3">{copy.col_id}</th>
                 <th className="px-4 py-3">{copy.col_ior}</th>
                 <th className="px-4 py-3">{copy.col_entries}</th>
@@ -125,24 +125,24 @@ export function ClaimsListClient({ lang, copy }: { lang: 'en' | 'es'; copy: Clai
               {claims.map((c) => {
                 const recoverable = Number(c.total_principal_owed_usd ?? 0) + Number(c.total_interest_owed_usd ?? 0);
                 return (
-                  <tr key={c.id} className="border-t border-white/[0.06] hover:bg-white/[0.02]">
+                  <tr key={c.id} className="border-t border-border/70 hover:bg-card">
                     <td className="px-4 py-3">
                       <Link
                         href={`/refunds/claims/${c.id}${langSuffix}`}
-                        className="font-mono text-amber-300 hover:text-amber-200"
+                        className="font-mono text-foreground hover:text-accent"
                       >
                         #{c.id}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-white/85">{c.ior_name}</td>
-                    <td className="px-4 py-3 text-white/65">{c.total_entries}</td>
-                    <td className="px-4 py-3 font-mono text-white/85">{fmt(recoverable)}</td>
+                    <td className="px-4 py-3 text-foreground/85">{c.ior_name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{c.total_entries}</td>
+                    <td className="px-4 py-3 font-mono text-foreground/85">{fmt(recoverable)}</td>
                     <td className="px-4 py-3">
                       <span className={`rounded-md border px-2 py-0.5 text-[11px] font-mono uppercase tracking-[0.14em] ${statusClass(c.status)}`}>
                         {statusLabel(c.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-white/55">{new Date(c.updated_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted-foreground/80">{new Date(c.updated_at).toLocaleDateString()}</td>
                   </tr>
                 );
               })}
@@ -185,18 +185,18 @@ function NewClaimForm({ copy, onCreated }: { copy: ClaimsCopy; onCreated: (c: Cl
   }
 
   return (
-    <form onSubmit={submit} className="mb-8 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-6">
-      <div className="font-serif text-[18px] text-white">{copy.new_form_title}</div>
+    <form onSubmit={submit} className="mb-8 rounded-2xl border border-border bg-card p-6">
+      <div className="font-serif text-[18px] text-foreground">{copy.new_form_title}</div>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Field label={copy.ior_name_label} value={iorName} onChange={setIorName} required />
         <Field label={copy.ior_id_label} value={iorId} onChange={setIorId} required />
         <Field label={copy.filer_code_label} value={filerCode} onChange={(v) => setFilerCode(v.toUpperCase().slice(0, 3))} />
-        <label className="block text-[12.5px] text-white/60">
+        <label className="block text-[12.5px] text-muted-foreground/80">
           <span>{copy.language_label}</span>
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value as 'en' | 'es')}
-            className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60"
+            className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60"
           >
             <option value="en">English</option>
             <option value="es">Español</option>
@@ -206,7 +206,7 @@ function NewClaimForm({ copy, onCreated }: { copy: ClaimsCopy; onCreated: (c: Cl
       <button
         type="submit"
         disabled={busy || !iorName.trim() || !iorId.trim()}
-        className="mt-6 rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-[#0a1020] hover:bg-amber-200 disabled:opacity-50"
+        className="mt-6 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/85 disabled:opacity-50"
       >
         {busy ? copy.creating : copy.create}
       </button>
@@ -218,14 +218,14 @@ function Field({
   label, value, onChange, required,
 }: { label: string; value: string; onChange: (v: string) => void; required?: boolean }) {
   return (
-    <label className="block text-[12.5px] text-white/60">
-      <span>{label}{required && <span className="text-amber-300/80"> *</span>}</span>
+    <label className="block text-[12.5px] text-muted-foreground/80">
+      <span>{label}{required && <span className="text-foreground/80"> *</span>}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 text-[14px] text-white outline-none focus:border-amber-300/60"
+        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60"
       />
     </label>
   );

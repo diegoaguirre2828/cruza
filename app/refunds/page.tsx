@@ -21,53 +21,53 @@ export default async function RefundsLandingPage({
   const langSuffix = lang === 'es' ? '?lang=es' : '';
 
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+    <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav current="refunds" lang={lang} />
 
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-20">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">
             {c.landing.eyebrow}
           </div>
-          <h1 className="font-serif text-[clamp(2.2rem,4.6vw,3.8rem)] font-medium text-white mt-3 leading-tight">
+          <h1 className="font-serif text-[clamp(2.2rem,4.6vw,3.8rem)] font-medium text-foreground mt-3 leading-tight">
             {c.landing.title}
           </h1>
-          <p className="mt-5 max-w-3xl text-[17px] text-white/70">{c.landing.sub}</p>
+          <p className="mt-5 max-w-3xl text-[17px] text-muted-foreground">{c.landing.sub}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={`/refunds/scan${langSuffix}`}
-              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+              className="bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85 transition"
             >
               {c.landing.primary_cta}
             </Link>
             <a
               href="#how"
-              className="rounded-lg border border-white/15 px-5 py-3 text-sm font-medium text-white/85 hover:border-amber-300 hover:text-amber-300"
+              className="border border-border px-5 py-3 text-sm font-medium text-foreground hover:border-foreground transition"
             >
               {c.landing.secondary_cta}
             </a>
           </div>
-          <div className="mt-6 text-[12px] font-mono text-white/55">{c.landing.pricing_strip}</div>
+          <div className="mt-6 text-[12px] font-mono text-muted-foreground/80">{c.landing.pricing_strip}</div>
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07] bg-[#070b18]">
+      <section className="border-b border-border bg-card">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">
             {c.landing.border_layer_eyebrow}
           </div>
-          <h2 className="font-serif text-[clamp(1.6rem,3vw,2.4rem)] text-white mt-3 max-w-3xl">
+          <h2 className="font-serif text-[clamp(1.6rem,3vw,2.4rem)] text-foreground mt-3 max-w-3xl">
             {c.landing.border_layer_title}
           </h2>
-          <p className="mt-5 max-w-3xl text-[15.5px] leading-[1.7] text-white/70">
+          <p className="mt-5 max-w-3xl text-[15.5px] leading-[1.7] text-muted-foreground">
             {c.landing.border_layer_body}
           </p>
         </div>
       </section>
 
-      <section id="how" className="border-b border-white/[0.07]">
+      <section id="how" className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">
             {c.landing.how.eyebrow}
           </div>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
@@ -79,31 +79,31 @@ export default async function RefundsLandingPage({
             ].map((s, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-6"
+                className="rounded-xl border border-border bg-card p-6"
               >
-                <div className="font-serif text-[18px] text-white">{s.title}</div>
-                <p className="mt-2 text-[14.5px] leading-[1.65] text-white/65">{s.body}</p>
+                <div className="font-serif text-[18px] text-foreground">{s.title}</div>
+                <p className="mt-2 text-[14.5px] leading-[1.65] text-muted-foreground">{s.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground">
             {c.landing.pricing.eyebrow}
           </div>
-          <ul className="mt-6 max-w-2xl space-y-2 text-[15px] text-white/75">
+          <ul className="mt-6 max-w-2xl space-y-2 text-[15px] text-foreground/75">
             <li>· {c.landing.pricing.rate}</li>
             <li>· {c.landing.pricing.floor}</li>
             <li>· {c.landing.pricing.no_fee}</li>
-            <li className="pt-2 text-amber-200">· {c.landing.pricing.no_retainer}</li>
+            <li className="pt-2 text-accent">· {c.landing.pricing.no_retainer}</li>
           </ul>
           <div className="mt-8">
             <Link
               href={`/refunds/scan${langSuffix}`}
-              className="rounded-lg bg-amber-300 px-5 py-3 text-sm font-medium text-[#0a1020] hover:bg-amber-200"
+              className="bg-foreground px-5 py-3 text-sm font-medium text-background hover:bg-foreground/85 transition"
             >
               {c.landing.primary_cta}
             </Link>
@@ -111,12 +111,12 @@ export default async function RefundsLandingPage({
         </div>
       </section>
 
-      <footer className="bg-[#070b18]">
+      <footer className="bg-card">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8 space-y-4">
-          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-white/45">
+          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-foreground/45">
             {c.shared.legal_disclaimer}
           </p>
-          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-white/40">
+          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-foreground/40">
             {c.shared.powered_by}
           </div>
         </div>

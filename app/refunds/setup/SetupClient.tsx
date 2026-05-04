@@ -105,8 +105,8 @@ export function SetupClient({ lang, copy }: { lang: 'en' | 'es'; copy: SetupCopy
               onClick={() => save({ ace_portal_account_status: s })}
               className={`rounded-md border px-3 py-1.5 ${
                 state.ace_portal_account_status === s
-                  ? 'border-amber-300/60 bg-amber-300/10 text-amber-200'
-                  : 'border-white/15 text-white/65 hover:border-amber-300/40'
+                  ? 'border-foreground/60 bg-foreground/5 text-accent'
+                  : 'border-border text-muted-foreground hover:border-accent/40'
               }`}
             >
               {aceLabel(s)}
@@ -147,8 +147,8 @@ export function SetupClient({ lang, copy }: { lang: 'en' | 'es'; copy: SetupCopy
               }
               className={`rounded-md border px-3 py-1.5 ${
                 state.ach_enrollment_status === s
-                  ? 'border-amber-300/60 bg-amber-300/10 text-amber-200'
-                  : 'border-white/15 text-white/65 hover:border-amber-300/40'
+                  ? 'border-foreground/60 bg-foreground/5 text-accent'
+                  : 'border-border text-muted-foreground hover:border-accent/40'
               }`}
             >
               {achLabel(s)}
@@ -172,8 +172,8 @@ export function SetupClient({ lang, copy }: { lang: 'en' | 'es'; copy: SetupCopy
         status={copy.status_not_started}
       />
 
-      {busy && <div className="text-[12.5px] text-white/55">{copy.saving}</div>}
-      {saved && !busy && <div className="text-[12.5px] text-amber-200">{copy.saved}</div>}
+      {busy && <div className="text-[12.5px] text-muted-foreground/80">{copy.saving}</div>}
+      {saved && !busy && <div className="text-[12.5px] text-accent">{copy.saved}</div>}
     </div>
   );
 }
@@ -191,24 +191,24 @@ function Step({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-6">
+    <div className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-center justify-between gap-4">
-        <div className="font-serif text-[18px] text-white">{title}</div>
+        <div className="font-serif text-[18px] text-foreground">{title}</div>
         <span
           className={`font-mono text-[10.5px] uppercase tracking-[0.18em] ${
-            active ? 'text-amber-300' : 'text-white/45'
+            active ? 'text-foreground' : 'text-muted-foreground/70'
           }`}
         >
           {optional ? 'Optional' : status}
         </span>
       </div>
-      <p className="mt-2 text-[14.5px] leading-[1.65] text-white/65">{body}</p>
+      <p className="mt-2 text-[14.5px] leading-[1.65] text-muted-foreground">{body}</p>
       {linkLabel && linkUrl && (
         <a
           href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-block text-[13px] text-amber-300 hover:text-amber-200"
+          className="mt-3 inline-block text-[13px] text-foreground hover:text-accent"
         >
           {linkLabel}
         </a>
@@ -220,7 +220,7 @@ function Step({
 
 function Last4({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="block text-[12.5px] text-white/60">
+    <label className="block text-[12.5px] text-muted-foreground/80">
       <span>{label}</span>
       <input
         type="text"
@@ -229,7 +229,7 @@ function Last4({ label, value, onChange }: { label: string; value: string; onCha
         maxLength={4}
         value={value}
         onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
-        className="mt-1 w-full rounded-md border border-white/15 bg-[#0a1020] px-3 py-2 font-mono text-[14px] text-white outline-none focus:border-amber-300/60"
+        className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[14px] text-foreground outline-none focus:border-foreground/60"
         placeholder="0000"
       />
     </label>

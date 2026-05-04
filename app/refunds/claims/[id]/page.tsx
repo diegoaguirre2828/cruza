@@ -19,9 +19,9 @@ export default async function RefundsClaimDetailPage({
   const c = lang === 'es' ? REFUNDS_ES : REFUNDS_EN;
 
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+    <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav current="refunds" lang={lang} />
-      <section className="border-b border-white/[0.07]">
+      <section className="border-b border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12">
           <ClaimDetailClient
             claimId={Number(id)}
@@ -31,12 +31,12 @@ export default async function RefundsClaimDetailPage({
           />
         </div>
       </section>
-      <footer className="bg-[#070b18]">
+      <footer className="bg-card">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8 space-y-4">
-          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-white/45">
+          <p className="max-w-3xl text-[11.5px] leading-[1.6] text-muted-foreground/70">
             {c.shared.legal_disclaimer}
           </p>
-          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-white/40">
+          <div className="text-[11.5px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60">
             {c.shared.powered_by}
           </div>
         </div>
