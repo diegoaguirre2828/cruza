@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { composeDrawback } from '@/lib/chassis/drawback/composer';
 import type { DrawbackEntry, DrawbackExport, DrawbackClaimantProfile } from '@/lib/chassis/drawback/types';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -100,6 +101,21 @@ export async function POST(req: NextRequest) {
       reason: d.reason,
     })),
     registry_version: comp.registry_version,
+    cross_module_hints: surfaceCrossModuleHints('from_drawback', {
+      has_entries: entries.length > 0,
+      entry_count: entries.length,
+      has_exports: exports_.length > 0,
+      has_supply_chain: false,
+      has_cbam_goods: false,
+      has_eori: false,
+      has_mexican_broker: false,
+      has_driver: false,
+      htsus_codes: entries.flatMap((e) => e.htsus_codes ?? []),
+      countries_of_origin: [],
+      has_chinese_supply: false,
+      any_duty_paid: entries.some((e) => (e.total_duty_paid_usd ?? 0) > 0),
+    }),
+    universal_scan_url: '/scan',
     cta: 'Sign up to compose Form 7551 + start your drawback claim.',
   });
 }

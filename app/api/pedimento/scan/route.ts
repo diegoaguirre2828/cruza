@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { composePedimento } from '@/lib/chassis/pedimento/composer';
 import type { OperacionInput } from '@/lib/chassis/pedimento/types';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,6 +60,21 @@ export async function POST(req: NextRequest) {
     impuestos: comp.impuestos,
     findings: comp.findings,
     registry_version: comp.registry_version,
+    cross_module_hints: surfaceCrossModuleHints('from_pedimento', {
+      has_entries: false,
+      entry_count: 0,
+      has_exports: false,
+      has_supply_chain: false,
+      has_cbam_goods: false,
+      has_eori: false,
+      has_mexican_broker: true,
+      has_driver: false,
+      htsus_codes: body.mercancias.map((m) => m.fraccion_arancelaria),
+      countries_of_origin: body.mercancias.map((m) => m.pais_origen),
+      has_chinese_supply: body.mercancias.some((m) => m.pais_origen === 'CN'),
+      any_duty_paid: false,
+    }),
+    universal_scan_url: '/scan',
     cta: 'Sign up to compose the pedimento + DODA + integrate with your VUCEM filer.',
   });
 }

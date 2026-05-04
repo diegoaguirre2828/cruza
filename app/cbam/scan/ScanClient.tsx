@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { CrossModuleHintsPanel, type CrossModuleHint } from '@/components/CrossModuleHintsPanel';
 
 interface ScanCopy {
   section_declarant: string;
@@ -52,6 +53,7 @@ interface ScanResult {
   ets_avg_price_eur_per_t: number;
   findings: Array<{ rule_id: string; severity: 'fatal' | 'warning' | 'info'; message_en: string; message_es: string }>;
   registry_version: string;
+  cross_module_hints?: CrossModuleHint[];
 }
 
 const fmtEur = (n: number) =>
@@ -213,6 +215,8 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
           </div>
         </div>
       )}
+
+      <CrossModuleHintsPanel hints={result?.cross_module_hints} lang={lang} />
     </form>
   );
 }

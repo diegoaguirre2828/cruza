@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { composeCbam } from '@/lib/chassis/cbam/composer';
 import type { CbamGood, CbamDeclarantProfile } from '@/lib/chassis/cbam/types';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,21 @@ export async function POST(req: NextRequest) {
     ets_avg_price_eur_per_t: comp.ets_avg_price_eur_per_t,
     findings: comp.findings,
     registry_version: comp.registry_version,
+    cross_module_hints: surfaceCrossModuleHints('from_cbam', {
+      has_entries: false,
+      entry_count: 0,
+      has_exports: false,
+      has_supply_chain: false,
+      has_cbam_goods: goods.length > 0,
+      has_eori: !!declarant.declarant_eori && declarant.declarant_eori !== 'PUBLIC_SCAN',
+      has_mexican_broker: false,
+      has_driver: false,
+      htsus_codes: goods.map((g) => g.cn_code),
+      countries_of_origin: goods.map((g) => g.installation?.country_iso ?? ''),
+      has_chinese_supply: false,
+      any_duty_paid: false,
+    }),
+    universal_scan_url: '/scan',
     cta: 'Sign up to compose your CBAM quarterly report + verifier engagement.',
   });
 }

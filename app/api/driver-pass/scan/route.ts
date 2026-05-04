@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { composeDriverPass } from '@/lib/chassis/driver-pass/composer';
 import type { DriverProfile, TripContext, DocRequirement } from '@/lib/chassis/driver-pass/types';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,6 +72,21 @@ export async function POST(req: NextRequest) {
     recommended_actions: comp.recommended_actions,
     pass_payload: comp.pass_payload,
     registry_version: comp.registry_version,
+    cross_module_hints: surfaceCrossModuleHints('from_driver_pass', {
+      has_entries: false,
+      entry_count: 0,
+      has_exports: false,
+      has_supply_chain: false,
+      has_cbam_goods: false,
+      has_eori: false,
+      has_mexican_broker: false,
+      has_driver: true,
+      htsus_codes: [],
+      countries_of_origin: [],
+      has_chinese_supply: false,
+      any_duty_paid: false,
+    }),
+    universal_scan_url: '/scan',
     cta: 'Sign up to issue Apple Wallet passes + email + SMS reminders to your drivers.',
   });
 }

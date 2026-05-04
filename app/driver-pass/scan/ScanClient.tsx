@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { CrossModuleHintsPanel, type CrossModuleHint } from '@/components/CrossModuleHintsPanel';
 
 interface ScanCopy {
   section_driver: string;
@@ -55,6 +56,7 @@ interface ScanResult {
   recommended_actions: string[];
   pass_payload: { pass_type: string; composed_at: string };
   registry_version: string;
+  cross_module_hints?: CrossModuleHint[];
 }
 
 const READINESS_COLORS: Record<string, string> = {
@@ -232,6 +234,8 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
           </div>
         </div>
       )}
+
+      <CrossModuleHintsPanel hints={result?.cross_module_hints} lang={lang} />
     </form>
   );
 }

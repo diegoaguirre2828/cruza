@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { CrossModuleHintsPanel, type CrossModuleHint } from '@/components/CrossModuleHintsPanel';
 
 interface ScanCopy {
   section_claimant: string;
@@ -60,6 +61,7 @@ interface ScanResult {
     reason: string;
   }>;
   registry_version: string;
+  cross_module_hints?: CrossModuleHint[];
 }
 
 const fmt = (n: number) =>
@@ -268,6 +270,8 @@ export function ScanClient({ lang, copy }: { lang: 'en' | 'es'; copy: ScanCopy }
           </div>
         </div>
       )}
+
+      <CrossModuleHintsPanel hints={result?.cross_module_hints} lang={lang} />
     </form>
   );
 }

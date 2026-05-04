@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { evaluateUflpa } from '@/lib/chassis/uflpa/risk-flagger';
 import type { UflpaShipmentInput, SupplyChainTier } from '@/lib/chassis/uflpa/types';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,21 @@ export async function POST(req: NextRequest) {
     required_actions: r.required_actions,
     findings: r.findings,
     registry_version: r.registry_version,
+    cross_module_hints: surfaceCrossModuleHints('from_uflpa', {
+      has_entries: false,
+      entry_count: 0,
+      has_exports: false,
+      has_supply_chain: input.supply_chain.length > 0,
+      has_cbam_goods: false,
+      has_eori: false,
+      has_mexican_broker: false,
+      has_driver: false,
+      htsus_codes: [input.htsus_code],
+      countries_of_origin: input.supply_chain.map((t) => t.country_iso),
+      has_chinese_supply: input.supply_chain.some((t) => t.country_iso === 'CN'),
+      any_duty_paid: false,
+    }),
+    universal_scan_url: '/scan',
     cta: 'Sign up to compose the full UFLPA rebuttal package + supplier-affidavit templates.',
   });
 }
