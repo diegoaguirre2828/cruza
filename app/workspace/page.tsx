@@ -2,10 +2,10 @@ import { B2BNav } from '@/components/B2BNav';
 import { WORKSPACE_EN } from '@/lib/copy/workspace-en';
 import { WORKSPACE_ES } from '@/lib/copy/workspace-es';
 import { WorkspaceClient } from './WorkspaceClient';
-import { BorderSpine } from '@/components/ui/BorderSpine';
 import { Eyebrow } from '@/components/ui/Eyebrow';
-import { DualLockup } from '@/components/ui/DualLockup';
 import { Stamp } from '@/components/ui/Stamp';
+import { BridgeHero } from '@/components/ui/BridgeHero';
+import { PortTicker } from '@/components/ui/PortTicker';
 
 export const metadata = {
   title: 'Workspace — Cruzar',
@@ -21,8 +21,6 @@ export default async function WorkspacePage({
   const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
   const c = lang === 'es' ? WORKSPACE_ES : WORKSPACE_EN;
 
-  // Stamp shows current date + RGV-MX as the issuance "location" — like a
-  // customs document header.
   const today = new Date();
   const stampDate = today.toISOString().slice(0, 10).replace(/-/g, '·');
 
@@ -30,39 +28,66 @@ export default async function WorkspacePage({
     <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav lang={lang} />
 
+      {/* HERO — asymmetric split. Left: bilingual headline + meta. Right: massive bridge silhouette. */}
       <section className="relative border-b border-border overflow-hidden">
-        {/* Cartographic spine — topographic contours + US-MX border line */}
-        <BorderSpine intensity="med" variant="both" />
-
-        <div className="relative mx-auto max-w-[1180px] px-5 sm:px-8 py-12 sm:py-16">
-          <div className="flex items-start justify-between gap-6 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <Eyebrow>{c.hero.eyebrow}</Eyebrow>
-              <div className="mt-4">
-                <DualLockup
-                  en={lang === 'en' ? c.hero.title : WORKSPACE_EN.hero.title}
-                  es={lang === 'es' ? c.hero.title : WORKSPACE_ES.hero.title}
-                  primary={lang}
-                  size="lg"
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14 sm:py-20">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+            {/* Left: meta + dual headline */}
+            <div className="relative">
+              <div className="flex items-center gap-3">
+                <Eyebrow tone="primary">{c.hero.eyebrow}</Eyebrow>
+                <span className="h-px flex-1 bg-border" />
+                <Stamp
+                  label={lang === 'es' ? 'EMITIDO' : 'ISSUED'}
+                  detail={`${stampDate} · RGV-MX`}
+                  tone="cream"
+                  tilt="left"
                 />
               </div>
-              <p className="mt-5 max-w-2xl text-[15px] leading-[1.65] text-muted-foreground">
+
+              {/* Big bilingual lockup — EN top in display serif, ES below in italic-muted */}
+              <h1 className="mt-6 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-foreground tracking-[-0.02em]">
+                {lang === 'en' ? c.hero.title : WORKSPACE_EN.hero.title}
+              </h1>
+              <h2 className="mt-1 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-muted-foreground/55 tracking-[-0.02em] italic">
+                {lang === 'es' ? c.hero.title : WORKSPACE_ES.hero.title}
+              </h2>
+
+              <p className="mt-7 max-w-xl text-[15px] leading-[1.65] text-muted-foreground">
                 {c.hero.sub}
               </p>
+
+              {/* Coordinate strip — under the headline, like a dossier header */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <span>26.18°N · 98.18°W</span>
+                <span className="h-3 w-px bg-border" />
+                <span>RGV CORRIDOR</span>
+                <span className="h-3 w-px bg-border" />
+                <span>BILINGUAL EN · ES</span>
+              </div>
             </div>
 
-            {/* Customs-stamp accent — issuance marker */}
-            <div className="shrink-0 pt-2">
-              <Stamp
-                label={lang === 'es' ? 'EMITIDO' : 'ISSUED'}
-                detail={`${stampDate} · RGV-MX`}
-                tone="cream"
-                tilt="left"
-              />
+            {/* Right: bridge silhouette as hero visual */}
+            <div className="relative flex items-center justify-center">
+              <BridgeHero className="w-full max-w-[520px]" weight={1.1} />
             </div>
           </div>
         </div>
+
+        {/* Footer hairline w/ section label */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-5 sm:px-8 py-2 border-t border-border bg-card/30">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground/60">
+            CRUZAR / SUBSTRATE / WORKSPACE / 01
+          </span>
+          <span className="h-px flex-1 bg-border" />
+          <span className="font-mono text-[9.5px] tabular-nums tracking-[0.14em] text-muted-foreground/50">
+            {today.getUTCFullYear()}.{String(today.getUTCMonth() + 1).padStart(2, '0')}.{String(today.getUTCDate()).padStart(2, '0')}
+          </span>
+        </div>
       </section>
+
+      {/* LIVE PORT TICKER — Bloomberg-style, the geographic spine made literal */}
+      <PortTicker />
 
       <WorkspaceClient lang={lang} copy={c} />
 

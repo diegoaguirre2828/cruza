@@ -120,44 +120,80 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
 
   return (
     <>
-      <section className="border-b border-border bg-card/40">
-        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-8">
-          <Eyebrow>{copy.quick_actions.eyebrow}</Eyebrow>
-          <div className="mt-4 flex flex-wrap gap-3">
+      {/* COMMAND BAR — single full-width strip with divider segments, terminal-style */}
+      <section className="border-b border-border bg-card/30">
+        <div className="mx-auto max-w-[1180px]">
+          <div className="flex items-stretch divide-x divide-border">
             <Link
               href={`/refunds/scan${langSuffix}`}
-              className="border border-foreground bg-foreground px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-background hover:bg-foreground/85 transition"
+              className="group flex-1 flex flex-col gap-1 px-5 sm:px-7 py-5 hover:bg-foreground/[0.04] transition relative"
             >
-              {copy.quick_actions.new_refund_scan}
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+                ACTION · 01
+              </span>
+              <span className="font-serif text-[18px] text-foreground leading-tight">
+                {copy.quick_actions.new_refund_scan}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 group-hover:text-foreground transition">
+                Open →
+              </span>
             </Link>
             <Link
               href={`/eudamed/scan${langSuffix}`}
-              className="border border-border px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-foreground hover:border-foreground transition"
+              className="group flex-1 flex flex-col gap-1 px-5 sm:px-7 py-5 hover:bg-foreground/[0.04] transition"
             >
-              {copy.quick_actions.new_eudamed_scan}
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+                ACTION · 02
+              </span>
+              <span className="font-serif text-[18px] text-foreground leading-tight">
+                {copy.quick_actions.new_eudamed_scan}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 group-hover:text-foreground transition">
+                Open →
+              </span>
             </Link>
             <Link
               href={`/dispatch${langSuffix}`}
-              className="border border-border px-4 py-2 text-[13px] font-mono uppercase tracking-[0.14em] text-muted-foreground hover:border-foreground hover:text-foreground transition"
+              className="group flex-1 flex flex-col gap-1 px-5 sm:px-7 py-5 hover:bg-foreground/[0.04] transition"
             >
-              {copy.quick_actions.open_dispatch}
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground">
+                ACTION · 03
+              </span>
+              <span className="font-serif text-[18px] text-foreground leading-tight">
+                {copy.quick_actions.open_dispatch}
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/70 group-hover:text-foreground transition">
+                Open →
+              </span>
             </Link>
           </div>
         </div>
       </section>
 
+      {/* MODULE GRID — magazine layout. Featured (refunds, biggest revenue wedge) takes
+          a 2-col span. SUBSTRATE card spans the full bottom row as the connective tissue.
+          Other modules in compact 3-col rows. Differentiation via SIZE + position, not color. */}
       <section className="border-b border-border relative">
-        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-12">
-          <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <ModuleCard
-              accent="primary"
-              code="MOD · 14"
-              title={copy.modules.refunds.title}
-              sub={copy.modules.refunds.sub}
-              stats={refundStats}
-              link={{ href: `/refunds/claims${langSuffix}`, label: copy.modules.refunds.open_link }}
-            />
+        <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-14">
+          <div className="flex items-baseline justify-between gap-4 mb-6">
+            <Eyebrow>{copy.modules.eyebrow}</Eyebrow>
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground/60">
+              8 MODULES · 1 SUBSTRATE
+            </span>
+          </div>
+
+          {/* Top row: featured refunds (2-col) + EU MDR (1-col) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+            <div className="md:col-span-2">
+              <ModuleCard
+                accent="primary"
+                code="MOD · 14 · FEATURED"
+                title={copy.modules.refunds.title}
+                sub={copy.modules.refunds.sub}
+                stats={refundStats}
+                link={{ href: `/refunds/claims${langSuffix}`, label: copy.modules.refunds.open_link }}
+              />
+            </div>
             <ModuleCard
               accent="primary"
               code="MOD · EU MDR"
@@ -166,6 +202,10 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               stats={eudamedStats}
               link={{ href: `/eudamed${langSuffix}`, label: copy.modules.eudamed.open_link }}
             />
+          </div>
+
+          {/* Mid row: chassis modules — 4-col compact */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 mb-4">
             <ModuleCard
               accent="primary"
               code="MOD · 04"
@@ -198,18 +238,25 @@ export function WorkspaceClient({ lang, copy }: { lang: 'en' | 'es'; copy: Copy 
               stats={regulatoryStats}
               link={{ href: `/regulatory${langSuffix}`, label: copy.modules.regulatory.open_link }}
             />
-            <ModuleCard
-              accent="primary"
-              code="LIVE · WAIT"
-              title={copy.modules.insights.title}
-              sub={copy.modules.insights.sub}
-              stats={insightsStats}
-              link={
-                data?.summary.insights.subscription_tier
-                  ? { href: `/dispatch${langSuffix}`, label: copy.modules.insights.open_link }
-                  : { href: `/insights${langSuffix}`, label: copy.modules.insights.sales_link }
-              }
-            />
+          </div>
+
+          {/* Insights row — single mid-width card */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 mb-4">
+            <div className="md:col-span-2">
+              <ModuleCard
+                accent="primary"
+                code="LIVE · WAIT"
+                title={copy.modules.insights.title}
+                sub={copy.modules.insights.sub}
+                stats={insightsStats}
+                link={
+                  data?.summary.insights.subscription_tier
+                    ? { href: `/dispatch${langSuffix}`, label: copy.modules.insights.open_link }
+                    : { href: `/insights${langSuffix}`, label: copy.modules.insights.sales_link }
+                }
+              />
+            </div>
+            {/* Substrate card spans the right column on this row */}
             <ModuleCard
               accent="accent"
               code="SUBSTRATE"
