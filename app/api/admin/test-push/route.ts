@@ -98,8 +98,8 @@ export async function POST(req: NextRequest) {
     title: 'Cruzar — test push',
     body: `Test from /api/admin/test-push at ${new Date().toISOString()}`,
     url: 'https://cruzar.app/dashboard',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
   })
 
   const results: SubResult[] = await Promise.all(

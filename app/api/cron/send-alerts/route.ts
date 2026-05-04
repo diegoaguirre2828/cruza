@@ -59,9 +59,13 @@ async function sendStaffingPush(
   const delta = officersTypical - officersOpen
   const es = lang === 'es'
 
+  // Title-prefix emojis stripped 2026-05-04 — Diego flagged that the
+  // 🌉 / ⚠️ at the start of the title was rendering as the visual
+  // "logo" on iOS notifications instead of the Cruzar bridge icon.
+  // Plain title lets the system-area app icon read clean.
   const title = es
-    ? `⚠️ ${portName} — ${delta} oficial${delta === 1 ? '' : 'es'} menos`
-    : `⚠️ ${portName} — ${delta} fewer officer${delta === 1 ? '' : 's'}`
+    ? `${portName} — ${delta} oficial${delta === 1 ? '' : 'es'} menos`
+    : `${portName} — ${delta} fewer officer${delta === 1 ? '' : 's'}`
   const body = es
     ? `${officersOpen} de ${officersTypical} normales en ${laneLabelEs}. La fila va a subir pronto.`
     : `${officersOpen} of ${officersTypical} normal in ${laneLabelEn} lane. Wait spike likely in 15–30 min.`
@@ -78,6 +82,8 @@ async function sendStaffingPush(
           body,
           url: `/cruzar/${encodeURIComponent(portId)}`,
           tag: `staffing-alert-${portId}-${laneType}`,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
           requireInteraction: true,
           actions: [
             { action: 'view', title: viewLabel },
@@ -178,10 +184,17 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
-          title: `🌉 ${portName} — ${wait} min`,
+          // 🌉 emoji stripped from title 2026-05-04 — Diego flagged
+          // that iOS was rendering the emoji as the notification's
+          // visual "logo," competing with the actual Cruzar app icon.
+          // Plain title + explicit icon path lets the system-area app
+          // icon (the bridge logo) read clean.
+          title: `${portName} — ${wait} min`,
           body,
           url: tapUrl,
           tag: `urgent-alert-${portId}`,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
           requireInteraction: true,
           data: { alert_id: alertId, action_kind: 'wait_drop_alert', url: tapUrl },
           actions: [

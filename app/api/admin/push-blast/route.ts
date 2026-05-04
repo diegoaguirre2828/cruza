@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
     title,
     body,
     url: url || 'https://cruzar.app',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
   })
 
   let sent = 0
