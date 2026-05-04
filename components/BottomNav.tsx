@@ -4,10 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useLang } from '@/lib/LangContext'
 
-// Phase 2 bottom nav. Five fixed tabs: Home / Mapa / Datos (Pro) /
-// Guardián / Más. Previously was Crossings / Negocios / Help / Me
-// which stacked everything on the home page and had no dedicated
-// home for the map, analytics, or community leaderboard.
+// Phase 2 bottom nav. Five fixed tabs: Home / All bridges / Pro (cameras)
+// / Mi panel (dashboard) / Más.
+//
+// 2026-05-04 update — Diego: "replace the guardians tab with the
+// dashboard that is found in more. guardian tab on the bottom should
+// just be a pill in the collapsible thing on top of the main page."
+// Reasoning: /dashboard surfaces the user's daily-use state (alerts,
+// favorites, recent reports, install nudge) and deserves a permanent
+// bottom-nav slot. The Guardian/leaderboard tab was lower-frequency
+// and is already represented by the GuardianProgressCard pill in the
+// collapsible header on Home (links to /leaderboard).
 
 // Only hidden on tight flows where the user needs to commit to a
 // step — login, signup, welcome, driver check-in, admin.
@@ -66,19 +73,24 @@ export function BottomNav() {
       proBadge: true,
     },
     {
-      href: '/leaderboard',
-      label: es ? 'Guardián' : 'Guardian',
-      active: isActive('/leaderboard') || isActive('/guardian'),
+      href: '/dashboard',
+      label: es ? 'Mi panel' : 'Dashboard',
+      active: isActive('/dashboard'),
       icon: (active: boolean) => (
+        // Grid / dashboard icon — distinct from the home/house glyph.
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3 6 6 1-4.5 4.5 1 6.5-5.5-3-5.5 3 1-6.5L3 9l6-1 3-6z" />
+          <rect x="3" y="3" width="7" height="9" rx="1.5" strokeLinejoin="round" />
+          <rect x="14" y="3" width="7" height="5" rx="1.5" strokeLinejoin="round" />
+          <rect x="14" y="12" width="7" height="9" rx="1.5" strokeLinejoin="round" />
+          <rect x="3" y="16" width="7" height="5" rx="1.5" strokeLinejoin="round" />
         </svg>
       ),
     },
     {
       href: '/mas',
       label: es ? 'Más' : 'More',
-      active: isActive('/mas') || isActive('/account') || isActive('/dashboard') || isActive('/negocios'),
+      // /dashboard removed from active-match list — it has its own tab now.
+      active: isActive('/mas') || isActive('/account') || isActive('/negocios'),
       icon: (active: boolean) => (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
           <circle cx="5" cy="12" r="1.5" fill="currentColor" />

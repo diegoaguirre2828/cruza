@@ -10,6 +10,7 @@ export const TICKET_ES = {
   superseded_by: 'Reemplazado por',
   modules_present: 'Módulos compuestos',
   spec_link: 'Spec Cruzar Ticket v1',
+  verify_at: 'Verifica esta firma en',
 
   // Cross-references
   cross_refs_section: 'Referencias cruzadas — entries × módulos',
