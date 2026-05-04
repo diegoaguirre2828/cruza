@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { LockedFeatureWall } from '@/components/LockedFeatureWall'
 import { formatWaitLabel } from '@/lib/formatWait'
 import {
@@ -29,6 +29,7 @@ import { getPortMeta } from '@/lib/portMeta'
 import { getAffiliate } from '@/lib/affiliates'
 import { AdBanner } from '@/components/AdBanner'
 import { JustCrossedPrompt } from '@/components/JustCrossedPrompt'
+import { AlertSnoozePrompt } from '@/components/AlertSnoozePrompt'
 import { PriorityNudge, type NudgeSpec } from '@/components/PriorityNudge'
 import { armNudge } from '@/lib/useNudge'
 import { trackShare } from '@/lib/trackShare'
@@ -544,6 +545,13 @@ export function PortDetailClient({ port, portId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* iOS-friendly snooze confirmation. Surfaces when the user lands
+          here from a wait-drop alert push (URL carries
+          ?just_crossed=alert_id). Wrapped in Suspense because Next 16
+          requires it for components reading useSearchParams. */}
+      <Suspense fallback={null}>
+        <AlertSnoozePrompt />
+      </Suspense>
       <JustCrossedPrompt
         portId={portId}
         portName={port.portName}

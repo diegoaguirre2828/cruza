@@ -713,5 +713,45 @@ export async function POST(req: NextRequest) {
     } catch { /* non-critical — don't fail the report */ }
   }
 
-  return NextResponse.json({ success: true, id: inserted?.id, pointsEarned, newBadges })
+  // Compose the report onto the user's active Cruzar Crossing for this
+  // port (or create a closing one if none active). Also auto-snooze any
+  // matching active alert — features talking to each other: report →
+  // crossing record → alert closure, all in one flow.
+  let crossingId: string | null = null
+  let snoozedAlertId: string | null = null
+  if (user && inserted?.id) {
+    try {
+      const { findOrCreateActiveCrossing, snoozeMatchingAlert } = await import('@/lib/crossing/upsert')
+      const submittedAt = new Date().toISOString()
+      const direction_norm = normalizedDirection === 'northbound' ? 'mx_to_us' : 'us_to_mx'
+      const snooze = await snoozeMatchingAlert(user.id, portId)
+      if (snooze) snoozedAlertId = snooze.alert_id
+      const upsert = await findOrCreateActiveCrossing({
+        user_id: user.id,
+        port_id: portId,
+        direction: direction_norm,
+        report: {
+          report_id: inserted.id,
+          wait_minutes: waitMinutes ?? null,
+          report_type: mappedType,
+          submitted_at: submittedAt,
+        },
+        ...(snooze
+          ? {
+              closure: {
+                closed_at: submittedAt,
+                reason: 'report_submitted' as const,
+                alert_id_snoozed: snooze.alert_id,
+                snoozed_until: snooze.snoozed_until,
+              },
+            }
+          : {}),
+      }, { closeAfterUpsert: true })
+      crossingId = upsert.id
+    } catch (e) {
+      console.error('crossing compose on report failed:', e)
+    }
+  }
+
+  return NextResponse.json({ success: true, id: inserted?.id, pointsEarned, newBadges, crossing_id: crossingId, snoozed_alert_id: snoozedAlertId })
 }

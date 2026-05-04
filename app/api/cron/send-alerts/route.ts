@@ -103,6 +103,42 @@ async function sendStaffingPush(
   }
 }
 
+// Find-or-create the user's active crossing for this port and append
+// an `alert` block. Pure side-effect — never throws into the cron's
+// hot path. Crossing block captures: which alert fired, threshold,
+// channels delivered. Used downstream for alert-accuracy calibration
+// (predicted-drop at fire time × actual-cross-duration from the same
+// crossing's detection or report block).
+async function composeAlertBlock(
+  userId: string,
+  portId: string,
+  alertId: string | undefined,
+  thresholdMin: number,
+  predictedDropMin: number,
+  channels: ('push' | 'sms' | 'email')[],
+  delivered: number,
+) {
+  if (!alertId) return
+  try {
+    const { findOrCreateActiveCrossing } = await import('@/lib/crossing/upsert')
+    await findOrCreateActiveCrossing({
+      user_id: userId,
+      port_id: portId,
+      direction: 'us_to_mx',
+      alert: {
+        alert_id: alertId,
+        threshold_minutes: thresholdMin,
+        fired_at: new Date().toISOString(),
+        predicted_drop_min: predictedDropMin,
+        channels,
+        delivered_to_devices: delivered,
+      },
+    })
+  } catch (e) {
+    console.error('compose alert block failed:', e)
+  }
+}
+
 async function sendPush(userId: string, portName: string, portId: string, wait: number, lang: Lang, alertId?: string) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
   const db = getServiceClient()
@@ -129,18 +165,25 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
   for (const sub of subs) {
     if (!sub?.endpoint) continue
     try {
+      // URL carries the alert_id as a query param so iOS users (where
+      // Web Push silently drops action buttons) get the same UX via a
+      // tap-and-prompt flow: tap push → /port/[id]?just_crossed=alertId
+      // → page shows a sticky "Did you cross?" card → tap snoozes.
+      // Android / desktop users see action buttons AND the same query
+      // param — either path works. The action_kind: 'wait_drop_alert'
+      // hint helps the page disambiguate from other alert kinds later.
+      const tapUrl = alertId
+        ? `/port/${encodeURIComponent(portId)}?just_crossed=${encodeURIComponent(alertId)}`
+        : `/port/${encodeURIComponent(portId)}`
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
           title: `🌉 ${portName} — ${wait} min`,
           body,
-          url: `/port/${encodeURIComponent(portId)}`,
+          url: tapUrl,
           tag: `urgent-alert-${portId}`,
           requireInteraction: true,
-          // alert_id passed in data so the SW can POST to the snooze
-          // endpoint when the user taps "Ya crucé". Without alert_id
-          // the SW falls back to no-op (button just dismisses).
-          data: { alert_id: alertId, action_kind: 'wait_drop_alert' },
+          data: { alert_id: alertId, action_kind: 'wait_drop_alert', url: tapUrl },
           actions: [
             { action: 'view', title: viewLabel },
             { action: 'ya_cruce', title: yaCruceLabel },
@@ -286,6 +329,15 @@ export async function GET(req: NextRequest) {
         sendPush(alert.user_id, reading.port_name, alert.port_id, wait, lang, alert.id),
         alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait, lang) : null,
       ])
+      // Compose alert block onto the user's active crossing record (or
+      // create a planning-state crossing for this port). Lets the
+      // calibration loop know which alert fired and at what predicted
+      // drop, so when the user later confirms (auto-detect / report /
+      // ya-crucé), we can compare predicted vs actual.
+      const channels: ('push' | 'sms' | 'email')[] = []
+      if (results[0].status === 'fulfilled') channels.push('push')
+      if (alert.phone && results[1].status === 'fulfilled') channels.push('sms')
+      composeAlertBlock(alert.user_id, alert.port_id, alert.id, alert.threshold_minutes, wait, channels, channels.length).catch(() => {})
       results.forEach((r, i) => {
         if (r.status === 'rejected') console.error(`Alert send failed [${['push','sms'][i]}] user=${alert.user_id}:`, r.reason)
       })

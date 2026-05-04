@@ -138,46 +138,29 @@ export async function POST(req: NextRequest) {
   }
 
   // Cruzar Crossing substrate (v85, 2026-05-04): if the user is authed
-  // and opted-in, write a SEPARATE user-private crossing record + auto-
-  // snooze any matching alert. This is intentionally a different table
-  // than wait_time_readings — wait_time_readings is anonymized at rest
-  // (the privacy posture from 2026-04-25), `crossings` carries user_id
-  // for personalization + per-user history. The two writes serve
-  // different purposes and don't leak into each other.
+  // and opted-in, find-or-extend the active crossing for this user ×
+  // this port and append detection + closure blocks. Auto-snooze any
+  // matching alert. The findOrCreateActiveCrossing helper makes sure
+  // we COMPOSE onto whatever the alert+report+co-pilot may have
+  // already written, instead of creating a duplicate row.
+  // Anonymized wait_time_readings write above is unchanged — separate
+  // table, separate purpose. Privacy posture from 2026-04-25 holds.
   let crossingId: string | null = null
   let snoozedAlertId: string | null = null
   if (user) {
     try {
       const detectedAt = now.toISOString()
       const direction_norm = direction === 'northbound' ? 'mx_to_us' : 'us_to_mx'
-      const snoozeUntil = new Date(now.getTime() + 16 * 60 * 60 * 1000).toISOString()
+      const { findOrCreateActiveCrossing, snoozeMatchingAlert } = await import('@/lib/crossing/upsert')
 
-      // Find a matching active alert to snooze.
-      const { data: matchingAlert } = await db
-        .from('alert_preferences')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('port_id', portId)
-        .eq('active', true)
-        .or('snoozed_until.is.null,snoozed_until.lt.now()')
-        .limit(1)
-        .maybeSingle()
-      if (matchingAlert) {
-        snoozedAlertId = matchingAlert.id
-        await db
-          .from('alert_preferences')
-          .update({ snoozed_until: snoozeUntil })
-          .eq('id', matchingAlert.id)
-      }
+      const snooze = await snoozeMatchingAlert(user.id, portId)
+      if (snooze) snoozedAlertId = snooze.alert_id
 
-      // Compose the signed crossing.
-      const { composeCrossing } = await import('@/lib/crossing/generate')
-      const { payload, signed } = await composeCrossing({
+      const upsert = await findOrCreateActiveCrossing({
         user_id: user.id,
         port_id: portId,
         port_name: portName,
         direction: direction_norm,
-        status: 'completed',
         detection: {
           detected_at: detectedAt,
           detection_source: 'geofence_exit',
@@ -185,34 +168,18 @@ export async function POST(req: NextRequest) {
           duration_min: dt ?? undefined,
           lane_inferred: lane === 'general' ? 'vehicle' : (lane as 'sentri' | 'pedestrian' | 'commercial'),
         },
-        ...(snoozedAlertId
+        ...(snooze
           ? {
               closure: {
                 closed_at: detectedAt,
                 reason: 'auto_geofence_exit' as const,
-                alert_id_snoozed: snoozedAlertId,
-                snoozed_until: snoozeUntil,
+                alert_id_snoozed: snooze.alert_id,
+                snoozed_until: snooze.snoozed_until,
               },
             }
           : {}),
-      })
-
-      const { error: cErr } = await db.from('crossings').insert({
-        id: payload.id,
-        user_id: user.id,
-        port_id: payload.port_id,
-        direction: payload.direction,
-        status: payload.status,
-        modules_present: payload.modules_present,
-        cohort_tags: payload.cohort_tags,
-        blocks: payload.blocks,
-        signature: signed.signature_b64,
-        signed_at: detectedAt,
-        signing_key_id: signed.signing_key_id,
-        started_at: payload.started_at,
-        ended_at: detectedAt,
-      })
-      if (!cErr) crossingId = payload.id
+      }, { closeAfterUpsert: true })
+      crossingId = upsert.id
     } catch {
       // Crossing-record side-effect must never break the primary
       // anonymized auto-crossing write. Swallow.

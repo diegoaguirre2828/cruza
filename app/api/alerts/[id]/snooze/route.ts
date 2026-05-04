@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { getServiceClient } from '@/lib/supabase'
-import { composeCrossing } from '@/lib/crossing/generate'
+import { findOrCreateActiveCrossing } from '@/lib/crossing/upsert'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,43 +63,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
 
-  // Compose / extend a Cruzar Crossing with closure block.
-  // For the snooze path, simplest is a new crossing with just the
-  // closure module — tying back to the alert. Later flows (real
-  // cross-detection) will create a richer crossing.
+  // Find-or-extend the active crossing for this user × port. This
+  // composes the closure block onto any in-progress trip (alert
+  // already-fired-block, prep-block from co-pilot start, etc) instead
+  // of creating an isolated row.
   const closedAt = new Date().toISOString()
-  const { payload, signed } = await composeCrossing({
+  const upsert = await findOrCreateActiveCrossing({
     user_id: user.id,
     port_id: alert.port_id,
     direction: direction ?? 'us_to_mx',
-    status: 'completed',
     closure: {
       closed_at: closedAt,
       reason: reason ?? 'user_button_ya_cruce',
       alert_id_snoozed: alertId,
       snoozed_until: snoozeUntil,
     },
-  })
-
-  await db.from('crossings').insert({
-    id: payload.id,
-    user_id: user.id,
-    port_id: payload.port_id,
-    direction: payload.direction,
-    status: payload.status,
-    modules_present: payload.modules_present,
-    cohort_tags: payload.cohort_tags,
-    blocks: payload.blocks,
-    signature: signed.signature_b64,
-    signed_at: closedAt,
-    signing_key_id: signed.signing_key_id,
-    started_at: payload.started_at,
-    ended_at: closedAt,
-  })
+  }, { closeAfterUpsert: true })
 
   return NextResponse.json({
     ok: true,
     snoozed_until: snoozeUntil,
-    crossing_id: payload.id,
+    crossing_id: upsert.id,
   })
 }
