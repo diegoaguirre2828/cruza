@@ -61,7 +61,7 @@ export default async function WorkspacePage({
                 <span className="h-3 w-px bg-border" />
                 <span>RGV CORRIDOR</span>
                 <span className="h-3 w-px bg-border" />
-                <span>BILINGUAL EN · ES</span>
+                <a href="/spec/ticket-v1" className="hover:text-foreground transition">CRUZAR TICKET · V1 →</a>
               </div>
             </div>
 
@@ -88,8 +88,10 @@ export default async function WorkspacePage({
             <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/60">
               {c.shared.powered_by}
             </div>
-            <div className="font-mono text-[10px] tabular-nums tracking-[0.08em] text-muted-foreground/50">
-              26.18°N · 98.18°W
+            <div className="flex items-center gap-4 font-mono text-[10px] tabular-nums tracking-[0.08em] text-muted-foreground/50">
+              <a href="/spec/ticket-v1" className="hover:text-foreground transition">SPEC · CRUZAR TICKET V1</a>
+              <span className="h-3 w-px bg-border/60" />
+              <span>26.18°N · 98.18°W</span>
             </div>
           </div>
         </div>
