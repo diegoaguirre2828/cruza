@@ -1,7 +1,5 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { RequireAuth } from "@/components/RequireAuth";
 
 // /dispatch — operator console for B2B Insights subscribers.
 // Hard auth gate: anonymous visitors redirect to /login. This is paid-tier
@@ -30,19 +28,9 @@ const NAV: Array<{ href: string; en: string; es: string }> = [
   { href: "/dispatch/export", en: "Export", es: "Exportar" },
 ];
 
-export default async function DispatchLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const sb = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } },
-  );
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    redirect("/login?redirect=/dispatch");
-  }
-
+export default function DispatchLayout({ children }: { children: React.ReactNode }) {
   return (
+    <RequireAuth redirectFrom="/dispatch">
     <div className="dark min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8">
@@ -78,5 +66,6 @@ export default async function DispatchLayout({ children }: { children: React.Rea
       </header>
       {children}
     </div>
+    </RequireAuth>
   );
 }

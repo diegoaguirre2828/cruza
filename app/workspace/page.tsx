@@ -1,6 +1,3 @@
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
 import { B2BNav } from '@/components/B2BNav';
 import { WORKSPACE_EN } from '@/lib/copy/workspace-en';
 import { WORKSPACE_ES } from '@/lib/copy/workspace-es';
@@ -10,6 +7,7 @@ import { Stamp } from '@/components/ui/Stamp';
 import { BridgeHero } from '@/components/ui/BridgeHero';
 import { PortTicker } from '@/components/ui/PortTicker';
 import { OperatorInstallHint } from '@/components/OperatorInstallHint';
+import { RequireAuth } from '@/components/RequireAuth';
 
 export const metadata = {
   title: 'Workspace — Cruzar',
@@ -26,18 +24,10 @@ export default async function WorkspacePage({
   const params = await searchParams;
   const lang: 'en' | 'es' = params?.lang === 'es' ? 'es' : 'en';
 
-  // Hard auth gate — workspace is operator-only. Anonymous → /login.
-  const cookieStore = await cookies();
-  const sb = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => cookieStore.getAll() } },
-  );
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) {
-    const langSuffix = lang === 'es' ? '&lang=es' : '';
-    redirect(`/login?redirect=/workspace${langSuffix}`);
-  }
+  // Server-side redirect from app router didn't fire reliably on prod
+  // (Next.js 16 + Vercel runtime quirk 2026-05-04). Wrapping in RequireAuth
+  // (client-side fallback) is the locked-tonight version. Server-side gate
+  // can be revisited tomorrow.
 
   const c = lang === 'es' ? WORKSPACE_ES : WORKSPACE_EN;
 
@@ -45,6 +35,7 @@ export default async function WorkspacePage({
   const stampDate = today.toISOString().slice(0, 10).replace(/-/g, '·');
 
   return (
+    <RequireAuth redirectFrom="/workspace" lang={lang}>
     <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav lang={lang} />
 
@@ -119,5 +110,6 @@ export default async function WorkspacePage({
 
       <OperatorInstallHint lang={lang} />
     </div>
+    </RequireAuth>
   );
 }
