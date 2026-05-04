@@ -35,6 +35,20 @@ interface OrchestratorResult {
     blocking_actions_required: number;
   };
   spec_url: string;
+  user_tier?: 'anon' | 'free' | 'starter' | 'pro' | 'fleet';
+  capabilities?: {
+    can_scan: boolean;
+    can_compose_ticket: boolean;
+    can_download_filings: boolean;
+    can_persist_history: boolean;
+    monthly_ticket_quota: number;
+  };
+  ticket?: {
+    ticket_id?: string;
+    verify_url?: string;
+    persisted: boolean;
+    error?: string;
+  } | null;
   cta: string;
 }
 
@@ -50,6 +64,7 @@ export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBu
   const [csvImporterName, setCsvImporterName] = useState('');
   const [csvImporterEin, setCsvImporterEin] = useState('');
   const [busy, setBusy] = useState(false);
+  const [composing, setComposing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OrchestratorResult | null>(null);
   const langSuffix = lang === 'es' ? '?lang=es' : '';
@@ -317,21 +332,171 @@ export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBu
               </div>
             )}
 
-            {/* CTA */}
-            <div className="rounded-xl border border-border bg-card p-5">
-              <p className="text-[13.5px] text-muted-foreground">{result.cta}</p>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <Link href={`/signup${langSuffix}`} className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:bg-foreground/85">
-                  Sign up to compose a signed Ticket
-                </Link>
-                <Link href={`/spec/ticket-v1${langSuffix}`} className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">
-                  spec →
-                </Link>
-              </div>
-            </div>
+            {/* TIER-AWARE CTA — the actual paywall surface */}
+            <TierGatedCta
+              result={result}
+              composing={composing}
+              onCompose={composeTicket}
+              langSuffix={langSuffix}
+            />
           </>
         )}
       </div>
+    </div>
+  );
+
+  async function composeTicket() {
+    if (!result || composing) return;
+    setComposing(true);
+    setError(null);
+    try {
+      // Re-run /api/scan with compose_ticket=true. The orchestrator will rerun
+      // (it's cheap; doing it this way keeps the API stateless + ensures the
+      // signed Ticket reflects exactly what the user just saw).
+      const bundlePayload = mode === 'json'
+        ? JSON.parse(bundleJson)
+        : null;
+      if (mode === 'json' && bundlePayload) {
+        const r = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ ...bundlePayload, compose_ticket: true }),
+        });
+        if (r.status === 429) { setError('Rate limited — try again in an hour.'); return; }
+        const j = await r.json();
+        if (!r.ok) { setError(j?.error ?? 'compose_failed'); return; }
+        setResult(j as OrchestratorResult);
+        if (j.ticket?.error) setError(j.ticket.error);
+      } else if (mode === 'csv') {
+        // CSV mode doesn't currently support compose_ticket on the same endpoint.
+        // Tell the user to switch to JSON for the compose flow OR sign up to upgrade.
+        setError('CSV-mode Ticket compose coming soon. Use JSON bundle mode for now, or sign up to enable saved-scan compose from any mode.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'error');
+    } finally {
+      setComposing(false);
+    }
+  }
+}
+
+function TierGatedCta({
+  result,
+  composing,
+  onCompose,
+  langSuffix,
+}: {
+  result: OrchestratorResult;
+  composing: boolean;
+  onCompose: () => void;
+  langSuffix: string;
+}) {
+  const tier = result.user_tier ?? 'anon';
+  const canCompose = result.capabilities?.can_compose_ticket ?? false;
+  const ticket = result.ticket;
+
+  // Composed-ticket success state — terminal of the paywall flow
+  if (ticket?.ticket_id && ticket.persisted) {
+    return (
+      <div className="rounded-xl border border-emerald-400/40 bg-emerald-400/[0.06] p-5">
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-emerald-300">
+          ✓ Cruzar Ticket composed + signed
+        </div>
+        <div className="mt-2 font-mono text-[15px] text-foreground">{ticket.ticket_id}</div>
+        <p className="mt-2 text-[12.5px] text-muted-foreground/80">
+          Signed Ed25519, persisted. Verifiable against our public key — the audit-shielded
+          artifact regulators accept.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href={`/ticket/${ticket.ticket_id}${langSuffix}`}
+            className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:bg-foreground/85"
+          >
+            View Ticket →
+          </Link>
+          <Link
+            href={`/spec/ticket-v1${langSuffix}`}
+            className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+          >
+            How verification works →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Anon — funnel into signup
+  if (tier === 'anon') {
+    return (
+      <div className="rounded-xl border border-border bg-card p-5">
+        <p className="text-[13.5px] text-foreground/85">{result.cta}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href={`/signup${langSuffix}`}
+            className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:bg-foreground/85"
+          >
+            Sign up free →
+          </Link>
+          <Link
+            href={`/pricing/business${langSuffix}`}
+            className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+          >
+            Compare paid tiers →
+          </Link>
+        </div>
+        <p className="mt-3 text-[11.5px] text-muted-foreground/70">
+          Free signup unlocks 1 signed Cruzar Ticket / month. Paid tiers compose unlimited
+          (within tier quota) + download filing artifacts (CAPE CSV / Form 19 / Form 7551).
+        </p>
+      </div>
+    );
+  }
+
+  // Authed (free or paid) — offer compose
+  return (
+    <div className="rounded-xl border border-accent/40 bg-accent/[0.04] p-5">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <p className="text-[13.5px] text-foreground/90">{result.cta}</p>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-foreground/70">
+          {tier} tier
+        </span>
+      </div>
+      {ticket?.error && (
+        <div className="mt-3 rounded-md border border-red-400/40 bg-red-400/[0.06] p-3 text-[12.5px] text-red-300">
+          {ticket.error}
+        </div>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {canCompose ? (
+          <button
+            type="button"
+            onClick={onCompose}
+            disabled={composing}
+            className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:bg-foreground/85 disabled:opacity-50"
+          >
+            {composing ? 'Composing…' : 'Compose signed Cruzar Ticket →'}
+          </button>
+        ) : (
+          <Link
+            href={`/pricing/business${langSuffix}`}
+            className="rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:bg-foreground/85"
+          >
+            Upgrade to compose →
+          </Link>
+        )}
+        <Link
+          href={`/spec/ticket-v1${langSuffix}`}
+          className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+        >
+          spec →
+        </Link>
+      </div>
+      {tier === 'free' && (
+        <p className="mt-3 text-[11.5px] text-muted-foreground/70">
+          Free tier: 1 Ticket / month. Upgrade to Starter ($99/mo) for 25 / month + filing
+          artifact downloads (CAPE CSV / Form 19).
+        </p>
+      )}
     </div>
   );
 }
