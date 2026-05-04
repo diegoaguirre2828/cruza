@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseAceCsv } from '@/lib/chassis/refunds/ace-parser';
 import { composeRefund } from '@/lib/chassis/refunds/composer';
+import { surfaceCrossModuleHints } from '@/lib/chassis/shared/cross-module-hints';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,27 @@ export async function POST(req: NextRequest) {
     ior_id_number: 'PUBLIC_SCAN',
     language: 'en',
   }, undefined, { skipScreening: true });
+  // Surface cross-module hints — what other modules could fire on these same entries.
+  // The "they talk to each other" surface at the per-module response level: even when
+  // the broker entered through /refunds/scan instead of /scan, we tell them what else
+  // applies and what data they'd need to provide to surface it.
+  const allHtsus = entries.flatMap((e) => e.htsus_codes);
+  const allCountries = [...new Set(entries.map((e) => e.country_of_origin))];
+  const hints = surfaceCrossModuleHints('from_refunds', {
+    has_entries: entries.length > 0,
+    entry_count: entries.length,
+    has_exports: false,
+    has_supply_chain: false,
+    has_cbam_goods: false,
+    has_eori: false,
+    has_mexican_broker: false,
+    has_driver: false,
+    htsus_codes: allHtsus,
+    countries_of_origin: allCountries,
+    has_chinese_supply: allCountries.includes('CN'),
+    any_duty_paid: entries.some((e) => e.total_duty_paid_usd > 0),
+  });
+
   return NextResponse.json({
     total_entries: comp.total_entries,
     cape_eligible_count: comp.cape_eligible_count,
@@ -63,6 +85,8 @@ export async function POST(req: NextRequest) {
     estimated_cruzar_fee_usd: comp.estimated_cruzar_fee_usd,
     estimated_net_to_you_usd: Math.max(comp.total_recoverable_usd - comp.estimated_cruzar_fee_usd, 0),
     registry_version: comp.registry_version,
+    cross_module_hints: hints,
+    universal_scan_url: '/scan',
     cta: 'Sign up to download the CAPE CSV + Form 19 packet and start your refund claim.',
   });
 }
