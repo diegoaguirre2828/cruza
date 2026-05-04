@@ -45,13 +45,11 @@ export default async function WorkspacePage({
                 />
               </div>
 
-              {/* Big bilingual lockup — EN top in display serif, ES below in italic-muted */}
+              {/* Single-language hero — bilingual is a TOGGLE in the nav, never both on one page.
+                  Per feedback_bilingual_toggle_not_both_on_one_page_20260503. */}
               <h1 className="mt-6 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-foreground tracking-[-0.02em]">
-                {lang === 'en' ? c.hero.title : WORKSPACE_EN.hero.title}
+                {c.hero.title}
               </h1>
-              <h2 className="mt-1 font-serif text-[clamp(2.4rem,4.8vw,3.8rem)] font-medium leading-[1.02] text-muted-foreground/55 tracking-[-0.02em] italic">
-                {lang === 'es' ? c.hero.title : WORKSPACE_ES.hero.title}
-              </h2>
 
               <p className="mt-7 max-w-xl text-[15px] leading-[1.65] text-muted-foreground">
                 {c.hero.sub}
@@ -74,20 +72,10 @@ export default async function WorkspacePage({
           </div>
         </div>
 
-        {/* Footer hairline w/ section label */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 px-5 sm:px-8 py-2 border-t border-border bg-card/30">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground/60">
-            CRUZAR / SUBSTRATE / WORKSPACE / 01
-          </span>
-          <span className="h-px flex-1 bg-border" />
-          <span className="font-mono text-[9.5px] tabular-nums tracking-[0.14em] text-muted-foreground/50">
-            {today.getUTCFullYear()}.{String(today.getUTCMonth() + 1).padStart(2, '0')}.{String(today.getUTCDate()).padStart(2, '0')}
-          </span>
-        </div>
       </section>
 
-      {/* LIVE PORT TICKER — Bloomberg-style, the geographic spine made literal */}
-      <PortTicker />
+      {/* LIVE PORT TICKER — adaptive to user's watched ports (or RGV defaults if anon) */}
+      <PortTicker lang={lang} />
 
       <WorkspaceClient lang={lang} copy={c} />
 
