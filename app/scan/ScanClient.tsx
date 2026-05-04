@@ -44,7 +44,11 @@ const fmtEur = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
 
 export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBundle: object }) {
+  const [mode, setMode] = useState<'json' | 'csv'>('csv');
   const [bundleJson, setBundleJson] = useState(JSON.stringify(sampleBundle, null, 2));
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvImporterName, setCsvImporterName] = useState('');
+  const [csvImporterEin, setCsvImporterEin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<OrchestratorResult | null>(null);
@@ -54,20 +58,38 @@ export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBu
     setError(null);
     setBusy(true);
     try {
-      let parsed: unknown;
-      try { parsed = JSON.parse(bundleJson); } catch (e) {
-        setError('Invalid JSON: ' + (e as Error).message);
-        return;
+      if (mode === 'json') {
+        let parsed: unknown;
+        try { parsed = JSON.parse(bundleJson); } catch (e) {
+          setError('Invalid JSON: ' + (e as Error).message);
+          return;
+        }
+        const r = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(parsed),
+        });
+        if (r.status === 429) { setError('Rate limited — try again in an hour.'); return; }
+        const j = await r.json();
+        if (!r.ok) { setError(j?.error ?? 'error'); return; }
+        setResult(j as OrchestratorResult);
+      } else {
+        if (!csvFile) { setError('Pick an ACE Entry Summary CSV first.'); return; }
+        if (!csvImporterName.trim()) { setError('Importer legal name required.'); return; }
+        const fd = new FormData();
+        fd.append('csv', csvFile);
+        fd.append('importer_name', csvImporterName);
+        fd.append('importer_ein', csvImporterEin);
+        const r = await fetch('/api/scan/csv', { method: 'POST', body: fd });
+        if (r.status === 429) { setError('Rate limited — try again in an hour.'); return; }
+        const j = await r.json();
+        if (!r.ok) {
+          const detail = j?.detail ? ` — ${Array.isArray(j.detail) ? j.detail.join('; ') : j.detail}` : '';
+          setError((j?.error ?? 'error') + detail);
+          return;
+        }
+        setResult(j as OrchestratorResult);
       }
-      const r = await fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(parsed),
-      });
-      if (r.status === 429) { setError('Rate limited — try again in an hour.'); return; }
-      const j = await r.json();
-      if (!r.ok) { setError(j?.error ?? 'error'); return; }
-      setResult(j as OrchestratorResult);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'error');
     } finally {
@@ -77,6 +99,9 @@ export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBu
 
   function reset() {
     setBundleJson(JSON.stringify(sampleBundle, null, 2));
+    setCsvFile(null);
+    setCsvImporterName('');
+    setCsvImporterEin('');
     setResult(null);
     setError(null);
   }
@@ -87,20 +112,94 @@ export function ScanClient({ lang, sampleBundle }: { lang: 'en' | 'es'; sampleBu
     <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
       {/* LEFT — input */}
       <div className="space-y-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
-            ShipmentBundle (JSON)
-          </div>
-          <button onClick={reset} type="button" className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">
-            reset to sample
+        {/* Mode toggle — CSV is the broker workflow, JSON is the developer/integration mode */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMode('csv')}
+            className={`rounded-md border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] transition ${
+              mode === 'csv' ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            ACE CSV upload
           </button>
+          <button
+            type="button"
+            onClick={() => setMode('json')}
+            className={`rounded-md border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.16em] transition ${
+              mode === 'json' ? 'border-foreground bg-foreground text-background' : 'border-border text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            JSON bundle
+          </button>
+          <span className="ml-auto">
+            <button onClick={reset} type="button" className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground">
+              reset
+            </button>
+          </span>
         </div>
-        <textarea
-          value={bundleJson}
-          onChange={(e) => setBundleJson(e.target.value)}
-          spellCheck={false}
-          className="w-full h-[520px] rounded-lg border border-border bg-card p-4 font-mono text-[12px] leading-[1.5] text-foreground outline-none focus:border-foreground/60 resize-y"
-        />
+
+        {mode === 'csv' && (
+          <div className="space-y-3">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
+              ACE Entry Summary CSV — broker workflow
+            </div>
+            <p className="text-[12.5px] text-muted-foreground/80 leading-[1.55]">
+              Drop the ACE Entry Summary CSV you already export from CBP&apos;s Trade Portal. We parse the
+              entries, run every applicable module against them, and surface refunds + drawback + UFLPA
+              + CBAM in one pass. Required columns: <code className="font-mono text-foreground">entry_number</code>,{' '}
+              <code className="font-mono text-foreground">entry_date</code>,{' '}
+              <code className="font-mono text-foreground">country_of_origin</code>,{' '}
+              <code className="font-mono text-foreground">htsus_codes</code>,{' '}
+              <code className="font-mono text-foreground">total_duty_paid_usd</code>.
+            </p>
+            <label className="block">
+              <span className="block text-[12px] text-muted-foreground/80 mb-1">CSV file</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(e) => setCsvFile(e.target.files?.[0] ?? null)}
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-[13px] text-foreground file:mr-3 file:rounded file:border-0 file:bg-foreground file:px-3 file:py-1 file:text-background file:font-mono file:text-[11px] file:uppercase file:tracking-[0.14em] file:cursor-pointer cursor-pointer"
+              />
+              {csvFile && (
+                <span className="mt-1 block font-mono text-[11px] text-muted-foreground/80">
+                  {csvFile.name} · {(csvFile.size / 1024).toFixed(1)} KB
+                </span>
+              )}
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="block text-[12px] text-muted-foreground/80 mb-1">Importer legal name *</span>
+                <input
+                  type="text"
+                  value={csvImporterName}
+                  onChange={(e) => setCsvImporterName(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground outline-none focus:border-foreground/60"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-[12px] text-muted-foreground/80 mb-1">Importer EIN</span>
+                <input
+                  type="text"
+                  value={csvImporterEin}
+                  onChange={(e) => setCsvImporterEin(e.target.value)}
+                  placeholder="12-3456789"
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[14px] text-foreground outline-none focus:border-foreground/60"
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
+        {mode === 'json' && (
+          <textarea
+            value={bundleJson}
+            onChange={(e) => setBundleJson(e.target.value)}
+            spellCheck={false}
+            className="w-full h-[520px] rounded-lg border border-border bg-card p-4 font-mono text-[12px] leading-[1.5] text-foreground outline-none focus:border-foreground/60 resize-y"
+          />
+        )}
+
         <div className="flex items-center gap-3">
           <button
             onClick={run}
