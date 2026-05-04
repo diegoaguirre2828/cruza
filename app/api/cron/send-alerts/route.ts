@@ -10,6 +10,25 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   )
 }
 
+// Per-user language for notification copy. Default 'es' (RGV-first).
+// Backed by profiles.language column added in migration v84
+// (2026-05-03). Diego flagged that push notifications were rendering
+// EN+ES side-by-side ("Bajó la espera · Wait dropped"), which violates
+// the bilingual-toggle-not-both rule
+// (feedback_bilingual_toggle_not_both_on_one_page_20260503). Each
+// notification now respects the user's stored preference.
+type Lang = 'en' | 'es'
+
+async function getUserLanguage(userId: string): Promise<Lang> {
+  const db = getServiceClient()
+  const { data } = await db
+    .from('profiles')
+    .select('language')
+    .eq('id', userId)
+    .maybeSingle()
+  return data?.language === 'en' ? 'en' : 'es'
+}
+
 // Staffing-drop push template (v56). Different copy + tag than the
 // wait-drop alert so the user can tell at a glance which kind fired.
 async function sendStaffingPush(
@@ -19,6 +38,7 @@ async function sendStaffingPush(
   laneType: string,
   officersOpen: number,
   officersTypical: number,
+  lang: Lang,
 ) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
   const db = getServiceClient()
@@ -28,11 +48,24 @@ async function sendStaffingPush(
     .eq('user_id', userId)
   if (!subs?.length) return
 
-  const laneLabel = laneType === 'commercial' ? 'camión'
+  const laneLabelEs = laneType === 'commercial' ? 'camión'
     : laneType === 'pedestrian' ? 'peatonal'
     : laneType === 'sentri' ? 'SENTRI'
     : 'autos'
+  const laneLabelEn = laneType === 'commercial' ? 'commercial'
+    : laneType === 'pedestrian' ? 'pedestrian'
+    : laneType === 'sentri' ? 'SENTRI'
+    : 'auto'
   const delta = officersTypical - officersOpen
+  const es = lang === 'es'
+
+  const title = es
+    ? `⚠️ ${portName} — ${delta} oficial${delta === 1 ? '' : 'es'} menos`
+    : `⚠️ ${portName} — ${delta} fewer officer${delta === 1 ? '' : 's'}`
+  const body = es
+    ? `${officersOpen} de ${officersTypical} normales en ${laneLabelEs}. La fila va a subir pronto.`
+    : `${officersOpen} of ${officersTypical} normal in ${laneLabelEn} lane. Wait spike likely in 15–30 min.`
+  const viewLabel = es ? 'Ver' : 'View'
 
   let anyDelivered = false
   for (const sub of subs) {
@@ -41,13 +74,13 @@ async function sendStaffingPush(
       await webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
-          title: `⚠️ ${portName} — ${delta} oficial${delta === 1 ? '' : 'es'} menos`,
-          body: `${officersOpen} de ${officersTypical} normales en ${laneLabel}. La fila va a subir pronto · Wait spike likely in 15-30 min`,
+          title,
+          body,
           url: `/cruzar/${encodeURIComponent(portId)}`,
           tag: `staffing-alert-${portId}-${laneType}`,
           requireInteraction: true,
           actions: [
-            { action: 'view', title: 'Ver · View' },
+            { action: 'view', title: viewLabel },
             { action: 'snooze', title: 'Snooze 1h' },
           ],
         }),
@@ -70,7 +103,7 @@ async function sendStaffingPush(
   }
 }
 
-async function sendPush(userId: string, portName: string, portId: string, wait: number) {
+async function sendPush(userId: string, portName: string, portId: string, wait: number, lang: Lang) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return
   const db = getServiceClient()
   // Fetch EVERY subscription for this user — a single user may have
@@ -85,6 +118,12 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
 
   if (!subs?.length) return
 
+  const es = lang === 'es'
+  const body = es
+    ? 'Bajó la espera — toca para ver en vivo.'
+    : 'Wait dropped — tap to view live.'
+  const viewLabel = es ? 'Ver' : 'View'
+
   let anyDelivered = false
   for (const sub of subs) {
     if (!sub?.endpoint) continue
@@ -93,12 +132,12 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
         JSON.stringify({
           title: `🌉 ${portName} — ${wait} min`,
-          body: `Bajó la espera · Wait dropped — toca para ver en vivo · tap to view live`,
+          body,
           url: `/port/${encodeURIComponent(portId)}`,
           tag: `urgent-alert-${portId}`,
           requireInteraction: true,
           actions: [
-            { action: 'view', title: 'Ver · View' },
+            { action: 'view', title: viewLabel },
             { action: 'snooze', title: 'Snooze 1h' },
           ],
         }),
@@ -148,12 +187,14 @@ async function smsSentInLast24h(userId: string): Promise<number> {
   return count ?? 0
 }
 
-async function sendSms(userId: string, phone: string, portName: string, portId: string, wait: number): Promise<'sent' | 'capped' | 'unconfigured'> {
+async function sendSms(userId: string, phone: string, portName: string, portId: string, wait: number, lang: Lang): Promise<'sent' | 'capped' | 'unconfigured'> {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) return 'unconfigured'
   const recent = await smsSentInLast24h(userId)
   if (recent >= DAILY_SMS_CAP) return 'capped'
   const url = `https://cruzar.app/port/${encodeURIComponent(portId)}`
-  const body = `🌉 Cruzar Alert: ${portName} is now ${wait} min. ${url}`
+  const body = lang === 'es'
+    ? `🌉 Alerta Cruzar: ${portName} ahora en ${wait} min. ${url}`
+    : `🌉 Cruzar Alert: ${portName} is now ${wait} min. ${url}`
   const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64')
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
     method: 'POST',
@@ -229,9 +270,10 @@ export async function GET(req: NextRequest) {
 
       if (!claimed?.length) continue // another instance already claimed it
 
+      const lang = await getUserLanguage(alert.user_id)
       const results = await Promise.allSettled([
-        sendPush(alert.user_id, reading.port_name, alert.port_id, wait),
-        alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait) : null,
+        sendPush(alert.user_id, reading.port_name, alert.port_id, wait, lang),
+        alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait, lang) : null,
       ])
       results.forEach((r, i) => {
         if (r.status === 'rejected') console.error(`Alert send failed [${['push','sms'][i]}] user=${alert.user_id}:`, r.reason)
@@ -329,7 +371,8 @@ export async function GET(req: NextRequest) {
           .select('id')
         if (!claimed?.length) continue
 
-        await sendStaffingPush(alert.user_id, reading.port_name, alert.port_id, lane, openCount, typical).catch((e) =>
+        const staffingLang = await getUserLanguage(alert.user_id)
+        await sendStaffingPush(alert.user_id, reading.port_name, alert.port_id, lane, openCount, typical, staffingLang).catch((e) =>
           console.error('staffing push failed', alert.user_id, e),
         )
         staffingSent++
