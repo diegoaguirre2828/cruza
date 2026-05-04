@@ -25,16 +25,16 @@ const NAV: Array<{ href: string; en: string; es: string }> = [
 
 export default function DispatchLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
-      <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#070b18]/95 backdrop-blur supports-[backdrop-filter]:bg-[#070b18]/70">
+    <div className="dark min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/70">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8">
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-3">
             <div className="flex items-baseline gap-3">
-              <Link href="/dispatch" className="font-mono text-[15px] font-semibold tracking-tight text-amber-300 hover:text-amber-200">
+              <Link href="/dispatch" className="font-mono text-[15px] font-semibold tracking-tight text-foreground hover:text-accent">
                 Cruzar Dispatch
               </Link>
-              <span className="text-[10.5px] uppercase tracking-[0.18em] text-white/40">
-                operator console · consola de operador
+              <span className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                operator console
               </span>
             </div>
             <nav className="flex items-center gap-1 text-[12.5px]">
@@ -42,20 +42,17 @@ export default function DispatchLayout({ children }: { children: React.ReactNode
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-lg px-2.5 py-1 text-white/70 hover:bg-white/[0.06] hover:text-white transition"
+                  className="rounded-lg px-2.5 py-1 text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground transition"
                 >
                   {item.en}
-                  <span className="ml-1.5 text-white/35" lang="es">
-                    · {item.es}
-                  </span>
                 </Link>
               ))}
-              <span className="mx-2 text-white/15">|</span>
+              <span className="mx-2 text-border">|</span>
               <Link
-                href="/insights"
-                className="rounded-lg px-2.5 py-1 text-[11.5px] text-white/40 hover:text-white/80 transition"
+                href="/workspace"
+                className="rounded-lg px-2.5 py-1 text-[11.5px] text-muted-foreground/70 hover:text-foreground transition"
               >
-                ← /insights
+                ← /workspace
               </Link>
             </nav>
           </div>

@@ -339,35 +339,35 @@ export default function UsmcaGenerator() {
   if (!form.signer_title) errors.push("Signer title");
 
   if (!hydrated) {
-    return <main className="mx-auto max-w-[920px] px-5 py-6 text-white/45">Loading…</main>;
+    return <main className="mx-auto max-w-[920px] px-5 py-6 text-muted-foreground/70">Loading…</main>;
   }
 
   return (
     <main className="mx-auto max-w-[920px] px-5 sm:px-8 py-6">
       <div className="mb-5 flex items-baseline justify-between gap-3">
         <div>
-          <h1 className="text-[1.4rem] font-semibold text-white">USMCA Certificate of Origin</h1>
-          <p className="mt-1 text-[12.5px] text-white/55">
+          <h1 className="text-[1.4rem] font-semibold text-foreground">USMCA Certificate of Origin</h1>
+          <p className="mt-1 text-[12.5px] text-muted-foreground/80">
             9 data elements per Article 5.2. We pre-fill, you verify, you sign. HS suggestion and
             pre-sign review available.
           </p>
         </div>
-        <Link href="/dispatch/paperwork" className="text-[11.5px] text-white/45 hover:text-white">
+        <Link href="/dispatch/paperwork" className="text-[11.5px] text-muted-foreground/70 hover:text-foreground">
           ← All forms
         </Link>
       </div>
 
       {/* History dropdown + save */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-[10.5px] uppercase tracking-[0.18em] text-white/45 mr-1">History</span>
+        <span className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70 mr-1">History</span>
         {history.length === 0 ? (
-          <span className="text-[12px] text-white/40">No saved drafts yet.</span>
+          <span className="text-[12px] text-muted-foreground/70">No saved drafts yet.</span>
         ) : (
           <select
             onChange={(e) => e.target.value && loadFromHistory(e.target.value)}
             value=""
             style={{ colorScheme: "dark" }}
-            className="rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1 text-[12px] text-white focus:border-amber-300/40 focus:outline-none"
+            className="rounded-lg border border-border bg-background px-2 py-1 text-[12px] text-foreground focus:border-amber-300/40 focus:outline-none"
           >
             <option value="">Load previous draft…</option>
             {history.map((h) => (
@@ -379,7 +379,7 @@ export default function UsmcaGenerator() {
         )}
         <button
           onClick={saveCurrent}
-          className="rounded-lg border border-white/[0.12] bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/65 hover:bg-white/[0.08] hover:text-white"
+          className="rounded-lg border border-border bg-foreground/[0.04] px-2.5 py-1 text-[11.5px] text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground"
           title="Snapshot the current form to history"
         >
           Save current to history
@@ -387,17 +387,17 @@ export default function UsmcaGenerator() {
       </div>
 
       {/* Step toggle */}
-      <div className="mb-5 inline-flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1 text-[12px]">
+      <div className="mb-5 inline-flex rounded-xl border border-border bg-foreground/[0.02] p-1 text-[12px]">
         <button
           onClick={() => setStep("input")}
-          className={`rounded-lg px-4 py-1.5 ${step === "input" ? "bg-amber-400 text-[#0a1020] font-semibold" : "text-white/55 hover:text-white"}`}
+          className={`rounded-lg px-4 py-1.5 ${step === "input" ? "bg-foreground text-background font-semibold" : "text-muted-foreground/80 hover:text-foreground"}`}
         >
           1. Fill
         </button>
         <button
           onClick={() => setStep("preview")}
           disabled={errors.length > 0}
-          className={`rounded-lg px-4 py-1.5 ${step === "preview" ? "bg-amber-400 text-[#0a1020] font-semibold" : errors.length > 0 ? "text-white/25 cursor-not-allowed" : "text-white/55 hover:text-white"}`}
+          className={`rounded-lg px-4 py-1.5 ${step === "preview" ? "bg-foreground text-background font-semibold" : errors.length > 0 ? "text-muted-foreground/40 cursor-not-allowed" : "text-muted-foreground/80 hover:text-foreground"}`}
         >
           2. Preview & sign
         </button>
@@ -411,7 +411,7 @@ export default function UsmcaGenerator() {
                 <button
                   key={r}
                   onClick={() => update("certifier_role", r)}
-                  className={`rounded-lg border px-3 py-1.5 text-[12.5px] capitalize ${form.certifier_role === r ? "border-amber-300/40 bg-amber-300/[0.06] text-amber-200" : "border-white/[0.1] text-white/65 hover:bg-white/[0.04]"}`}
+                  className={`rounded-lg border px-3 py-1.5 text-[12.5px] capitalize ${form.certifier_role === r ? "border-amber-300/40 bg-foreground/[0.06] text-accent" : "border-foreground/20 text-muted-foreground hover:bg-foreground/[0.04]"}`}
                 >
                   {r}
                 </button>
@@ -464,8 +464,8 @@ export default function UsmcaGenerator() {
           <Section num="6+7" title="Goods + origin criterion">
             <ul className="space-y-3">
               {form.goods.map((g, i) => (
-                <li key={i} className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 space-y-2">
-                  <div className="flex items-baseline justify-between text-[10.5px] uppercase tracking-[0.15em] text-white/45">
+                <li key={i} className="rounded-xl border border-border bg-foreground/[0.02] p-3 space-y-2">
+                  <div className="flex items-baseline justify-between text-[10.5px] uppercase tracking-[0.15em] text-muted-foreground/70">
                     <span>Item {i + 1}</span>
                     {form.goods.length > 1 && (
                       <button onClick={() => removeGoodRow(i)} className="text-rose-300/70 hover:text-rose-300 normal-case tracking-normal">
@@ -477,13 +477,13 @@ export default function UsmcaGenerator() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <div className="flex items-baseline justify-between mb-1.5">
-                        <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55">
+                        <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80">
                           HS subheading (6 digits)
                         </label>
                         <button
                           onClick={() => runHsPanel(i)}
                           disabled={hsPanelLoading && hsPanelFor === i}
-                          className="text-[10.5px] text-amber-300 hover:text-amber-200 disabled:opacity-50"
+                          className="text-[10.5px] text-foreground hover:text-accent disabled:opacity-50"
                           title="Suggest the HS subheading"
                         >
                           {hsPanelLoading && hsPanelFor === i ? "Suggesting…" : "✦ Suggest HS code"}
@@ -494,18 +494,18 @@ export default function UsmcaGenerator() {
                         value={g.hs_subheading}
                         onChange={(e) => updateGood(i, { hs_subheading: e.target.value })}
                         placeholder="0000.00"
-                        className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 font-mono text-[13px] text-white placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-[13px] text-foreground placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">
+                      <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">
                         Origin criterion
                       </label>
                       <select
                         value={g.origin_criterion}
                         onChange={(e) => updateGood(i, { origin_criterion: e.target.value as OriginCriterion })}
                         style={{ colorScheme: "dark" }}
-                        className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
                       >
                         {(["A", "B", "C", "D"] as OriginCriterion[]).map((c) => (
                           <option key={c} value={c}>
@@ -513,15 +513,15 @@ export default function UsmcaGenerator() {
                           </option>
                         ))}
                       </select>
-                      <p className="mt-1 text-[10.5px] text-white/40 leading-[1.4]">{CRITERION_LABEL[g.origin_criterion]}</p>
+                      <p className="mt-1 text-[10.5px] text-muted-foreground/70 leading-[1.4]">{CRITERION_LABEL[g.origin_criterion]}</p>
                     </div>
                   </div>
 
                   {/* HS suggestion panel result */}
                   {hsPanelFor === i && (hsPanelLoading || hsPanelResult || hsPanelError) && (
-                    <div className="mt-2 rounded-xl border border-amber-300/20 bg-amber-300/[0.03] p-3">
+                    <div className="mt-2 rounded-xl border border-amber-300/20 bg-foreground/[0.03] p-3">
                       <div className="flex items-baseline justify-between mb-2">
-                        <span className="text-[10.5px] uppercase tracking-[0.15em] text-amber-200">
+                        <span className="text-[10.5px] uppercase tracking-[0.15em] text-accent">
                           HS suggestion
                         </span>
                         <button
@@ -530,12 +530,12 @@ export default function UsmcaGenerator() {
                             setHsPanelResult(null);
                             setHsPanelError(null);
                           }}
-                          className="text-[11px] text-white/40 hover:text-white"
+                          className="text-[11px] text-muted-foreground/70 hover:text-foreground"
                         >
                           ×
                         </button>
                       </div>
-                      {hsPanelLoading && <div className="text-[12px] text-white/55">Reading the data…</div>}
+                      {hsPanelLoading && <div className="text-[12px] text-muted-foreground/80">Reading the data…</div>}
                       {hsPanelError && (
                         <div className="text-[12px] text-rose-300">✗ {hsPanelError}</div>
                       )}
@@ -552,7 +552,7 @@ export default function UsmcaGenerator() {
             </ul>
             <button
               onClick={addGoodRow}
-              className="mt-3 rounded-lg border border-white/[0.12] bg-white/[0.04] px-3 py-1.5 text-[12px] text-white/70 hover:bg-white/[0.08] hover:text-white"
+              className="mt-3 rounded-lg border border-border bg-foreground/[0.04] px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground"
             >
               + add another good
             </button>
@@ -563,23 +563,23 @@ export default function UsmcaGenerator() {
             {form.blanket_period && (
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">From</label>
+                  <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">From</label>
                   <input
                     type="date"
                     value={form.blanket_from}
                     onChange={(e) => update("blanket_from", e.target.value)}
                     style={{ colorScheme: "dark" }}
-                    className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">To</label>
+                  <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">To</label>
                   <input
                     type="date"
                     value={form.blanket_to}
                     onChange={(e) => update("blanket_to", e.target.value)}
                     style={{ colorScheme: "dark" }}
-                    className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
                   />
                 </div>
               </div>
@@ -590,27 +590,27 @@ export default function UsmcaGenerator() {
             <Field label="Authorized signer name" v={form.signer_name} on={(v) => update("signer_name", v)} />
             <Field label="Signer title" v={form.signer_title} on={(v) => update("signer_title", v)} />
             <div>
-              <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">Date signed</label>
+              <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">Date signed</label>
               <input
                 type="date"
                 value={form.signed_date}
                 onChange={(e) => update("signed_date", e.target.value)}
                 style={{ colorScheme: "dark" }}
-                className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
               />
             </div>
           </Section>
 
           {/* Validation summary */}
-          <div className="mt-6 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+          <div className="mt-6 rounded-xl border border-border bg-foreground/[0.02] p-4">
             {errors.length === 0 ? (
               <div className="text-[13px] text-emerald-300">
                 ✓ All required Article 5.2 elements present. Click <span className="font-semibold">Preview & sign</span> to continue.
               </div>
             ) : (
               <>
-                <div className="text-[11px] uppercase tracking-[0.15em] text-amber-300/80 mb-2">Required before preview:</div>
-                <ul className="text-[12.5px] text-amber-200/80 space-y-0.5 list-disc list-inside">
+                <div className="text-[11px] uppercase tracking-[0.15em] text-foreground/80 mb-2">Required before preview:</div>
+                <ul className="text-[12.5px] text-accent/80 space-y-0.5 list-disc list-inside">
                   {errors.map((e) => (
                     <li key={e}>{e}</li>
                   ))}
@@ -623,11 +623,11 @@ export default function UsmcaGenerator() {
             <button
               onClick={() => setStep("preview")}
               disabled={errors.length > 0}
-              className="rounded-xl bg-amber-400 px-5 py-2.5 text-[13.5px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-40"
+              className="rounded-xl bg-foreground px-5 py-2.5 text-[13.5px] font-semibold text-background hover:bg-foreground disabled:opacity-40"
             >
               Preview & sign →
             </button>
-            <button onClick={reset} className="text-[12px] text-white/45 hover:text-rose-300">Reset form</button>
+            <button onClick={reset} className="text-[12px] text-muted-foreground/70 hover:text-rose-300">Reset form</button>
           </div>
         </>
       )}
@@ -635,15 +635,15 @@ export default function UsmcaGenerator() {
       {step === "preview" && (
         <>
           {/* Pre-sign review */}
-          <div className="mb-4 rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-4">
+          <div className="mb-4 rounded-2xl border border-amber-300/20 bg-foreground/[0.03] p-4">
             <div className="flex items-baseline justify-between gap-3">
-              <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
+              <div className="text-[10.5px] uppercase tracking-[0.2em] text-accent">
                 Pre-sign review
               </div>
               <button
                 onClick={runPreSignReview}
                 disabled={reviewLoading}
-                className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
+                className="rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-semibold text-background hover:bg-foreground disabled:opacity-50"
               >
                 {reviewLoading ? "Reviewing…" : reviewResult ? "Re-run" : "Run review"}
               </button>
@@ -661,28 +661,28 @@ export default function UsmcaGenerator() {
             <button
               onClick={downloadPdf}
               disabled={pdfBusy}
-              className="rounded-lg bg-emerald-400 px-3 py-1.5 text-[12.5px] font-semibold text-[#0a1020] hover:bg-emerald-300 disabled:opacity-50"
+              className="rounded-lg bg-emerald-400 px-3 py-1.5 text-[12.5px] font-semibold text-background hover:bg-emerald-300 disabled:opacity-50"
             >
               {pdfBusy ? "Generating…" : "Download PDF ↓"}
             </button>
-            <button onClick={() => window.print()} className="rounded-lg border border-white/[0.12] px-3 py-1.5 text-[12.5px] text-white/70 hover:bg-white/[0.06] hover:text-white">
+            <button onClick={() => window.print()} className="rounded-lg border border-border px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground">
               Print
             </button>
-            <button onClick={copyCertText} className="rounded-lg border border-white/[0.12] px-3 py-1.5 text-[12.5px] text-white/70 hover:bg-white/[0.06] hover:text-white">
+            <button onClick={copyCertText} className="rounded-lg border border-border px-3 py-1.5 text-[12.5px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground">
               Copy text
             </button>
-            <button onClick={() => setStep("input")} className="text-[12px] text-white/45 hover:text-white ml-2">
+            <button onClick={() => setStep("input")} className="text-[12px] text-muted-foreground/70 hover:text-foreground ml-2">
               ← Edit
             </button>
           </div>
 
-          <div ref={printRef} className="rounded-2xl border border-white/[0.1] bg-white text-slate-900 px-8 py-10 print:border-0 print:p-0">
+          <div ref={printRef} className="rounded-2xl border border-foreground/20 bg-white text-slate-900 px-8 py-10 print:border-0 print:p-0">
             <CertificateRender form={form} />
           </div>
         </>
       )}
 
-      <p className="mt-8 text-[10.5px] text-white/35 leading-[1.55]">
+      <p className="mt-8 text-[10.5px] text-muted-foreground/60 leading-[1.55]">
         We generate, you verify. Cruzar is not a customs broker and does not provide legal advice
         on origin determination. The certifier (you) bears legal responsibility under USMCA Article
         5.2 and 19 USC § 1592 for the accuracy of the information. Retain supporting records for
@@ -717,7 +717,7 @@ function PanelDisplay({
 }) {
   const code = onApplyCode ? pickBestHsCode(result) : null;
   return (
-    <div className="rounded-lg border border-white/[0.08] bg-[#040814] p-3">
+    <div className="rounded-lg border border-border bg-background p-3">
       {(verdict || (code && onApplyCode)) && (
         <div className="flex items-baseline gap-2 mb-2">
           {verdict && (
@@ -725,7 +725,7 @@ function PanelDisplay({
               className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] border ${
                 verdict === "ready"
                   ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                  : "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                  : "border-accent/30 bg-accent/10 text-accent"
               }`}
             >
               {verdict === "ready" ? "ready to sign" : "fix before signing"}
@@ -734,14 +734,14 @@ function PanelDisplay({
           {code && onApplyCode && (
             <button
               onClick={() => onApplyCode(code)}
-              className="ml-auto rounded-md border border-amber-300/40 bg-amber-300/[0.06] px-2 py-0.5 font-mono text-[11px] text-amber-200 hover:bg-amber-300/[0.12]"
+              className="ml-auto rounded-md border border-amber-300/40 bg-foreground/[0.06] px-2 py-0.5 font-mono text-[11px] text-accent hover:bg-foreground/[0.12]"
             >
               use {code}
             </button>
           )}
         </div>
       )}
-      <p className="text-[13px] text-white/85 leading-[1.55]">{result.synthesis}</p>
+      <p className="text-[13px] text-foreground/85 leading-[1.55]">{result.synthesis}</p>
     </div>
   );
 }
@@ -750,10 +750,10 @@ function PanelDisplay({
 
 function Section({ num, title, children }: { num: string; title: string; children: React.ReactNode }) {
   return (
-    <section className="mb-5 rounded-2xl border border-white/[0.07] bg-white/[0.015] p-5">
+    <section className="mb-5 rounded-2xl border border-border bg-foreground/[0.015] p-5">
       <div className="mb-3 flex items-baseline gap-3">
-        <span className="font-mono text-[10.5px] tracking-[0.15em] text-amber-300/70">#{num}</span>
-        <h3 className="text-[13.5px] font-semibold text-white">{title}</h3>
+        <span className="font-mono text-[10.5px] tracking-[0.15em] text-foreground/70">#{num}</span>
+        <h3 className="text-[13.5px] font-semibold text-foreground">{title}</h3>
       </div>
       <div className="space-y-3">{children}</div>
     </section>
@@ -777,14 +777,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">{label}</label>
+      <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">{label}</label>
       {multiline ? (
         <textarea
           value={v}
           onChange={(e) => on(e.target.value)}
           rows={2}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
         />
       ) : (
         <input
@@ -792,7 +792,7 @@ function Field({
           value={v}
           onChange={(e) => on(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
         />
       )}
     </div>
@@ -801,7 +801,7 @@ function Field({
 
 function Toggle({ label, v, on }: { label: string; v: boolean; on: (b: boolean) => void }) {
   return (
-    <label className="flex items-center gap-2 text-[12.5px] text-white/75">
+    <label className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
       <input type="checkbox" checked={v} onChange={(e) => on(e.target.checked)} className="accent-amber-400" />
       {label}
     </label>

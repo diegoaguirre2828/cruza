@@ -106,12 +106,12 @@ export default function AccountPage() {
     }
   }
 
-  if (loading) return <main className="p-8 text-white/60">Loading…</main>;
+  if (loading) return <main className="p-8 text-muted-foreground">Loading…</main>;
   if (!sub)
     return (
       <main className="mx-auto max-w-[860px] px-5 sm:px-8 py-12">
-        <h1 className="font-serif text-[28px] text-white mb-3">Pick your plan</h1>
-        <p className="text-white/60 mb-8">
+        <h1 className="font-serif text-[28px] text-foreground mb-3">Pick your plan</h1>
+        <p className="text-muted-foreground mb-8">
           Start free with 1 port + the morning brief. Upgrade anytime — billing kicks in only on paid tiers.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -120,15 +120,15 @@ export default function AccountPage() {
             return (
               <div
                 key={t}
-                className="rounded-2xl border border-white/[0.10] bg-white/[0.02] p-5 flex flex-col"
+                className="rounded-2xl border border-border bg-foreground/[0.02] p-5 flex flex-col"
               >
-                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300">
+                <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground">
                   {t}
                 </div>
-                <div className="font-serif text-[24px] text-white mt-2">
+                <div className="font-serif text-[24px] text-foreground mt-2">
                   {limits.monthlyUsd === 0 ? 'Free' : `$${limits.monthlyUsd}/mo`}
                 </div>
-                <ul className="mt-3 space-y-1 text-[12px] text-white/65 flex-1">
+                <ul className="mt-3 space-y-1 text-[12px] text-muted-foreground flex-1">
                   <li>· {limits.maxWatchedPorts} watched port{limits.maxWatchedPorts === 1 ? '' : 's'}</li>
                   <li>· {limits.channels.email && 'email'}{limits.channels.sms && ' + SMS'}{limits.channels.whatsapp && ' + WhatsApp'}</li>
                   <li>
@@ -140,7 +140,7 @@ export default function AccountPage() {
                 <button
                   onClick={() => startSubscribe(t)}
                   disabled={saving}
-                  className="mt-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#0a1020] font-semibold py-2 text-[13px] disabled:opacity-50"
+                  className="mt-4 rounded-xl bg-foreground hover:bg-foreground/85 text-background font-semibold py-2 text-[13px] disabled:opacity-50"
                 >
                   {t === 'free' ? 'Start free' : `Subscribe · $${limits.monthlyUsd}/mo`}
                 </button>
@@ -149,8 +149,8 @@ export default function AccountPage() {
           })}
         </div>
         {msg && <p className="text-[12px] text-rose-300">{msg}</p>}
-        <p className="text-[12px] text-white/40">
-          Prefer to talk first? <a href="mailto:diegonaguirre@icloud.com?subject=Cruzar%20Insights%20trial" className="text-amber-300 hover:text-amber-200">Email Diego</a>.
+        <p className="text-[12px] text-muted-foreground/70">
+          Prefer to talk first? <a href="mailto:diegonaguirre@icloud.com?subject=Cruzar%20Insights%20trial" className="text-foreground hover:text-accent">Email Diego</a>.
         </p>
       </main>
     );
@@ -159,8 +159,8 @@ export default function AccountPage() {
 
   return (
       <main className="mx-auto max-w-[860px] px-5 sm:px-8 py-10">
-        <h1 className="font-serif text-[28px] text-white mb-1">Insights account</h1>
-        <p className="text-white/55 mb-8">
+        <h1 className="font-serif text-[28px] text-foreground mb-1">Insights account</h1>
+        <p className="text-muted-foreground/80 mb-8">
           {sub.tier.toUpperCase()} · {sub.status} · ${limits.monthlyUsd}/mo
         </p>
 
@@ -241,12 +241,12 @@ export default function AccountPage() {
           {sub.has_stripe_subscription && (
             <button
               onClick={openPortal}
-              className="rounded-xl bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.12] px-4 py-2 text-[13px] text-white"
+              className="rounded-xl bg-foreground/[0.06] hover:bg-foreground/[0.10] border border-border px-4 py-2 text-[13px] text-foreground"
             >
               Manage billing →
             </button>
           )}
-          {msg && <span className="text-[12px] text-white/55">{msg}</span>}
+          {msg && <span className="text-[12px] text-muted-foreground/80">{msg}</span>}
         </div>
       </main>
   );
@@ -254,8 +254,8 @@ export default function AccountPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
-      <h2 className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-amber-300 mb-3">{title}</h2>
+    <section className="mt-6 rounded-2xl border border-border bg-foreground/[0.02] p-5">
+      <h2 className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-foreground mb-3">{title}</h2>
       <div className="space-y-3">{children}</div>
     </section>
   );
@@ -274,7 +274,7 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-4 text-[13px]">
-      <span className={disabled ? 'text-white/30' : 'text-white/80'}>{label}</span>
+      <span className={disabled ? 'text-muted-foreground/50' : 'text-foreground/85'}>{label}</span>
       <input
         type="checkbox"
         checked={checked}
@@ -298,7 +298,7 @@ function NumberField({
   useEffect(() => setV(String(value)), [value]);
   return (
     <label className="flex items-center justify-between gap-4 text-[13px]">
-      <span className="text-white/80">{label}</span>
+      <span className="text-foreground/85">{label}</span>
       <input
         type="number"
         min={0}
@@ -306,7 +306,7 @@ function NumberField({
         value={v}
         onChange={(e) => setV(e.target.value)}
         onBlur={() => onChange(Number(v))}
-        className="w-20 rounded border border-white/[0.10] bg-[#040814] px-2 py-1 text-white text-right"
+        className="w-20 rounded border border-border bg-background px-2 py-1 text-foreground text-right"
       />
     </label>
   );
@@ -325,13 +325,13 @@ function TextField({
   useEffect(() => setV(value), [value]);
   return (
     <label className="flex items-center justify-between gap-4 text-[13px]">
-      <span className="text-white/80">{label}</span>
+      <span className="text-foreground/85">{label}</span>
       <input
         type="text"
         value={v}
         onChange={(e) => setV(e.target.value)}
         onBlur={() => onChange(v)}
-        className="w-56 rounded border border-white/[0.10] bg-[#040814] px-2 py-1 text-white"
+        className="w-56 rounded border border-border bg-background px-2 py-1 text-foreground"
       />
     </label>
   );
@@ -350,11 +350,11 @@ function SelectField({
 }) {
   return (
     <label className="flex items-center justify-between gap-4 text-[13px]">
-      <span className="text-white/80">{label}</span>
+      <span className="text-foreground/85">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border border-white/[0.10] bg-[#040814] px-2 py-1 text-white"
+        className="rounded border border-border bg-background px-2 py-1 text-foreground"
       >
         {options.map((o) => (
           <option key={o.v} value={o.v}>
@@ -380,17 +380,17 @@ function ListField({
   const [draft, setDraft] = useState('');
   return (
     <div className="text-[13px]">
-      <div className="text-white/80 mb-1.5">{label}</div>
+      <div className="text-foreground/85 mb-1.5">{label}</div>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {values.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center gap-1 rounded-full border border-white/[0.10] bg-white/[0.04] px-2.5 py-0.5 text-[12px] text-white/85"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-foreground/[0.04] px-2.5 py-0.5 text-[12px] text-foreground/85"
           >
             {v}
             <button
               onClick={() => onChange(values.filter((x) => x !== v))}
-              className="text-white/40 hover:text-rose-300"
+              className="text-muted-foreground/70 hover:text-rose-300"
               aria-label="Remove"
             >
               ×
@@ -403,7 +403,7 @@ function ListField({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Add…"
-          className="flex-1 rounded border border-white/[0.10] bg-[#040814] px-2 py-1 text-white"
+          className="flex-1 rounded border border-border bg-background px-2 py-1 text-foreground"
         />
         <button
           onClick={() => {
@@ -413,7 +413,7 @@ function ListField({
             onChange([...values, draft]);
             setDraft('');
           }}
-          className="rounded bg-amber-400 text-[#0a1020] font-semibold px-3 py-1 text-[12px]"
+          className="rounded bg-foreground text-background font-semibold px-3 py-1 text-[12px]"
         >
           Add
         </button>

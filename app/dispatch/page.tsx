@@ -91,11 +91,11 @@ function saveWatched(ids: string[]) {
 
 const STATUS_LABEL: Record<DispatchPort["drift_status"], { en: string; tone: string }> = {
   "decision-grade": { en: "decision-grade", tone: "text-emerald-300/90" },
-  marginal: { en: "marginal vs CBP", tone: "text-amber-300/90" },
+  marginal: { en: "marginal vs CBP", tone: "text-foreground/90" },
   "self-baseline": { en: "first-party baseline", tone: "text-sky-300/90" },
-  "marginal-self": { en: "marginal (self)", tone: "text-amber-300/70" },
+  "marginal-self": { en: "marginal (self)", tone: "text-foreground/70" },
   "drift-fallback": { en: "matching CBP", tone: "text-slate-400" },
-  untracked: { en: "untracked", tone: "text-white/30" },
+  untracked: { en: "untracked", tone: "text-muted-foreground/50" },
 };
 
 export default function DispatchConsole() {
@@ -214,7 +214,7 @@ export default function DispatchConsole() {
       {/* Watched chips */}
       <section className="mb-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mr-1">Watching</span>
+          <span className="text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/70 mr-1">Watching</span>
           {watched.map((id) => {
             const meta = PORT_META[id];
             const label = meta?.localName ?? meta?.city ?? id;
@@ -222,11 +222,11 @@ export default function DispatchConsole() {
               <button
                 key={id}
                 onClick={() => removePort(id)}
-                className="group flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-300/[0.07] px-3 py-1 text-[12px] text-amber-200/90 hover:border-rose-400/50 hover:bg-rose-400/[0.08] hover:text-rose-200 transition"
+                className="group flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-foreground/[0.07] px-3 py-1 text-[12px] text-accent/90 hover:border-rose-400/50 hover:bg-rose-400/[0.08] hover:text-rose-200 transition"
                 title="Click to remove"
               >
                 <span>{label}</span>
-                <span className="text-amber-300/40 group-hover:text-rose-300/70 text-[14px] leading-none">×</span>
+                <span className="text-foreground/40 group-hover:text-rose-300/70 text-[14px] leading-none">×</span>
               </button>
             );
           })}
@@ -234,25 +234,25 @@ export default function DispatchConsole() {
             onClick={() => setPickerOpen((v) => !v)}
             className={`rounded-full px-3 py-1 text-[12px] transition border ${
               pickerOpen
-                ? "border-white/30 bg-white/[0.1] text-white"
-                : "border-white/[0.12] bg-white/[0.04] text-white/65 hover:bg-white/[0.08] hover:text-white"
+                ? "border-foreground/40 bg-foreground/[0.10] text-foreground"
+                : "border-border bg-foreground/[0.04] text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground"
             }`}
           >
             {pickerOpen ? "× close" : "+ add port"}
           </button>
           {watched.length === 0 && (
-            <span className="text-[12px] text-white/45 ml-2">
+            <span className="text-[12px] text-muted-foreground/70 ml-2">
               No ports watched. Add one to start.
             </span>
           )}
           {generated && (
-            <span className="ml-auto text-[10.5px] text-white/35 tabular-nums">
+            <span className="ml-auto text-[10.5px] text-muted-foreground/60 tabular-nums">
               refreshed {new Date(generated).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Chicago" })} CT
             </span>
           )}
           <button
             onClick={() => mutate()}
-            className="rounded-lg border border-white/[0.12] px-2 py-0.5 text-[11px] text-white/55 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-lg border border-border px-2 py-0.5 text-[11px] text-muted-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground transition"
             title="Force refresh"
           >
             ↻
@@ -260,7 +260,7 @@ export default function DispatchConsole() {
         </div>
 
         {pickerOpen && (
-          <div className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+          <div className="mt-3 rounded-xl border border-border bg-foreground/[0.02] p-3">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -270,13 +270,13 @@ export default function DispatchConsole() {
                   if (e.key === "Escape") setPickerOpen(false);
                 }}
                 placeholder="Search by name, city, or port ID..."
-                className="flex-1 rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white placeholder-white/35 focus:border-amber-300/40 focus:outline-none"
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder-white/35 focus:border-amber-300/40 focus:outline-none"
                 autoFocus
               />
               <button
                 onClick={() => setPickerOpen(false)}
                 aria-label="Close picker"
-                className="flex-shrink-0 rounded-lg border border-white/[0.12] px-2.5 py-1.5 text-[12px] text-white/55 hover:bg-white/[0.06] hover:text-white transition"
+                className="flex-shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground transition"
               >
                 ×
               </button>
@@ -286,18 +286,18 @@ export default function DispatchConsole() {
                 <li key={id}>
                   <button
                     onClick={() => addPort(id)}
-                    className="flex w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-[12.5px] text-left hover:bg-white/[0.04] transition"
+                    className="flex w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-[12.5px] text-left hover:bg-foreground/[0.04] transition"
                   >
-                    <span className="text-white/85">
+                    <span className="text-foreground/85">
                       {meta.localName ?? meta.city}
-                      <span className="ml-2 text-white/40">{meta.region}</span>
+                      <span className="ml-2 text-muted-foreground/70">{meta.region}</span>
                     </span>
-                    <span className="font-mono text-[10.5px] text-white/30">{id}</span>
+                    <span className="font-mono text-[10.5px] text-muted-foreground/50">{id}</span>
                   </button>
                 </li>
               ))}
               {pickerCandidates.length === 0 && (
-                <li className="px-2 py-3 text-[12px] text-white/40">No matches</li>
+                <li className="px-2 py-3 text-[12px] text-muted-foreground/70">No matches</li>
               )}
             </ul>
           </div>
@@ -307,16 +307,16 @@ export default function DispatchConsole() {
       {/* Snapshot table */}
       <section>
         {isLoading && watched.length > 0 && (
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-6 text-center text-[12.5px] text-white/45">
+          <div className="rounded-xl border border-border bg-foreground/[0.02] p-6 text-center text-[12.5px] text-muted-foreground/70">
             Loading snapshot…
           </div>
         )}
 
         {!isLoading && ports.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-foreground/[0.02]">
             <table className="w-full text-[13px]">
-              <thead className="text-[10.5px] uppercase tracking-[0.18em] text-white/45">
-                <tr className="border-b border-white/[0.06]">
+              <thead className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left">Port</th>
                   <th className="px-4 py-3 text-right">Now</th>
                   <th className="px-4 py-3 text-right">+6h</th>
@@ -347,17 +347,17 @@ export default function DispatchConsole() {
           </div>
         )}
 
-        <p className="mt-4 text-[11px] text-white/35 leading-[1.5]">
+        <p className="mt-4 text-[11px] text-muted-foreground/60 leading-[1.5]">
           Auto-refreshes every 60s. Anomaly fires when current wait ≥ 1.5× the 90-day DOW × hour
           average. Drift status indicates whether our 6h forecast model currently beats CBP&apos;s own
           baseline; <span className="text-slate-300">matching CBP</span> means we serve their number rather
           than a worse model output.
         </p>
-        <p className="mt-3 text-[12px] text-white/55">
+        <p className="mt-3 text-[12px] text-muted-foreground/80">
           Want anomaly pushes to your phone or email?{" "}
           <Link
             href="/dispatch/account"
-            className="text-amber-300 hover:text-amber-200 underline decoration-amber-300/40"
+            className="text-foreground hover:text-accent underline decoration-amber-300/40"
           >
             Set up alerts →
           </Link>
@@ -395,15 +395,15 @@ function DispatchRow({
         ? "text-rose-300"
         : p.delta_min < -5
           ? "text-emerald-300"
-          : "text-white/55"
-      : "text-white/30";
+          : "text-muted-foreground/80"
+      : "text-muted-foreground/50";
 
   return (
-    <tr className="hover:bg-white/[0.02] transition">
+    <tr className="hover:bg-foreground/[0.02] transition">
       <td className="px-4 py-3.5">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="font-medium text-white">{p.name}</span>
-          <span className="font-mono text-[10.5px] text-white/30">{p.port_id}</span>
+          <span className="font-medium text-foreground">{p.name}</span>
+          <span className="font-mono text-[10.5px] text-muted-foreground/50">{p.port_id}</span>
           {p.anomaly_high && (
             <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-rose-300 border border-rose-400/30">
               anomaly{" "}
@@ -413,16 +413,16 @@ function DispatchRow({
             </span>
           )}
         </div>
-        <div className="mt-0.5 text-[11px] text-white/40">{p.region}</div>
+        <div className="mt-0.5 text-[11px] text-muted-foreground/70">{p.region}</div>
       </td>
       <td className="px-4 py-3.5 text-right">
-        <div className="font-mono text-[15px] tabular-nums text-white">{live}</div>
+        <div className="font-mono text-[15px] tabular-nums text-foreground">{live}</div>
         {typeof p.live_stale_min === "number" && p.live_stale_min > 30 && (
-          <div className="mt-0.5 text-[10px] text-amber-300/70">stale {p.live_stale_min}m</div>
+          <div className="mt-0.5 text-[10px] text-foreground/70">stale {p.live_stale_min}m</div>
         )}
       </td>
       <td className="px-4 py-3.5 text-right">
-        <span className="font-mono text-[15px] tabular-nums text-white/80">{pred}</span>
+        <span className="font-mono text-[15px] tabular-nums text-foreground/85">{pred}</span>
       </td>
       <td className={`px-4 py-3.5 text-right font-mono text-[13px] tabular-nums ${deltaTone}`}>
         {delta}

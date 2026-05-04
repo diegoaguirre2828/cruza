@@ -142,10 +142,10 @@ export default function ExportPage() {
   return (
     <main className="mx-auto max-w-[1180px] px-5 sm:px-8 py-6">
       <div className="mb-5">
-        <h1 className="text-[1.4rem] font-semibold text-white">
-          Export <span className="text-white/40 text-base font-normal">· exportar</span>
+        <h1 className="text-[1.4rem] font-semibold text-foreground">
+          Export <span className="text-muted-foreground/70 text-base font-normal">· exportar</span>
         </h1>
-        <p className="mt-1 text-[12.5px] text-white/55 max-w-2xl">
+        <p className="mt-1 text-[12.5px] text-muted-foreground/80 max-w-2xl">
           Drop port_ids one per line (or comma-separated). Generate a snapshot, then download as CSV.
           Open in Excel / Sheets / your TMS.
         </p>
@@ -153,7 +153,7 @@ export default function ExportPage() {
 
       <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <div>
-          <label className="block text-[10.5px] uppercase tracking-[0.2em] text-white/55 mb-2">
+          <label className="block text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/80 mb-2">
             Port IDs
           </label>
           <textarea
@@ -161,9 +161,9 @@ export default function ExportPage() {
             onChange={(e) => setInput(e.target.value)}
             rows={10}
             placeholder={`230501\n230502\n230503\n230402`}
-            className="w-full rounded-xl border border-white/[0.08] bg-[#040814] px-3 py-2.5 font-mono text-[12.5px] text-white placeholder-white/25 focus:border-amber-300/40 focus:outline-none"
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-[12.5px] text-foreground placeholder-white/25 focus:border-amber-300/40 focus:outline-none"
           />
-          <div className="mt-2 flex items-center justify-between text-[11px] text-white/45">
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground/70">
             <span>
               {validIds.length} valid · {invalidIds.length} invalid
               {invalidIds.length > 0 && (
@@ -179,7 +179,7 @@ export default function ExportPage() {
           <button
             onClick={generate}
             disabled={loading || validIds.length === 0}
-            className="mt-4 w-full rounded-xl bg-amber-400 py-2.5 text-[13.5px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50 transition"
+            className="mt-4 w-full rounded-xl bg-foreground py-2.5 text-[13.5px] font-semibold text-background hover:bg-foreground disabled:opacity-50 transition"
           >
             {loading ? "Generating…" : "Generate snapshot"}
           </button>
@@ -190,7 +190,7 @@ export default function ExportPage() {
             </div>
           )}
 
-          <p className="mt-5 text-[10.5px] text-white/35 leading-[1.5]">
+          <p className="mt-5 text-[10.5px] text-muted-foreground/60 leading-[1.5]">
             {hydrated && loadWatched().length > 0 ? (
               <>Pre-filled from your /dispatch watched list.</>
             ) : (
@@ -201,32 +201,32 @@ export default function ExportPage() {
 
         <div>
           {!rows && !loading && (
-            <div className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-10 text-center text-[12.5px] text-white/40">
+            <div className="rounded-2xl border border-dashed border-border bg-foreground/[0.01] p-10 text-center text-[12.5px] text-muted-foreground/70">
               CSV preview appears here.
             </div>
           )}
           {rows && rows.length > 0 && (
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02]">
-              <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.06]">
-                <div className="text-[10.5px] uppercase tracking-[0.18em] text-white/55">
+            <div className="rounded-2xl border border-border bg-foreground/[0.02]">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+                <div className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/80">
                   Snapshot · {rows.length} ports
                   {generatedAt && (
-                    <span className="ml-2 text-white/35 normal-case tracking-normal">
+                    <span className="ml-2 text-muted-foreground/60 normal-case tracking-normal">
                       ({new Date(generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })})
                     </span>
                   )}
                 </div>
                 <button
                   onClick={download}
-                  className="rounded-lg bg-emerald-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-emerald-300 transition"
+                  className="rounded-lg bg-emerald-400 px-3 py-1.5 text-[12px] font-semibold text-background hover:bg-emerald-300 transition"
                 >
                   Download CSV ↓
                 </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[12px]">
-                  <thead className="text-[10px] uppercase tracking-[0.15em] text-white/45">
-                    <tr className="border-b border-white/[0.06]">
+                  <thead className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70">
+                    <tr className="border-b border-border">
                       <th className="px-4 py-2 text-left">Port</th>
                       <th className="px-4 py-2 text-right">Now</th>
                       <th className="px-4 py-2 text-right">+6h</th>
@@ -237,19 +237,19 @@ export default function ExportPage() {
                   <tbody className="divide-y divide-white/[0.04]">
                     {rows.map((r) => (
                       <tr key={r.port_id}>
-                        <td className="px-4 py-2 text-white">
-                          {r.name} <span className="ml-1 font-mono text-[10px] text-white/35">{r.port_id}</span>
+                        <td className="px-4 py-2 text-foreground">
+                          {r.name} <span className="ml-1 font-mono text-[10px] text-muted-foreground/60">{r.port_id}</span>
                         </td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-white">
+                        <td className="px-4 py-2 text-right font-mono tabular-nums text-foreground">
                           {r.live_wait_min ?? "—"}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-white/75">
+                        <td className="px-4 py-2 text-right font-mono tabular-nums text-muted-foreground">
                           {r.predicted_6h_min ?? "—"}
                         </td>
-                        <td className="px-4 py-2 text-right font-mono tabular-nums text-white/55">
+                        <td className="px-4 py-2 text-right font-mono tabular-nums text-muted-foreground/80">
                           {r.delta_min ?? "—"}
                         </td>
-                        <td className="px-4 py-2 text-[11px] text-white/65">{r.drift_status}</td>
+                        <td className="px-4 py-2 text-[11px] text-muted-foreground">{r.drift_status}</td>
                       </tr>
                     ))}
                   </tbody>

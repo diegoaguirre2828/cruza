@@ -130,10 +130,10 @@ export default function LoadAdvisor() {
   return (
     <main className="mx-auto max-w-[1180px] px-5 sm:px-8 py-6">
       <div className="mb-5">
-        <h1 className="text-[1.4rem] font-semibold text-white">
-          Load advisor <span className="text-white/40 text-base font-normal">· asesor de carga</span>
+        <h1 className="text-[1.4rem] font-semibold text-foreground">
+          Load advisor <span className="text-muted-foreground/70 text-base font-normal">· asesor de carga</span>
         </h1>
-        <p className="mt-1 text-[12.5px] text-white/55 max-w-2xl">
+        <p className="mt-1 text-[12.5px] text-muted-foreground/80 max-w-2xl">
           Paste a load. We rank the top 5 ports by drive + predicted wait at arrival, flag detention $
           exposure if you give us an appointment, and emit a driver SMS template you can copy-paste.
         </p>
@@ -141,18 +141,18 @@ export default function LoadAdvisor() {
 
       <section className="grid gap-6 lg:grid-cols-[360px_1fr]">
         {/* Input form */}
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
-          <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/45 mb-4">
+        <div className="rounded-2xl border border-border bg-foreground/[0.02] p-5">
+          <div className="text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/70 mb-4">
             Load details
           </div>
 
-          <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mb-1.5">
+          <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">
             Origin
           </label>
           <select
             value={originLabel}
             onChange={(e) => pickPreset(e.target.value)}
-            className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none mb-2"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none mb-2"
           >
             {ORIGIN_PRESETS.map((p) => (
               <option key={p.label} value={p.label}>
@@ -166,19 +166,19 @@ export default function LoadAdvisor() {
               step="0.0001"
               value={originLat}
               onChange={(e) => setOriginLat(Number(e.target.value))}
-              className="rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1.5 text-[12px] font-mono text-white focus:border-amber-300/40 focus:outline-none"
+              className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] font-mono text-foreground focus:border-amber-300/40 focus:outline-none"
             />
             <input
               type="number"
               step="0.0001"
               value={originLng}
               onChange={(e) => setOriginLng(Number(e.target.value))}
-              className="rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1.5 text-[12px] font-mono text-white focus:border-amber-300/40 focus:outline-none"
+              className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] font-mono text-foreground focus:border-amber-300/40 focus:outline-none"
             />
           </div>
 
-          <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mt-4 mb-1.5">
-            Receiver appointment <span className="text-white/35 normal-case font-normal">(optional)</span>
+          <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mt-4 mb-1.5">
+            Receiver appointment <span className="text-muted-foreground/60 normal-case font-normal">(optional)</span>
           </label>
           <input
             type="datetime-local"
@@ -191,12 +191,12 @@ export default function LoadAdvisor() {
             // the calendar pop-up appears as a white block — typing
             // works but the picker is effectively invisible.
             style={{ colorScheme: "dark" }}
-            className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
           />
           {apptAt && (
-            <div className="mt-1.5 text-[11px] text-white/55">
-              <span className="text-white/40">Set for </span>
-              <span className="font-mono text-amber-200/85">
+            <div className="mt-1.5 text-[11px] text-muted-foreground/80">
+              <span className="text-muted-foreground/70">Set for </span>
+              <span className="font-mono text-accent/85">
                 {new Date(apptAt).toLocaleString("en-US", {
                   weekday: "short",
                   month: "short",
@@ -210,13 +210,13 @@ export default function LoadAdvisor() {
             </div>
           )}
 
-          <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mt-4 mb-1.5">
+          <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mt-4 mb-1.5">
             Cargo type
           </label>
           <select
             value={cargo}
             onChange={(e) => setCargo(e.target.value)}
-            className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
           >
             <option value="dry van">Dry van</option>
             <option value="reefer">Reefer</option>
@@ -226,21 +226,21 @@ export default function LoadAdvisor() {
             <option value="other">Other</option>
           </select>
 
-          <label className="block text-[11px] uppercase tracking-[0.15em] text-white/55 mt-4 mb-1.5">
-            Driver name <span className="text-white/35 normal-case font-normal">(for SMS)</span>
+          <label className="block text-[11px] uppercase tracking-[0.15em] text-muted-foreground/80 mt-4 mb-1.5">
+            Driver name <span className="text-muted-foreground/60 normal-case font-normal">(for SMS)</span>
           </label>
           <input
             type="text"
             value={driverName}
             onChange={(e) => setDriverName(e.target.value)}
             placeholder="e.g. Manny"
-            className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[13px] text-white placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder-white/30 focus:border-amber-300/40 focus:outline-none"
           />
 
           <button
             onClick={submit}
             disabled={loading}
-            className="mt-5 w-full rounded-xl bg-amber-400 py-2.5 text-[13.5px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50 transition"
+            className="mt-5 w-full rounded-xl bg-foreground py-2.5 text-[13.5px] font-semibold text-background hover:bg-foreground disabled:opacity-50 transition"
           >
             {loading ? "Computing…" : "Get recommendations →"}
           </button>
@@ -255,10 +255,10 @@ export default function LoadAdvisor() {
         {/* Results */}
         <div>
           {!result && !loading && (
-            <div className="rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01] p-10 text-center text-[12.5px] text-white/40">
+            <div className="rounded-2xl border border-dashed border-border bg-foreground/[0.01] p-10 text-center text-[12.5px] text-muted-foreground/70">
               Recommendations appear here.
               <br />
-              Pick origin + appointment, click <span className="text-amber-300">Get recommendations</span>.
+              Pick origin + appointment, click <span className="text-foreground">Get recommendations</span>.
             </div>
           )}
           {result && result.picks.length > 0 && (
@@ -268,15 +268,15 @@ export default function LoadAdvisor() {
               ))}
 
               {/* Pre-execution review */}
-              <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.03] p-4">
+              <div className="rounded-2xl border border-amber-300/20 bg-foreground/[0.03] p-4">
                 <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-[10.5px] uppercase tracking-[0.2em] text-amber-200">
+                  <div className="text-[10.5px] uppercase tracking-[0.2em] text-accent">
                     Pre-execution review
                   </div>
                   <button
                     onClick={runRouteReview}
                     disabled={reviewLoading}
-                    className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-50"
+                    className="rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-semibold text-background hover:bg-foreground disabled:opacity-50"
                   >
                     {reviewLoading ? "Reviewing…" : reviewPanel ? "Re-run" : "Run review"}
                   </button>
@@ -285,7 +285,7 @@ export default function LoadAdvisor() {
                   <div className="mt-2 text-[12px] text-rose-300">✗ {reviewError}</div>
                 )}
                 {reviewPanel && (
-                  <p className="mt-3 text-[13px] text-white/85 leading-[1.55]">
+                  <p className="mt-3 text-[13px] text-foreground/85 leading-[1.55]">
                     {reviewPanel.synthesis}
                   </p>
                 )}
@@ -295,10 +295,10 @@ export default function LoadAdvisor() {
         </div>
       </section>
 
-      <p className="mt-8 text-[11px] text-white/35 leading-[1.5]">
+      <p className="mt-8 text-[11px] text-muted-foreground/60 leading-[1.5]">
         Drive time is haversine × 1.4 / 65 mph — within ±10 min for typical RGV/Laredo runs. Replace
         with HERE/Google routing once we&apos;ve validated demand. Detention math uses $85/hr industry
-        baseline; configurable per fleet under <Link href="/dispatch/alerts" className="text-amber-300 hover:text-amber-200">Alerts</Link>.
+        baseline; configurable per fleet under <Link href="/dispatch/alerts" className="text-foreground hover:text-accent">Alerts</Link>.
       </p>
     </main>
   );
@@ -338,15 +338,15 @@ function PickCard({
     <div
       className={`rounded-2xl border p-5 ${
         winner
-          ? "border-amber-300/40 bg-amber-300/[0.03]"
-          : "border-white/[0.08] bg-white/[0.02]"
+          ? "border-amber-300/40 bg-foreground/[0.03]"
+          : "border-border bg-foreground/[0.02]"
       }`}
     >
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-2">
-          <span className="font-mono text-[11px] tabular-nums text-white/35">#{rank}</span>
-          <span className="text-[15px] font-semibold text-white">{pick.name}</span>
-          <span className="text-[11px] text-white/40">{pick.region}</span>
+          <span className="font-mono text-[11px] tabular-nums text-muted-foreground/60">#{rank}</span>
+          <span className="text-[15px] font-semibold text-foreground">{pick.name}</span>
+          <span className="text-[11px] text-muted-foreground/70">{pick.region}</span>
         </div>
         {pick.detention_usd_at_risk !== null && pick.detention_usd_at_risk > 0 && (
           <span className="rounded-full border border-rose-400/30 bg-rose-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-rose-200">
@@ -361,9 +361,9 @@ function PickCard({
       </div>
 
       {apptProvided && apptSlackMin !== null && (
-        <div className="mt-3 rounded-lg border border-white/[0.06] bg-[#040814] px-3 py-2 text-[11.5px]">
-          <span className="text-white/45">Arrives </span>
-          <span className="font-mono text-white/80">
+        <div className="mt-3 rounded-lg border border-border bg-background px-3 py-2 text-[11.5px]">
+          <span className="text-muted-foreground/70">Arrives </span>
+          <span className="font-mono text-foreground/85">
             {new Date(pick.estimated_arrival_at).toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
@@ -380,42 +380,42 @@ function PickCard({
       )}
 
       <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-        <div className="rounded-lg border border-white/[0.06] bg-[#040814] p-2.5">
-          <div className="text-[10px] uppercase tracking-[0.15em] text-white/40">Drive</div>
-          <div className="mt-1 font-mono text-[15px] tabular-nums text-white">
-            {pick.drive_min} <span className="text-[10px] text-white/45">min</span>
+        <div className="rounded-lg border border-border bg-background p-2.5">
+          <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70">Drive</div>
+          <div className="mt-1 font-mono text-[15px] tabular-nums text-foreground">
+            {pick.drive_min} <span className="text-[10px] text-muted-foreground/70">min</span>
           </div>
-          <div className="mt-0.5 text-[10px] text-white/40">{pick.drive_km} km</div>
+          <div className="mt-0.5 text-[10px] text-muted-foreground/70">{pick.drive_km} km</div>
         </div>
-        <div className="rounded-lg border border-white/[0.06] bg-[#040814] p-2.5">
-          <div className="text-[10px] uppercase tracking-[0.15em] text-white/40">Wait @ arrival</div>
-          <div className="mt-1 font-mono text-[15px] tabular-nums text-white">
+        <div className="rounded-lg border border-border bg-background p-2.5">
+          <div className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70">Wait @ arrival</div>
+          <div className="mt-1 font-mono text-[15px] tabular-nums text-foreground">
             {pick.predicted_wait_at_arrival_min ?? "—"}{" "}
-            <span className="text-[10px] text-white/45">min</span>
+            <span className="text-[10px] text-muted-foreground/70">min</span>
           </div>
         </div>
-        <div className="rounded-lg border border-amber-300/20 bg-amber-300/[0.04] p-2.5">
-          <div className="text-[10px] uppercase tracking-[0.15em] text-amber-200/70">Total ETA</div>
-          <div className="mt-1 font-mono text-[15px] tabular-nums text-amber-200">
+        <div className="rounded-lg border border-amber-300/20 bg-foreground/[0.04] p-2.5">
+          <div className="text-[10px] uppercase tracking-[0.15em] text-accent/70">Total ETA</div>
+          <div className="mt-1 font-mono text-[15px] tabular-nums text-accent">
             {pick.total_eta_min ?? "—"}{" "}
-            <span className="text-[10px] text-amber-200/55">min</span>
+            <span className="text-[10px] text-accent/55">min</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-3 rounded-lg border border-white/[0.06] bg-[#020410] p-3">
+      <div className="mt-3 rounded-lg border border-border bg-[#020410] p-3">
         <div className="flex items-center justify-between gap-2 mb-1.5">
-          <span className="text-[10px] uppercase tracking-[0.15em] text-white/45">
+          <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/70">
             Driver SMS — copy + paste
           </span>
           <button
             onClick={copy}
-            className="rounded-md border border-white/[0.1] px-2 py-0.5 text-[10.5px] text-white/60 hover:bg-white/[0.06] hover:text-white transition"
+            className="rounded-md border border-foreground/20 px-2 py-0.5 text-[10.5px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground transition"
           >
             {copied ? "✓ copied" : "copy"}
           </button>
         </div>
-        <code className="block whitespace-pre-wrap break-words font-mono text-[11.5px] text-white/85">
+        <code className="block whitespace-pre-wrap break-words font-mono text-[11.5px] text-foreground/85">
           {pick.driver_sms}
         </code>
       </div>

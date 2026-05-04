@@ -143,16 +143,16 @@ export default function AlertsManager() {
   }
 
   if (!hydrated) {
-    return <main className="mx-auto max-w-[860px] px-5 py-6 text-white/45">Loading…</main>;
+    return <main className="mx-auto max-w-[860px] px-5 py-6 text-muted-foreground/70">Loading…</main>;
   }
 
   return (
     <main className="mx-auto max-w-[860px] px-5 sm:px-8 py-6">
       <div className="mb-5">
-        <h1 className="text-[1.4rem] font-semibold text-white">
-          Alerts <span className="text-white/40 text-base font-normal">· alertas</span>
+        <h1 className="text-[1.4rem] font-semibold text-foreground">
+          Alerts <span className="text-muted-foreground/70 text-base font-normal">· alertas</span>
         </h1>
-        <p className="mt-1 text-[12.5px] text-white/55">
+        <p className="mt-1 text-[12.5px] text-muted-foreground/80">
           When a watched port runs above its threshold, push the alert to your channels of choice.
           Quiet hours pause notifications overnight.
         </p>
@@ -161,8 +161,8 @@ export default function AlertsManager() {
       {/* Per-port thresholds */}
       <Section title="Per-port threshold" subtitle="Anomaly fires when current wait ≥ ratio × 90-day DOW × hour avg. Default 1.5×.">
         {watched.length === 0 ? (
-          <div className="text-[12.5px] text-white/40">
-            No watched ports yet. <Link href="/dispatch" className="text-amber-300 hover:text-amber-200">Add some on the console →</Link>
+          <div className="text-[12.5px] text-muted-foreground/70">
+            No watched ports yet. <Link href="/dispatch" className="text-foreground hover:text-accent">Add some on the console →</Link>
           </div>
         ) : (
           <ul className="divide-y divide-white/[0.05]">
@@ -172,8 +172,8 @@ export default function AlertsManager() {
               return (
                 <li key={id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
-                    <div className="text-[13.5px] text-white">{meta?.localName ?? meta?.city ?? id}</div>
-                    <div className="text-[10.5px] text-white/40">{meta?.region ?? ""}</div>
+                    <div className="text-[13.5px] text-foreground">{meta?.localName ?? meta?.city ?? id}</div>
+                    <div className="text-[10.5px] text-muted-foreground/70">{meta?.region ?? ""}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -183,9 +183,9 @@ export default function AlertsManager() {
                       step={0.1}
                       value={cur}
                       onChange={(e) => setThreshold(id, Number(e.target.value))}
-                      className="w-20 rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1 text-right font-mono text-[12.5px] text-white focus:border-amber-300/40 focus:outline-none"
+                      className="w-20 rounded-lg border border-border bg-background px-2 py-1 text-right font-mono text-[12.5px] text-foreground focus:border-amber-300/40 focus:outline-none"
                     />
-                    <span className="text-[11px] text-white/45">×</span>
+                    <span className="text-[11px] text-muted-foreground/70">×</span>
                   </div>
                 </li>
               );
@@ -235,7 +235,7 @@ export default function AlertsManager() {
 
       {/* Quiet hours */}
       <Section title="Quiet hours" subtitle="Skip alerts overnight. Times in Central (CT).">
-        <label className="flex items-center gap-2 text-[12.5px] text-white/75 mb-3">
+        <label className="flex items-center gap-2 text-[12.5px] text-muted-foreground mb-3">
           <input
             type="checkbox"
             checked={config.quiet_enabled}
@@ -244,7 +244,7 @@ export default function AlertsManager() {
           />
           Enabled
         </label>
-        <div className="flex items-center gap-3 text-[12.5px] text-white/70">
+        <div className="flex items-center gap-3 text-[12.5px] text-muted-foreground">
           <span>From</span>
           <input
             type="number"
@@ -252,7 +252,7 @@ export default function AlertsManager() {
             max={23}
             value={config.quiet_start_hour}
             onChange={(e) => update("quiet_start_hour", Number(e.target.value))}
-            className="w-16 rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1 text-right font-mono text-white focus:border-amber-300/40 focus:outline-none"
+            className="w-16 rounded-lg border border-border bg-background px-2 py-1 text-right font-mono text-foreground focus:border-amber-300/40 focus:outline-none"
           />
           <span>to</span>
           <input
@@ -261,25 +261,25 @@ export default function AlertsManager() {
             max={23}
             value={config.quiet_end_hour}
             onChange={(e) => update("quiet_end_hour", Number(e.target.value))}
-            className="w-16 rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1 text-right font-mono text-white focus:border-amber-300/40 focus:outline-none"
+            className="w-16 rounded-lg border border-border bg-background px-2 py-1 text-right font-mono text-foreground focus:border-amber-300/40 focus:outline-none"
           />
-          <span className="text-white/40">CT</span>
+          <span className="text-muted-foreground/70">CT</span>
         </div>
       </Section>
 
       {/* Detention rate */}
       <Section title="Detention rate" subtitle="Used by /dispatch/load to compute $ exposure when a load can't make appointment.">
         <div className="flex items-center gap-2">
-          <span className="text-white/55">$</span>
+          <span className="text-muted-foreground/80">$</span>
           <input
             type="number"
             min={0}
             value={config.detention_usd_per_hr}
             onChange={(e) => update("detention_usd_per_hr", Number(e.target.value))}
-            className="w-28 rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1.5 font-mono text-[13px] text-white focus:border-amber-300/40 focus:outline-none"
+            className="w-28 rounded-lg border border-border bg-background px-2 py-1.5 font-mono text-[13px] text-foreground focus:border-amber-300/40 focus:outline-none"
           />
-          <span className="text-[12px] text-white/55">/ hour</span>
-          <span className="ml-2 text-[10.5px] text-white/35">industry default $85/hr</span>
+          <span className="text-[12px] text-muted-foreground/80">/ hour</span>
+          <span className="ml-2 text-[10.5px] text-muted-foreground/60">industry default $85/hr</span>
         </div>
       </Section>
 
@@ -287,21 +287,21 @@ export default function AlertsManager() {
       <Section title="Send a test alert" subtitle="Fire one alert through the email channel to confirm delivery + see how a real anomaly notification will read.">
         <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
           <div>
-            <label className="block text-[10.5px] uppercase tracking-[0.15em] text-white/55 mb-1.5">Port</label>
+            <label className="block text-[10.5px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">Port</label>
             {watched.length === 0 ? (
               <input
                 type="text"
                 value={testPort}
                 onChange={(e) => setTestPort(e.target.value)}
                 placeholder="230502"
-                className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1.5 font-mono text-[12.5px] text-white focus:border-amber-300/40 focus:outline-none"
+                className="w-full rounded-lg border border-border bg-background px-2 py-1.5 font-mono text-[12.5px] text-foreground focus:border-amber-300/40 focus:outline-none"
               />
             ) : (
               <select
                 value={testPort}
                 onChange={(e) => setTestPort(e.target.value)}
                 style={{ colorScheme: "dark" }}
-                className="w-full rounded-lg border border-white/[0.08] bg-[#040814] px-2 py-1.5 text-[12.5px] text-white focus:border-amber-300/40 focus:outline-none"
+                className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-[12.5px] text-foreground focus:border-amber-300/40 focus:outline-none"
               >
                 {watched.map((id) => {
                   const meta = PORT_META[id];
@@ -315,8 +315,8 @@ export default function AlertsManager() {
             )}
           </div>
           <div>
-            <label className="block text-[10.5px] uppercase tracking-[0.15em] text-white/55 mb-1.5">Mode</label>
-            <label className="flex items-center gap-2 text-[12.5px] text-white/75">
+            <label className="block text-[10.5px] uppercase tracking-[0.15em] text-muted-foreground/80 mb-1.5">Mode</label>
+            <label className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
               <input
                 type="checkbox"
                 checked={testForce}
@@ -331,12 +331,12 @@ export default function AlertsManager() {
           <button
             onClick={fireTest}
             disabled={testFiring || !config.email_to}
-            className="rounded-lg bg-amber-400 px-3 py-1.5 text-[12px] font-semibold text-[#0a1020] hover:bg-amber-300 disabled:opacity-40"
+            className="rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-semibold text-background hover:bg-foreground disabled:opacity-40"
           >
             {testFiring ? "Sending…" : "Send test alert →"}
           </button>
           {!config.email_to && (
-            <span className="text-[11px] text-amber-300/80">Set your email above first.</span>
+            <span className="text-[11px] text-foreground/80">Set your email above first.</span>
           )}
         </div>
         {testResult && (
@@ -349,13 +349,13 @@ export default function AlertsManager() {
           >
             {testResult.sent ? (
               <>
-                ✓ Sent to <span className="font-mono">{config.email_to}</span> · subject: <span className="text-white/85">{testResult.rendered?.subject}</span>
+                ✓ Sent to <span className="font-mono">{config.email_to}</span> · subject: <span className="text-foreground/85">{testResult.rendered?.subject}</span>
               </>
             ) : (
               <>
                 ✗ {testResult.error ?? "did not send"}
                 {testResult.baseline && (
-                  <div className="mt-1 text-[11px] text-white/60">
+                  <div className="mt-1 text-[11px] text-muted-foreground">
                     live={testResult.baseline.live_wait_min ?? "—"}min · baseline={testResult.baseline.baseline_avg_min ?? "—"}min · ratio={testResult.baseline.ratio ?? "—"}× · anomaly={String(testResult.baseline.anomaly)}
                   </div>
                 )}
@@ -368,15 +368,15 @@ export default function AlertsManager() {
       <div className="sticky bottom-4 mt-8 flex justify-end">
         <button
           onClick={save}
-          className="rounded-xl bg-amber-400 px-5 py-2.5 text-[13.5px] font-semibold text-[#0a1020] hover:bg-amber-300 transition shadow-lg"
+          className="rounded-xl bg-foreground px-5 py-2.5 text-[13.5px] font-semibold text-background hover:bg-foreground transition shadow-lg"
         >
           {saved ? "✓ Saved" : "Save settings"}
         </button>
       </div>
 
-      <p className="mt-6 text-[11px] text-white/35 leading-[1.5]">
+      <p className="mt-6 text-[11px] text-muted-foreground/60 leading-[1.5]">
         v0 stores config in this browser&apos;s localStorage. Once the v70 subscribers schema lands +
-        Meta clears, we migrate your settings to the server-side <code className="font-mono text-white/55">insights_subscribers</code> table
+        Meta clears, we migrate your settings to the server-side <code className="font-mono text-muted-foreground/80">insights_subscribers</code> table
         — no re-entry required.
       </p>
     </main>
@@ -393,10 +393,10 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+    <section className="mb-6 rounded-2xl border border-border bg-foreground/[0.02] p-5">
       <div className="mb-3">
-        <div className="text-[10.5px] uppercase tracking-[0.2em] text-white/55">{title}</div>
-        {subtitle && <div className="mt-1 text-[12px] text-white/45 leading-[1.45]">{subtitle}</div>}
+        <div className="text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/80">{title}</div>
+        {subtitle && <div className="mt-1 text-[12px] text-muted-foreground/70 leading-[1.45]">{subtitle}</div>}
       </div>
       {children}
     </section>
@@ -427,13 +427,13 @@ function ChannelRow({
   inputType: string;
 }) {
   return (
-    <div className="border-t border-white/[0.04] first:border-t-0 py-3 first:pt-0">
+    <div className="border-t border-border first:border-t-0 py-3 first:pt-0">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <span className="text-[13.5px] font-medium text-white">{name}</span>
-          <span className="ml-2 text-[11px] text-white/40">{subtitle}</span>
+          <span className="text-[13.5px] font-medium text-foreground">{name}</span>
+          <span className="ml-2 text-[11px] text-muted-foreground/70">{subtitle}</span>
         </div>
-        <label className="flex items-center gap-2 text-[12px] text-white/70">
+        <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
           <input
             type="checkbox"
             checked={enabled && ready}
@@ -441,7 +441,7 @@ function ChannelRow({
             onChange={(e) => onToggle(e.target.checked)}
             className="accent-amber-400 disabled:opacity-30"
           />
-          {ready ? "On" : <span className="text-white/35">{gateNote ?? "Pending"}</span>}
+          {ready ? "On" : <span className="text-muted-foreground/60">{gateNote ?? "Pending"}</span>}
         </label>
       </div>
       <input
@@ -450,7 +450,7 @@ function ChannelRow({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         disabled={!ready}
-        className="mt-2 w-full rounded-lg border border-white/[0.08] bg-[#040814] px-3 py-2 text-[12.5px] text-white placeholder-white/30 focus:border-amber-300/40 focus:outline-none disabled:opacity-40"
+        className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-[12.5px] text-foreground placeholder-white/30 focus:border-amber-300/40 focus:outline-none disabled:opacity-40"
       />
     </div>
   );

@@ -66,10 +66,10 @@ export default function PaperworkHub() {
   return (
     <main className="mx-auto max-w-[1180px] px-5 sm:px-8 py-6">
       <div className="mb-6">
-        <h1 className="text-[1.4rem] font-semibold text-white">
-          Paperwork <span className="text-white/40 text-base font-normal">· trámites</span>
+        <h1 className="text-[1.4rem] font-semibold text-foreground">
+          Paperwork <span className="text-muted-foreground/70 text-base font-normal">· trámites</span>
         </h1>
-        <p className="mt-1 text-[13px] text-white/55 max-w-2xl">
+        <p className="mt-1 text-[13px] text-muted-foreground/80 max-w-2xl">
           Generate the cross-border paperwork your aduanal broker normally hand-types. We pre-fill,
           you verify, you sign. Saves 30+ min per load and eliminates the trailer-seizure errors.
         </p>
@@ -82,36 +82,36 @@ export default function PaperworkHub() {
             <div
               className={`rounded-2xl border p-5 h-full transition ${
                 isLive
-                  ? "border-amber-300/30 bg-amber-300/[0.02] hover:border-amber-300/60 hover:bg-amber-300/[0.05]"
-                  : "border-white/[0.07] bg-white/[0.015]"
+                  ? "border-amber-300/30 bg-foreground/[0.02] hover:border-amber-300/60 hover:bg-foreground/[0.05]"
+                  : "border-border bg-foreground/[0.015]"
               }`}
             >
               <div className="flex items-baseline justify-between gap-3 mb-2">
-                <h2 className={`text-[15px] font-semibold ${isLive ? "text-white" : "text-white/55"}`}>
+                <h2 className={`text-[15px] font-semibold ${isLive ? "text-foreground" : "text-muted-foreground/80"}`}>
                   {f.title}
                 </h2>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] font-medium ${
                     isLive
                       ? "bg-emerald-500/15 text-emerald-300 border border-emerald-400/30"
-                      : "bg-white/[0.05] text-white/35 border border-white/[0.08]"
+                      : "bg-foreground/[0.05] text-muted-foreground/60 border border-border"
                   }`}
                 >
                   {isLive ? "live" : "queued"}
                 </span>
               </div>
-              <p className={`text-[12.5px] leading-[1.55] ${isLive ? "text-white/65" : "text-white/40"}`}>
+              <p className={`text-[12.5px] leading-[1.55] ${isLive ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
                 {f.description}
               </p>
               <p
-                className={`mt-3 pt-3 border-t border-white/[0.05] text-[11.5px] leading-[1.5] italic ${
-                  isLive ? "text-rose-200/70" : "text-white/30"
+                className={`mt-3 pt-3 border-t border-border text-[11.5px] leading-[1.5] italic ${
+                  isLive ? "text-rose-200/70" : "text-muted-foreground/50"
                 }`}
               >
                 Pain: {f.pain}
               </p>
               {isLive && (
-                <div className="mt-4 text-[12px] text-amber-300 group">
+                <div className="mt-4 text-[12px] text-foreground group">
                   Open generator <span className="inline-block transition group-hover:translate-x-0.5">→</span>
                 </div>
               )}
@@ -127,7 +127,7 @@ export default function PaperworkHub() {
         })}
       </div>
 
-      <p className="mt-8 text-[11px] text-white/35 leading-[1.55]">
+      <p className="mt-8 text-[11px] text-muted-foreground/60 leading-[1.55]">
         We generate, you verify. Cruzar is not a customs broker; the generator pre-fills based on
         your inputs and USMCA Article 5.2 / 19 CFR § 141.86 conventions. Your aduanal broker / CHB
         owns the legal filing. Drafts saved to this browser only — nothing leaves your machine
