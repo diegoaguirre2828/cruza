@@ -30,7 +30,13 @@ interface OpsData {
     lastPagePostAt: string | null
     lastGroupPostAt: string | null
   }
-  circles: { total: number; memberships: number; invitesOpen: number; invitesAccepted: number }
+  // Optional — `/api/admin/ops-glance` doesn't always return circles
+  // metrics. The Circles feature was scoped out at some point but the
+  // component still expected the field, which crashed the entire admin
+  // page with `Cannot read properties of undefined (reading 'invitesOpen')`
+  // (Diego flagged 2026-05-03 night). Now optional; the card below is
+  // gated on its presence.
+  circles?: { total: number; memberships: number; invitesOpen: number; invitesAccepted: number }
   alerts: { activePrefs: number; firedToday: number }
   moderation: { usersCurrentlyBanned: number }
   infra: { pwaInstalls: number; generatedAt: string }
@@ -154,12 +160,14 @@ export function OpsGlance() {
           <Metric label="Group" value={data.socialPosts.group24h} dot={statusDot(groupHealthy)} />
         </Card>
 
-        {/* Circles */}
-        <Card title="Circles" detail={`${data.circles.invitesOpen} invites open`}>
-          <Metric label="Circles" value={data.circles.total} />
-          <Metric label="Members" value={data.circles.memberships} />
-          <Metric label="Accepted" value={data.circles.invitesAccepted} />
-        </Card>
+        {/* Circles — gated on presence (API may not return this section) */}
+        {data.circles && (
+          <Card title="Circles" detail={`${data.circles.invitesOpen} invites open`}>
+            <Metric label="Circles" value={data.circles.total} />
+            <Metric label="Members" value={data.circles.memberships} />
+            <Metric label="Accepted" value={data.circles.invitesAccepted} />
+          </Card>
+        )}
 
         {/* Alerts */}
         <Card title="Alerts" detail={`${data.alerts.firedToday} fired today`}>
