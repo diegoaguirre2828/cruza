@@ -27,10 +27,10 @@ export default async function WorkspacePage({
   const stampDate = today.toISOString().slice(0, 10).replace(/-/g, '·');
 
   return (
-    <div className="min-h-screen bg-[#0a1020] text-slate-100">
+    <div className="dark min-h-screen bg-background text-foreground">
       <B2BNav lang={lang} />
 
-      <section className="relative border-b border-white/[0.07] overflow-hidden">
+      <section className="relative border-b border-border overflow-hidden">
         {/* Cartographic spine — topographic contours + US-MX border line */}
         <BorderSpine intensity="med" variant="both" />
 
@@ -46,7 +46,7 @@ export default async function WorkspacePage({
                   size="lg"
                 />
               </div>
-              <p className="mt-5 max-w-2xl text-[15px] leading-[1.65] text-white/65">
+              <p className="mt-5 max-w-2xl text-[15px] leading-[1.65] text-muted-foreground">
                 {c.hero.sub}
               </p>
             </div>
@@ -66,16 +66,16 @@ export default async function WorkspacePage({
 
       <WorkspaceClient lang={lang} copy={c} />
 
-      <footer className="bg-[#070b18]">
+      <footer className="bg-card border-t border-border">
         <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-10 space-y-4">
-          <p className="max-w-3xl text-[11px] leading-[1.65] text-white/45">
+          <p className="max-w-3xl text-[11px] leading-[1.65] text-muted-foreground/70">
             {c.shared.legal_disclaimer}
           </p>
-          <div className="flex items-center justify-between gap-4 flex-wrap pt-4 border-t border-white/[0.05]">
-            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/40">
+          <div className="flex items-center justify-between gap-4 flex-wrap pt-4 border-t border-border/60">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/60">
               {c.shared.powered_by}
             </div>
-            <div className="font-mono text-[10px] tabular-nums tracking-[0.08em] text-white/30">
+            <div className="font-mono text-[10px] tabular-nums tracking-[0.08em] text-muted-foreground/50">
               26.18°N · 98.18°W
             </div>
           </div>
