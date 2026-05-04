@@ -164,8 +164,16 @@ export function ClaimDetailClient({
   const iorReady = !!claim.ior_attested_at;
   const showAttestationSection = claim.status === 'validated' || claim.status === 'submitted_to_ace' || (claim.status === 'draft' && claim.cape_csv_url);
 
+  // Mobile sticky action bar — surfaces the primary action (mark submitted /
+  // mark received) at the bottom of the screen so a dispatcher mid-shift can
+  // tap it without scrolling through the entries table.
+  const showStickyMarkSubmitted = claim.status === 'validated';
+  const showStickyMarkReceived =
+    claim.status === 'submitted_to_ace' || claim.status === 'refund_in_transit';
+  const showStickyAction = showStickyMarkSubmitted || showStickyMarkReceived;
+
   return (
-    <div>
+    <div className={showStickyAction ? 'pb-24 md:pb-0' : ''}>
       <Link href={`/refunds/claims${langSuffix}`} className="text-[12px] text-muted-foreground/80 hover:text-foreground">
         {detailCopy.back}
       </Link>
@@ -446,6 +454,39 @@ export function ClaimDetailClient({
             className="mt-3 w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-[14px] text-foreground outline-none focus:border-foreground/60"
           />
         </Modal>
+      )}
+
+      {/* Mobile sticky action bar — primary status-change action thumb-reachable
+          on mobile. Hidden on md+ where the inline buttons in the actions section
+          are already visible. */}
+      {showStickyAction && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 px-4 py-3">
+          {showStickyMarkSubmitted && (
+            <button
+              type="button"
+              onClick={() => setShowSubmitModal(true)}
+              disabled={!brokerReady || !iorReady}
+              className="w-full rounded-lg bg-foreground px-4 py-3.5 text-[15px] font-medium text-background hover:bg-foreground/85 disabled:cursor-not-allowed disabled:opacity-40"
+              title={!brokerReady ? detailCopy.submission_blocked_broker : !iorReady ? detailCopy.submission_blocked_ior : undefined}
+            >
+              {detailCopy.mark_submitted}
+            </button>
+          )}
+          {showStickyMarkReceived && (
+            <button
+              type="button"
+              onClick={() => setShowReceivedModal(true)}
+              className="w-full rounded-lg bg-emerald-400 px-4 py-3.5 text-[15px] font-medium text-background hover:bg-emerald-300"
+            >
+              {detailCopy.mark_received}
+            </button>
+          )}
+          {showStickyMarkSubmitted && (!brokerReady || !iorReady) && (
+            <p className="mt-2 text-[11.5px] text-muted-foreground/80 text-center">
+              {!brokerReady ? detailCopy.submission_blocked_broker : detailCopy.submission_blocked_ior}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
