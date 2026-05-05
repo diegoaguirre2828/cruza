@@ -126,6 +126,7 @@ function HourlyBars({
 interface Moment {
   key: string
   label: string
+  source?: string
   badge: string | null
   body: React.ReactNode
 }
@@ -214,6 +215,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
       list.push({
         key: 'today_pattern',
         label: es ? `Patrón típico · ${todayDayName.toLowerCase()}` : `Typical · ${todayDayName}`,
+        source: es ? `prom. ${todayDayName.toLowerCase()} · últimos 14 días` : `${todayDayName} avg · last 14 days`,
         badge: todayBest && todayPeak
           ? (es ? `mejor ${fmtHour(todayBest.hour, true)} · pico ${fmtHour(todayPeak.hour, true)}` : `best ${fmtHour(todayBest.hour, false)} · peak ${fmtHour(todayPeak.hour, false)}`)
           : null,
@@ -233,6 +235,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
       list.push({
         key: 'forecast_6h',
         label: es ? 'En 6 horas' : 'In 6 hours',
+        source: es ? 'predicción · próximas 6h' : 'prediction · next 6h',
         badge: trend,
         body: (
           <div className="flex items-end justify-between gap-3 py-2">
@@ -257,6 +260,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
       list.push({
         key: 'saturday',
         label: satLabel,
+        source: es ? 'prom. sábado · últimos 14 días' : 'Saturday avg · last 14 days',
         badge: sameHourValue != null
           ? (es ? `${fmtHour(currentHour, true)}: ~${sameHourValue} min` : `${fmtHour(currentHour, false)}: ~${sameHourValue} min`)
           : null,
@@ -315,12 +319,19 @@ export function BridgeMomentChips({ portId, port }: Props) {
         whileTap={{ scale: 0.995 }}
         className="relative rounded-3xl border border-gray-200 dark:border-gray-700 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 px-5 py-5 overflow-hidden text-gray-900 dark:text-gray-100 shadow-sm cursor-grab active:cursor-grabbing"
       >
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-gray-500 dark:text-gray-400">
-            {current.label}
-          </p>
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-gray-500 dark:text-gray-400">
+              {current.label}
+            </p>
+            {current.source && (
+              <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5 normal-case tracking-normal">
+                {current.source}
+              </p>
+            )}
+          </div>
           {current.badge && (
-            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[55%] tabular-nums">
+            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 truncate max-w-[50%] tabular-nums">
               {current.badge}
             </span>
           )}
