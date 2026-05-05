@@ -38,14 +38,14 @@ export const WORKSPACE_ES = {
     },
     cbam: {
       title: 'CBAM UE',
-      sub: 'Reporte trimestral del Mecanismo de Ajuste de Carbono UE. Acero + aluminio + cemento + fertilizantes + electricidad + hidrógeno. Fase definitiva desde 1 ene 2026.',
+      sub: 'Herramienta para exportaciones a la UE — impuesto de carbono en frontera para acero, aluminio, cemento y fertilizantes enviados a la UE. Fase definitiva 1 ene 2026. No aplica a carga terrestre MX-EE.UU.',
       stat_certificates: 'certificados requeridos',
       stat_cost: 'costo CBAM estimado (EUR)',
       open_link: 'Abrir CBAM',
     },
     uflpa: {
       title: 'Riesgo UFLPA',
-      sub: 'Escáner de riesgo de trabajo forzado. Mapea cadena de suministro, marca exposición Xinjiang + coincidencias Entity List antes de que CBP detenga el envío.',
+      sub: 'Herramienta para oficiales de cumplimiento — escáner de riesgo para importaciones marítimas. Mapea cadena de suministro, marca exposición Xinjiang + coincidencias Entity List antes de que CBP detenga el envío.',
       stat_scans: 'escaneos (30d)',
       stat_high_risk: 'hallazgos riesgo-alto',
       open_link: 'Abrir UFLPA',
@@ -86,7 +86,7 @@ export const WORKSPACE_ES = {
     },
     regulatory: {
       title: 'Notificación pre-arribo',
-      sub: 'FDA Prior Notice · USDA APHIS · ISF 10+2 · CBP 7501 · PDF multi-página para agente.',
+      sub: 'FDA Prior Notice · USDA APHIS · CBP 7501 pre-fill · PDF multi-página para agente. ISF 10+2 aplica solo para carga marítima.',
       stat_submissions: 'presentaciones (30d)',
       open_link: 'Abrir regulatorio',
     },

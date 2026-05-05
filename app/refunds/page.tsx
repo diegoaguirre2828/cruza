@@ -32,8 +32,8 @@ export default async function RefundsLandingPage({
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
             <p className="text-[13px] text-amber-200/90 leading-snug">
               {lang === 'es'
-                ? 'La Suprema Corte anuló los aranceles IEEPA el 24 Feb 2026. Los reembolsos no son automáticos — tienes 80 días para tramitarlos en ACE antes de perderlos.'
-                : 'Supreme Court struck down IEEPA tariffs Feb 24, 2026. Refunds are not automatic — you have 80 days to file in ACE or forfeit them.'}
+                ? 'CAPE activo 20 Abr 2026: la vía rápida Phase 1 de CBP está abierta. Los reembolsos no son automáticos — ventana de 80 días por entrada desde su fecha de protesta. Las entradas dentro de su ventana pueden presentar ahora.'
+                : 'CAPE live Apr 20, 2026: CBP\'s Phase 1 fast-lane is open. Refunds are not automatic — 80-day rolling window per entry from its protest date. Entries still inside their window can file now.'}
             </p>
           </div>
           <Link

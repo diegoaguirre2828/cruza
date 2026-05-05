@@ -28,7 +28,7 @@ export const B2B_ES = {
         n: '02',
         label: 'Cumplimiento',
         title: 'Si esta carga cruza sin problemas.',
-        body: 'Verificación USMCA, validación aduanal, escaneo de documentos, HOS del chofer. Señala banderas antes del puente, no en él.',
+        body: 'Verificación USMCA, validación aduanal, escaneo de documentos, HOS del chofer. Detectamos los errores que niegan tu certificado USMCA en CBP — señala banderas antes del puente, no en él.',
       },
       {
         n: '03',

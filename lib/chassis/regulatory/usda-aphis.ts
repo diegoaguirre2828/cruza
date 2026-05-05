@@ -60,7 +60,7 @@ export function composeUsdaAphis(input: RoutingInput): UsdaAphisComposition {
     manifest_notes: [
       `File ${forms.join(' + ')} via USDA APHIS eFile at efile.aphis.usda.gov`,
       `Schedule pre-arrival inspection at ${input.shipment.port_of_entry ?? 'TBD'} via USDA Field Office`,
-      treatment === 'heat' ? `Wood treatment certificate (heat ≥56°C/30min OR fumigation) required at origin per ISPM-15.` : '',
+      treatment === 'heat' ? `Wood treatment certificate (heat ≥56°C/30min OR fumigation) required at origin per ISPM-15. From Jan 1, 2026 CBP enforces hyphenated mark format: DB-{CC}-{regnum} (e.g. DB-CN-56-5) — space-separated marks rejected at port.` : '',
     ].filter(Boolean),
   };
 }

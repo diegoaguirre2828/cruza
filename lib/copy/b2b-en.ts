@@ -29,7 +29,7 @@ export const B2B_EN = {
         n: '02',
         label: 'Compliance',
         title: 'Does this load cross clean.',
-        body: 'USMCA cert check, customs validation, paperwork scan, driver HOS. Flags before the bridge, not at it.',
+        body: 'USMCA cert check, customs validation, paperwork scan, driver HOS. We catch the errors that get your USMCA claim denied at CBP — flags before the bridge, not at it.',
       },
       {
         n: '03',

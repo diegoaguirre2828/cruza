@@ -38,14 +38,14 @@ export const WORKSPACE_EN = {
     },
     cbam: {
       title: 'EU CBAM',
-      sub: 'Carbon Border Adjustment quarterly report. Steel + aluminum + cement + fertilizers + electricity + hydrogen. Definitive phase from Jan 1, 2026.',
+      sub: 'EU Export tool — carbon border tax for goods shipped into the EU. Steel, aluminum, cement, fertilizers. Definitive phase Jan 1, 2026. Not applicable to MX-to-US land freight.',
       stat_certificates: 'certificates required',
       stat_cost: 'estimated CBAM cost (EUR)',
       open_link: 'Open CBAM',
     },
     uflpa: {
       title: 'UFLPA risk',
-      sub: 'Forced-labor risk scanner. Maps your supply chain, flags Xinjiang exposure + Entity List matches before CBP detains the shipment.',
+      sub: 'Compliance officer tool — forced-labor risk scanner for ocean imports. Maps supply chain, flags Xinjiang exposure + Entity List matches before CBP detains the shipment.',
       stat_scans: 'risk scans (30d)',
       stat_high_risk: 'high-risk findings',
       open_link: 'Open UFLPA',
@@ -86,7 +86,7 @@ export const WORKSPACE_EN = {
     },
     regulatory: {
       title: 'Regulatory pre-arrival',
-      sub: 'FDA Prior Notice · USDA APHIS · ISF 10+2 · CBP 7501 · multi-page broker handoff PDF.',
+      sub: 'FDA Prior Notice · USDA APHIS · CBP 7501 pre-fill · multi-page broker handoff PDF. ISF 10+2 auto-scoped for ocean shipments.',
       stat_submissions: 'submissions (30d)',
       open_link: 'Open regulatory',
     },

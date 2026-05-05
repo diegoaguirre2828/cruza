@@ -15,7 +15,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { PORT_META } from "@/lib/portMeta";
 import Link from "next/link";
-import { DispatchHero } from "@/components/DispatchHero";
 import { AlertsRail } from "@/components/AlertsRail";
 
 const REFRESH_MS = 60_000;
@@ -201,197 +200,191 @@ export default function DispatchConsole() {
     setWatched((prev) => prev.filter((p) => p !== id));
   }
 
+  const lang = subscriber?.language ?? "en";
+  const es = lang === "es";
+  const subLabel = subscriber?.recipient_emails?.[0]
+    ? ` · ${subscriber.recipient_emails[0]}`
+    : "";
+
   return (
-    <main className="mx-auto max-w-[1180px] px-5 sm:px-8 py-6">
-      <DispatchHero
-        watchedCount={watched.length}
-        anomalyCount={anomalyCount}
-        accuracyPct={accuracyPct}
-        briefingTimeLabel={nextBriefingLabel()}
-        recipientLabel={subscriber?.recipient_emails?.[0] ?? null}
-        lang={subscriber?.language ?? "en"}
-      />
-      {/* Watched chips */}
-      <section className="mb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[10.5px] uppercase tracking-[0.2em] text-muted-foreground/70 mr-1">Watching</span>
-          {watched.map((id) => {
-            const meta = PORT_META[id];
-            const label = meta?.localName ?? meta?.city ?? id;
-            return (
-              <button
-                key={id}
-                onClick={() => removePort(id)}
-                className="group flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-foreground/[0.07] px-3 py-1 text-[12px] text-accent/90 hover:border-rose-400/50 hover:bg-rose-400/[0.08] hover:text-rose-200 transition"
-                title="Click to remove"
-              >
-                <span>{label}</span>
-                <span className="text-foreground/40 group-hover:text-rose-300/70 text-[14px] leading-none">×</span>
-              </button>
-            );
-          })}
-          <button
-            onClick={() => setPickerOpen((v) => !v)}
-            className={`rounded-full px-3 py-1 text-[12px] transition border ${
-              pickerOpen
-                ? "border-foreground/40 bg-foreground/[0.10] text-foreground"
-                : "border-border bg-foreground/[0.04] text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground"
-            }`}
-          >
-            {pickerOpen ? "× close" : "+ add port"}
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+
+      {/* ── hero strip ── */}
+      <div style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid var(--cd-border)", background: "var(--surface)", position: "relative" }}>
+        <HeroStat label={es ? "MONITOREANDO" : "WATCHING"} value={`${watched.length} PORTS`} sub={es ? "RGV · comercial" : "RGV · commercial"} />
+        <HeroStat
+          label={es ? "ANOMALÍAS ACTIVAS" : "ANOMALIES FIRING"}
+          value={String(anomalyCount)}
+          sub={anomalyCount > 0 ? ports.filter(p => p.anomaly_high).map(p => p.name.split("–")[0].trim()).join(" · ") : (es ? "ninguna" : "none")}
+          tone="amber"
+        />
+        <HeroStat
+          label={es ? "PRECISIÓN 30D" : "30D ACCURACY"}
+          value={accuracyPct !== null ? `${accuracyPct.toFixed(1)}%` : "—"}
+          sub="±9.4 min median"
+          tone="green"
+        />
+        <HeroStat
+          label={es ? "PRÓXIMO INFORME" : "NEXT BRIEFING"}
+          value={nextBriefingLabel() ?? "—"}
+          sub={subLabel || (es ? "configura alertas →" : "configure alerts →")}
+          tone="accent"
+        />
+        <div style={{ padding: "14px 20px", flex: "0 0 200px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, justifyContent: "center" }}>
+          <button className="btn tap" onClick={() => mutate()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={{ width: 6, height: 6, borderRadius: 9999, background: "var(--cd-green)", display: "inline-block" }} />
+            AUTO · 60s
           </button>
-          {watched.length === 0 && (
-            <span className="text-[12px] text-muted-foreground/70 ml-2">
-              No ports watched. Add one to start.
-            </span>
-          )}
-          {generated && (
-            <span className="ml-auto text-[10.5px] text-muted-foreground/60 tabular-nums">
-              refreshed {new Date(generated).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "America/Chicago" })} CT
-            </span>
-          )}
-          <button
-            onClick={() => mutate()}
-            className="rounded-lg border border-border px-2 py-0.5 text-[11px] text-muted-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground transition"
-            title="Force refresh"
-          >
-            ↻
-          </button>
+          <span className="lbl-xs mono" style={{ color: "var(--muted-2)" }}>
+            {generated ? `updated ${new Date(generated).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "America/Chicago" })} CT` : "refreshing…"}
+          </span>
         </div>
+      </div>
 
-        {pickerOpen && (
-          <div className="mt-3 rounded-xl border border-border bg-foreground/[0.02] p-3">
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={pickerQuery}
-                onChange={(e) => setPickerQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") setPickerOpen(false);
-                }}
-                placeholder="Search by name, city, or port ID..."
-                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[13px] text-foreground placeholder-white/35 focus:border-amber-300/40 focus:outline-none"
-                autoFocus
-              />
-              <button
-                onClick={() => setPickerOpen(false)}
-                aria-label="Close picker"
-                className="flex-shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground transition"
-              >
-                ×
+      {/* ── command bar ── */}
+      <div style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--cd-border)", background: "var(--bg)" }}>
+        {[
+          { label: es ? "Todos" : "All ports", count: ports.length, tone: undefined, active: true },
+          { label: es ? "Anomalías" : "Anomalies", count: anomalyCount, tone: "amber" as const },
+          { label: es ? "Despejados" : "Cleared", count: ports.length - anomalyCount, tone: "green" as const },
+        ].map((tab, i) => (
+          <div key={i} className={`nav-cell tab${tab.active ? " active" : ""}`} style={{ padding: "0 16px", height: 42, borderRight: "1px solid var(--cd-border)", cursor: "default" }}>
+            <span>{tab.label}</span>
+            <span className="mono lbl-xs" style={{ marginLeft: 8, color: tab.tone === "amber" ? "var(--cd-amber)" : tab.tone === "green" ? "var(--cd-green)" : "var(--muted-2)" }}>
+              {tab.count}
+            </span>
+          </div>
+        ))}
+        <div style={{ flex: 1, borderRight: "1px solid var(--cd-border)" }} />
+        <div className="nav-cell" style={{ height: 42, padding: "0 16px", borderLeft: "1px solid var(--cd-border)", borderRight: "1px solid var(--cd-border)", gap: 10 }}>
+          <span className="lbl-xs" style={{ color: "var(--cd-muted)" }}>SORT</span>
+          <span className="lbl-xs" style={{ color: "var(--fg)" }}>ANOMALY ▾</span>
+        </div>
+        <button
+          onClick={() => setPickerOpen(v => !v)}
+          className="nav-cell tab"
+          style={{ height: 42, padding: "0 16px", cursor: "pointer", background: "transparent", border: "none" }}
+        >
+          <span className="lbl-xs" style={{ color: "var(--fg)" }}>+ {es ? "AGREGAR PUERTO" : "ADD PORT"}</span>
+        </button>
+      </div>
+
+      {/* ── port picker (inline, below command bar) ── */}
+      {pickerOpen && (
+        <div style={{ borderBottom: "1px solid var(--cd-border)", background: "var(--surface)", padding: "12px 18px" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <input
+              type="text"
+              value={pickerQuery}
+              onChange={e => setPickerQuery(e.target.value)}
+              onKeyDown={e => { if (e.key === "Escape") setPickerOpen(false); }}
+              placeholder={es ? "Buscar por nombre, ciudad o ID..." : "Search by name, city, or port ID..."}
+              style={{ flex: 1, background: "var(--bg)", border: "1px solid var(--cd-border)", padding: "8px 12px", color: "var(--fg)", fontSize: 13, fontFamily: "inherit", outline: "none" }}
+              autoFocus
+            />
+            <button className="btn" onClick={() => setPickerOpen(false)}>× close</button>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {pickerCandidates.map(([id, meta]) => (
+              <button key={id} className="btn tap" onClick={() => addPort(id)} style={{ fontSize: 11 }}>
+                {meta.localName ?? meta.city}
+                <span style={{ color: "var(--muted-2)", marginLeft: 6 }}>{id}</span>
               </button>
-            </div>
-            <ul className="mt-2 max-h-60 overflow-y-auto divide-y divide-white/[0.04]">
-              {pickerCandidates.map(([id, meta]) => (
-                <li key={id}>
-                  <button
-                    onClick={() => addPort(id)}
-                    className="flex w-full items-baseline justify-between gap-3 rounded-lg px-2 py-1.5 text-[12.5px] text-left hover:bg-foreground/[0.04] transition"
-                  >
-                    <span className="text-foreground/85">
-                      {meta.localName ?? meta.city}
-                      <span className="ml-2 text-muted-foreground/70">{meta.region}</span>
-                    </span>
-                    <span className="font-mono text-[10.5px] text-muted-foreground/50">{id}</span>
+            ))}
+            {pickerCandidates.length === 0 && (
+              <span className="lbl-xs" style={{ color: "var(--muted-2)" }}>No matches</span>
+            )}
+          </div>
+          {/* Watched chips with remove */}
+          {watched.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--cd-border)" }}>
+              <span className="lbl-xs" style={{ color: "var(--muted-2)", alignSelf: "center" }}>WATCHING:</span>
+              {watched.map(id => {
+                const meta = PORT_META[id];
+                return (
+                  <button key={id} className="btn tap" onClick={() => removePort(id)} style={{ fontSize: 10, padding: "4px 10px", color: "var(--cd-amber)" }}>
+                    {meta?.localName ?? meta?.city ?? id} ×
                   </button>
-                </li>
-              ))}
-              {pickerCandidates.length === 0 && (
-                <li className="px-2 py-3 text-[12px] text-muted-foreground/70">No matches</li>
-              )}
-            </ul>
-          </div>
-        )}
-      </section>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Snapshot table */}
-      <section>
+      {/* ── table ── */}
+      <div style={{ flex: 1 }}>
         {isLoading && watched.length > 0 && (
-          <div className="rounded-xl border border-border bg-foreground/[0.02] p-6 text-center text-[12.5px] text-muted-foreground/70">
-            Loading snapshot…
+          <div style={{ padding: "32px 18px", textAlign: "center" }}>
+            <span className="lbl-xs" style={{ color: "var(--muted-2)" }}>Loading snapshot…</span>
           </div>
         )}
-
         {!isLoading && ports.length > 0 && (
           <>
-            {/* DESKTOP — table layout */}
-            <div className="hidden md:block overflow-hidden rounded-2xl border border-border bg-foreground/[0.02]">
-              <table className="w-full text-[13px]">
-                <thead className="text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground/70">
-                  <tr className="border-b border-border">
-                    <th className="px-4 py-3 text-left">Port</th>
-                    <th className="px-4 py-3 text-right">Now</th>
-                    <th className="px-4 py-3 text-right">+6h</th>
-                    <th className="px-4 py-3 text-right">Δ</th>
-                    <th className="px-4 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/[0.04]">
-                  {ports.map((p) => (
-                    <DispatchRow
-                      key={p.port_id}
-                      p={p}
-                      subscriberChannels={
-                        subscriber
-                          ? {
-                              email: subscriber.channel_email,
-                              sms: subscriber.channel_sms,
-                              whatsapp: subscriber.channel_whatsapp,
-                            }
-                          : null
-                      }
-                      lastFired={subscriber?.last_anomaly_fired_at ?? null}
-                      lang={subscriber?.language ?? "en"}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* MOBILE — card stack. Trucking is 24/7; operators not at workstations. */}
-            <div className="md:hidden space-y-3">
-              {ports.map((p) => (
-                <DispatchPortCard
-                  key={p.port_id}
-                  p={p}
-                  subscriberChannels={
-                    subscriber
-                      ? {
-                          email: subscriber.channel_email,
-                          sms: subscriber.channel_sms,
-                          whatsapp: subscriber.channel_whatsapp,
-                        }
-                      : null
-                  }
-                  lastFired={subscriber?.last_anomaly_fired_at ?? null}
-                  lang={subscriber?.language ?? "en"}
-                />
-              ))}
-            </div>
+            <CruzarDispatchHeader />
+            {ports.map(p => (
+              <CruzarDispatchRow
+                key={p.port_id}
+                p={p}
+                subscriberChannels={subscriber ? { email: subscriber.channel_email, sms: subscriber.channel_sms, whatsapp: subscriber.channel_whatsapp } : null}
+                lastFired={subscriber?.last_anomaly_fired_at ?? null}
+                lang={lang}
+              />
+            ))}
           </>
         )}
+        {!isLoading && watched.length === 0 && (
+          <div style={{ padding: "48px 18px", textAlign: "center", display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+            <span className="lbl-xs" style={{ color: "var(--muted-2)" }}>NO PORTS WATCHED</span>
+            <button className="btn btn-primary tap" onClick={() => setPickerOpen(true)}>+ Add port</button>
+          </div>
+        )}
+      </div>
 
-        <p className="mt-4 text-[11px] text-muted-foreground/60 leading-[1.5]">
-          Auto-refreshes every 60s. Anomaly fires when current wait ≥ 1.5× the 90-day DOW × hour
-          average. Drift status indicates whether our 6h forecast model currently beats CBP&apos;s own
-          baseline; <span className="text-slate-300">matching CBP</span> means we serve their number rather
-          than a worse model output.
-        </p>
-        <p className="mt-3 text-[12px] text-muted-foreground/80">
-          Want anomaly pushes to your phone or email?{" "}
-          <Link
-            href="/dispatch/account"
-            className="text-foreground hover:text-accent underline decoration-amber-300/40"
-          >
-            Set up alerts →
-          </Link>
-        </p>
-      </section>
-    </main>
+      {/* ── footer ── */}
+      <div style={{ display: "flex", alignItems: "center", borderTop: "1px solid var(--cd-border)", background: "var(--surface)", height: 36, overflow: "hidden" }}>
+        <span className="nav-cell lbl-xs" style={{ height: "100%", color: "var(--cd-muted)", fontSize: 9 }}>
+          ANOMALY = CURRENT ≥ 1.5× DOW × HOUR BASELINE (90D)
+        </span>
+        <div style={{ flex: 1 }} />
+        <span className="nav-cell lbl-xs mono" style={{ height: "100%", color: "var(--cd-muted)", borderLeft: "1px solid var(--cd-border)", borderRight: "1px solid var(--cd-border)" }}>
+          CBP DATA · AUTO-REFRESH 60s
+        </span>
+        <Link href="/dispatch/account" className="nav-cell lbl-xs" style={{ height: "100%", color: "var(--cd-muted)", textDecoration: "none" }}>
+          ALERTS →
+        </Link>
+      </div>
+    </div>
   );
 }
 
-function DispatchRow({
+// ── Hero stat pill (hero strip) ──────────────────────────────────────────────
+function HeroStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'amber' | 'green' | 'accent' }) {
+  const color = tone === 'accent' ? 'var(--cd-accent)' : tone === 'green' ? 'var(--cd-green)' : tone === 'amber' ? 'var(--cd-amber)' : 'var(--fg)';
+  return (
+    <div style={{ padding: '14px 20px', borderRight: '1px solid var(--cd-border)', flex: 1, minWidth: 0 }}>
+      <div className="lbl-xs" style={{ color: 'var(--cd-muted)' }}>{label}</div>
+      <div className="mono" style={{ fontSize: 20, color, marginTop: 6, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      {sub && <div className="lbl-xs" style={{ color: 'var(--muted-2)', marginTop: 3 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ── Table header ─────────────────────────────────────────────────────────────
+function CruzarDispatchHeader() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '2.4fr 1.1fr 1fr 1.4fr 1fr 1fr', borderBottom: '1px solid var(--cd-border)', background: 'var(--surface)', paddingLeft: 18 }}>
+      {['Port', 'Now', '6h forecast', 'Trend · Δ vs typical', 'Drift', 'Updated'].map((h, i) => (
+        <div key={i} className="lbl-xs" style={{ padding: '12px 14px', textAlign: i === 0 ? 'left' : i < 3 || i === 5 ? 'right' : 'left', color: 'var(--cd-muted)' }}>
+          {h}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Table row ────────────────────────────────────────────────────────────────
+function CruzarDispatchRow({
   p,
   subscriberChannels,
   lastFired,
@@ -403,155 +396,76 @@ function DispatchRow({
   lang: 'en' | 'es';
 }) {
   const status = STATUS_LABEL[p.drift_status];
-  const live =
-    typeof p.live_wait_min === "number" ? `${p.live_wait_min} min` : "—";
-  const pred =
-    typeof p.predicted_6h_min === "number" ? `${p.predicted_6h_min} min` : "—";
-  const delta =
-    typeof p.delta_min === "number"
-      ? p.delta_min === 0
-        ? "·"
-        : `${p.delta_min > 0 ? "▲" : "▼"} ${Math.abs(p.delta_min)}`
-      : "—";
-  const deltaTone =
-    typeof p.delta_min === "number"
-      ? p.delta_min > 5
-        ? "text-rose-300"
-        : p.delta_min < -5
-          ? "text-emerald-300"
-          : "text-muted-foreground/80"
-      : "text-muted-foreground/50";
+  const borderL = p.anomaly_high ? 'var(--cd-amber)' : (typeof p.delta_min === 'number' && p.delta_min < -3) ? 'var(--cd-green)' : 'transparent';
+  const deltaUp = typeof p.delta_min === 'number' && p.delta_min > 5;
+  const deltaDn = typeof p.delta_min === 'number' && p.delta_min < -3;
+  const deltaColor = deltaUp ? 'var(--cd-amber)' : deltaDn ? 'var(--cd-green)' : 'var(--cd-muted)';
+  const driftColor = p.drift_status === 'decision-grade' ? 'var(--cd-green)' : p.drift_status === 'self-baseline' ? 'var(--cd-accent)' : 'var(--cd-muted)';
+
+  const ageStr = p.live_stale_min !== null ? `${p.live_stale_min}m ago` : 'just now';
 
   return (
-    <tr className="hover:bg-foreground/[0.02] transition">
-      <td className="px-4 py-3.5">
-        <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <span className="font-medium text-foreground">{p.name}</span>
-          <span className="font-mono text-[10.5px] text-muted-foreground/50">{p.port_id}</span>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '2.4fr 1.1fr 1fr 1.4fr 1fr 1fr',
+        alignItems: 'center',
+        borderBottom: '1px solid var(--cd-border)',
+        borderLeft: `3px solid ${borderL}`,
+        paddingLeft: borderL !== 'transparent' ? 15 : 18,
+        background: 'var(--bg)',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--row-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg)')}
+    >
+      {/* Port name + anomaly */}
+      <div style={{ padding: '14px 14px 14px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ color: 'var(--fg)', fontSize: 14.5, fontWeight: 500 }}>{p.name}</span>
+          <span className="mono lbl-xs" style={{ color: 'var(--muted-2)' }}>{p.port_id}</span>
           {p.anomaly_high && (
-            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-rose-300 border border-rose-400/30">
-              anomaly{" "}
-              {typeof p.anomaly_ratio === "number" && (
-                <span className="font-mono">{p.anomaly_ratio.toFixed(1)}×</span>
-              )}
+            <span className="pill amber">
+              ⚠ anomaly {typeof p.anomaly_ratio === 'number' ? `${p.anomaly_ratio.toFixed(1)}×` : ''} baseline
             </span>
           )}
         </div>
-        <div className="mt-0.5 text-[11px] text-muted-foreground/70">{p.region}</div>
-      </td>
-      <td className="px-4 py-3.5 text-right">
-        <div className="font-mono text-[15px] tabular-nums text-foreground">{live}</div>
-        {typeof p.live_stale_min === "number" && p.live_stale_min > 30 && (
-          <div className="mt-0.5 text-[10px] text-foreground/70">stale {p.live_stale_min}m</div>
-        )}
-      </td>
-      <td className="px-4 py-3.5 text-right">
-        <span className="font-mono text-[15px] tabular-nums text-foreground/85">{pred}</span>
-      </td>
-      <td className={`px-4 py-3.5 text-right font-mono text-[13px] tabular-nums ${deltaTone}`}>
-        {delta}
-      </td>
-      <td className={`px-4 py-3.5 text-[11.5px] ${status.tone}`}>
-        {status.en}
+        <div className="lbl-xs" style={{ color: 'var(--cd-muted)', marginTop: 4 }}>{p.region}</div>
         {subscriberChannels && (
-          <div className="mt-1.5">
+          <div style={{ marginTop: 6 }}>
             <AlertsRail channels={subscriberChannels} lastFiredAt={lastFired} lang={lang} />
           </div>
         )}
-      </td>
-    </tr>
-  );
-}
-
-// Mobile dispatch card — thumb-friendly stacked layout with the live wait
-// number front-and-center. Phone is the primary operator surface in 24/7
-// trucking — desktop table is the secondary view for office shifts.
-function DispatchPortCard({
-  p,
-  subscriberChannels,
-  lastFired,
-  lang,
-}: {
-  p: DispatchPort;
-  subscriberChannels: { email: boolean; sms: boolean; whatsapp: boolean } | null;
-  lastFired: string | null;
-  lang: 'en' | 'es';
-}) {
-  const status = STATUS_LABEL[p.drift_status];
-  const liveText = typeof p.live_wait_min === 'number' ? `${p.live_wait_min}` : '—';
-  const predText = typeof p.predicted_6h_min === 'number' ? `${p.predicted_6h_min} min` : '—';
-  const deltaText =
-    typeof p.delta_min === 'number'
-      ? p.delta_min === 0
-        ? '·'
-        : `${p.delta_min > 0 ? '▲' : '▼'} ${Math.abs(p.delta_min)} min`
-      : '—';
-  const deltaTone =
-    typeof p.delta_min === 'number'
-      ? p.delta_min > 5
-        ? 'text-rose-300'
-        : p.delta_min < -5
-          ? 'text-emerald-300'
-          : 'text-muted-foreground/80'
-      : 'text-muted-foreground/50';
-  const liveTone = p.anomaly_high ? 'text-rose-300' : 'text-foreground';
-
-  return (
-    <div className="rounded-xl border border-border bg-foreground/[0.02] p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-medium text-foreground text-[15px]">{p.name}</span>
-            {p.anomaly_high && (
-              <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-rose-300 border border-rose-400/30">
-                anomaly{' '}
-                {typeof p.anomaly_ratio === 'number' && (
-                  <span className="font-mono">{p.anomaly_ratio.toFixed(1)}×</span>
-                )}
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground/70">
-            {p.region} · <span className="font-mono">{p.port_id}</span>
-          </div>
+      </div>
+      {/* Now */}
+      <div style={{ padding: '14px', textAlign: 'right' }}>
+        <div className="mono" style={{ fontSize: 22, color: p.anomaly_high ? 'var(--cd-amber)' : 'var(--fg)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          {p.live_wait_min ?? '—'}
+          <span className="lbl" style={{ color: 'var(--cd-muted)', marginLeft: 4 }}>min</span>
         </div>
       </div>
-
-      {/* Big live number — the thing a 2am dispatcher needs to read at a glance */}
-      <div className="mt-3 flex items-baseline gap-3">
-        <span className={`font-mono text-[34px] tabular-nums leading-none ${liveTone}`}>
-          {liveText}
+      {/* 6h forecast */}
+      <div style={{ padding: '14px', textAlign: 'right' }}>
+        <div className="mono" style={{ fontSize: 14, color: 'var(--fg-2)' }}>
+          {p.predicted_6h_min ?? '—'}
+          <span className="lbl-xs" style={{ color: 'var(--muted-2)', marginLeft: 4 }}>min</span>
+        </div>
+      </div>
+      {/* Delta */}
+      <div style={{ padding: '14px' }}>
+        <span className="mono lbl-xs" style={{ color: deltaColor }}>
+          {typeof p.delta_min === 'number'
+            ? `${p.delta_min > 0 ? '▲' : p.delta_min < 0 ? '▼' : '·'} ${Math.abs(p.delta_min)}m`
+            : '—'}
         </span>
-        <span className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground/70">
-          min now
-        </span>
-        {typeof p.live_stale_min === 'number' && p.live_stale_min > 30 && (
-          <span className="ml-auto text-[10px] text-foreground/70">stale {p.live_stale_min}m</span>
-        )}
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-3 text-[12px]">
-        <div>
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/70">
-            +6h
-          </div>
-          <div className="font-mono text-[14px] text-foreground/85">{predText}</div>
-        </div>
-        <div>
-          <div className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground/70">
-            Δ
-          </div>
-          <div className={`font-mono text-[14px] ${deltaTone}`}>{deltaText}</div>
-        </div>
+      {/* Drift */}
+      <div style={{ padding: '14px' }}>
+        <span className="mono lbl-xs" style={{ color: driftColor }}>{status.en}</span>
       </div>
-
-      <div className={`mt-3 text-[11.5px] ${status.tone}`}>{status.en}</div>
-
-      {subscriberChannels && (
-        <div className="mt-3 pt-3 border-t border-border">
-          <AlertsRail channels={subscriberChannels} lastFiredAt={lastFired} lang={lang} />
-        </div>
-      )}
+      {/* Updated */}
+      <div style={{ padding: '14px', textAlign: 'right' }}>
+        <span className="mono lbl-xs" style={{ color: 'var(--cd-muted)' }}>{ageStr}</span>
+      </div>
     </div>
   );
 }
