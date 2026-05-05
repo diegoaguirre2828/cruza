@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useLang } from '@/lib/LangContext'
-import { ExchangeRateWidget } from './ExchangeRateWidget'
 
 // Compact exchange-rate pill, meant to sit in the header row.
 //
@@ -26,8 +26,6 @@ export function ExchangeRatePill() {
   const { lang } = useLang()
   const es = lang === 'es'
   const [data, setData] = useState<ShortExchange | null>(null)
-  const [open, setOpen] = useState(false)
-
   useEffect(() => {
     fetch('/api/exchange')
       .then(r => r.json())
@@ -44,53 +42,21 @@ export function ExchangeRatePill() {
   if (!rate) return null
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="cruzar-pill inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-2 pr-3 py-1.5 text-xs hover:border-emerald-400 dark:hover:border-emerald-500 max-w-full"
-      >
-        <span className="text-base leading-none">💱</span>
-        <span className="font-semibold text-gray-700 dark:text-gray-200 tabular-nums">
-          $1 = <span className="font-black text-emerald-700 dark:text-emerald-400">{rate.toFixed(2)}</span>
-          <span className="ml-0.5 text-[10px] text-gray-400">MXN</span>
+    <Link
+      href="/cambio"
+      className="cruzar-pill inline-flex items-center gap-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full pl-2 pr-3 py-1.5 text-xs hover:border-emerald-400 dark:hover:border-emerald-500 max-w-full"
+    >
+      <span className="text-base leading-none">💱</span>
+      <span className="font-semibold text-gray-700 dark:text-gray-200 tabular-nums">
+        $1 = <span className="font-black text-emerald-700 dark:text-emerald-400">{rate.toFixed(2)}</span>
+        <span className="ml-0.5 text-[10px] text-gray-400">MXN</span>
+      </span>
+      {isCommunity && (
+        <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full">
+          {es ? 'real' : 'live'}
         </span>
-        {isCommunity && (
-          <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full">
-            {es ? 'real' : 'live'}
-          </span>
-        )}
-        <span className="text-gray-400 text-[10px]">→</span>
-      </button>
-
-      {open && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
-          style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}
-          onClick={() => setOpen(false)}
-          role="dialog"
-        >
-          <div
-            className="w-full max-w-md bg-white dark:bg-gray-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto cruzar-rise"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-5 py-3 flex items-center justify-between">
-              <p className="text-sm font-black text-gray-900 dark:text-gray-100">
-                {es ? 'Tipo de cambio' : 'Exchange rate'}
-              </p>
-              <button
-                onClick={() => setOpen(false)}
-                className="text-2xl leading-none text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                aria-label={es ? 'Cerrar' : 'Close'}
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-4">
-              <ExchangeRateWidget />
-            </div>
-          </div>
-        </div>
       )}
-    </>
+      <span className="text-gray-400 text-[10px]">→</span>
+    </Link>
   )
 }
