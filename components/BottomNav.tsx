@@ -63,7 +63,7 @@ export function BottomNav() {
     },
     {
       href: '/camaras',
-      label: es ? 'Pro' : 'Pro',
+      label: es ? 'Cámaras' : 'Cameras',
       active: isActive('/camaras') || isActive('/datos'),
       icon: (active: boolean) => (
         <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
