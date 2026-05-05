@@ -362,8 +362,8 @@ export function PricingClient({ isIosApp }: { isIosApp: boolean }) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(isIosApp ? PLANS.filter(p => p.id === 'free' || p.id === 'pro') : PLANS).map(plan => {
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {PLANS.filter(p => p.id === 'free' || p.id === 'pro').map(plan => {
             const isCurrent = currentTier === plan.id
             return (
               <div
