@@ -19,8 +19,8 @@
 // fix landed in <1hr). Bump v8 → v9 to force every client to drop the
 // shell + API caches on next launch and re-hydrate against fresh
 // chunk hashes. Same recovery pattern as 1c41343 earlier today.
-const CACHE = 'cruzar-v12'
-const API_CACHE = 'cruzar-api-v12'
+const CACHE = 'cruzar-v13'
+const API_CACHE = 'cruzar-api-v13'
 // Intentionally NOT precaching '/' — the cached HTML shell from an old deploy
 // references Next.js chunk hashes that get deleted on every deploy. Serving
 // that stale shell on a slow-network fallback caused soft-navigations between
@@ -28,6 +28,20 @@ const API_CACHE = 'cruzar-api-v12'
 // hard-reloaded. Network-first with empty cache is correct here; the chunk
 // hashes always match what the server is currently serving.
 const SHELL = []
+
+// Pages that must NEVER be served from cache because their content
+// differs per User-Agent (iOS vs web). The service worker cache key
+// is just the URL — it is NOT UA-aware. If a non-iOS response was
+// cached and then an iOS request hits the cache before the network
+// responds, the wrong (all-plans) HTML is served. Force network-only
+// for these paths so the server always runs isIOSAppServer().
+const NEVER_CACHE_PATHS = [
+  '/pricing',
+]
+
+function isNeverCachePath(pathname) {
+  return NEVER_CACHE_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
 
 // API routes that are safe to serve stale-while-revalidate. These are
 // public, non-auth-bound, and the user benefits far more from seeing
@@ -136,11 +150,12 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       (async () => {
         const cache = await caches.open(CACHE)
+        const neverCache = isNeverCachePath(url.pathname)
         let networkSettled = false
         const networkPromise = fetch(request)
           .then(res => {
             networkSettled = true
-            if (res && res.ok) {
+            if (res && res.ok && !neverCache) {
               cache.put(request, res.clone()).catch(() => {})
             }
             return res
@@ -161,12 +176,13 @@ self.addEventListener('fetch', e => {
           if (res) return res
         }
 
-        // Network slow or unreachable — fall back to cached shell
-        // so the user sees the app instead of a browser error. The
-        // cached shell may reference stale chunks; ChunkErrorReload
-        // on the client will catch + recover if that happens.
-        const cached = await cache.match(request) || await cache.match('/')
-        if (cached) return cached
+        // Network slow or unreachable — fall back to cached shell.
+        // Skip cache for UA-sensitive pages (/pricing) to prevent
+        // serving the wrong (all-plans) HTML to iOS users.
+        if (!neverCache) {
+          const cached = await cache.match(request) || await cache.match('/')
+          if (cached) return cached
+        }
 
         // Still nothing — wait out the network fully as a last resort.
         const res = await networkPromise
