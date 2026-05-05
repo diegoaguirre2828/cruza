@@ -173,9 +173,6 @@ export function NavPublic({
 
 const CONSOLE_TABS = [
   { label: 'Console', href: '/dispatch' },
-  { label: 'Load advisor', href: '/dispatch/load' },
-  { label: 'Paperwork', href: '/dispatch/paperwork' },
-  { label: 'Alerts', href: '/dispatch/alerts' },
   { label: 'Account', href: '/dispatch/account' },
 ];
 
@@ -201,7 +198,6 @@ export function NavConsole({
     }
   }
 
-  // Determine active tab
   const active = CONSOLE_TABS.find(t => t.href !== '/dispatch'
     ? pathname?.startsWith(t.href)
     : pathname === '/dispatch' || pathname === '/dispatch/'
@@ -209,13 +205,10 @@ export function NavConsole({
 
   return (
     <nav className="nav">
-      <Link href="/dispatch" className="nav-cell" style={{ paddingRight: 14, gap: 10, textDecoration: 'none' }}>
+      <Link href="/dispatch" className="nav-cell" style={{ borderRight: '1px solid var(--cd-border)', gap: 10, textDecoration: 'none' }}>
         <span className="brand">Cruzar</span>
-        <span className="brand-sub">Dispatch</span>
+        <span className="brand-sub">/dispatch</span>
       </Link>
-      <div className="nav-cell" style={{ borderRight: '1px solid var(--cd-border)' }}>
-        <span className="lbl-xs">Operator console</span>
-      </div>
       {CONSOLE_TABS.map(t => (
         <Link
           key={t.href}
@@ -234,27 +227,21 @@ export function NavConsole({
       <div className="nav-cell right">
         <ModeToggle mode={mode} setMode={setMode} />
       </div>
-      <div className="nav-cell right" style={{ gap: 10 }}>
+      <button
+        onClick={signOut}
+        className="nav-cell right tab"
+        title="Sign out"
+        style={{ padding: '0 14px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 8 }}
+        aria-label="Sign out"
+      >
         <span style={{
-          width: 26, height: 26, display: 'inline-flex', alignItems: 'center',
+          width: 24, height: 24, display: 'inline-flex', alignItems: 'center',
           justifyContent: 'center', background: 'var(--surface-2)',
           border: '1px solid var(--cd-border)', fontFamily: 'ui-monospace,Menlo,monospace',
           fontSize: 11, color: 'var(--fg)',
         }}>
           {displayName.charAt(0).toUpperCase()}
         </span>
-        <span className="lbl-xs">{displayName}</span>
-      </div>
-      <button
-        onClick={signOut}
-        className="nav-cell right tab"
-        title="Sign out"
-        style={{ padding: '0 14px', background: 'transparent', border: 'none', cursor: 'pointer' }}
-        aria-label="Sign out"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-        </svg>
       </button>
     </nav>
   );
