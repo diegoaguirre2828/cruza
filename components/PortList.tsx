@@ -570,7 +570,7 @@ export function PortList({ initialPorts }: PortListProps = {}) {
                     {lang === 'es' ? 'Ver todos →' : 'See all →'}
                   </Link>
                 </div>
-                <div className="space-y-5">
+                <div className="space-y-3">
                   {favPorts.map(port => (
                     <PortCard key={`fav-${port.portId}`} port={port} signal={signals[port.portId]} />
                   ))}
@@ -579,13 +579,22 @@ export function PortList({ initialPorts }: PortListProps = {}) {
             )
           })()}
 
-          <div className="space-y-7">
+          <div className="space-y-6">
             {Object.entries(grouped).map(([region, regionPorts], regionIdx) => (
               <div key={region}>
-                <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-1">
-                  {region === 'Other' ? (lang === 'es' ? 'Otros' : 'Other') : region}
-                </h2>
-                <div className="space-y-5">
+                <div className="flex items-center justify-between mb-2 px-0.5">
+                  <h2 className="text-[10px] font-mono font-semibold text-gray-400 dark:text-white/25 uppercase tracking-[0.15em]">
+                    {region === 'Other' ? (lang === 'es' ? 'Otros' : 'Other') : region}
+                  </h2>
+                  {timeAgo !== null && regionIdx === 0 && (
+                    <span className="text-[9px] font-mono text-gray-300 dark:text-white/15 tracking-wide">
+                      {timeAgo === 0
+                        ? (lang === 'es' ? 'actualizado ahora' : 'updated now')
+                        : (lang === 'es' ? `hace ${timeAgo} min` : `${timeAgo}m ago`)}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-3">
                   {regionPorts.map(port => (
                     <PortCard key={`${port.portId}-${port.crossingName}`} port={port} signal={signals[port.portId]} />
                   ))}

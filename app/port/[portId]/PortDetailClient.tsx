@@ -572,55 +572,78 @@ export function PortDetailClient({ port, portId }: Props) {
         </div>
       )}
 
-      {/* Two primary actions: Reportar (megaphone — opens BridgeReportSheet
-          which folds in share-via-success-toast) + Guardar. Diego
-          2026-05-02: "share the view part of the individual bridge
-          page should be just part of the report part, they can do
-          either or." Standalone Compartir button removed; share now
-          lives inside the report sheet's success path + the small
-          share icon below the hero. */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => setShowReportSheet(true)}
-          className="flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 border-emerald-300 dark:border-emerald-700 bg-gradient-to-br from-emerald-500 to-green-600 text-white text-[12px] font-black shadow-lg shadow-emerald-600/25 active:scale-[0.97] transition-all"
-        >
-          <Megaphone className="w-5 h-5" />
-          <span className="leading-tight text-center truncate max-w-full">{es ? 'Reportar' : 'Report'}</span>
-        </button>
+      {/* Action strip — Alert me (primary, 1.4fr) | Report | Share.
+          Alert me is the highest-leverage retention action — it converts
+          one-and-done visits into repeat users. Primary wide col per
+          Claude Design org pattern. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '8px' }}>
+        {/* Col 1 (wider): Alert me — blue primary */}
         {user ? (
-          <button
-            onClick={toggleSave}
-            disabled={saving}
-            className={`flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 text-[12px] font-black shadow-sm active:scale-[0.97] transition-all ${
-              saved
-                ? 'border-yellow-300 dark:border-yellow-700 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 active:bg-yellow-100 dark:active:bg-yellow-900/40'
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700'
-            }`}
-          >
-            <span className="text-xl leading-none">{saved ? '⭐' : '☆'}</span>
-            <span className="leading-tight text-center truncate max-w-full">{saved ? (es ? 'Guardado' : 'Saved') : (es ? 'Guardar' : 'Save')}</span>
-          </button>
+          hasAlertForPort === true ? (
+            <Link
+              href="/dashboard?tab=alerts"
+              className="flex flex-col items-center justify-center gap-1.5 py-4 px-1 rounded-xl border border-green-300 dark:border-green-700/60 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-[11px] font-black active:scale-[0.97] transition-all"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="leading-tight text-center">{es ? '✓ Activa' : '✓ Active'}</span>
+            </Link>
+          ) : (
+            <Link
+              href={`/dashboard?tab=alerts&portId=${encodeURIComponent(portId)}`}
+              className="flex flex-col items-center justify-center gap-1.5 py-4 px-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black shadow-lg shadow-blue-600/30 active:scale-[0.97] transition-all"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="leading-tight text-center">{es ? 'Avísame' : 'Alert me'}</span>
+            </Link>
+          )
         ) : (
           <Link
             href="/signup"
-            className="flex flex-col items-center justify-center gap-1 py-3.5 px-1 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-[12px] font-black shadow-sm active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-700 transition-all"
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black shadow-lg shadow-blue-600/30 active:scale-[0.97] transition-all"
           >
-            <span className="text-xl leading-none">☆</span>
-            <span className="leading-tight text-center truncate max-w-full">{es ? 'Guardar' : 'Save'}</span>
+            <Bell className="w-5 h-5" />
+            <span className="leading-tight text-center">{es ? 'Avísame' : 'Alert me'}</span>
           </Link>
         )}
+
+        {/* Col 2: Report */}
+        <button
+          onClick={() => setShowReportSheet(true)}
+          className="flex flex-col items-center justify-center gap-1.5 py-4 px-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-gray-700 dark:text-white/70 text-[11px] font-black active:scale-[0.97] transition-all"
+        >
+          <Megaphone className="w-5 h-5" />
+          <span className="leading-tight text-center">{es ? 'Reportar' : 'Report'}</span>
+        </button>
+
+        {/* Col 3: Share */}
+        <button
+          onClick={handleShare}
+          className="flex flex-col items-center justify-center gap-1.5 py-4 px-1 rounded-xl border border-gray-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.05] text-gray-700 dark:text-white/70 text-[11px] font-black active:scale-[0.97] transition-all"
+        >
+          {shareCopied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
+          <span className="leading-tight text-center">{shareCopied ? (es ? '¡Listo!' : 'Done!') : (es ? 'Compartir' : 'Share')}</span>
+        </button>
       </div>
 
-      {/* Quick share affordance — collapsed below the primary report
-          CTA so "I just want to forward this number" stays a 1-tap
-          action without competing visually with the report flow. */}
-      <button
-        onClick={handleShare}
-        className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 active:scale-[0.99] transition-transform"
-      >
-        {shareCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Share2 className="w-3.5 h-3.5" />}
-        {shareCopied ? (es ? '¡Copiado!' : 'Copied!') : (es ? 'Compartir tiempo' : 'Share wait time')}
-      </button>
+      {/* Save — secondary action below the strip */}
+      {user ? (
+        <button
+          onClick={toggleSave}
+          disabled={saving}
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-white/30 hover:text-gray-600 dark:hover:text-white/60 active:scale-[0.99] transition-all"
+        >
+          <span className="text-sm leading-none">{saved ? '⭐' : '☆'}</span>
+          {saved ? (es ? 'Guardado en favoritos' : 'Saved to favorites') : (es ? 'Guardar este puente' : 'Save this bridge')}
+        </button>
+      ) : (
+        <Link
+          href="/signup"
+          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-gray-400 dark:text-white/30 hover:text-gray-600 dark:hover:text-white/60 transition-all"
+        >
+          <span className="text-sm leading-none">☆</span>
+          {es ? 'Guardar este puente' : 'Save this bridge'}
+        </Link>
+      )}
 
       {/* Live wait now lives in the page header (app/cruzar/[slug]/page.tsx)
           per Diego 2026-05-02 — frees up vertical space for the carousel
@@ -655,36 +678,7 @@ export function PortDetailClient({ port, portId }: Props) {
         <PersonalWaitAtPort portId={portId} currentVehicleWait={port.vehicle ?? null} />
       )}
 
-      {/* One-tap alert CTA — fights the 89% one-and-done retention
-          problem. Users who land here came for a wait time number;
-          the single highest-leverage thing we can do is turn them
-          into someone with a reason to come back. If they already
-          have an alert for THIS port, we show a subtle "active"
-          pill with a manage link instead. Auth-only path — guests
-          hit the LockedFeatureWall above. */}
-      {user && hasAlertForPort === false && (
-        <Link
-          href={`/dashboard?tab=alerts&portId=${encodeURIComponent(portId)}`}
-          className="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-center font-black py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition-all"
-        >
-          {es
-            ? `🔔 Avísame cuando baje este puente`
-            : `🔔 Alert me when this bridge clears`}
-        </Link>
-      )}
-      {user && hasAlertForPort === true && (
-        <Link
-          href="/dashboard?tab=alerts"
-          className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl px-4 py-3 hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-        >
-          <p className="text-sm font-bold text-green-800 dark:text-green-300">
-            {es ? '✓ Alerta activa' : '✓ Alert active'}
-          </p>
-          <span className="text-xs font-semibold text-green-700 dark:text-green-400">
-            {es ? 'Administrar →' : 'Manage →'}
-          </span>
-        </Link>
-      )}
+      {/* Alert CTA consolidated into action strip above. */}
 
       {/* 10s SharePrompt popup removed 2026-04-21 — it was the clearest
           example of ambient interruption, firing on every visit. Share

@@ -10,7 +10,7 @@
 // State: watched port_ids persisted in localStorage AND mirrored to ?ports=
 // query param so a dispatcher can bookmark / share a specific watch list.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { PORT_META } from "@/lib/portMeta";
@@ -96,6 +96,48 @@ const STATUS_LABEL: Record<DispatchPort["drift_status"], { en: string; tone: str
   "drift-fallback": { en: "matching CBP", tone: "text-slate-400" },
   untracked: { en: "untracked", tone: "text-muted-foreground/50" },
 };
+
+// Flash a number briefly when it changes by ≥ threshold minutes
+function useFlash(value: number | null, isAmber = false, threshold = 3) {
+  const [k, setK] = useState(0);
+  const prev = useRef(value);
+  useEffect(() => {
+    if (typeof value === 'number' && typeof prev.current === 'number') {
+      if (Math.abs(value - prev.current) >= threshold) setK(x => x + 1);
+    }
+    prev.current = value;
+  }, [value, threshold]);
+  return { key: k, className: k ? (isAmber ? 'num-flash-amber' : 'num-flash') : '' };
+}
+
+// Scrolling live-feed ticker strip
+function LiveTape({ ports }: { ports: DispatchPort[] }) {
+  const items = ports
+    .filter(p => p.live_wait_min !== null)
+    .map(p => ({
+      name: p.name.split('–')[0].split('/')[0].trim().slice(0, 18),
+      wait: p.live_wait_min as number,
+      delta: p.delta_min ?? 0,
+    }));
+  if (items.length < 2) return null;
+  const all = [...items, ...items];
+  return (
+    <div className="tape">
+      <div className="tape-track">
+        {all.map((it, i) => (
+          <span className="tape-item" key={i}>
+            <span style={{ color: 'var(--muted-2)' }}>{it.name}</span>
+            <span className="v">{it.wait}<span style={{ color: 'var(--muted-2)' }}>m</span></span>
+            <span className={`v${it.delta > 0 ? ' up' : it.delta < 0 ? ' dn' : ''}`}>
+              {it.delta > 0 ? '▲' : it.delta < 0 ? '▼' : '·'}{Math.abs(it.delta)}
+            </span>
+            <span className="tape-divider" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DispatchConsole() {
   const router = useRouter();
@@ -209,6 +251,9 @@ export default function DispatchConsole() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
 
+      {/* ── live tape ticker ── */}
+      <LiveTape ports={ports} />
+
       {/* ── hero strip ── */}
       <div style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid var(--cd-border)", background: "var(--surface)", position: "relative" }}>
         <HeroStat label={es ? "MONITOREANDO" : "WATCHING"} value={`${watched.length} PORTS`} sub={es ? "RGV · comercial" : "RGV · commercial"} />
@@ -232,7 +277,7 @@ export default function DispatchConsole() {
         />
         <div style={{ padding: "14px 20px", flex: "0 0 200px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, justifyContent: "center" }}>
           <button className="btn tap" onClick={() => mutate()} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 9999, background: "var(--cd-green)", display: "inline-block" }} />
+            <span className="ping"><span className="core" /></span>
             AUTO · 60s
           </button>
           <span className="lbl-xs mono" style={{ color: "var(--muted-2)" }}>
@@ -396,35 +441,41 @@ function CruzarDispatchRow({
   lang: 'en' | 'es';
 }) {
   const status = STATUS_LABEL[p.drift_status];
-  const borderL = p.anomaly_high ? 'var(--cd-amber)' : (typeof p.delta_min === 'number' && p.delta_min < -3) ? 'var(--cd-green)' : 'transparent';
-  const deltaUp = typeof p.delta_min === 'number' && p.delta_min > 5;
   const deltaDn = typeof p.delta_min === 'number' && p.delta_min < -3;
+  const deltaUp = typeof p.delta_min === 'number' && p.delta_min > 5;
   const deltaColor = deltaUp ? 'var(--cd-amber)' : deltaDn ? 'var(--cd-green)' : 'var(--cd-muted)';
   const driftColor = p.drift_status === 'decision-grade' ? 'var(--cd-green)' : p.drift_status === 'self-baseline' ? 'var(--cd-accent)' : 'var(--cd-muted)';
-
   const ageStr = p.live_stale_min !== null ? `${p.live_stale_min}m ago` : 'just now';
+  const flash = useFlash(p.live_wait_min, p.anomaly_high);
+
+  const borderL = !p.anomaly_high
+    ? (deltaDn ? 'var(--cd-green)' : 'transparent')
+    : 'none';
+
+  const rowClasses = ['dispatch-row'];
+  if (p.anomaly_high) rowClasses.push('anomaly-row', 'anomaly-glow');
 
   return (
     <div
+      className={rowClasses.join(' ')}
       style={{
         display: 'grid',
         gridTemplateColumns: '2.4fr 1.1fr 1fr 1.4fr 1fr 1fr',
         alignItems: 'center',
         borderBottom: '1px solid var(--cd-border)',
-        borderLeft: `3px solid ${borderL}`,
-        paddingLeft: borderL !== 'transparent' ? 15 : 18,
-        background: 'var(--bg)',
+        borderLeft: p.anomaly_high ? 'none' : `3px solid ${borderL}`,
+        paddingLeft: (!p.anomaly_high && borderL !== 'transparent') ? 15 : 18,
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--row-hover)')}
-      onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg)')}
+      onMouseLeave={e => (e.currentTarget.style.background = '')}
     >
-      {/* Port name + anomaly */}
+      {/* Port name + anomaly pill */}
       <div style={{ padding: '14px 14px 14px 0' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ color: 'var(--fg)', fontSize: 14.5, fontWeight: 500 }}>{p.name}</span>
           <span className="mono lbl-xs" style={{ color: 'var(--muted-2)' }}>{p.port_id}</span>
           {p.anomaly_high && (
-            <span className="pill amber">
+            <span className="pill amber firing">
               ⚠ anomaly {typeof p.anomaly_ratio === 'number' ? `${p.anomaly_ratio.toFixed(1)}×` : ''} baseline
             </span>
           )}
@@ -436,9 +487,9 @@ function CruzarDispatchRow({
           </div>
         )}
       </div>
-      {/* Now */}
+      {/* Now — flashes when value changes by ≥3 min */}
       <div style={{ padding: '14px', textAlign: 'right' }}>
-        <div className="mono" style={{ fontSize: 22, color: p.anomaly_high ? 'var(--cd-amber)' : 'var(--fg)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+        <div key={flash.key} className={`mono ${flash.className}`} style={{ fontSize: 22, color: p.anomaly_high ? 'var(--cd-amber)' : 'var(--fg)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
           {p.live_wait_min ?? '—'}
           <span className="lbl" style={{ color: 'var(--cd-muted)', marginLeft: 4 }}>min</span>
         </div>
@@ -450,7 +501,7 @@ function CruzarDispatchRow({
           <span className="lbl-xs" style={{ color: 'var(--muted-2)', marginLeft: 4 }}>min</span>
         </div>
       </div>
-      {/* Delta */}
+      {/* Trend — delta vs typical */}
       <div style={{ padding: '14px' }}>
         <span className="mono lbl-xs" style={{ color: deltaColor }}>
           {typeof p.delta_min === 'number'

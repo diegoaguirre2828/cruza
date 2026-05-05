@@ -7,13 +7,7 @@ import { useAuth } from '@/lib/useAuth';
 import { NavPublic } from '@/components/B2BNav';
 import { B2B_EN } from '@/lib/copy/b2b-en';
 import { B2B_ES } from '@/lib/copy/b2b-es';
-
-interface PortData {
-  port_id: string;
-  port_name: string;
-  vehicle_wait_min: number | null;
-  recorded_at: string | null;
-}
+import type { PortWaitTime } from '@/types';
 
 const RGV_IDS = ['230502', '230501', '230503'];
 const PORT_LABELS: Record<string, string> = {
@@ -71,14 +65,14 @@ export function B2BPortalClient({ lang = 'en' }: { lang?: 'en' | 'es' }) {
   const es = currentLang === 'es';
   const c = es ? B2B_ES : B2B_EN;
 
-  const { data: portsRaw } = useSWR<PortData[]>('/api/ports', fetcher, { refreshInterval: 60000 });
+  const { data: portsRaw } = useSWR<{ ports: PortWaitTime[] }>('/api/ports', fetcher, { refreshInterval: 60000 });
   const rgvPorts = RGV_IDS.map(id => {
-    const p = portsRaw?.find(x => x.port_id === id);
+    const p = portsRaw?.ports?.find(x => x.portId === id);
     return {
       port_id: id,
-      wait: p?.vehicle_wait_min ?? null,
-      status: waitStatus(p?.vehicle_wait_min ?? null),
-      age: ageLabel(p?.recorded_at ?? null),
+      wait: p?.vehicle ?? null,
+      status: waitStatus(p?.vehicle ?? null),
+      age: ageLabel(p?.recordedAt ?? null),
     };
   });
 

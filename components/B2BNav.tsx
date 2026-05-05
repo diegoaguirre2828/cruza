@@ -136,14 +136,17 @@ export function NavPublic({
   lang?: 'en' | 'es';
   setLang?: (l: 'en' | 'es') => void;
 }) {
+  const pathname = usePathname();
+  const accuracyActive = pathname?.startsWith('/insights/accuracy');
+  const refundsActive = pathname?.startsWith('/refunds');
   return (
     <nav className="nav">
       <Link href="/b2b" className="nav-cell" style={{ borderRight: '1px solid var(--cd-border)', gap: 10, textDecoration: 'none' }}>
         <span className="brand">Cruzar</span>
       </Link>
-      <Link href="/insights/accuracy" className="nav-cell tab" style={{ textDecoration: 'none' }}>Accuracy</Link>
+      <Link href="/insights/accuracy" className={`nav-cell tab${accuracyActive ? ' active' : ''}`} style={{ textDecoration: 'none' }}>Accuracy</Link>
       <Link href="/b2b#layers" className="nav-cell tab" style={{ textDecoration: 'none' }}>Methods</Link>
-      <Link href="/refunds" className="nav-cell tab" style={{ textDecoration: 'none' }}>
+      <Link href="/refunds" className={`nav-cell tab${refundsActive ? ' active' : ''}`} style={{ textDecoration: 'none' }}>
         {lang === 'es' ? 'Reembolsos' : 'Refunds'}
       </Link>
       <div style={{ flex: 1, borderRight: '1px solid var(--cd-border)' }} />

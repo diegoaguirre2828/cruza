@@ -103,7 +103,10 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50
+        bg-white/96 dark:bg-[#0b0f1a]/92
+        backdrop-blur-2xl dark:[backdrop-filter:blur(24px)_saturate(180%)]
+        border-t border-gray-200 dark:border-white/10"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-stretch">
@@ -112,21 +115,21 @@ export function BottomNav() {
             key={tab.href}
             href={tab.href}
             prefetch={true}
-            // Empty onClick + cursor-pointer fights the iOS Safari
-            // "first tap dead" quirk in PWA standalone mode where
-            // <Link> clicks sometimes need a primed click target
-            // before they register.
             onClick={() => {}}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 cursor-pointer transition-transform duration-100 active:scale-[0.92] relative touch-manipulation ${
+            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 cursor-pointer transition-[transform,opacity] duration-100 active:scale-[0.92] active:opacity-60 relative touch-manipulation ${
               tab.active
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                ? 'text-gray-900 dark:text-white'
+                : 'text-gray-400 dark:text-white/30 hover:text-gray-600 dark:hover:text-white/60'
             }`}
           >
             {tab.icon(tab.active)}
-            <span className={`text-[10px] leading-none ${tab.active ? 'font-black' : 'font-semibold'}`}>
+            <span className={`text-[10px] leading-none font-mono tracking-wide ${tab.active ? 'font-bold' : 'font-medium'}`}>
               {tab.label}
             </span>
+            {/* Active pip indicator */}
+            {tab.active && (
+              <span className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+2px)] w-1 h-1 rounded-full bg-blue-500" />
+            )}
             {tab.proBadge && (
               <span className="absolute top-1 right-1/2 translate-x-5 bg-gradient-to-br from-amber-400 to-orange-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full leading-none">
                 PRO
