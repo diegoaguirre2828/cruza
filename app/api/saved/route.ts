@@ -18,7 +18,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from('saved_crossings')
-    .select('*')
+    .select('port_id, label, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 

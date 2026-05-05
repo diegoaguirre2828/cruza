@@ -235,23 +235,9 @@ async function sendPush(userId: string, portName: string, portId: string, wait: 
 // dispatches per user per 24h. Push remains uncapped (free).
 const DAILY_SMS_CAP = 10
 
-async function smsSentInLast24h(userId: string): Promise<number> {
-  const db = getServiceClient()
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count } = await db
-    .from('app_events')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('event_name', 'alert_fired')
-    .filter('props->>channel', 'eq', 'sms')
-    .gte('created_at', since)
-  return count ?? 0
-}
-
-async function sendSms(userId: string, phone: string, portName: string, portId: string, wait: number, lang: Lang): Promise<'sent' | 'capped' | 'unconfigured'> {
+async function sendSms(userId: string, phone: string, portName: string, portId: string, wait: number, lang: Lang, recentSmsCount: number): Promise<'sent' | 'capped' | 'unconfigured'> {
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) return 'unconfigured'
-  const recent = await smsSentInLast24h(userId)
-  if (recent >= DAILY_SMS_CAP) return 'capped'
+  if (recentSmsCount >= DAILY_SMS_CAP) return 'capped'
   const url = `https://cruzar.app/port/${encodeURIComponent(portId)}`
   const body = lang === 'es'
     ? `🌉 Alerta Cruzar: ${portName} ahora en ${wait} min. ${url}`
@@ -300,6 +286,31 @@ export async function GET(req: NextRequest) {
 
     if (!alerts?.length) return NextResponse.json({ sent: 0, checked: 0 })
 
+    // Batch-fetch user languages + 24h SMS counts before the loop
+    // to avoid N sequential DB round-trips (one per alert that fires)
+    const uniqueUserIds = [...new Set(alerts.map((a: { user_id: string }) => a.user_id))]
+    const usersWithPhone = [...new Set(alerts.filter((a: { phone: string | null }) => a.phone).map((a: { user_id: string }) => a.user_id))]
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+    const [langRows, smsRows] = await Promise.all([
+      supabase.from('profiles').select('id, language').in('id', uniqueUserIds),
+      usersWithPhone.length > 0
+        ? supabase
+            .from('app_events')
+            .select('user_id')
+            .in('user_id', usersWithPhone)
+            .eq('event_name', 'alert_fired')
+            .filter('props->>channel', 'eq', 'sms')
+            .gte('created_at', since24h)
+        : Promise.resolve({ data: [] as { user_id: string }[] }),
+    ])
+
+    const langMap = new Map<string, Lang>()
+    for (const p of (langRows.data ?? [])) langMap.set(p.id, p.language === 'en' ? 'en' : 'es')
+
+    const smsCountMap = new Map<string, number>()
+    for (const e of (smsRows.data ?? [])) smsCountMap.set(e.user_id, (smsCountMap.get(e.user_id) ?? 0) + 1)
+
     const { data: readings } = await supabase
       .from('wait_time_readings')
       .select('port_id, port_name, vehicle_wait, commercial_wait, pedestrian_wait, sentri_wait, recorded_at')
@@ -337,10 +348,10 @@ export async function GET(req: NextRequest) {
 
       if (!claimed?.length) continue // another instance already claimed it
 
-      const lang = await getUserLanguage(alert.user_id)
+      const lang = langMap.get(alert.user_id) ?? 'es'
       const results = await Promise.allSettled([
         sendPush(alert.user_id, reading.port_name, alert.port_id, wait, lang, alert.id),
-        alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait, lang) : null,
+        alert.phone ? sendSms(alert.user_id, alert.phone, reading.port_name, alert.port_id, wait, lang, smsCountMap.get(alert.user_id) ?? 0) : null,
       ])
       // Compose alert block onto the user's active crossing record (or
       // create a planning-state crossing for this port). Lets the

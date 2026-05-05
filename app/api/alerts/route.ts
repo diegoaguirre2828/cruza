@@ -25,7 +25,7 @@ export async function GET() {
 
   const { data } = await supabase
     .from('alert_preferences')
-    .select('*')
+    .select('id, port_id, lane_type, threshold_minutes, active, staffing_drop_enabled, snoozed_until, last_triggered_at, phone, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
