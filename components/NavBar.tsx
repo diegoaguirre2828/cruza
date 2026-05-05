@@ -8,6 +8,7 @@ import { useTheme } from '@/lib/ThemeContext'
 import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 import { getTitle, getTitleColor } from '@/lib/titles'
 import { LayoutDashboard, Moon, Sun, Building2, MessageCircle } from 'lucide-react'
+import { isIOSAppClient } from '@/lib/platform'
 
 export function NavBar() {
   const { user, loading } = useAuth()
@@ -60,7 +61,7 @@ export function NavBar() {
         {lang === 'es' ? 'Ayuda' : 'Help'}
       </Link>
 
-      {isBusiness && (
+      {isBusiness && !isIOSAppClient() && (
         <Link
           href="/business"
           className="flex items-center gap-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1.5 rounded-xl transition-colors"

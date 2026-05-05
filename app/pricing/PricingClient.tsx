@@ -363,7 +363,7 @@ export function PricingClient({ isIosApp }: { isIosApp: boolean }) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(isIosApp ? PLANS.filter(p => p.id === 'free') : PLANS).map(plan => {
+          {(isIosApp ? PLANS.filter(p => p.id === 'free' || p.id === 'pro') : PLANS).map(plan => {
             const isCurrent = currentTier === plan.id
             return (
               <div
@@ -509,8 +509,8 @@ export function PricingClient({ isIosApp }: { isIosApp: boolean }) {
             </h3>
             <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 leading-snug">
               {es
-                ? 'Los planes Pro, Business y Operator están disponibles en cruzar.app desde tu computadora.'
-                : 'Pro, Business and Operator plans are available at cruzar.app from a desktop browser.'}
+                ? 'Los planes Business y Operator (para flotas comerciales) están disponibles en cruzar.app desde tu computadora.'
+                : 'Business and Operator plans (for commercial fleets) are available at cruzar.app from a desktop browser.'}
             </p>
           </div>
         )}

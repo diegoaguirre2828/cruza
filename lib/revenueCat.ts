@@ -2,7 +2,7 @@
 // Apple guideline 3.1.1 blocks Stripe for digital subs inside iOS apps,
 // so Pro purchases made from the Capacitor-iOS build route through
 // RevenueCat → StoreKit. Entitlement `pro` maps to product
-// `app.cruzar.ios.pro.monthly`.
+// `app.cruzar.ios.pro.monthly.v2` (v1 was deleted 2026-05-05 — Apple permanently retires deleted product IDs).
 
 import { Purchases, LOG_LEVEL } from '@revenuecat/purchases-capacitor'
 import { isIOSAppClient } from './platform'
@@ -87,7 +87,7 @@ export async function purchaseProMonthly(): Promise<{ purchased: boolean; error?
 // dashboard items:
 //   1. Paid Apps Agreement signed (Agreements, Tax, Banking)
 //   2. Banking + Tax filled in
-//   3. IAP `app.cruzar.ios.pro.monthly` status = "Ready to Submit"
+// 3. IAP `app.cruzar.ios.pro.monthly.v2` status = "Ready to Submit"
 //   4. IAP attached to the binary submission
 //   5. RevenueCat offering linked to product ID
 // Once Diego completes those, this returns true and the button auto-shows.

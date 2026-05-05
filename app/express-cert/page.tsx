@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { ArrowLeft, ShieldCheck, FileText } from 'lucide-react'
+import { isIOSAppClient } from '@/lib/platform'
 import { LangToggle } from '@/components/LangToggle'
 
 interface Application {
@@ -69,6 +70,7 @@ export default function ExpressCertPage() {
 
   async function pay() {
     if (!app) return
+    if (isIOSAppClient()) return
     setPaying(true)
     setError('')
     const res = await fetch('/api/stripe/checkout', {

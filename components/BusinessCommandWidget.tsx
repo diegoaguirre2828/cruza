@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/lib/useAuth'
 import { useLang } from '@/lib/LangContext'
 import { Building2, Truck, ChevronRight, Wifi } from 'lucide-react'
+import { isIOSAppClient } from '@/lib/platform'
 
 interface Driver {
   id: string
@@ -74,7 +75,7 @@ export function BusinessCommandWidget() {
   }, [user])
 
   // Don't render for non-business users or while still loading auth
-  if (authLoading || !user || tier === null || tier !== 'business') return null
+  if (authLoading || !user || tier === null || tier !== 'business' || isIOSAppClient()) return null
 
   const active = drivers.filter(d => ['en_route', 'in_line', 'at_bridge'].includes(d.current_status))
   const cleared = drivers.filter(d => d.current_status === 'cleared')

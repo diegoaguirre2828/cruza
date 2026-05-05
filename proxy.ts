@@ -40,6 +40,19 @@ const IOS_BLOCKED_ROUTE_PREFIXES = [
   '/intelligence',
   '/express-cert',
   '/customs',
+  '/pricing/business',
+  '/for-fleets',
+  '/refunds',
+  '/uflpa',
+  '/cbam',
+  '/pedimento',
+  '/drawback',
+  '/driver-pass',
+  '/scan',
+  '/workspace',
+  '/pitch',
+  '/spec',
+  '/ticket',
 ]
 
 function isIOSBlockedPath(path: string): boolean {

@@ -44,7 +44,6 @@ const EXPLORE_ITEMS: MenuItem[] = [
   { href: '/camaras', emoji: '📹', icon: Camera, labelEs: 'Cámaras en vivo', labelEn: 'Live cameras', subEs: 'Mira los puentes ahorita', subEn: 'Watch the bridges right now' },
   { href: '/servicios', emoji: '💼', icon: Briefcase, labelEs: 'Servicios de frontera', labelEn: 'Border services', subEs: 'Seguro mexicano, eSIM, dentistas, y más — todo pa\' los que cruzan', subEn: 'Mexican insurance, eSIM, dental, and more — all for border crossers' },
   { href: '/planner', emoji: '🗺️', labelEs: 'Planifica tu cruce', labelEn: 'Plan your crossing', subEs: 'Cuándo salir y qué puente agarrar', subEn: 'When to leave and which bridge to pick' },
-  { href: '/for-fleets', emoji: '🚛', labelEs: 'Para flotas / Trucking', labelEn: 'For fleets / Trucking', subEs: 'Panel de flota + alertas + ROI', subEn: 'Fleet dashboard + alerts + ROI' },
   { href: '/negocios', emoji: '🏪', labelEs: 'Negocios locales', labelEn: 'Local businesses', subEs: 'Dental, farmacias, cambios', subEn: 'Dental, pharmacy, exchange' },
   { href: '/guide', emoji: '📖', labelEs: 'Guía del cruzante', labelEn: 'Crosser\'s guide', subEs: 'Documentos, FMM, SENTRI', subEn: 'Documents, FMM, SENTRI' },
   { href: '/compare', emoji: '⚖️', labelEs: '¿Por qué Cruzar?', labelEn: 'Why Cruzar?', subEs: 'Cruzar vs grupos de Facebook vs otras apps', subEn: 'Cruzar vs Facebook groups vs other apps' },

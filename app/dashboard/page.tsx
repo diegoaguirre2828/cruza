@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/trackEvent'
 import { PostUpgradeTour } from '@/components/PostUpgradeTour'
 import { InstallGateModal, useInstallGate, needsInstallGate } from '@/components/InstallGateModal'
 import { isIosSafari, isPwaInstalled } from '@/lib/iosDetect'
+import { isIOSAppClient } from '@/lib/platform'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import type { PortWaitTime } from '@/types'
 import { slugForPort } from '@/lib/portSlug'
@@ -320,8 +321,8 @@ export default function DashboardPage() {
             the last 7 days. */}
         <DashboardPushNudgeBlock />
 
-        {/* Business portal shortcut — prominent for business users */}
-        {isBusiness && (
+        {/* Business portal shortcut — hidden on iOS (B2B route blocked) */}
+        {isBusiness && !isIOSAppClient() && (
           <Link
             href="/business"
             className="flex items-center justify-between bg-blue-600 dark:bg-blue-700 rounded-2xl px-4 py-3.5 mb-4 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
@@ -352,7 +353,7 @@ export default function DashboardPage() {
               🏅 Fundador
             </div>
           )}
-          {!isPro && (
+          {!isPro && !isIOSAppClient() && (
             <Link href="/pricing" className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium">
               {t.upgradeLink}
             </Link>
@@ -536,7 +537,7 @@ export default function DashboardPage() {
               es={es}
               fromWelcome={typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('fromWelcome') === '1'}
             />
-            {tier === 'free' && (
+            {tier === 'free' && !isIOSAppClient() && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl px-4 py-3 flex items-center justify-between">
                 <p className="text-xs font-medium text-blue-700 dark:text-blue-300">
                   🔔 {es ? 'Plan gratis incluye 1 alerta' : 'Free plan includes 1 alert'}
@@ -546,7 +547,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             )}
-            {alertLimitHit && (
+            {alertLimitHit && !isIOSAppClient() && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl px-4 py-3">
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
                   {es ? '1 alerta gratis usada' : 'Free alert used'}

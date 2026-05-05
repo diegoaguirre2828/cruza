@@ -8,6 +8,7 @@ import { createClient } from '@/lib/auth'
 import { BADGES } from '@/lib/points'
 import { useLang } from '@/lib/LangContext'
 import { ArrowLeft, Save, CreditCard, LogOut, User, Building2, FileText, Trophy, Navigation, Brain, Trash2 } from 'lucide-react'
+import { isIOSAppClient } from '@/lib/platform'
 
 export default function AccountPage() {
   const { user, loading: authLoading } = useAuth()
@@ -187,8 +188,8 @@ export default function AccountPage() {
           </button>
         </div>
 
-        {/* Business portal shortcut */}
-        {isBusiness && (
+        {/* Business portal shortcut — hidden on iOS */}
+        {isBusiness && !isIOSAppClient() && (
           <Link
             href="/business"
             className="flex items-center justify-between bg-blue-600 dark:bg-blue-700 rounded-2xl px-4 py-3.5 mb-4 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"

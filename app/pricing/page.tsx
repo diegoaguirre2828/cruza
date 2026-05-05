@@ -12,6 +12,8 @@
 import { isIOSAppServer } from '@/lib/platform'
 import { PricingClient } from './PricingClient'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PricingPage() {
   const isIosApp = await isIOSAppServer()
   return <PricingClient isIosApp={isIosApp} />

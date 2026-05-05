@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/lib/useAuth';
+import { isIOSAppClient } from '@/lib/platform';
 
 interface Props {
   /** Cold-pitch line shown to anonymous visitors. Authed users don't see this. */
@@ -28,7 +29,7 @@ export function PricingStrip({ pitch, authed_label, lang = 'en' }: Props) {
   if (loading) return null;
   const langSuffix = lang === 'es' ? '?lang=es' : '';
 
-  if (user) {
+  if (user && !isIOSAppClient()) {
     return (
       <div className="text-[12px] font-mono text-muted-foreground/70">
         <Link
