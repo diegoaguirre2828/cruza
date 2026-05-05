@@ -28,30 +28,29 @@ function SalesInquiryForm({ es }: { es: boolean }) {
     setState('ok'); setEmail(''); setCompany(''); setFleetSize(''); setUseCase('')
   }
   return (
-    <div id="sales-inquiry-form" className="mt-6 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 rounded-2xl p-6">
-      <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-violet-700 dark:text-violet-400 mb-1">{es ? 'Hablar con ventas' : 'Talk to sales'}</p>
-      <h3 className="text-lg font-bold text-violet-900 dark:text-violet-100 mb-1">
-        {es ? 'Cruzar Intelligence Enterprise — $499/mes' : 'Cruzar Intelligence Enterprise — $499/mo'}
+    <div id="sales-inquiry-form" className="mt-6 bg-emerald-950 border border-emerald-700/50 rounded-2xl p-6">
+      <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-emerald-400 mb-1">{es ? 'Para flotas y empresas' : 'For fleets & operators'}</p>
+      <h3 className="text-lg font-bold text-white mb-1">
+        {es ? 'Un camión demorado paga el servicio completo.' : 'One delayed truck pays for the whole thing.'}
       </h3>
-      <p className="text-xs text-violet-700 dark:text-violet-400 mb-4">
+      <p className="text-xs text-emerald-300/80 mb-4">
         {es
-          ? 'Para VPs de cadena de suministro, aseguradoras y gobierno. Te contactamos en 24 horas.'
-          : 'For supply chain VPs, underwriters, and government. We respond within 24 hours.'}
+          ? '¿Conoces a alguien con flota? Déjanos tu contacto y te decimos cómo funciona. Respondemos en 24 horas.'
+          : 'Know someone who runs a fleet? Drop your info and we\'ll show you how it works. We respond within 24 hours.'}
       </p>
       {state === 'ok' ? (
-        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
-          ✓ {es ? '¡Recibido! Te contactamos en 24 horas a tu email.' : 'Got it! We\'ll be in touch within 24 hours.'}
+        <p className="text-sm font-bold text-emerald-400">
+          ✓ {es ? '¡Recibido! Te contactamos en 24 horas.' : 'Got it! We\'ll be in touch within 24 hours.'}
         </p>
       ) : (
         <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={es ? 'Tu correo de trabajo' : 'Work email'} className="text-sm px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
-          <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder={es ? 'Empresa' : 'Company'} className="text-sm px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100" />
-          <input value={fleetSize} onChange={(e) => setFleetSize(e.target.value)} placeholder={es ? 'Tamaño de flota / volumen' : 'Fleet size / volume'} className="text-sm px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 sm:col-span-1" />
-          <textarea value={useCase} onChange={(e) => setUseCase(e.target.value)} rows={2} placeholder={es ? 'Caso de uso (corredores, equipo, etc.)' : 'Use case (corridors, team, etc.)'} className="text-sm px-3 py-2 rounded-lg border border-violet-300 dark:border-violet-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 sm:col-span-2 resize-none" />
-          <button type="submit" disabled={state === 'sending'} className="sm:col-span-2 py-2.5 rounded-xl bg-violet-700 text-white text-sm font-bold disabled:opacity-50">
-            {state === 'sending' ? (es ? 'Enviando…' : 'Sending…') : (es ? 'Solicitar contacto' : 'Request contact')}
+          <input name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={es ? 'Tu correo' : 'Your email'} className="text-sm px-3 py-2 rounded-lg border border-emerald-700 bg-emerald-900/40 text-white placeholder:text-emerald-500" />
+          <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder={es ? 'Empresa o flota' : 'Company or fleet'} className="text-sm px-3 py-2 rounded-lg border border-emerald-700 bg-emerald-900/40 text-white placeholder:text-emerald-500" />
+          <input value={fleetSize} onChange={(e) => setFleetSize(e.target.value)} placeholder={es ? 'Número de camiones' : 'Number of trucks'} className="text-sm px-3 py-2 rounded-lg border border-emerald-700 bg-emerald-900/40 text-white placeholder:text-emerald-500 sm:col-span-2" />
+          <button type="submit" disabled={state === 'sending'} className="sm:col-span-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold disabled:opacity-50 transition-colors">
+            {state === 'sending' ? (es ? 'Enviando…' : 'Sending…') : (es ? 'Quiero saber más →' : 'Tell me more →')}
           </button>
-          {state === 'err' && <p className="text-xs text-red-500 sm:col-span-2">{err}</p>}
+          {state === 'err' && <p className="text-xs text-red-400 sm:col-span-2">{err}</p>}
         </form>
       )}
     </div>
