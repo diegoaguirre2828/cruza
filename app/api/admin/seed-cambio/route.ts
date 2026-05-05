@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
   let elements: OsmElement[] = []
   try {
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
+    const res = await fetch('https://overpass.kumi.systems/api/interpreter', {
       method: 'POST',
       body: 'data=' + encodeURIComponent(OVERPASS_QUERY),
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
