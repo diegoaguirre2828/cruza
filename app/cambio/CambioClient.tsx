@@ -199,6 +199,14 @@ export default function CambioClient() {
                   + Reportar tasa
                 </button>
               )}
+              <a
+                href={`https://maps.apple.com/?daddr=${l.lat},${l.lng}&dirflg=d`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[11px] text-blue-400/80 hover:text-blue-400 transition-colors"
+              >
+                Cómo llegar →
+              </a>
               {l.phone && (
                 <a href={`tel:${l.phone}`} className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white transition-colors">
                   <Phone className="w-3 h-3" /> Llamar

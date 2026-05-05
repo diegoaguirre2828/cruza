@@ -90,6 +90,15 @@ export function HomeSwipe({ panels, initialPanel = 'cerca' }: Props) {
     trackEvent('home_panel_changed', { panel: panels[idx].id, via: 'tab' })
   }
 
+  // When a bridge is starred from the Cerca panel, auto-jump to Mi puente
+  useEffect(() => {
+    const mioIdx = panels.findIndex((p) => p.id === 'mio')
+    if (mioIdx === -1) return
+    const handler = () => jumpTo(mioIdx)
+    window.addEventListener('cruzar:bridge-starred', handler)
+    return () => window.removeEventListener('cruzar:bridge-starred', handler)
+  }, [panels]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Segmented control with a sliding indicator. The connected look reads
   // as ONE tabbed control rather than three independent nav pills, which
   // is the affordance Diego flagged was missing — users were forgetting

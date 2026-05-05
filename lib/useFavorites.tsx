@@ -102,6 +102,10 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
               body: JSON.stringify({ portId, label }),
             })
         if (!res.ok) throw new Error('save failed')
+        // Notify the home swipe shell so it can jump to "Mi puente"
+        if (!currentlyFavorite && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('cruzar:bridge-starred', { detail: { portId } }))
+        }
         return { ok: true as const }
       } catch {
         setFavorites((prev) => {
