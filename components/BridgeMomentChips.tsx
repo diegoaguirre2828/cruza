@@ -30,6 +30,7 @@ interface HourlyResponse {
   hours: HourBucket[]
   peak: { hour: number; avgWait: number } | null
   best: { hour: number; avgWait: number } | null
+  weeksOfData?: number | null
 }
 
 const ROTATE_MS = 6000
@@ -151,6 +152,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
   const [todayHours, setTodayHours] = useState<HourBucket[] | null>(null)
   const [todayBest, setTodayBest] = useState<{ hour: number; avgWait: number } | null>(null)
   const [todayPeak, setTodayPeak] = useState<{ hour: number; avgWait: number } | null>(null)
+  const [weeksOfData, setWeeksOfData] = useState<number | null>(null)
   const [satHours, setSatHours] = useState<HourBucket[] | null>(null)
   const [forecast6h, setForecast6h] = useState<number | null>(null)
 
@@ -174,6 +176,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
         setTodayHours(d.hours)
         setTodayBest(d.best)
         setTodayPeak(d.peak)
+        if (d.weeksOfData) setWeeksOfData(d.weeksOfData)
       })
       .catch(() => {})
   }, [portId])
@@ -215,7 +218,9 @@ export function BridgeMomentChips({ portId, port }: Props) {
       list.push({
         key: 'today_pattern',
         label: es ? `Patrón típico · ${todayDayName.toLowerCase()}` : `Typical · ${todayDayName}`,
-        source: es ? `prom. ${todayDayName.toLowerCase()} · últimos 14 días` : `${todayDayName} avg · last 14 days`,
+        source: weeksOfData
+          ? (es ? `prom. ${todayDayName.toLowerCase()} · ${weeksOfData} semanas de datos` : `${todayDayName} avg · ${weeksOfData}-week history`)
+          : (es ? `prom. ${todayDayName.toLowerCase()} · todos los datos` : `${todayDayName} avg · all data`),
         badge: todayBest && todayPeak
           ? (es ? `mejor ${fmtHour(todayBest.hour, true)} · pico ${fmtHour(todayPeak.hour, true)}` : `best ${fmtHour(todayBest.hour, false)} · peak ${fmtHour(todayPeak.hour, false)}`)
           : null,
@@ -260,7 +265,9 @@ export function BridgeMomentChips({ portId, port }: Props) {
       list.push({
         key: 'saturday',
         label: satLabel,
-        source: es ? 'prom. sábado · últimos 14 días' : 'Saturday avg · last 14 days',
+        source: weeksOfData
+          ? (es ? `prom. sábado · ${weeksOfData} semanas de datos` : `Saturday avg · ${weeksOfData}-week history`)
+          : (es ? 'prom. sábado · todos los datos' : 'Saturday avg · all data'),
         badge: sameHourValue != null
           ? (es ? `${fmtHour(currentHour, true)}: ~${sameHourValue} min` : `${fmtHour(currentHour, false)}: ~${sameHourValue} min`)
           : null,
@@ -269,7 +276,7 @@ export function BridgeMomentChips({ portId, port }: Props) {
     }
 
     return list
-  }, [liveMin, todayHours, todayBest, todayPeak, forecast6h, satHours, todayDayName, satLabel, currentHour, es])
+  }, [liveMin, todayHours, todayBest, todayPeak, weeksOfData, forecast6h, satHours, todayDayName, satLabel, currentHour, es])
 
   useEffect(() => {
     if (moments.length <= 1 || autoPaused) return

@@ -345,7 +345,7 @@ function DetailedHourlyChart({ hourly, es }: { hourly: HourlyResponse | null; es
         <p className="text-[10px] uppercase tracking-widest font-bold text-gray-500 dark:text-gray-400">
           {es ? 'Espera promedio por hora' : 'Average wait by hour'}
         </p>
-        <p className="text-[10px] text-gray-400">{es ? 'todos los días · 14 días' : 'all days · last 14'}</p>
+        <p className="text-[10px] text-gray-400">{es ? 'todos los días · todos los datos' : 'all days · all data'}</p>
       </div>
 
       {/* Tapped/current hour detail */}
